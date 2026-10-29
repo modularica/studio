@@ -1,0 +1,1479 @@
+<!doctype html><html lang="tr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="description" content="Adım adım yelken okulu: yeke, seyirler, iskota, tramola, kavança, balon yelken ve parkur yarışı.">
+<meta name="theme-color" content="#0b161d">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rüzgâr Kaptanı">
+<meta property="og:description" content="Adım adım yelken okulu: yeke, seyirler, iskota, tramola, kavança, balon yelken ve parkur yarışı.">
+<meta property="og:image" content="cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+</head><body>
+<title>Rüzgâr Kaptanı</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: chart-plotter style. The sea is a framed display; lesson card, instruments and helm sit beneath it (beside it on wide screens). */
+:root{
+  --bg:#0b161d;
+  --panel:#122029;
+  --panel-2:#182b36;
+  --line:#284050;
+  --text:#e7eff2;
+  --muted:#94aab4;
+  --port:#e5484d;
+  --stbd:#2fb36d;
+  --course:#e04aa8;
+  --warn:#f2a93b;
+  --buoy:#ff8a1f;
+  --sea:#13587a;
+  --wind:#9fd3ea;
+  --font-display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-tap-highlight-color:transparent}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--course);outline-offset:2px}
+
+.app{
+  height:100%;display:grid;
+  grid-template-areas:"lesson" "sea" "inst" "ctrl";
+  grid-template-rows:auto minmax(0,1fr) auto auto;
+  gap:8px;padding-block:10px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.side{display:contents}
+.lesson{grid-area:lesson}.sea{grid-area:sea}.inst{grid-area:inst}.ctrl{grid-area:ctrl}
+
+/* Lesson card */
+.lesson{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:8px;min-width:0}
+.lesson-top{display:flex;align-items:center;gap:8px;min-width:0}
+.icon-btn{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0}
+.icon-btn svg{display:block}
+.lesson-title{min-width:0;flex:1;display:grid;gap:1px}
+.kicker{font:600 11px/1.2 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.ltitle{font:700 20px/1.1 var(--font-display);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step-box{display:grid;gap:7px}
+.dots{display:flex;gap:4px}
+.dots i{flex:1;height:4px;border-radius:2px;background:var(--line);position:relative;overflow:hidden}
+.dots i.done{background:var(--stbd)}
+.dots i.cur::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,0%);background:var(--course);transition:width .15s linear}
+.step{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.step-count{flex:none;font:700 13px/1.3 var(--font-display);color:var(--course);border:1px solid var(--course);border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums}
+.step-text{margin:0;font:500 15px/1.4 var(--font-body);color:var(--text);min-width:0}
+.free-box{display:grid;gap:6px}
+
+/* Sea */
+.sea{position:relative;min-height:0;min-width:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--sea)}
+#sea{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.toast{position:absolute;left:50%;bottom:12px;transform:translate(-50%,10px);opacity:0;max-width:calc(100% - 24px);width:max-content;background:rgba(8,20,28,.94);border:1px solid var(--line);color:var(--text);font:600 14px/1.35 var(--font-body);padding:8px 14px;border-radius:10px;text-align:center;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.warn{border-color:var(--warn);color:#ffd9a0}
+.toast.good{border-color:var(--stbd);color:#bff0d3}
+
+/* Instruments */
+.inst{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cell{background:var(--panel);padding:7px 9px;display:grid;gap:1px;align-content:start;min-width:0}
+.k{font:600 10px/1.2 var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v{font:700 22px/1.1 var(--font-display);color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v small{font-size:12px;font-weight:600;color:var(--muted);margin-left:3px}
+.v.txt{font-size:17px;line-height:1.3}
+.sub{font:600 11px/1.25 var(--font-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.port{color:var(--port)}.stbd{color:var(--stbd)}.ok{color:var(--stbd)}.warn{color:var(--warn)}.bad{color:var(--port)}
+
+/* Controls */
+.ctrl{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:10px;min-width:0}
+.row{display:grid;gap:4px;min-width:0}
+.row-head{display:flex;align-items:center;gap:8px;min-height:28px;min-width:0}
+.val{margin-left:auto;font:600 13px var(--font-body);color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{font:600 11px var(--font-body);color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.range-wrap{display:flex;align-items:center;gap:10px;min-width:0}
+.end{font:600 11px var(--font-body);color:var(--muted);flex:none}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;min-width:0;height:34px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#3f5f70,#9fd3ea)}
+input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#3f5f70,#9fd3ea)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-9px;border-radius:50%;background:var(--text);border:3px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--text);border:3px solid var(--panel)}
+input[type=range]:disabled{opacity:.45;cursor:not-allowed}
+.pill-btn{font:700 13px var(--font-body);color:var(--bg);background:var(--text);border:0;border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.pill-btn.active{background:#d93a5b;color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none}
+.seg button{font:600 12px var(--font-body);color:var(--muted);background:transparent;border:0;padding:4px 9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--panel-2);color:var(--text)}
+.helm{position:relative;height:60px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);touch-action:none;cursor:grab;overflow:hidden}
+.helm:active{cursor:grabbing}
+#helmCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.chk{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--font-body);color:var(--muted);cursor:pointer}
+.chk input{accent-color:var(--course);width:16px;height:16px;margin:0}
+
+/* Modals */
+.modal{position:fixed;inset:0;z-index:30;display:flex;overflow:auto;background:rgba(4,10,14,.76);
+  padding-top:max(16px, env(safe-area-inset-top, 0px));padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.modal-card{margin:auto;width:100%;max-width:560px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:14px}
+.modal h2{margin:0;font:700 clamp(28px,6.5vw,36px)/1.05 var(--font-display);text-wrap:balance}
+.modal p{margin:0;font:400 15px/1.55 var(--font-body);max-width:65ch}
+.modal b{color:#fff;font-weight:600}
+.diagram{background:#0e2c3c;border:1px solid var(--line);border-radius:12px;padding:8px;overflow-x:auto}
+.steps-list,.recap{margin:0;padding-left:22px;display:grid;gap:5px;font:500 14px/1.45 var(--font-body)}
+.steps-list li::marker{color:var(--course);font-weight:700}
+.recap li::marker{color:var(--stbd)}
+.big-time{font:700 48px/1 var(--font-display)!important;font-variant-numeric:tabular-nums}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1 1 auto;font:700 17px/1.1 var(--font-display);background:var(--text);color:var(--bg);border:0;border-radius:10px;padding:13px 16px;cursor:pointer}
+.btn.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+.lesson-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.lesson-list button{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
+.lesson-list button.current{border-color:var(--course)}
+.li-num{flex:none;width:24px;font:700 20px var(--font-display);color:var(--muted);font-variant-numeric:tabular-nums}
+.li-body{display:grid;min-width:0}
+.li-title{font:600 15px/1.25 var(--font-body)}
+.li-sub{font:400 12px/1.3 var(--font-body);color:var(--muted)}
+.li-tick{margin-left:auto;flex:none;font:600 12px var(--font-body);color:var(--stbd)}
+
+/* Diagrams */
+.dg{display:block;width:100%;height:auto;min-width:280px}
+.dg *{vector-effect:non-scaling-stroke}
+.dg text{font-family:var(--font-body);font-size:12px;fill:var(--muted)}
+.dg .t-strong{fill:var(--text);font-weight:600}
+.dg .t-port{fill:var(--port);font-weight:600}
+.dg .t-stbd{fill:var(--stbd);font-weight:600}
+.dg .t-course{fill:var(--course);font-weight:600}
+.dg .t-wind{fill:var(--wind);font-weight:600}
+.dg .hull{fill:#f3f6f7;stroke:#8fa5b0;stroke-width:1}
+.dg .boom{stroke:#cfd8dc;stroke-width:2.2;stroke-linecap:round;fill:none}
+.dg .sail{fill:rgba(250,252,253,.85);stroke:#a9bcc5;stroke-width:.8}
+.dg .wind{stroke:var(--wind);stroke-width:2.5;fill:none;stroke-linecap:round}
+.dg .wind-head{fill:var(--wind)}
+.dg .nogo{fill:rgba(229,72,77,.18);stroke:rgba(229,72,77,.7);stroke-width:1}
+.dg .path{fill:none;stroke:var(--course);stroke-width:2.2;stroke-dasharray:6 5;stroke-linecap:round;stroke-linejoin:round}
+.dg .path-solid{fill:none;stroke:var(--course);stroke-width:2.2;stroke-linecap:round}
+.dg .lay{fill:none;stroke:var(--course);stroke-width:1;stroke-dasharray:3 4;opacity:.6}
+.dg .buoy{fill:var(--buoy);stroke:#c45f0c;stroke-width:1}
+.dg .buoy-b{fill:#ffd23f;stroke:#b8921a;stroke-width:1}
+.dg .arrow{fill:none;stroke:var(--warn);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.dg .arrow-head{fill:var(--warn)}
+.dg .tiller{stroke:#c08a52;stroke-width:3;stroke-linecap:round}
+.dg .rudder{stroke:#e7eff2;stroke-width:3.5;stroke-linecap:round}
+.dg .faint{opacity:.35}
+.dg .spin{fill:#d93a5b;stroke:#f3f6f7;stroke-width:1}
+.dg .bad{stroke:var(--port);stroke-width:2.5;stroke-linecap:round;fill:none}
+.dg .good{stroke:var(--stbd);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.dg .divider{stroke:var(--line);stroke-width:1;stroke-dasharray:4 4}
+
+/* Wide screens and landscape phones: sea left, panel right */
+@media (min-aspect-ratio: 5/4){
+  .app{grid-template-areas:"sea side";grid-template-columns:minmax(0,1fr) clamp(300px,32vw,380px);grid-template-rows:minmax(0,1fr);column-gap:14px}
+  .side{display:flex;flex-direction:column;gap:10px;grid-area:side;overflow:auto;min-height:0}
+  .inst{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion: reduce){
+  .toast,.dots i.cur::after{transition:none}
+}
+</style>
+
+<div class="app">
+  <div class="sea" id="seaBox">
+    <canvas id="sea" role="img" aria-label="Deniz görünümü: yelkenli tekne, rüzgâr ve şamandıralar"></canvas>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+  <div class="side">
+    <header class="lesson">
+      <div class="lesson-top">
+        <button class="icon-btn" id="menuBtn" type="button" aria-label="Dersler">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="lesson-title">
+          <span class="kicker" id="lessonKicker">Ders 1 / 8</span>
+          <span class="ltitle" id="lessonTitle">Dümen ve yeke</span>
+        </div>
+        <button class="icon-btn" id="infoBtn" type="button" aria-label="Dersin anlatımı">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.4" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true" aria-label="Sesi kapat">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><g id="sOn" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></g><g id="sOff" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" hidden><path d="M16 9l6 6M22 9l-6 6"/></g></svg>
+        </button>
+      </div>
+      <div class="step-box" id="stepBox">
+        <div class="dots" id="stepDots"></div>
+        <div class="step"><span class="step-count" id="stepCount">1/3</span><p class="step-text" id="stepText">Yekeyi bir tarafa it.</p></div>
+      </div>
+      <div class="free-box" id="freeBox" hidden>
+        <div class="range-wrap"><span class="end">Yön</span><input type="range" id="windDir" min="0" max="345" step="15" value="0" aria-label="Rüzgârın geldiği yön"><span class="val" id="windDirVal">Yıldız · 0°</span></div>
+        <div class="range-wrap"><span class="end">Güç</span><input type="range" id="windSpd" min="4" max="20" step="1" value="12" aria-label="Rüzgâr gücü"><span class="val" id="windSpdVal">12 kn</span></div>
+      </div>
+    </header>
+
+    <section class="inst" aria-label="Göstergeler">
+      <div class="cell"><span class="k">Hız</span><span class="v"><span id="iSpeed">0,0</span><small>kn</small></span><span class="sub" id="iVmg" title="Rüzgâra karşı ya da rüzgâraltına giden hız bileşeni">VMG 0,0</span></div>
+      <div class="cell"><span class="k" title="Gerçek rüzgâr açısı">Açı</span><span class="v" id="iTwa">90°</span><span class="sub" id="iTack">İskele kontra</span></div>
+      <div class="cell"><span class="k">Seyir</span><span class="v txt" id="iPoint">Apaz</span><span class="sub" id="iPointSub">~90°</span></div>
+      <div class="cell"><span class="k">Yelken</span><span class="v txt" id="iTrim">İyi trim</span><span class="sub" id="iTrimSub">ipler düz</span></div>
+    </section>
+
+    <section class="ctrl" aria-label="Kontroller">
+      <div class="row">
+        <div class="row-head">
+          <span class="k">İskota</span>
+          <span class="tag" id="autoTag" hidden>Otomatik</span>
+          <label class="chk" id="autoWrap" hidden><input type="checkbox" id="autoChk"> Oto trim</label>
+          <span class="val" id="sheetVal">Bom 45°</span>
+          <button class="pill-btn" id="balloonBtn" type="button" hidden>Balon çek</button>
+        </div>
+        <div class="range-wrap"><span class="end">Laçka</span><input type="range" id="sheet" min="0" max="100" value="50" aria-label="İskota: sola laçka, sağa kas"><span class="end">Kas</span></div>
+      </div>
+      <div class="row">
+        <div class="row-head">
+          <span class="k" id="helmLabel">Yeke</span>
+          <div class="seg" role="group" aria-label="Dümen tipi">
+            <button type="button" id="modeTiller" aria-pressed="true">Yeke</button>
+            <button type="button" id="modeWheel" aria-pressed="false">Dümen dolabı</button>
+          </div>
+          <span class="val" id="turnVal">Düz</span>
+        </div>
+        <div class="helm" id="helm" tabindex="0" role="slider" aria-label="Dümen: basılı tutup sağa sola sürükle" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><canvas id="helmCanvas"></canvas></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden><div class="modal-card" id="modalCard" role="dialog" aria-modal="true"></div></div>
+
+<script>
+(() => {
+'use strict';
+const TAU = Math.PI * 2, D2R = Math.PI / 180;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = (a, b) => a + Math.random() * (b - a);
+const hyp = Math.hypot;
+const w180 = a => { a = ((a + 180) % 360 + 360) % 360; return a - 180; };
+const w360 = a => ((a % 360) + 360) % 360;
+const fmt1 = v => v.toFixed(1).replace('.', ',');
+const f = n => (+n).toFixed(1);
+const fmtTime = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const KN = 9;      // dünya birimi / (knot·saniye)
+const UPM = 11;    // dünya birimi / metre
+const REACH = 55;  // şamandıraya varış yarıçapı
+
+const WIND_NAMES = [
+  ['Yıldız', 'kuzeyden'], ['Poyraz', 'kuzeydoğudan'], ['Gündoğusu', 'doğudan'], ['Keşişleme', 'güneydoğudan'],
+  ['Kıble', 'güneyden'], ['Lodos', 'güneybatıdan'], ['Günbatısı', 'batıdan'], ['Karayel', 'kuzeybatıdan']
+];
+const windName = dir => WIND_NAMES[Math.round(w360(dir) / 45) % 8];
+
+const POINTS = { olu: 'Ölü bölge', orsa: 'Orsa', darapaz: 'Dar apaz', apaz: 'Apaz', genis: 'Geniş apaz', pupa: 'Pupa' };
+const POINT_SUB = { olu: '42° altı', orsa: '~45°', darapaz: '~60°', apaz: '~90°', genis: '~135°', pupa: '~180°' };
+function pointOf(twa) {
+  if (twa < 42) return 'olu';
+  if (twa < 58) return 'orsa';
+  if (twa < 78) return 'darapaz';
+  if (twa < 103) return 'apaz';
+  if (twa < 152) return 'genis';
+  return 'pupa';
+}
+const POLAR = [[0, 0], [35, 0], [42, .5], [50, .72], [60, .82], [90, 1], [120, .97], [150, .84], [180, .74]];
+function polar(t) {
+  for (let i = 1; i < POLAR.length; i++) {
+    if (t <= POLAR[i][0]) { const a = POLAR[i - 1], b = POLAR[i]; return lerp(a[1], b[1], (t - a[0]) / (b[0] - a[0])); }
+  }
+  return .74;
+}
+
+/* ---------- Ders çizimleri (SVG) ---------- */
+const S_HULL = 'M0,-20 C7,-14 8,4 6,20 L-6,20 C-8,4 -7,-14 0,-20 Z';
+function arrowHead(x1, y1, x2, y2, cls, size) {
+  size = size || 7;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const p1 = [x2 - Math.cos(a - 0.45) * size, y2 - Math.sin(a - 0.45) * size];
+  const p2 = [x2 - Math.cos(a + 0.45) * size, y2 - Math.sin(a + 0.45) * size];
+  return `<path class="${cls}" d="M${f(x2)},${f(y2)} L${f(p1[0])},${f(p1[1])} L${f(p2[0])},${f(p2[1])} Z"/>`;
+}
+function svgWind(x1, y1, x2, y2, label, lx, ly) {
+  return `<line class="wind" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>${arrowHead(x1, y1, x2, y2, 'wind-head', 8)}` +
+    (label ? `<text x="${lx}" y="${ly}" class="t-wind">${label}</text>` : '');
+}
+// Tekne yukarı bakar; boom: derece, + sancak (sağ)
+function svgBoat(x, y, rot, sc, boom, opts) {
+  opts = opts || {};
+  let s = `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${sc})"${opts.cls ? ` class="${opts.cls}"` : ''}><path class="hull" d="${S_HULL}"/>`;
+  if (boom != null) {
+    const bl = 22, a = boom * D2R, mx = 0, my = -7;
+    const ex = mx + Math.sin(a) * bl, ey = my + Math.cos(a) * bl;
+    const side = boom >= 0 ? 1 : -1;
+    const qx = (mx + ex) / 2 + Math.cos(a) * 5 * side, qy = (my + ey) / 2 - Math.sin(a) * 5 * side;
+    s += `<path class="sail" d="M${mx},${my} Q${f(qx)},${f(qy)} ${f(ex)},${f(ey)} Z"/><line class="boom" x1="${mx}" y1="${my}" x2="${f(ex)}" y2="${f(ey)}"/>`;
+  }
+  if (opts.extra) s += opts.extra;
+  return s + '</g>';
+}
+function svgWrap(vb, label, inner) {
+  return `<svg class="dg" viewBox="${vb}" role="img" aria-label="${label}">${inner}</svg>`;
+}
+
+const DIAGRAMS = {
+  yeke: () => svgWrap('0 0 320 180', 'Yeke sağa itilince dümen palası sola döner ve tekne sola döner',
+    svgBoat(160, 92, 0, 2.4, null, { extra: '<line class="tiller" x1="0" y1="17" x2="6" y2="1"/><line class="rudder" x1="0" y1="20" x2="-4" y2="28"/><circle cx="0" cy="-6" r="1.4" fill="#2a3a44"/>' }) +
+    `<line class="arrow" x1="184" y1="98" x2="208" y2="98"/>${arrowHead(184, 98, 208, 98, 'arrow-head')}` +
+    `<text x="214" y="102" class="t-strong">Yekeyi sağa it</text>` +
+    `<text x="140" y="154" text-anchor="end">Pala sola döner</text>` +
+    `<path class="arrow" d="M170,38 Q154,18 132,30"/>${arrowHead(154, 18, 132, 30, 'arrow-head', 8)}` +
+    `<text x="126" y="26" text-anchor="end" class="t-course">Tekne sola döner</text>` +
+    `<text x="312" y="174" text-anchor="end">Dümen dolabı ise çevirdiğin yöne döner</text>`),
+
+  olu: () => svgWrap('0 0 320 180', 'Rüzgârın iki yanında 45 derecelik ölü bölge; tekne bu açılarda orsa seyreder',
+    svgWind(160, 6, 160, 34, 'Rüzgâr', 168, 22) +
+    `<path class="nogo" d="M160,120 L95,55 A92,92 0 0 1 225,55 Z"/>` +
+    `<text x="160" y="84" text-anchor="middle" class="t-port">Ölü bölge</text>` +
+    svgBoat(160, 140, 0, 1, 0, { cls: 'faint' }) +
+    svgBoat(98, 132, -45, 1, -12) + svgBoat(222, 132, 45, 1, 12) +
+    `<text x="76" y="172" text-anchor="middle" class="t-strong">Orsa</text>` +
+    `<text x="244" y="172" text-anchor="middle" class="t-strong">Orsa</text>` +
+    `<text x="160" y="176" text-anchor="middle">burun rüzgârda: durur</text>`),
+
+  seyir: () => svgWrap('0 0 320 190', 'Rüzgâra göre seyirler: orsa, apaz, geniş apaz, pupa',
+    svgWind(90, 4, 90, 30, 'Rüzgâr', 98, 18) +
+    `<path class="nogo" d="M90,95 L55.2,56.4 A52,52 0 0 1 124.8,56.4 Z"/>` +
+    `<circle cx="90" cy="95" r="3" fill="#94aab4"/>` +
+    svgBoat(133.8, 51.2, 45, .8, 12) + svgBoat(152, 95, 90, .8, 45) + svgBoat(133.8, 138.8, 135, .8, 70) + svgBoat(90, 157, 180, .8, 85) +
+    `<text x="152" y="38" class="t-strong">Orsa</text>` +
+    `<text x="172" y="99" class="t-strong">Apaz</text>` +
+    `<text x="152" y="164" class="t-strong">Geniş apaz</text>` +
+    `<text x="90" y="186" text-anchor="middle" class="t-strong">Pupa</text>` +
+    `<text x="6" y="64" class="t-port">Ölü bölge</text>` +
+    `<text x="316" y="122" text-anchor="end" class="t-port">Rüzgâr soldan: iskele kontra</text>` +
+    `<text x="316" y="138" text-anchor="end" class="t-stbd">Rüzgâr sağdan: sancak kontra</text>`),
+
+  iskota: () => svgWrap('0 0 320 176', 'Orsada iskota kasılı, apazda yarı açık, pupada laçka',
+    svgWind(160, 6, 160, 30, 'Rüzgâr', 168, 20) +
+    svgBoat(60, 92, 45, 1.3, 8) + svgBoat(160, 92, 90, 1.3, 45) + svgBoat(262, 92, 180, 1.3, 85) +
+    `<text x="60" y="152" text-anchor="middle" class="t-strong">Orsa</text><text x="60" y="168" text-anchor="middle">iskota kasılı</text>` +
+    `<text x="160" y="152" text-anchor="middle" class="t-strong">Apaz</text><text x="160" y="168" text-anchor="middle">yarı açık</text>` +
+    `<text x="262" y="152" text-anchor="middle" class="t-strong">Pupa</text><text x="262" y="168" text-anchor="middle">tamamen laçka</text>`),
+
+  tramola: () => svgWrap('0 0 320 180', 'Rüzgârüstündeki hedefe zikzak çizerek, tramola atarak gidilir',
+    svgWind(40, 8, 40, 40, 'Rüzgâr', 48, 24) +
+    `<line class="lay" x1="160" y1="22" x2="30" y2="152"/><line class="lay" x1="160" y1="22" x2="290" y2="152"/>` +
+    `<path class="path" d="M196,166 L136,106 L190,52 L160,22"/>` +
+    `<circle cx="160" cy="22" r="6" class="buoy"/><text x="172" y="20" class="t-strong">Hedef</text>` +
+    `<circle cx="136" cy="106" r="3.5" fill="#e04aa8"/><circle cx="190" cy="52" r="3.5" fill="#e04aa8"/>` +
+    `<text x="124" y="110" text-anchor="end" class="t-course">Tramola</text>` +
+    `<text x="202" y="56" class="t-course">Tramola</text>` +
+    svgBoat(166, 136, -45, .7, -10) + svgBoat(163, 79, 45, .7, 10) +
+    `<text x="292" y="140" text-anchor="end">kontra hattı</text>`),
+
+  kavanca: () => svgWrap('0 0 320 190', 'Kavançada teknenin kıçı rüzgârdan geçer ve bom karşı tarafa savrulur',
+    svgWind(40, 8, 40, 38, 'Rüzgâr', 48, 24) +
+    `<path class="path" d="M70,30 L160,100 L118,172"/>` +
+    svgBoat(106, 58, 128, .8, 72) +
+    svgBoat(160, 104, 180, 1.1, -85, { extra: `<line class="boom faint" x1="0" y1="-7" x2="21.9" y2="-5.1"/><path class="arrow" d="M20,4 Q0,34 -20,4"/>${arrowHead(0, 34, -20, 4, 'arrow-head', 7)}` }) +
+    svgBoat(136, 140, 211, .8, -72) +
+    `<circle cx="116" cy="180" r="5" class="buoy"/>` +
+    `<text x="196" y="84" class="t-strong">Bom karşıya savrulur</text>` +
+    `<text x="196" y="100">önce iskotayı kas</text>` +
+    `<text x="196" y="116">geçince laçka et</text>`),
+
+  balon: () => svgWrap('0 0 320 176', 'Balon rüzgâr arkadan gelirken çalışır, yandan gelirken indirilir',
+    svgWind(160, 6, 160, 30, 'Rüzgâr', 168, 20) +
+    `<line class="divider" x1="160" y1="40" x2="160" y2="150"/>` +
+    svgBoat(80, 62, 180, 1.2, 80) +
+    `<ellipse cx="80" cy="112" rx="24" ry="18" class="spin"/><path d="M58,110 Q80,102 102,110" stroke="#f3f6f7" stroke-width="3" fill="none"/>` +
+    `<path class="good" d="M30,108 l6,7 l12,-14"/>` +
+    `<text x="80" y="156" text-anchor="middle" class="t-stbd">Rüzgâr arkadan</text><text x="80" y="172" text-anchor="middle">balon çek</text>` +
+    svgBoat(240, 84, 90, 1.2, 45) +
+    `<ellipse cx="282" cy="98" rx="12" ry="8" class="spin faint"/>` +
+    `<path class="bad" d="M286,54 l14,14 M300,54 l-14,14"/>` +
+    `<text x="240" y="156" text-anchor="middle" class="t-port">Rüzgâr yandan</text><text x="240" y="172" text-anchor="middle">balonu indir</text>`),
+
+  parkur: () => svgWrap('0 0 320 190', 'Parkur: başlangıçtan rüzgârüstü şamandırasına, oradan rüzgâraltına, sonra bitişe',
+    svgWind(40, 8, 40, 38, 'Rüzgâr', 48, 24) +
+    `<path class="path" d="M156,174 L118,128 L178,62 L162,26"/>` +
+    `<path class="path-solid" d="M166,28 L176,146"/>` +
+    `<ellipse cx="171" cy="88" rx="6" ry="5" class="spin"/>` +
+    `<path class="path" d="M176,160 L162,112"/>` +
+    `<circle cx="160" cy="20" r="6" class="buoy"/><text x="170" y="18" class="t-strong">1 rüzgârüstü</text>` +
+    `<circle cx="160" cy="106" r="5" class="buoy-b"/><text x="142" y="104" text-anchor="end" class="t-strong">B bitiş</text>` +
+    `<circle cx="178" cy="154" r="6" class="buoy"/><text x="188" y="158" class="t-strong">2 rüzgâraltı</text>` +
+    `<circle cx="128" cy="178" r="3" class="buoy"/><circle cx="192" cy="178" r="3" class="buoy"/><line class="lay" x1="128" y1="178" x2="192" y2="178"/>` +
+    `<text x="200" y="182">başlangıç</text>` +
+    `<text x="194" y="64" class="t-course">tramola</text>` +
+    `<text x="184" y="94" class="t-course">balon</text>`)
+};
+/* ---------- Dersler ---------- */
+function holdFor(st, cond, secs, dt) {
+  st.acc = cond ? (st.acc || 0) + dt : Math.max(0, (st.acc || 0) - dt * 1.5);
+  st.p = clamp(st.acc / secs, 0, 1);
+  return st.acc >= secs;
+}
+function markReached(i) { return !!(G.marks[i] && G.marks[i].done); }
+function distMark(i) { const m = G.marks[i]; return m ? hyp(G.boat.x - m.x, G.boat.y - m.y) : Infinity; }
+const turnWord = dir => G.wheel ? `dolabı ${dir === 'sol' ? 'sola' : 'sağa'} çevir` : `yekeyi ${dir === 'sol' ? 'sağa' : 'sola'} it`;
+
+const LESSONS = [
+  {
+    title: 'Dümen ve yeke', sub: 'Yeke ters çalışır', diagram: 'yeke',
+    intro: [
+      'Küçük yelkenlilerde dümen, <b>yeke</b> denen bir kolla kullanılır. Yeke, kıçtaki dümen palasına bağlıdır.',
+      'Yekeyi bir tarafa ittiğinde pala öbür tarafa döner ve <b>tekne yekenin tersine döner</b>: yekeyi sağa itersen tekne sola, sola itersen sağa gider.',
+      'Yekeyi bırakınca ortaya gelir ve tekne düz gider. Dümen, tekne ilerlerken iyi çalışır; dururken tekne zor döner.',
+      'Alttaki düğmeyle <b>dümen dolabına</b> da geçebilirsin; dolap, direksiyon gibi çevirdiğin yöne döndürür. Bu derste yelkeni senin yerine ayarlıyoruz, sen dümene odaklan.'
+    ],
+    setup: { wind: 0, spd: 10, hdg: 90, v: 3, sheet: .5, auto: true, marks: [[420, 330, '1'], [820, 110, '2']] },
+    steps: [
+      { t: () => G.wheel ? 'Dümen çubuğunu basılı tutup bir yana çek ve teknenin hangi yöne döndüğüne bak.' : 'Yekeyi basılı tutup bir yana it ve teknenin hangi yöne döndüğüne bak.',
+        check: (st, dt) => holdFor(st, Math.abs(G.boat.u) > .4, 1.2, dt) },
+      { t: () => `Sağ alttaki 1 numaralı şamandıraya git. Sağa dönmek için ${turnWord('sag')}.`, mark: 0, check: () => markReached(0) },
+      { t: () => `Şimdi 2 numaralı şamandıraya dön. Sola dönmek için ${turnWord('sol')}.`, mark: 1, check: () => markReached(1) }
+    ],
+    recap: ['Yeke ters çalışır: sağa itersen tekne sola döner.', 'Yekeyi bırakınca tekne düz gider.', 'Tekne yavaşken dümen zor tutar.']
+  },
+  {
+    title: 'Rüzgâr ve ölü bölge', sub: 'Rüzgâra karşı gidilmez', diagram: 'olu',
+    intro: [
+      'Rüzgâr adını geldiği yönden alır. Bu derste rüzgâr kuzeyden, yani ekranın üstünden esiyor; buna <b>Yıldız</b> denir.',
+      'Yelkenli rüzgâra tam karşı gidemez. Burnun rüzgâra yaklaşık 45 dereceden daha yakın olduğu alana <b>ölü bölge</b> denir. Orada yelken çırpınır (<b>fileler</b>), tekne yavaşlar ve durur.',
+      'Burnu rüzgâra yaklaştırmaya <b>orsa etmek</b>, rüzgârdan uzaklaştırmaya <b>boca etmek</b> denir.',
+      'Sağ üstteki kadranda tekne hep yukarı bakar. Kırmızı alan ölü bölge, mavi ok rüzgârın geldiği yön, beyaz dilim şu anki seyrin.'
+    ],
+    setup: { wind: 0, spd: 10, hdg: 90, v: 4, sheet: .5, auto: true },
+    steps: [
+      { t: 'Burnu yavaşça rüzgâra, yani ekranın üstüne çevir (orsa et) ve ölü bölgeye gir.', check: (st, dt) => holdFor(st, G.d.twa < 38, 1.5, dt) },
+      { t: 'Yelken fileliyor, tekne yavaşlıyor. Hız 1 knotın altına düşene kadar bekle.', check: () => G.boat.v < 1.2 },
+      { t: 'Ölü bölgeden çık: burnu rüzgârdan uzaklaştır (boca et) ve 4 knota ulaş.', check: (st, dt) => holdFor(st, G.d.twa > 50 && G.boat.v > 4, .5, dt) }
+    ],
+    recap: ['Rüzgâra 45°’den yakın gidilemez: burası ölü bölge.', 'Ölü bölgede yelken fileler, tekne durur.', 'Kurtulmak için boca et, hız kazan.']
+  },
+  {
+    title: 'Rüzgâr seyirleri', sub: 'Orsa, apaz, pupa', diagram: 'seyir',
+    intro: [
+      'Teknenin rüzgâra göre gidiş açısına <b>seyir</b> denir. <b>Orsa</b> ~45°, <b>dar apaz</b> ~60°, <b>apaz</b> 90° (rüzgâr yandan), <b>geniş apaz</b> ~135° (arka yandan), <b>pupa</b> 180° (tam arkadan).',
+      'Rüzgâr teknenin sağından (sancaktan) geliyorsa <b>sancak kontra</b>, solundan (iskeleden) geliyorsa <b>iskele kontra</b> seyredersin. Göstergede yeşil sancak, kırmızı iskele demek.',
+      'Yelken bu derste de otomatik. Seyir adını alttaki göstergeden takip et.'
+    ],
+    setup: { wind: 0, spd: 10, hdg: 90, v: 4, sheet: .5, auto: true },
+    steps: [
+      { t: 'Orsaya çık: burnu rüzgâra yaklaşık 45° yaklaştır ve 3 saniye öyle seyret.', check: (st, dt) => holdFor(st, G.d.point === 'orsa' && G.boat.v > 1.5, 3, dt) },
+      { t: 'Apaza boca et: rüzgâr tam yandan gelsin. 3 saniye seyret.', check: (st, dt) => holdFor(st, G.d.point === 'apaz' && G.boat.v > 1.5, 3, dt) },
+      { t: 'Geniş apaza boca et: rüzgâr arka yandan gelsin. 3 saniye seyret.', check: (st, dt) => holdFor(st, G.d.point === 'genis' && G.boat.v > 1.5, 3, dt) },
+      { t: 'Pupaya boca et: rüzgâr tam arkadan gelsin. 3 saniye seyret.', check: (st, dt) => holdFor(st, G.d.point === 'pupa' && G.boat.v > 1.5, 3, dt) }
+    ],
+    recap: ['Orsa ~45°, apaz 90°, geniş apaz ~135°, pupa 180°.', 'En hızlı seyirler genellikle apaz ve geniş apazdır.', 'Rüzgâr sağdan geliyorsa sancak, soldan geliyorsa iskele kontra.']
+  },
+  {
+    title: 'İskota', sub: 'Yelkenin açısı', diagram: 'iskota',
+    intro: [
+      '<b>İskota</b>, bomu ve yelkeni çeken halattır. İskotayı <b>kasarsan</b> bom ortaya gelir; <b>laçka edersen</b> bom dışarı açılır.',
+      'Doğru açı seyre bağlıdır: orsada kas, apazda yarıya kadar aç, pupada tamamen laçka et. Tekne hızlandıkça rüzgâr biraz öne döner; iskotayı tekrar ayarla.',
+      'Yelkendeki kırmızı <b>rüzgâr iplerine</b> bak: düz akıyorsa trim doğru. Yelken çırpınıyorsa (fileliyorsa) kas. İpler kıvrılıyor ve tekne yavaşlıyorsa yelken fazla kasılmıştır, laçka et.',
+      'Artık iskota senin elinde: alttaki İskota çubuğunu kullan.'
+    ],
+    setup: { wind: 0, spd: 10, hdg: 90, v: 1, sheet: 0, auto: false },
+    steps: [
+      { t: 'Yelken fileliyor. İskotayı kas ve apazda “İyi trim” yazana kadar ayarla.', check: (st, dt) => holdFor(st, G.d.trim === 'iyi' && G.d.twa > 75 && G.d.twa < 110, 2, dt) },
+      { t: 'Orsaya çık ve iskotayı iyice kas. Yelken yine “İyi trim” olsun.', check: (st, dt) => holdFor(st, G.d.point === 'orsa' && G.d.trim === 'iyi', 2, dt) },
+      { t: 'Pupaya boca et ve iskotayı laçka et.', check: (st, dt) => holdFor(st, G.d.twa > 150 && G.d.trim === 'iyi', 2, dt) }
+    ],
+    recap: ['Orsada iskota kasılır, bom ortaya yakındır.', 'Apazda bom yarı açıktır, pupada tamamen dışarıdadır.', 'Yelken fileliyorsa kas; fazla kasılıysa laçka et.']
+  },
+  {
+    title: 'Tramola', sub: 'Rüzgârüstüne zikzak', diagram: 'tramola',
+    intro: [
+      'Rüzgârın geldiği yöndeki bir hedefe dümdüz gidemezsin, çünkü yol ölü bölgenin içinden geçer. Bunun yerine zikzak çizersin: bir süre iskele kontra orsa, sonra sancak kontra orsa.',
+      'Kontra değiştirmek için teknenin <b>burnunu rüzgârın içinden</b> geçirmeye <b>tramola</b> denir.',
+      'Sıra şöyle: orsada hız yap → dümeni kararlı bas → burun rüzgârdan geçer, bom öbür tarafa geçer → yeni kontrada orsaya otur ve iskotayı kas.',
+      'Yavaş girersen ölü bölgede kalırsın. Mor kesikli çizgiler <b>kontra hattıdır</b>: o çizgiye gelince tramola atarsan şamandırayı tam yakalarsın.'
+    ],
+    setup: { wind: 0, spd: 12, hdg: 45, v: 3, sheet: .85, auto: false, layLines: true, marks: [[0, -950, '1']] },
+    steps: [
+      { t: 'Orsada hız yap: 3 knotı geç.', check: (st, dt) => holdFor(st, G.d.twa >= 40 && G.d.twa < 65 && G.boat.v > 3, .6, dt) },
+      { t: 'Tramola at: dümeni kararlı bas, burnu rüzgârın içinden öbür tarafa geçir.', check: () => G.tacks >= 1 },
+      { t: 'Yeni kontrada orsaya otur, iskotayı kas ve hızlan. Sonra ikinci tramolayı at.', check: () => G.tacks >= 2 },
+      { t: 'Mor kontra hattına gelince tramola at ve rüzgârüstü şamandırasına ulaş.', mark: 0, check: () => markReached(0) }
+    ],
+    recap: ['Rüzgârüstüne zikzak çizerek gidilir.', 'Tramolada burun rüzgârdan geçer ve kontra değişir.', 'Tramolaya hızlı gir; yavaş girersen ölü bölgede kalırsın.', 'Kontra hattında tramola atan şamandırayı tam yakalar.']
+  },
+  {
+    title: 'Kavança', sub: 'Kıç rüzgârdan geçer', diagram: 'kavanca',
+    intro: [
+      'Rüzgâraltına giderken kontra değiştirmek için teknenin <b>kıçını rüzgârdan</b> geçirirsin. Buna <b>kavança</b> denir.',
+      'Kavançada rüzgâr yelkenin arkasına geçer ve bom bir anda öbür tarafa savrulur. Hazırlıksız yapılırsa çok serttir: tekneyi yavaşlatır, gerçekte de tehlikelidir.',
+      'Güvenli kavança: iskotayı kasıp bomu ortaya al → dümeni yavaşça bas, kıç rüzgârdan geçsin → bom geçince iskotayı hemen laçka et.'
+    ],
+    setup: { wind: 0, spd: 12, hdg: 150, v: 4, sheet: .15, auto: false, marks: [[-420, 950, '1']] },
+    steps: [
+      { t: 'Pupaya yakın seyret ve iskotayı kas: bomu ortaya al (%60 üstü).', check: (st, dt) => holdFor(st, G.boat.sheet >= .6 && G.d.twa > 130, .5, dt) },
+      { t: 'Kıçı rüzgârdan geçir: dümeni yavaşça bas, bom karşıya geçsin.', check: () => !!(G.lastGybe && G.lastGybe.controlled && G.lastGybe.t >= G.ls.stepStart) },
+      { t: 'Bom geçti. Şimdi iskotayı laçka et ve iyi trimde devam et.', check: (st, dt) => holdFor(st, G.d.trim === 'iyi' && G.d.twa > 120, 2, dt) },
+      { t: 'Rüzgâraltı şamandırasına ulaş.', mark: 0, check: () => markReached(0) }
+    ],
+    recap: ['Kavançada kıç rüzgârdan geçer, bom bir anda karşıya savrulur.', 'Önce iskotayı kas, bom geçince laçka et.', 'Kontrolsüz kavança tekneyi yavaşlatır ve tehlikelidir.']
+  },
+  {
+    title: 'Balon yelken', sub: 'Rüzgâraltında hız', diagram: 'balon',
+    intro: [
+      '<b>Balon</b>, rüzgâr arkadan ya da arka yandan gelirken (geniş apaz ve pupa) açılan büyük, hafif bir yelkendir. Tekneyi epey hızlandırır.',
+      'Rüzgâr yandan ya da önden gelirse balon tekneyi yatırır ve orsaya savurur. Bu yüzden şamandırayı dönüp orsaya çıkmadan önce balonu indirirsin.',
+      'Balonu çekmek de indirmek de birkaç saniye sürer; erken davran. Balon açıkken ana yelkenin iskotasını da ayarlamayı unutma.'
+    ],
+    setup: { wind: 0, spd: 12, hdg: 160, v: 3.5, sheet: .1, auto: false, balloon: true, marks: [[230, 1150, '1']] },
+    steps: [
+      { t: 'Geniş apazdasın. “Balon çek” düğmesine bas.', check: () => G.balloon.state === 'up' },
+      { t: 'Balonla hızlan: 6 knotı geç. İskotayı laçka tut.', check: (st, dt) => holdFor(st, G.boat.v > 6, .5, dt) },
+      { t: 'Şamandıraya yaklaşırken (son 45 metre) balonu indir.', mark: 0,
+        check: (st, dt) => {
+          st.warn = (st.warn || 0) - dt;
+          if (distMark(0) < 130 && G.balloon.k > 0 && st.warn <= 0) { toast('Balon hâlâ açık! Şamandırayı dönmeden indir.', 'warn', 2600); st.warn = 4; }
+          return G.balloon.state === 'down' && distMark(0) < 45 * UPM;
+        } },
+      { t: 'Şamandırayı dön ve orsaya çık: rüzgâra doğru dön, iskotayı kas.', mark: 0,
+        check: (st, dt) => { if (distMark(0) < 80) st.round = true; return !!st.round && holdFor(st, G.d.twa >= 40 && G.d.twa < 62 && G.boat.v > 2, 1, dt); } }
+    ],
+    recap: ['Balon geniş apaz ve pupada açılır, tekneyi çok hızlandırır.', 'Rüzgâr yandan gelirse balon tekneyi orsaya savurur.', 'Şamandırayı dönmeden önce balon indirilir.']
+  },
+  {
+    title: 'Parkur yarışı', sub: 'Hepsi bir arada', diagram: 'parkur', timer: true,
+    intro: [
+      'Gerçek bir yelken yarışı gibi: önce rüzgârüstü şamandırasına (1) tramolalarla çık, sonra balonla rüzgâraltı şamandırasına (2) in, en son bitiş şamandırasına (B) dön.',
+      'Rüzgâr hafifçe yön ve güç değiştiriyor. Kadrana ve trim durumuna göz at; rüzgâr dönünce iskotayı ve rotanı ayarla.',
+      'Süren tutuluyor, en iyi süren kaydedilir.'
+    ],
+    setup: { wind: 0, spd: 12, hdg: 45, v: 2.5, sheet: .85, auto: false, balloon: true, layLines: true, shift: true, timer: true,
+      marks: [[0, -850, '1'], [60, 120, '2'], [0, -220, 'B']] },
+    steps: [
+      { t: 'Rüzgârüstü şamandırasına (1) tramolalarla çık.', mark: 0, check: () => markReached(0) },
+      { t: 'Rüzgâraltı şamandırasına (2) in. Balonu kullanabilirsin.', mark: 1, check: () => markReached(1) },
+      { t: 'Balonu indir ve bitiş şamandırasına (B) orsa ile dön.', mark: 2, check: () => markReached(2) }
+    ],
+    recap: ['Rüzgârüstüne tramolalarla, rüzgâraltına balonla gidilir.', 'Şamandırada balon iner, iskota kasılır.', 'Rüzgâr dönerse rota ve trim de değişir.']
+  }
+];
+
+const FREE = {
+  title: 'Serbest seyir', sub: 'Rüzgârı sen ayarla',
+  intro: [
+    'Rüzgârın yönünü ve gücünü üstteki ayarlardan sen belirle. Rüzgâr adını yine geldiği yönden alır: Poyraz, Lodos, Karayel…',
+    'Balon ve tüm kontroller açık. İstersen iskota satırındaki “Oto trim” ile yelkeni otomatiğe alabilirsin.',
+    'Etraftaki dört şamandırayı dolaşarak tramola ve kavança çalış.'
+  ],
+  setup: { wind: 0, spd: 12, hdg: 90, v: 3, sheet: .5, auto: false, balloon: true,
+    marks: [[500, -500, ''], [-500, -500, ''], [-500, 500, ''], [500, 500, '']] }
+};
+/* ---------- Kayıt ---------- */
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+const K_DONE = 'ruzgar-kaptani-yo-tamam', K_LAST = 'ruzgar-kaptani-yo-son', K_WHEEL = 'ruzgar-kaptani-yo-dumen',
+  K_SND = 'ruzgar-kaptani-yo-ses', K_BEST = 'ruzgar-kaptani-yo-rekor';
+let doneSet = new Set();
+try { doneSet = new Set(JSON.parse(store.get(K_DONE) || '[]')); } catch (e) {}
+
+/* ---------- Ses ---------- */
+const Snd = {
+  ctx: null, master: null, on: true, windG: null, windF: null, luffG: null, buf: null, wait: 0,
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {}); return; }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const c = this.ctx = new AC();
+      this.master = c.createGain(); this.master.gain.value = this.on ? .8 : 0; this.master.connect(c.destination);
+      const len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      this.buf = buf;
+      const n1 = c.createBufferSource(); n1.buffer = buf; n1.loop = true;
+      this.windF = c.createBiquadFilter(); this.windF.type = 'bandpass'; this.windF.frequency.value = 500; this.windF.Q.value = .6;
+      this.windG = c.createGain(); this.windG.gain.value = 0;
+      n1.connect(this.windF); this.windF.connect(this.windG); this.windG.connect(this.master); n1.start();
+      const n2 = c.createBufferSource(); n2.buffer = buf; n2.loop = true; n2.playbackRate.value = .9;
+      const f2 = c.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 1800; f2.Q.value = .8;
+      this.luffG = c.createGain(); this.luffG.gain.value = 0;
+      const trem = c.createGain(); trem.gain.value = .5;
+      const lfo = c.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 11;
+      const lfoG = c.createGain(); lfoG.gain.value = .5;
+      lfo.connect(lfoG); lfoG.connect(trem.gain);
+      n2.connect(f2); f2.connect(this.luffG); this.luffG.connect(trem); trem.connect(this.master);
+      n2.start(); lfo.start();
+    } catch (e) { this.ctx = null; }
+  },
+  update(dt, aws, luff) {
+    if (!this.ctx) return;
+    this.wait -= dt; if (this.wait > 0) return; this.wait = .15;
+    const t = this.ctx.currentTime;
+    this.windG.gain.setTargetAtTime(aws > 0 ? Math.min(.09, .006 + .0045 * aws) : 0, t, .3);
+    this.windF.frequency.setTargetAtTime(300 + aws * 45, t, .4);
+    this.luffG.gain.setTargetAtTime(luff ? .07 : 0, t, .08);
+  },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.setTargetAtTime(v ? .8 : 0, this.ctx.currentTime, .05); },
+  tone(type, f0, f1, dur, vol, delay) {
+    const c = this.ctx; if (!c || !this.master) return;
+    const t = c.currentTime + (delay || 0);
+    const o = c.createOscillator(); o.type = type;
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + .05);
+  },
+  noise(dur, vol, freq) {
+    const c = this.ctx; if (!c || !this.buf) return;
+    const t = c.currentTime, s = c.createBufferSource(); s.buffer = this.buf;
+    const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = freq;
+    const g = c.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + .05);
+  },
+  ding() { this.tone('sine', 880, 880, .25, .14, 0); this.tone('sine', 1320, 1320, .3, .09, .08); },
+  bell() { this.tone('triangle', 660, 660, .7, .16, 0); this.tone('triangle', 990, 990, .5, .07, .02); },
+  slam() { this.tone('sine', 150, 45, .35, .45, 0); this.noise(.25, .25, 900); },
+  fanfare() { [523, 659, 784, 1047].forEach((fr, i) => this.tone('triangle', fr, fr, .3, .14, i * .12)); }
+};
+
+/* ---------- Oyun durumu ---------- */
+let W = 0, H = 0, DPR = 1, seaGrad = null;
+let helmPos = 0, helmDrag = false;
+const keys = { l: false, r: false };
+const G = {
+  t: 0, mode: 'lesson', idx: 0, phase: 'intro', started: false, wheel: false,
+  auto: true, allowBalloon: false, layLines: false, timer: false,
+  wind: { dir: 0, spd: 10, base: 0, baseSpd: 10, shift: false },
+  boat: { x: 0, y: 0, hdg: 90, v: 0, u: 0, sheet: .5, boom: 0, boomSide: 1, tackSide: -1 },
+  balloon: { state: 'down', k: 0, collapsed: false, bad: 0 },
+  d: { rel: 0, twa: 90, awa: 90, awaRel: 0, aws: 0, point: 'apaz', trim: 'iyi', e: 1, vmg: 0 },
+  marks: [], targetMark: -1, trail: [], trailT: 0, streaks: [], cam: { x: 0, y: 0 }, zoom: 1,
+  tacks: 0, gybes: 0, lastGybe: null, shake: 0, raceT: 0,
+  ls: { step: 0, st: {}, stepStart: 0 },
+  hint: { cool: 3, irons: 0, file: 0, kas: 0 }
+};
+function curLesson() { return G.mode === 'lesson' ? LESSONS[G.idx] : null; }
+function curStep() { const L = curLesson(); return L ? L.steps[G.ls.step] : null; }
+function stepText(s) { return typeof s.t === 'function' ? s.t() : s.t; }
+
+function applySetup(s) {
+  const b = G.boat;
+  b.x = 0; b.y = 0; b.hdg = s.hdg; b.v = s.v; b.u = 0; b.sheet = s.sheet;
+  G.wind.base = G.wind.dir = s.wind; G.wind.baseSpd = G.wind.spd = s.spd; G.wind.shift = !!s.shift;
+  G.auto = !!s.auto; G.allowBalloon = !!s.balloon; G.layLines = !!s.layLines; G.timer = !!s.timer;
+  G.balloon = { state: 'down', k: 0, collapsed: false, bad: 0 };
+  G.marks = (s.marks || []).map(m => ({ x: m[0], y: m[1], l: m[2], done: false }));
+  G.trail = []; G.tacks = 0; G.gybes = 0; G.lastGybe = null; G.raceT = 0; G.shake = 0;
+  const rel = w180(G.wind.dir - b.hdg);
+  b.tackSide = rel >= 0 ? 1 : -1; b.boomSide = -b.tackSide;
+  b.boom = b.boomSide * Math.min(lerp(88, 4, b.sheet), Math.max(0, Math.abs(rel) - 2));
+  G.cam.x = b.x; G.cam.y = b.y;
+  helmPos = 0;
+  G.hint = { cool: 3, irons: 0, file: 0, kas: 0 };
+  initStreaks();
+  physics(0);
+}
+
+/* ---------- Fizik ---------- */
+function sideChanged(twa) {
+  if (G.phase !== 'play') return;
+  const b = G.boat;
+  if (twa < 90) {
+    G.tacks++;
+    toast('Tramola! Yeni kontra: ' + (b.tackSide > 0 ? 'sancak' : 'iskele'), '', 1800);
+  } else {
+    const ctrl = G.auto || b.sheet >= .55 || G.wind.spd < 6;
+    G.gybes++; G.lastGybe = { controlled: ctrl, t: G.t };
+    if (ctrl) toast('Kavança! Bom kontrollü geçti.', 'good', 1800);
+    else { b.v *= .45; G.shake = .45; Snd.slam(); toast('Kontrolsüz kavança! Bom sert savruldu. Önce iskotayı kas.', 'warn', 3200); }
+  }
+}
+
+function broach(rel) {
+  const b = G.boat, bl = G.balloon;
+  bl.collapsed = true; bl.bad = 0;
+  b.v *= .35; b.hdg = w360(b.hdg + Math.sign(rel) * 18);
+  G.shake = .4; Snd.slam();
+  toast('Balon tekneyi orsaya savurdu! Balonu indir ya da boca et.', 'warn', 3200);
+}
+
+function physics(dt) {
+  const b = G.boat, w = G.wind;
+  // dümen girdisi
+  const keyU = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
+  if (keyU !== 0) { const tgt = G.wheel ? keyU : -keyU; helmPos += clamp(tgt - helmPos, -4 * dt, 4 * dt); }
+  else if (!helmDrag) { helmPos += (0 - helmPos) * Math.min(1, 7 * dt); if (Math.abs(helmPos) < .003) helmPos = 0; }
+  const uT = G.wheel ? helmPos : -helmPos;
+  b.u += (uT - b.u) * Math.min(1, 10 * dt);
+
+  // rüzgâr salınımı
+  if (w.shift) {
+    w.dir = w360(w.base + Math.sin(G.t * .07) * 7 + Math.sin(G.t * .19 + 1.3) * 3);
+    w.spd = w.baseSpd * (1 + .12 * Math.sin(G.t * .23) + .06 * Math.sin(G.t * .61 + .4));
+  } else { w.dir = w.base; w.spd = w.baseSpd; }
+
+  // gerçek rüzgâr
+  const rel = w180(w.dir - b.hdg), twa = Math.abs(rel);
+  if (twa > 2 && twa < 178) { const side = rel > 0 ? 1 : -1; if (side !== b.tackSide) { b.tackSide = side; sideChanged(twa); } }
+
+  // görünen rüzgâr
+  const to = (w.dir + 180) * D2R, h = b.hdg * D2R;
+  const ax = w.spd * Math.sin(to) - b.v * Math.sin(h), ay = -w.spd * Math.cos(to) + b.v * Math.cos(h);
+  const aws = hyp(ax, ay) || .0001;
+  const awaRel = w180(Math.atan2(-ax, ay) / D2R - b.hdg), awa = Math.abs(awaRel);
+
+  // en iyi bom açısı ve otomatik trim
+  const dopt = awa > 145 ? 85 : clamp(awa - 20, 5, 85);
+  if (G.auto) { const sT = clamp((88 - dopt) / 84, 0, 1); b.sheet += (sT - b.sheet) * Math.min(1, 2.5 * dt); }
+
+  // bom
+  let side = b.boomSide;
+  if (awa > 1 && awa < 170) side = awaRel > 0 ? -1 : 1;
+  const dmax = lerp(88, 4, b.sheet);
+  const target = side * Math.min(dmax, Math.max(0, awa - 2));
+  const crossing = Math.sign(target) !== Math.sign(b.boom) && Math.abs(b.boom) > 3;
+  const rate = crossing && awa > 100 ? ((G.auto || b.sheet >= .55) ? 170 : 560) : 120;
+  b.boom += clamp(target - b.boom, -rate * dt, rate * dt);
+  b.boomSide = side;
+
+  // trim verimi
+  const err = Math.abs(b.boom) - dopt;
+  let e, trim;
+  if (awa < 25 || twa < 34) { e = 0; trim = 'bos'; }
+  else {
+    e = err >= 0 ? Math.exp(-((err / 10) ** 2)) : Math.max(Math.exp(-((err / 18) ** 2)), awa > 110 ? .45 : .12);
+    trim = err > 7 ? 'file' : (err < (awa > 145 ? -22 : -13) ? 'kasili' : 'iyi');
+  }
+
+  // balon
+  const bl = G.balloon; let bf = 1;
+  if (bl.state === 'hoisting') { bl.k = Math.min(1, bl.k + dt / 2); if (bl.k >= 1) bl.state = 'up'; }
+  else if (bl.state === 'dousing') { bl.k = Math.max(0, bl.k - dt / 1.5); if (bl.k <= 0) { bl.state = 'down'; bl.collapsed = false; bl.bad = 0; } }
+  if (bl.k > 0) {
+    if (bl.collapsed) { bf = 1 - .45 * bl.k; if (twa > 115) bl.collapsed = false; }
+    else if (twa >= 115) bf = 1 + .38 * bl.k;
+    else if (twa >= 95) bf = 1 + .15 * bl.k;
+    else if (twa >= 80) bf = 1 - .1 * bl.k;
+    else bf = 1 - .5 * bl.k;
+    if (bl.state === 'up' && !bl.collapsed && twa < 88 && G.phase === 'play') { bl.bad += dt; if (bl.bad > 2) broach(rel); }
+    else bl.bad = Math.max(0, bl.bad - dt);
+  }
+
+  // hız
+  const vmax = Math.min(7, .42 * w.spd + 1.2);
+  const vt = vmax * polar(twa) * e * bf * (1 - .22 * Math.abs(b.u));
+  const kk = vt > b.v ? .42 : (twa < 35 ? .9 : .7);
+  b.v = Math.max(0, b.v + (vt - b.v) * Math.min(1, kk * dt));
+
+  // dönüş ve hareket
+  const yaw = clamp(b.u * (9 + 8 * b.v), -55, 55);
+  b.hdg = w360(b.hdg + yaw * dt);
+  const drift = w.spd * .12 * (twa < 35 ? 4 : 1);
+  b.x += Math.sin(h) * b.v * KN * dt + Math.sin(to) * drift * dt;
+  b.y += -Math.cos(h) * b.v * KN * dt - Math.cos(to) * drift * dt;
+
+  G.d = { rel, twa, awa, awaRel, aws, point: pointOf(twa), trim, e, vmg: b.v * Math.cos(twa * D2R) };
+}
+
+function marksUpdate() {
+  const s = curStep();
+  const mi = s && s.mark != null ? s.mark : -1;
+  G.targetMark = mi;
+  if (mi >= 0) { const m = G.marks[mi]; if (m && !m.done && distMark(mi) < REACH) { m.done = true; Snd.bell(); } }
+}
+
+function trailUpdate(dt) {
+  G.trailT -= dt;
+  if (G.trailT <= 0) {
+    G.trailT = .09;
+    const b = G.boat, h = b.hdg * D2R;
+    G.trail.push({ x: b.x - Math.sin(h) * 22, y: b.y + Math.cos(h) * 22 });
+    if (G.trail.length > 90) G.trail.shift();
+  }
+}
+
+function initStreaks() {
+  G.streaks = [];
+  const z = G.zoom || 1, hw = W / 2 / z + 150, hh = H / 2 / z + 150;
+  for (let i = 0; i < 55; i++) G.streaks.push({ x: G.cam.x + rand(-hw, hw), y: G.cam.y + rand(-hh, hh), len: rand(26, 60), a: rand(.35, 1), sp: rand(.8, 1.2) });
+}
+function streaksUpdate(dt) {
+  const w = G.wind, to = (w.dir + 180) * D2R, vx = Math.sin(to), vy = -Math.cos(to), sp = w.spd * 5;
+  const z = G.zoom || 1, hw = W / 2 / z + 150, hh = H / 2 / z + 150;
+  for (const s of G.streaks) {
+    s.x += vx * sp * s.sp * dt; s.y += vy * sp * s.sp * dt;
+    if (s.x < G.cam.x - hw) s.x += 2 * hw; else if (s.x > G.cam.x + hw) s.x -= 2 * hw;
+    if (s.y < G.cam.y - hh) s.y += 2 * hh; else if (s.y > G.cam.y + hh) s.y -= 2 * hh;
+  }
+}
+function cameraUpdate(dt) {
+  const b = G.boat, h = b.hdg * D2R, la = Math.min(1, b.v / 6) * 80;
+  const k = Math.min(1, 2.2 * dt);
+  G.cam.x = lerp(G.cam.x, b.x + Math.sin(h) * la, k);
+  G.cam.y = lerp(G.cam.y, b.y - Math.cos(h) * la, k);
+}
+
+function hints(dt) {
+  const Hn = G.hint, d = G.d, b = G.boat;
+  Hn.cool -= dt;
+  Hn.irons = (d.twa < 40 && b.v < .8) ? Hn.irons + dt : 0;
+  Hn.file = (!G.auto && d.trim === 'file' && d.twa > 45) ? Hn.file + dt : 0;
+  Hn.kas = (!G.auto && d.trim === 'kasili') ? Hn.kas + dt : 0;
+  if (Hn.cool > 0) return;
+  let msg = null;
+  if (Hn.irons > 4 && !(G.mode === 'lesson' && G.idx === 1 && G.ls.step < 2)) msg = 'Ölü bölgede takıldın. Dümeni bir yana bas, boca et ve hız kazan.';
+  else if (Hn.file > 4) msg = 'Yelken fileliyor: iskotayı biraz kas.';
+  else if (Hn.kas > 5) msg = 'Yelken fazla kasılı, tekne yavaşlıyor: biraz laçka et.';
+  else if (G.balloon.k > .5 && !G.balloon.collapsed && d.twa < 100 && d.twa >= 85) msg = 'Balon için rüzgâr fazla yandan geliyor. Boca et ya da balonu indir.';
+  if (msg) { toast(msg, 'warn', 3000); Hn.cool = 7; Hn.irons = 0; Hn.file = 0; Hn.kas = 0; }
+}
+/* ---------- Çizim ---------- */
+const $ = id => document.getElementById(id);
+const seaBox = $('seaBox'), sea = $('sea'), ctx = sea.getContext('2d');
+
+function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, TAU); }
+function rrect(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h);
+  c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath();
+}
+function hash(i, j, k) {
+  let h = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(k, 1442695041);
+  h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function worldToScreen(x, y) { return [(x - G.cam.x) * G.zoom + W / 2, (y - G.cam.y) * G.zoom + H / 2]; }
+
+function drawWater() {
+  const z = G.zoom, hw = W / 2 / z + 120, hh = H / 2 / z + 120, C = 110;
+  const to = (G.wind.dir + 180) * D2R, wx = Math.sin(to), wy = -Math.cos(to), px = -wy, py = wx;
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5 / z; ctx.lineCap = 'round';
+  const i0 = Math.floor((G.cam.x - hw) / C), i1 = Math.floor((G.cam.x + hw) / C);
+  const j0 = Math.floor((G.cam.y - hh) / C), j1 = Math.floor((G.cam.y + hh) / C);
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) for (let k = 0; k < 2; k++) {
+    const r1 = hash(i, j, k * 3 + 1), r2 = hash(i, j, k * 3 + 2), r3 = hash(i, j, k * 3 + 3);
+    const bob = Math.sin(G.t * .8 + r3 * 6) * 2;
+    const x = (i + r1) * C + wx * bob, y = (j + r2) * C + wy * bob, s = 7 + r3 * 7;
+    ctx.globalAlpha = .06 + .08 * r3;
+    ctx.beginPath();
+    ctx.moveTo(x - px * s, y - py * s);
+    ctx.quadraticCurveTo(x - px * s * .5 + wx * s * .45, y - py * s * .5 + wy * s * .45, x, y);
+    ctx.quadraticCurveTo(x + px * s * .5 + wx * s * .45, y + py * s * .5 + wy * s * .45, x + px * s, y + py * s);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawStreaks() {
+  const w = G.wind, to = (w.dir + 180) * D2R, vx = Math.sin(to), vy = -Math.cos(to);
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5 / G.zoom; ctx.lineCap = 'round';
+  const base = clamp(.05 + .018 * w.spd, .08, .4);
+  for (const s of G.streaks) {
+    ctx.globalAlpha = base * s.a;
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - vx * s.len, s.y - vy * s.len); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawTrail() {
+  const tr = G.trail; if (tr.length < 2) return;
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#ffffff';
+  for (let i = 1; i < tr.length; i++) {
+    const k = i / tr.length;
+    ctx.globalAlpha = k * .3; ctx.lineWidth = 2 + k * 5;
+    ctx.beginPath(); ctx.moveTo(tr[i - 1].x, tr[i - 1].y); ctx.lineTo(tr[i].x, tr[i].y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function targetMarkObj() { const i = G.targetMark; const m = i >= 0 ? G.marks[i] : null; return m && !m.done ? m : null; }
+
+function drawLayLines() {
+  if (!G.layLines) return;
+  const m = targetMarkObj(); if (!m) return;
+  const brg = Math.atan2(m.x - G.boat.x, -(m.y - G.boat.y)) / D2R;
+  if (Math.abs(w180(brg - G.wind.dir)) > 60) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(224,74,168,.55)'; ctx.lineWidth = 1.5 / G.zoom; ctx.setLineDash([12 / G.zoom, 10 / G.zoom]);
+  for (const s of [-1, 1]) {
+    const a = (G.wind.dir + 180 + s * 48) * D2R;
+    ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x + Math.sin(a) * 1600, m.y - Math.cos(a) * 1600); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawCourseLine() {
+  const m = targetMarkObj(); if (!m) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(224,74,168,.85)'; ctx.lineWidth = 2 / G.zoom; ctx.setLineDash([10 / G.zoom, 8 / G.zoom]);
+  ctx.lineDashOffset = -G.t * 18 / G.zoom;
+  ctx.beginPath(); ctx.moveTo(G.boat.x, G.boat.y); ctx.lineTo(m.x, m.y); ctx.stroke();
+  ctx.restore();
+}
+
+function drawMarks() {
+  const z = G.zoom;
+  G.marks.forEach((m, i) => {
+    const tgt = i === G.targetMark && !m.done;
+    if (tgt) {
+      ctx.save(); ctx.strokeStyle = '#e04aa8'; ctx.lineWidth = 2 / z; ctx.setLineDash([8 / z, 6 / z]); ctx.lineDashOffset = -G.t * 20 / z;
+      circle(ctx, m.x, m.y, REACH + Math.sin(G.t * 3) * 3); ctx.stroke(); ctx.restore();
+    }
+    const fin = m.l === 'B';
+    ctx.fillStyle = 'rgba(0,18,28,.3)'; circle(ctx, m.x + 3, m.y + 4, 10); ctx.fill();
+    ctx.fillStyle = fin ? '#ffd23f' : '#ff8a1f'; circle(ctx, m.x, m.y, 10); ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = fin ? '#b8921a' : '#c45f0c'; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; circle(ctx, m.x - 3, m.y - 3, 3); ctx.fill();
+    if (m.done) { ctx.strokeStyle = '#2fb36d'; ctx.lineWidth = 2.5 / z; circle(ctx, m.x, m.y, 16); ctx.stroke(); }
+    let lbl = m.l;
+    if (tgt) lbl = (lbl ? lbl + ' · ' : '') + Math.round(distMark(i) / UPM) + ' m';
+    if (lbl) {
+      ctx.font = `700 ${14 / z}px "Saira Semi Condensed", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.lineJoin = 'round'; ctx.lineWidth = 3.5 / z; ctx.strokeStyle = 'rgba(8,20,28,.9)'; ctx.strokeText(lbl, m.x, m.y - 17);
+      ctx.fillStyle = '#e7eff2'; ctx.fillText(lbl, m.x, m.y - 17);
+    }
+  });
+}
+
+function hullPath(c, L, B) {
+  c.beginPath(); c.moveTo(L * .5, 0);
+  c.bezierCurveTo(L * .42, -B * .44, L * .02, -B * .52, -L * .5, -B * .4);
+  c.lineTo(-L * .5, B * .4);
+  c.bezierCurveTo(L * .02, B * .52, L * .42, B * .44, L * .5, 0);
+  c.closePath();
+}
+
+function drawMainsail(c, L) {
+  const b = G.boat, d = G.d, mx = L * .14, phi = Math.PI - b.boom * D2R, bl = L * .6;
+  const dx = Math.cos(phi), dy = Math.sin(phi), ex = mx + dx * bl, ey = dy * bl, nx = -dy, ny = dx;
+  const ar = (d.awaRel || 0) * D2R, tx = -Math.cos(ar), ty = -Math.sin(ar);
+  const side = Math.sign(nx * tx + ny * ty) || 1;
+  const luff = d.trim === 'file' || d.trim === 'bos';
+  const depth = bl * (.05 + .09 * clamp((d.aws || 0) / 14, 0, 1)) * (d.trim === 'bos' ? .3 : 1);
+  const amp = luff ? bl * (d.trim === 'bos' ? .07 : .045) : 0;
+  const pts = [];
+  for (let i = 0; i <= 14; i++) {
+    const t = i / 14, env = 4 * t * (1 - t);
+    const off = depth * env * side + amp * Math.sin(t * Math.PI * 3.2 - G.t * 26) * env;
+    pts.push([mx + dx * bl * t + nx * off, dy * bl * t + ny * off]);
+  }
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+  for (const p of pts) c.lineTo(p[0], p[1]);
+  c.lineTo(mx, 0); c.closePath();
+  c.fillStyle = 'rgba(250,252,253,.93)'; c.fill();
+  c.strokeStyle = '#a3b6bf'; c.lineWidth = 1; c.stroke();
+  // çıtalar
+  c.strokeStyle = 'rgba(120,145,158,.6)'; c.lineWidth = .8;
+  for (const ti of [4, 7, 10]) { const p = pts[ti], q = [mx + dx * bl * ti / 14, dy * bl * ti / 14]; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(lerp(p[0], q[0], .6), lerp(p[1], q[1], .6)); c.stroke(); }
+  // rüzgâr ipleri
+  const base = Math.atan2(dy, dx);
+  for (const ti of [8, 11]) {
+    const p = pts[ti]; let a = base;
+    if (d.trim === 'iyi') a += Math.sin(G.t * 9 + ti) * .12;
+    else if (luff) a += Math.sin(G.t * 31 + ti) * 1.1;
+    else a += side * 2.1 + Math.sin(G.t * 5 + ti) * .3;
+    c.strokeStyle = '#e5484d'; c.lineWidth = 1.6; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(p[0] + Math.cos(a) * 7, p[1] + Math.sin(a) * 7); c.stroke();
+  }
+  // bom
+  c.strokeStyle = '#33434d'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(mx, 0); c.lineTo(ex, ey); c.stroke();
+}
+
+function drawSpinnaker(c, L, B) {
+  const bl = G.balloon, k = bl.k, col = bl.collapsed;
+  const lee = Math.sign(G.boat.boom) || G.boat.boomSide;
+  c.strokeStyle = '#33434d'; c.lineWidth = 2; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(L * .14, 0); c.lineTo(L * .5, -lee * L * .3 * k); c.stroke();
+  const cx = L * .5 + L * .36 * k, cy = lee * L * .12 * k;
+  const rx = L * .3 * k * (col ? .55 : 1), ry = L * .48 * k * (col ? .5 : 1);
+  const shape = () => {
+    c.beginPath();
+    if (col) {
+      for (let i = 0; i <= 28; i++) { const a = i / 28 * TAU, r = 1 + .14 * Math.sin(i * 3 + G.t * 12); const x = cx + Math.cos(a) * rx * r, y = cy + Math.sin(a) * ry * r; i ? c.lineTo(x, y) : c.moveTo(x, y); }
+      c.closePath();
+    } else c.ellipse(cx, cy, rx, ry, 0, 0, TAU);
+  };
+  c.save(); shape(); c.fillStyle = '#d93a5b'; c.globalAlpha = col ? .8 : 1; c.fill(); c.clip();
+  c.fillStyle = '#f3f6f7'; c.fillRect(cx - rx * .15, cy - ry * 1.2, rx * .3, ry * 2.4);
+  c.fillStyle = '#2a4f9a'; c.fillRect(cx + rx * .35, cy - ry * 1.2, rx, ry * 2.4);
+  c.restore();
+  shape(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1; c.stroke();
+  c.strokeStyle = 'rgba(230,240,245,.55)'; c.lineWidth = .8;
+  c.beginPath(); c.moveTo(cx - rx * .6, cy + ry * .75); c.lineTo(-L * .45, B * .38); c.moveTo(cx - rx * .6, cy - ry * .75); c.lineTo(-L * .45, -B * .38); c.stroke();
+}
+
+function drawBoat() {
+  const b = G.boat, L = 48, B = 20, a = (b.hdg - 90) * D2R, c = ctx;
+  c.save(); c.translate(b.x + 3, b.y + 5); c.rotate(a); hullPath(c, L, B); c.fillStyle = 'rgba(0,18,28,.3)'; c.fill(); c.restore();
+  c.save(); c.translate(b.x, b.y); c.rotate(a);
+  // dümen palası
+  const ra = Math.PI - b.u * .55;
+  c.strokeStyle = '#1a262d'; c.lineWidth = 3.5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-L * .5, 0); c.lineTo(-L * .5 + Math.cos(ra) * 9, Math.sin(ra) * 9); c.stroke();
+  // gövde
+  hullPath(c, L, B); c.fillStyle = '#f3f6f7'; c.fill(); c.lineWidth = 1.4; c.strokeStyle = '#7f96a2'; c.stroke();
+  c.save(); c.scale(.88, .84); hullPath(c, L, B); c.restore(); c.strokeStyle = '#1f4e79'; c.lineWidth = 1.2; c.stroke();
+  c.fillStyle = '#d5dfe3'; rrect(c, -L * .42, -B * .27, L * .46, B * .54, 4); c.fill();
+  // dümenci rüzgârüstünde oturur
+  const bs = Math.sign(b.boom) || b.boomSide, cy = -bs * B * .24;
+  c.fillStyle = '#ff9f1c'; c.beginPath(); c.ellipse(-L * .2, cy, 6, 5, 0, 0, TAU); c.fill();
+  c.fillStyle = '#e9b98f'; circle(c, -L * .2, cy - bs * 2, 3.4); c.fill();
+  // yeke ya da dolap
+  if (!G.wheel) {
+    const ta = -b.u * .55;
+    c.strokeStyle = '#b07a45'; c.lineWidth = 2.6;
+    c.beginPath(); c.moveTo(-L * .47, 0); c.lineTo(-L * .47 + Math.cos(ta) * L * .32, Math.sin(ta) * L * .32); c.stroke();
+  } else {
+    c.save(); c.translate(-L * .36, 0); c.rotate(b.u * 2); c.strokeStyle = '#b07a45'; c.lineWidth = 1.6;
+    circle(c, 0, 0, 5.5); c.stroke();
+    for (let i = 0; i < 6; i++) { const q = i * Math.PI / 3; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(q) * 7.5, Math.sin(q) * 7.5); c.stroke(); }
+    c.restore();
+  }
+  drawMainsail(c, L);
+  c.fillStyle = '#22313a'; circle(c, L * .14, 0, 2.6); c.fill();
+  if (G.balloon.k > 0) drawSpinnaker(c, L, B);
+  c.restore();
+}
+
+/* Ekran üstü göstergeler */
+function drawOffscreen() {
+  const m = targetMarkObj(); if (!m) return;
+  const [sx, sy] = worldToScreen(m.x, m.y), pad = 26, top = 76;
+  if (sx > pad && sx < W - pad && sy > top && sy < H - pad) return;
+  const cx = W / 2, cy = H / 2, dx = sx - cx, dy = sy - cy;
+  const tX = dx > 0 ? (W - pad - cx) / dx : dx < 0 ? (pad - cx) / dx : Infinity;
+  const tY = dy > 0 ? (H - pad - cy) / dy : dy < 0 ? (top - cy) / dy : Infinity;
+  const t = Math.min(tX, tY), px = cx + dx * t, py = cy + dy * t, ang = Math.atan2(dy, dx);
+  ctx.save(); ctx.translate(px, py); ctx.rotate(ang);
+  ctx.fillStyle = '#e04aa8'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-7, -9); ctx.lineTo(-7, 9); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  const lbl = (m.l ? m.l + ' · ' : '') + Math.round(hyp(m.x - G.boat.x, m.y - G.boat.y) / UPM) + ' m';
+  ctx.font = '700 13px "Saira Semi Condensed", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const lx = clamp(px - Math.cos(ang) * 34, 30, W - 30), ly = clamp(py - Math.sin(ang) * 22, top - 10, H - 14);
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(8,20,28,.9)'; ctx.strokeText(lbl, lx, ly);
+  ctx.fillStyle = '#e7eff2'; ctx.fillText(lbl, lx, ly);
+}
+
+function drawWindHud() {
+  const w = G.wind, nm = windName(w.dir), x = 10, y = 10;
+  const t1 = nm[0], t2 = Math.round(w.spd) + ' kn · ' + nm[1];
+  ctx.font = '700 15px "Saira Semi Condensed", sans-serif'; const w1 = ctx.measureText(t1).width;
+  ctx.font = '500 11px "IBM Plex Sans", sans-serif'; const w2 = ctx.measureText(t2).width;
+  const bw = 56 + Math.max(w1, w2), bh = 50;
+  rrect(ctx, x, y, bw, bh, 10); ctx.fillStyle = 'rgba(8,20,28,.8)'; ctx.fill(); ctx.strokeStyle = '#284050'; ctx.lineWidth = 1; ctx.stroke();
+  const cx = x + 25, cy = y + 25, r = 17;
+  circle(ctx, cx, cy, r); ctx.strokeStyle = '#3a5566'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.font = '700 9px "IBM Plex Sans", sans-serif'; ctx.fillStyle = '#94aab4'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('K', cx, cy - r + 6);
+  const to = (w.dir + 180) * D2R, vx = Math.sin(to), vy = -Math.cos(to);
+  const x1 = cx - vx * r * .7, y1 = cy - vy * r * .7, x2 = cx + vx * r * .7, y2 = cy + vy * r * .7;
+  ctx.strokeStyle = '#9fd3ea'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const ha = Math.atan2(vy, vx);
+  ctx.fillStyle = '#9fd3ea'; ctx.beginPath(); ctx.moveTo(x2 + Math.cos(ha) * 3, y2 + Math.sin(ha) * 3);
+  ctx.lineTo(x2 - Math.cos(ha - .5) * 7, y2 - Math.sin(ha - .5) * 7); ctx.lineTo(x2 - Math.cos(ha + .5) * 7, y2 - Math.sin(ha + .5) * 7); ctx.closePath(); ctx.fill();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = '700 15px "Saira Semi Condensed", sans-serif'; ctx.fillStyle = '#e7eff2'; ctx.fillText(t1, x + 50, y + 22);
+  ctx.font = '500 11px "IBM Plex Sans", sans-serif'; ctx.fillStyle = '#94aab4'; ctx.fillText(t2, x + 50, y + 38);
+}
+
+const SECT = [['olu', 0, 42], ['orsa', 42, 58], ['darapaz', 58, 78], ['apaz', 78, 103], ['genis', 103, 152], ['pupa', 152, 180]];
+const SECT_COL = { olu: 'rgba(229,72,77,.6)', orsa: '#1b5872', darapaz: '#21698a', apaz: '#287ca0', genis: '#2e8db3', pupa: '#3a9fc4' };
+function drawDialInst() {
+  const d = G.d, R = W < 420 ? 44 : 56, cx = W - R - 18, cy = R + 18, rIn = R * .66;
+  ctx.save();
+  circle(ctx, cx, cy, R + 9); ctx.fillStyle = 'rgba(8,20,28,.82)'; ctx.fill(); ctx.strokeStyle = '#284050'; ctx.lineWidth = 1; ctx.stroke();
+  for (const [k, lo, hi] of SECT) for (const sg of [1, -1]) {
+    let a0 = (d.rel + sg * lo - 90) * D2R, a1 = (d.rel + sg * hi - 90) * D2R;
+    if (sg < 0) { const tmp = a0; a0 = a1; a1 = tmp; }
+    ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.arc(cx, cy, rIn, a1, a0, true); ctx.closePath();
+    const cur = k === d.point;
+    ctx.fillStyle = cur ? (k === 'olu' ? '#e5484d' : '#e7eff2') : SECT_COL[k];
+    ctx.fill(); ctx.strokeStyle = '#0b161d'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  // pruva işareti
+  ctx.fillStyle = '#e7eff2'; ctx.beginPath(); ctx.moveTo(cx, cy - R - 8); ctx.lineTo(cx - 5, cy - R - 1); ctx.lineTo(cx + 5, cy - R - 1); ctx.closePath(); ctx.fill();
+  // ortada küçük tekne ve bom
+  const s = R * .95 / 48;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(-Math.PI / 2); ctx.scale(s, s);
+  hullPath(ctx, 48, 20); ctx.fillStyle = '#f3f6f7'; ctx.fill();
+  const phi = Math.PI - G.boat.boom * D2R;
+  ctx.strokeStyle = '#e04aa8'; ctx.lineWidth = 3.2 / s * .6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(48 * .14, 0); ctx.lineTo(48 * .14 + Math.cos(phi) * 28, Math.sin(phi) * 28); ctx.stroke();
+  ctx.restore();
+  // rüzgâr oku
+  const wa = (d.rel - 90) * D2R, ux = Math.cos(wa), uy = Math.sin(wa);
+  const x1 = cx + ux * (R + 8), y1 = cy + uy * (R + 8), x2 = cx + ux * (rIn - 3), y2 = cy + uy * (rIn - 3);
+  ctx.strokeStyle = '#9fd3ea'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const ha = Math.atan2(y2 - y1, x2 - x1);
+  ctx.fillStyle = '#9fd3ea'; ctx.beginPath(); ctx.moveTo(x2 + Math.cos(ha) * 3, y2 + Math.sin(ha) * 3);
+  ctx.lineTo(x2 - Math.cos(ha - .5) * 8, y2 - Math.sin(ha - .5) * 8); ctx.lineTo(x2 - Math.cos(ha + .5) * 8, y2 - Math.sin(ha + .5) * 8); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = seaGrad; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  let sx = 0, sy = 0;
+  if (G.shake > 0 && !reduceMotion) { sx = Math.sin(G.t * 90) * G.shake * 10; sy = Math.cos(G.t * 73) * G.shake * 8; }
+  ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(G.zoom, G.zoom); ctx.translate(-G.cam.x, -G.cam.y);
+  drawWater(); drawStreaks(); drawLayLines(); drawCourseLine(); drawTrail(); drawMarks(); drawBoat();
+  ctx.restore();
+  drawOffscreen(); drawWindHud(); drawDialInst();
+}
+
+/* Dümen kontrolü */
+const helm = $('helm'), hc = $('helmCanvas'), hctx = hc.getContext('2d');
+let HW = 0, HH = 0, HDPR = 1;
+function resizeHelm() {
+  const r = helm.getBoundingClientRect(); if (!r.width) return;
+  HW = r.width; HH = r.height; HDPR = Math.min(2, window.devicePixelRatio || 1);
+  hc.width = Math.round(HW * HDPR); hc.height = Math.round(HH * HDPR);
+}
+function drawHelm() {
+  if (!HW) return;
+  const c = hctx, w = HW, h = HH, cx = w / 2, range = w / 2 - 28;
+  c.setTransform(HDPR, 0, 0, HDPR, 0, 0); c.clearRect(0, 0, w, h);
+  c.strokeStyle = '#2c4554'; c.lineWidth = 1;
+  for (const fr of [-1, -.5, .5, 1]) { const x = cx + fr * range; c.beginPath(); c.moveTo(x, h - 12); c.lineTo(x, h - 5); c.stroke(); }
+  c.strokeStyle = '#4f6b7a'; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, h - 14); c.lineTo(cx, h - 4); c.stroke();
+  c.font = '600 11px "IBM Plex Sans", sans-serif'; c.fillStyle = '#94aab4'; c.textBaseline = 'top';
+  c.textAlign = 'left'; c.fillText(G.wheel ? '← sola' : '← tekne sağa', 10, 7);
+  c.textAlign = 'right'; c.fillText(G.wheel ? 'sağa →' : 'tekne sola →', w - 10, 7);
+  const hx = cx + helmPos * range;
+  if (!G.wheel) {
+    c.strokeStyle = '#b07a45'; c.lineWidth = 8; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx, h + 40); c.lineTo(hx, h * .52); c.stroke();
+    c.fillStyle = '#e7eff2'; circle(c, hx, h * .52, 11); c.fill(); c.strokeStyle = '#0b161d'; c.lineWidth = 2; c.stroke();
+  } else {
+    const r = 15;
+    c.save(); c.translate(hx, h * .55); c.rotate(helmPos * 2.2);
+    c.strokeStyle = '#c99a62'; c.lineWidth = 3; c.lineCap = 'round';
+    circle(c, 0, 0, r); c.stroke();
+    for (let i = 0; i < 8; i++) { const q = i * Math.PI / 4; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(q) * (r + 6), Math.sin(q) * (r + 6)); c.stroke(); }
+    c.fillStyle = '#e7eff2'; circle(c, 0, 0, 4); c.fill();
+    c.restore();
+  }
+}
+/* ---------- Arayüz ---------- */
+const toastEl = $('toast'), lessonKicker = $('lessonKicker'), lessonTitle = $('lessonTitle');
+const stepBox = $('stepBox'), stepDots = $('stepDots'), stepCount = $('stepCount'), stepTextEl = $('stepText');
+const freeBox = $('freeBox'), windDirIn = $('windDir'), windDirVal = $('windDirVal'), windSpdIn = $('windSpd'), windSpdVal = $('windSpdVal');
+const iSpeed = $('iSpeed'), iVmg = $('iVmg'), iTwa = $('iTwa'), iTack = $('iTack'), iPoint = $('iPoint'), iPointSub = $('iPointSub'), iTrim = $('iTrim'), iTrimSub = $('iTrimSub');
+const sheetIn = $('sheet'), sheetVal = $('sheetVal'), autoTag = $('autoTag'), autoWrap = $('autoWrap'), autoChk = $('autoChk'), balloonBtn = $('balloonBtn');
+const helmLabel = $('helmLabel'), modeTiller = $('modeTiller'), modeWheel = $('modeWheel'), turnVal = $('turnVal');
+const modal = $('modal'), modalCard = $('modalCard'), menuBtn = $('menuBtn'), infoBtn = $('infoBtn'), soundBtn = $('soundBtn'), sOn = $('sOn'), sOff = $('sOff');
+
+let toastTimer = 0;
+function toast(msg, cls, ms) {
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show' + (cls ? ' ' + cls : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.className = 'toast' + (cls ? ' ' + cls : ''); }, ms || 2400);
+}
+
+const ui = {};
+function setText(el, key, val) { if (ui[key] !== val) { ui[key] = val; el.textContent = val; } }
+function setClass(el, key, val) { if (ui[key] !== val) { ui[key] = val; el.className = val; } }
+
+function renderBar() {
+  const L = curLesson();
+  if (L) {
+    lessonKicker.textContent = `Ders ${G.idx + 1} / ${LESSONS.length}`;
+    lessonTitle.textContent = L.title;
+    stepBox.hidden = false; freeBox.hidden = true;
+    stepDots.innerHTML = L.steps.map((s, i) => `<i class="${i < G.ls.step ? 'done' : i === G.ls.step ? 'cur' : ''}"></i>`).join('');
+    stepCount.textContent = `${G.ls.step + 1}/${L.steps.length}`;
+    stepTextEl.textContent = stepText(L.steps[G.ls.step]);
+  } else {
+    lessonKicker.textContent = 'Serbest seyir';
+    lessonTitle.textContent = 'Rüzgârı sen ayarla';
+    stepBox.hidden = true; freeBox.hidden = false;
+  }
+  balloonBtn.hidden = !G.allowBalloon;
+  autoWrap.hidden = G.mode !== 'free';
+  autoTag.hidden = !(G.auto && G.mode === 'lesson');
+  autoChk.checked = G.auto;
+  sheetIn.disabled = G.auto;
+  sheetIn.value = String(Math.round(G.boat.sheet * 100));
+  helmLabel.textContent = G.wheel ? 'Dümen dolabı' : 'Yeke';
+  modeTiller.setAttribute('aria-pressed', String(!G.wheel));
+  modeWheel.setAttribute('aria-pressed', String(G.wheel));
+}
+
+let uiWait = 0;
+function updateUI(dt) {
+  uiWait -= dt; if (uiWait > 0) return; uiWait = .1;
+  const d = G.d, b = G.boat;
+  setText(iSpeed, 'spd', fmt1(b.v));
+  setText(iVmg, 'vmg', 'VMG ' + fmt1(Math.abs(d.vmg)));
+  setText(iTwa, 'twa', Math.round(d.twa) + '°');
+  const stb = b.tackSide > 0;
+  setText(iTack, 'tack', stb ? 'Sancak kontra' : 'İskele kontra');
+  setClass(iTack, 'tackc', 'sub ' + (stb ? 'stbd' : 'port'));
+  setText(iPoint, 'pt', POINTS[d.point]);
+  setText(iPointSub, 'pts', POINT_SUB[d.point]);
+  setClass(iPoint, 'ptc', 'v txt' + (d.point === 'olu' ? ' bad' : ''));
+  const TR = {
+    iyi: ['İyi trim', 'ok', 'ipler düz'],
+    file: ['Fileliyor', 'warn', G.auto ? 'otomatik' : 'kas'],
+    kasili: ['Fazla kasılı', 'warn', 'laçka et'],
+    bos: ['Boşta', 'bad', 'ölü bölge']
+  }[d.trim];
+  setText(iTrim, 'tr', TR[0]); setClass(iTrim, 'trc', 'v txt ' + TR[1]); setText(iTrimSub, 'trs', TR[2]);
+  setText(sheetVal, 'sh', 'Bom ' + Math.round(Math.abs(b.boom)) + '° · %' + Math.round(b.sheet * 100));
+  if (G.auto) { const v = String(Math.round(b.sheet * 100)); if (sheetIn.value !== v) sheetIn.value = v; }
+  setText(turnVal, 'turn', b.u > .08 ? 'Sancağa (sağa) dönüyor' : b.u < -.08 ? 'İskeleye (sola) dönüyor' : 'Düz');
+  helm.setAttribute('aria-valuenow', String(Math.round(helmPos * 100)));
+  const bl = G.balloon;
+  setText(balloonBtn, 'bl', { down: 'Balon çek', hoisting: 'Çekiliyor…', up: 'Balonu indir', dousing: 'İniyor…' }[bl.state]);
+  setClass(balloonBtn, 'blc', 'pill-btn' + (bl.state === 'up' || bl.state === 'hoisting' ? ' active' : ''));
+  const cur = stepDots.querySelector('.cur');
+  if (cur) cur.style.setProperty('--p', Math.round((G.ls.st.p || 0) * 100) + '%');
+  if (G.timer && G.mode === 'lesson') setText(lessonKicker, 'kick', `Ders ${G.idx + 1} / ${LESSONS.length} · Süre ${fmtTime(G.raceT)}`);
+}
+
+/* ---------- Ders akışı ---------- */
+function startStep(i) { G.ls.step = i; G.ls.st = {}; G.ls.stepStart = G.t; ui.kick = null; renderBar(); }
+function completeStep() {
+  Snd.ding();
+  const L = curLesson();
+  if (G.ls.step + 1 >= L.steps.length) lessonDone();
+  else { toast('✓ Adım tamam', 'good', 1500); startStep(G.ls.step + 1); }
+}
+function lessonUpdate(dt) {
+  const s = curStep(); if (!s) return;
+  if (s.check(G.ls.st, dt)) completeStep();
+}
+
+function openModal(html) { modalCard.innerHTML = html; modal.hidden = false; modal.scrollTop = 0; }
+function closeModal() { modal.hidden = true; modalCard.innerHTML = ''; }
+const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
+
+function play() { closeModal(); G.phase = 'play'; G.started = true; Snd.init(); keepAwake(); }
+
+function openLesson(i) {
+  G.mode = 'lesson'; G.idx = clamp(i, 0, LESSONS.length - 1); G.started = false;
+  store.set(K_LAST, String(G.idx));
+  applySetup(LESSONS[G.idx].setup);
+  startStep(0);
+  showIntro();
+}
+function restartLesson() { applySetup(curLesson().setup); startStep(0); play(); }
+
+function showIntro() {
+  const L = curLesson(); G.phase = 'intro';
+  const resume = G.started;
+  openModal(
+    `<div class="kicker">Ders ${G.idx + 1} / ${LESSONS.length} · ${L.sub}</div><h2>${L.title}</h2>` +
+    `<div class="diagram">${DIAGRAMS[L.diagram]()}</div>` +
+    L.intro.map(p => `<p>${p}</p>`).join('') +
+    `<div class="kicker">Adımlar</div><ol class="steps-list">${L.steps.map(s => `<li>${stepText(s)}</li>`).join('')}</ol>` +
+    `<div class="btn-row"><button class="btn" id="mGo" type="button">${resume ? 'Devam et' : 'Başla'}</button>` +
+    (resume ? `<button class="btn secondary" id="mRestart" type="button">Baştan başla</button>` : '') +
+    `<button class="btn secondary" id="mMenu" type="button">Dersler</button></div>`
+  );
+  on('mGo', play); on('mRestart', restartLesson); on('mMenu', showMenu);
+}
+
+let doneNote = '';
+function lessonDone() {
+  G.phase = 'done';
+  doneSet.add(G.idx); store.set(K_DONE, JSON.stringify([...doneSet]));
+  Snd.fanfare();
+  doneNote = '';
+  if (G.timer) {
+    const best = parseFloat(store.get(K_BEST) || '0');
+    if (!best || G.raceT < best) { store.set(K_BEST, String(G.raceT)); doneNote = best ? 'Yeni rekor!' : 'İlk rekorun kaydedildi.'; }
+    else doneNote = 'Rekorun: ' + fmtTime(best) + '.';
+  }
+  showDone();
+}
+function showDone() {
+  const L = curLesson(), next = LESSONS[G.idx + 1];
+  const extra = G.timer ? `<p class="big-time">${fmtTime(G.raceT)}</p><p>Parkuru bitirdin. ${doneNote}</p>` : '';
+  openModal(
+    `<div class="kicker">Ders ${G.idx + 1} tamamlandı</div><h2>${L.title}</h2>${extra}` +
+    `<div class="kicker">Öğrendiklerin</div><ul class="recap">${L.recap.map(r => `<li>${r}</li>`).join('')}</ul>` +
+    `<div class="btn-row">` +
+    (next ? `<button class="btn" id="mNext" type="button">Sonraki: ${next.title}</button>` : `<button class="btn" id="mFree" type="button">Serbest seyre çık</button>`) +
+    `<button class="btn secondary" id="mAgain" type="button">Tekrar dene</button><button class="btn secondary" id="mMenu" type="button">Dersler</button></div>`
+  );
+  on('mNext', () => openLesson(G.idx + 1)); on('mFree', openFree); on('mAgain', restartLesson); on('mMenu', showMenu);
+}
+
+function openFree() {
+  G.mode = 'free'; G.started = false;
+  store.set(K_LAST, 'free');
+  const s = Object.assign({}, FREE.setup, { wind: +windDirIn.value, spd: +windSpdIn.value });
+  applySetup(s);
+  G.ls = { step: 0, st: {}, stepStart: 0 };
+  updateFreeLabels();
+  renderBar();
+  showFreeIntro();
+}
+function showFreeIntro() {
+  G.phase = 'intro';
+  openModal(
+    `<div class="kicker">Serbest seyir</div><h2>${FREE.sub}</h2>` +
+    FREE.intro.map(p => `<p>${p}</p>`).join('') +
+    `<div class="btn-row"><button class="btn" id="mGo" type="button">${G.started ? 'Devam et' : 'Başla'}</button><button class="btn secondary" id="mMenu" type="button">Dersler</button></div>`
+  );
+  on('mGo', play); on('mMenu', showMenu);
+}
+
+function showMenu() {
+  if (G.phase === 'play') G.phase = 'paused';
+  const items = LESSONS.map((L, i) =>
+    `<li><button type="button" data-i="${i}" class="${G.mode === 'lesson' && G.idx === i ? 'current' : ''}"><span class="li-num">${i + 1}</span><span class="li-body"><span class="li-title">${L.title}</span><span class="li-sub">${L.sub}</span></span>${doneSet.has(i) ? '<span class="li-tick">✓ Tamam</span>' : ''}</button></li>`).join('');
+  openModal(
+    `<div class="kicker">Rüzgâr Kaptanı · Yelken okulu</div><h2>Dersler</h2>` +
+    `<p>Dersler sırayla ilerler; her biri bir öncekinin üstüne kurulur. İstediğin derse atlayabilirsin.</p>` +
+    `<ol class="lesson-list">${items}<li><button type="button" data-free="1" class="${G.mode === 'free' ? 'current' : ''}"><span class="li-num">∞</span><span class="li-body"><span class="li-title">Serbest seyir</span><span class="li-sub">Rüzgârın yönünü ve gücünü sen ayarla</span></span></button></li></ol>` +
+    `<div class="btn-row"><button class="btn secondary" id="mClose" type="button">Kapat</button></div>`
+  );
+  modalCard.querySelectorAll('[data-i]').forEach(btn => btn.addEventListener('click', () => openLesson(+btn.dataset.i)));
+  modalCard.querySelector('[data-free]').addEventListener('click', openFree);
+  on('mClose', () => {
+    closeModal();
+    if (G.phase === 'paused') G.phase = 'play';
+    else if (G.phase === 'intro') { if (G.mode === 'lesson') showIntro(); else showFreeIntro(); }
+    else if (G.phase === 'done') showDone();
+  });
+}
+
+function updateFreeLabels() {
+  const dir = +windDirIn.value, nm = windName(dir);
+  windDirVal.textContent = nm[0] + ' · ' + dir + '°';
+  windSpdVal.textContent = windSpdIn.value + ' kn';
+}
+
+/* ---------- Kontroller ---------- */
+function adjustSheet(dv) {
+  if (G.auto) { toast(G.mode === 'free' ? 'Oto trim açık. İskotayı kendin ayarlamak için kapat.' : 'Bu derste yelken otomatik ayarlanıyor.', '', 2000); return; }
+  G.boat.sheet = clamp(G.boat.sheet + dv, 0, 1);
+  sheetIn.value = String(Math.round(G.boat.sheet * 100));
+}
+function toggleBalloon() {
+  if (!G.allowBalloon || G.phase !== 'play') return;
+  const bl = G.balloon;
+  if (bl.state === 'down') {
+    if (G.d.twa < 100) { toast('Balon geniş apaz ya da pupada çekilir. Önce boca et.', 'warn', 2600); return; }
+    bl.state = 'hoisting';
+  } else if (bl.state === 'up' || bl.state === 'hoisting') bl.state = 'dousing';
+}
+function setWheel(v) { G.wheel = v; store.set(K_WHEEL, v ? '1' : '0'); helmPos = 0; ui.turn = null; renderBar(); }
+function renderSound() {
+  soundBtn.setAttribute('aria-pressed', String(Snd.on));
+  soundBtn.setAttribute('aria-label', Snd.on ? 'Sesi kapat' : 'Sesi aç');
+  if (Snd.on) { sOn.removeAttribute('hidden'); sOff.setAttribute('hidden', ''); }
+  else { sOff.removeAttribute('hidden'); sOn.setAttribute('hidden', ''); }
+}
+async function keepAwake() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {} }
+
+sheetIn.addEventListener('input', () => { if (!G.auto) G.boat.sheet = (+sheetIn.value) / 100; });
+autoChk.addEventListener('change', () => { G.auto = autoChk.checked; renderBar(); });
+balloonBtn.addEventListener('click', toggleBalloon);
+modeTiller.addEventListener('click', () => setWheel(false));
+modeWheel.addEventListener('click', () => setWheel(true));
+menuBtn.addEventListener('click', showMenu);
+infoBtn.addEventListener('click', () => { if (G.phase === 'play') G.phase = 'intro'; if (G.mode === 'lesson') showIntro(); else showFreeIntro(); });
+soundBtn.addEventListener('click', () => { Snd.setOn(!Snd.on); store.set(K_SND, Snd.on ? '1' : '0'); renderSound(); });
+windDirIn.addEventListener('input', () => { G.wind.base = +windDirIn.value; updateFreeLabels(); });
+windSpdIn.addEventListener('input', () => { G.wind.baseSpd = +windSpdIn.value; updateFreeLabels(); });
+
+function setHelmFromX(clientX) {
+  const r = helm.getBoundingClientRect(), range = r.width / 2 - 28;
+  helmPos = clamp((clientX - (r.left + r.width / 2)) / range, -1, 1);
+}
+helm.addEventListener('pointerdown', e => { helmDrag = true; try { helm.setPointerCapture(e.pointerId); } catch (_) {} setHelmFromX(e.clientX); e.preventDefault(); });
+helm.addEventListener('pointermove', e => { if (helmDrag) { setHelmFromX(e.clientX); e.preventDefault(); } });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => helm.addEventListener(ev, () => { helmDrag = false; }));
+
+const isLeft = k => k === 'ArrowLeft' || k === 'a' || k === 'A';
+const isRight = k => k === 'ArrowRight' || k === 'd' || k === 'D';
+window.addEventListener('keydown', e => {
+  if (!modal.hidden) return;
+  const k = e.key;
+  if (isLeft(k)) keys.l = true;
+  else if (isRight(k)) keys.r = true;
+  else if (k === 'ArrowUp' || k === 'w' || k === 'W') adjustSheet(.04);
+  else if (k === 'ArrowDown' || k === 's' || k === 'S') adjustSheet(-.04);
+  else if (k === 'b' || k === 'B') toggleBalloon();
+  else return;
+  e.preventDefault();
+});
+window.addEventListener('keyup', e => { if (isLeft(e.key)) keys.l = false; if (isRight(e.key)) keys.r = false; });
+window.addEventListener('blur', () => { keys.l = keys.r = false; });
+document.addEventListener('visibilitychange', () => {
+  if (!Snd.ctx) return;
+  if (document.hidden) Snd.ctx.suspend().catch(() => {});
+  else { Snd.ctx.resume().catch(() => {}); if (G.phase === 'play') keepAwake(); }
+});
+
+/* ---------- Boyut ve döngü ---------- */
+function resize() {
+  const r = seaBox.getBoundingClientRect();
+  const nw = Math.max(1, r.width), nh = Math.max(1, r.height);
+  if (nw === W && nh === H) return;
+  W = nw; H = nh; DPR = Math.min(2, window.devicePixelRatio || 1);
+  sea.width = Math.round(W * DPR); sea.height = Math.round(H * DPR);
+  G.zoom = clamp(Math.min(W, H) / 430, .72, 1.45);
+  seaGrad = ctx.createLinearGradient(0, 0, 0, H);
+  seaGrad.addColorStop(0, '#186a8f'); seaGrad.addColorStop(1, '#0e4762');
+  initStreaks();
+}
+
+function step(dt) {
+  G.t += dt;
+  G.shake = Math.max(0, G.shake - dt);
+  const playing = G.phase === 'play';
+  if (playing) {
+    physics(dt);
+    marksUpdate();
+    trailUpdate(dt);
+    if (G.timer) G.raceT += dt;
+    if (G.mode === 'lesson') lessonUpdate(dt);
+    if (G.phase === 'play') hints(dt);
+  }
+  streaksUpdate(dt);
+  cameraUpdate(dt);
+  updateUI(dt);
+  Snd.update(dt, playing ? G.d.aws : 0, playing && (G.d.trim === 'file' || G.d.trim === 'bos'));
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (W > 2 && H > 2) { step(dt); draw(); drawHelm(); }
+  requestAnimationFrame(frame);
+}
+
+function start(data) {
+  G.wheel = store.get(K_WHEEL) === '1';
+  Snd.on = store.get(K_SND) !== '0';
+  renderSound();
+  resize(); resizeHelm();
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => resize()).observe(seaBox);
+    new ResizeObserver(() => resizeHelm()).observe(helm);
+  } else window.addEventListener('resize', () => { resize(); resizeHelm(); });
+  updateFreeLabels();
+  const lastSaved = store.get(K_LAST);
+  if ((data && data.mode === 'free') || (!(data && data.mode) && lastSaved === 'free')) openFree();
+  else {
+    const i = data && Number.isInteger(data.idx) ? data.idx : parseInt(lastSaved || '0', 10);
+    openLesson(Number.isFinite(i) ? i : 0);
+  }
+  requestAnimationFrame(frame);
+}
+
+try { window.claude?.hot?.snapshot(() => ({ mode: G.mode, idx: G.idx })); } catch (e) {}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body></html>
