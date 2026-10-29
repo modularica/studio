@@ -385,6 +385,35 @@
       oyun.not = metin == null ? null : String(metin).slice(0, 80);
     },
 
+    // Records a finished round's score for the leaderboard (one row per round).
+    skor: function (deger, ayrinti, oyunAdi) {
+      oyunAdi = oyunAdi || OYUN;
+      return hazir.then(function () {
+        if (!durum.profil) throw new Error('Oyuncu seçilmedi');
+        return istemci.from('scores').insert({ profile_id: durum.profil.id, game: oyunAdi, score: deger, detail: ayrinti || {} });
+      }).then(function (r) {
+        if (r.error) throw r.error;
+        return true;
+      });
+    },
+
+    // Best score per player. secenek: { hafta: true } for this week (from Monday 00:00), limit (default 10).
+    siralama: function (secenek) {
+      secenek = secenek || {};
+      var since = null;
+      if (secenek.hafta) {
+        var d = new Date(); d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        since = d.toISOString();
+      }
+      return hazir.then(function () {
+        return istemci.rpc('leaderboard', { p_game: secenek.oyun || OYUN, p_since: since, p_limit: secenek.limit || 10 });
+      }).then(function (r) {
+        if (r.error) throw r.error;
+        return r.data || [];
+      });
+    },
+
     cikis: function () {
       yazProfil(null);
       return istemci.auth.signOut().finally(function () { location.replace(GIRIS); });

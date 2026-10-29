@@ -53,12 +53,14 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 - Bir hesabın altında birden fazla oyuncu (`profiles`: ad, renk) olabilir. Hesap açılınca ilk oyuncu kullanıcı adıyla kendiliğinden oluşur. Tek oyunculu hesaplar oyuncu seçmeden doğrudan oyuna döner; "Değiştir" bağlantısı (`?degistir=1`) her zaman "Kim oynuyor?" ekranını açar.
 - Şifre unutulursa e-postayla sıfırlanamaz. SQL ile sıfırlanır:
   `update auth.users set encrypted_password = extensions.crypt('yeni-sifre', extensions.gen_salt('bf')) where email = '<ad>@oyuncu.bringthepoint.com';`
-- Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `admins` (herkesin oynama kaydını görebilen e-postalar; şu an umutguncan@gmail.com).
+- Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `scores` (biten turların skorları; herkes okur, herkes sadece kendi oyuncusu için yazar), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `admins` (herkesin oynama kaydını görebilen e-postalar; şu an umutguncan@gmail.com).
 - Kurallar: giriş yapan herkes bütün oyuncuların adını/rengini ve oynama kayıtlarını görür ("Kim ne oynuyor?" herkese açık). Oyun kayıtları (`saves`) sadece sahibine açık. Herkes sadece kendi oyuncularını, kayıtlarını ve oynama kayıtlarını yazar. `admins` tablosu şu an bir şey açmıyor, ileride yönetici özellikleri için duruyor. Kural yardımcıları `private` şemasında.
 - Oyunlardan kullanım (`hesap/hesap.js` başındaki açıklamaya bak):
   - `Hesap.hazir` giriş kapısı geçilince çözülür, `Hesap.profil` seçili oyuncu.
   - `Hesap.yukle()` / `Hesap.kaydet(veri)` bu oyunun kaydı. Kaydı seviye ya da ders sonu gibi anlarda yaz, her karede değil.
   - `Hesap.not('12. dalga')` takip sayfasında görünen kısa ilerleme notu.
+  - `Hesap.skor(deger, ayrinti)` biten bir turun skorunu `scores` tablosuna yazar (her tur bir satır, sonradan değişmez).
+  - `Hesap.siralama({ hafta: true, limit: 100 })` oyuncu başına en iyi skor, büyükten küçüğe (`leaderboard` fonksiyonu). `hafta: true` bu haftanın pazartesisinden beri, yoksa tüm zamanlar. Satırlar: `profile_id, name, color, best, rounds, best_at`.
 - Kayıt eşitleme (`data-kayit`): oyunlar ilerlemeyi her zamanki gibi localStorage'a yazar; `hesap.js` bu anahtarları oyuncunun hesabındaki `saves` satırına (`data.keys`) taşır. Oyun açılırken karar verir, karar verene kadar sayfa gizli kalır:
   - Hesapta kayıt yok, cihazdaki kayıt bu oyuncunun ya da hesaplardan önceki eski kayıt → hesaba yüklenir (eski ilerleme ilk girişte aktarılır).
   - Cihazdaki kayıt başka bir oyuncunun → bu oyuncu sıfırdan başlar.
@@ -66,7 +68,7 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
   - Cihazdaki eşitleme durumu `hesap.senk.<oyun>` anahtarında. İnternet yoksa oyun cihazdaki kayıtla açılır, karar bir sonraki açılışta verilir.
   - Aynı oyunda hem `data-kayit` hem `Hesap.kaydet` kullanma: ikisi aynı satıra yazar.
 - Oyun oyun ne kaydediliyor:
-  - Fish: `fish.best` (en iyi boy), `fish.toplam` (şimdiye kadar yenen balıklar, tür tür). Not: boy, yenen balık, yakalayan tür.
+  - Fish: `fish.best` (en iyi boy), `fish.toplam` (şimdiye kadar yenen balıklar, tür tür). Not: boy, yenen balık, yakalayan tür. Leaderboard: her tur bitince boy (cm) `scores`'a yazılır; oyun sonunda bu haftanın ilk 5'i ve oyuncunun yeri, başlangıç ekranındaki Leaderboard düğmesinde bu hafta / tüm zamanlar ilk 10.
   - Rüzgâr Kaptanı: biten dersler, son ders, parkur rekoru, yeke/dümen dolabı tercihi. Not: açık ders ve kaç ders bittiği, parkur süresi.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.

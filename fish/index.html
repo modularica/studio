@@ -122,14 +122,14 @@ body{
 
 /* Menus */
 .overlay{
-  position:fixed;inset:0;z-index:10;display:grid;place-items:center;overflow-y:auto;
+  position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;overflow-y:auto;
   padding-top:calc(env(safe-area-inset-top,0px) + 24px);
   padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px);
   padding-left:max(20px,env(safe-area-inset-left,0px));
   padding-right:max(20px,env(safe-area-inset-right,0px));
   background:radial-gradient(120% 90% at 50% 42%,var(--scrim-0),var(--scrim-1));
 }
-.panel{width:100%;max-width:440px;display:grid;justify-items:center;gap:16px;text-align:center}
+.panel{width:100%;max-width:440px;display:grid;justify-items:center;gap:16px;text-align:center;margin:auto}
 .title{
   margin:0 0 4px;font-family:var(--font-display);font-weight:400;
   font-size:clamp(100px,31vw,184px);line-height:.82;color:var(--koi);
@@ -161,6 +161,34 @@ body{
 .notes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .notes li{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:6px 11px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);font-variant-numeric:tabular-nums}
 .notes .sw{width:10px;height:10px;border-radius:50%;flex:none}
+
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1.5px solid var(--glass-line);padding:13px 24px;min-height:48px;font-size:15px;margin-top:0}
+.btn.ghost:active{transform:translateY(1px);box-shadow:none}
+
+/* Leaderboard */
+.lb{width:100%;max-width:360px}
+.lb-list{list-style:none;margin:0;padding:0;display:grid;gap:4px;width:100%;max-width:360px}
+.lb-row{
+  display:grid;grid-template-columns:1.8em 28px minmax(0,1fr) auto;align-items:center;gap:10px;
+  padding:7px 12px 7px 10px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-line);
+  font-weight:600;font-size:15px;text-align:left;
+}
+.lb-row .n{font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink-dim);text-align:right}
+.lb-row.first .n{color:var(--koi)}
+.lb-row .rz{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--rc,var(--ink-dim));color:#fff;font:800 14px/1 var(--font-ui)}
+.lb-row .ad{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-row .v{font-weight:800;font-variant-numeric:tabular-nums}
+.lb-row.me{border-color:var(--koi);box-shadow:inset 0 0 0 1px var(--koi)}
+.lb-gap{color:var(--ink-dim);text-align:center;line-height:1}
+#lbList{max-height:min(56vh,560px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
+#lbOv{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}
+body.lb-acik .chain{display:none}
+.lb-empty{color:var(--ink-dim);font-size:14px;padding:8px 0}
+.lb-rank{margin:8px 0 0;font-size:14px;font-weight:700;color:var(--koi);min-height:1.3em}
+.period{display:inline-flex;gap:4px;padding:3px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line)}
+.period button{border:0;background:transparent;color:var(--ink-dim);font:700 14px/1 var(--font-ui);padding:9px 16px;border-radius:999px;cursor:pointer}
+.period button[aria-pressed="true"]{background:var(--koi);color:var(--koi-ink)}
+.period button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
 @media (prefers-reduced-motion:reduce){
   .title span{animation:none}
@@ -200,6 +228,7 @@ body{
     <p class="lede">You are a 10&nbsp;cm koi in a crowded pond. Eat fish smaller than you, keep away from bigger ones, and see how big you can grow.</p>
     <div class="how"><span>Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
+    <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
     <p class="best" id="startBest" hidden></p>
   </div>
 </section>
@@ -220,8 +249,26 @@ body{
       <p class="eyebrow">Field notes</p>
       <ul class="notes" id="notes"></ul>
     </div>
+    <div class="lb" id="overLb" hidden>
+      <p class="eyebrow">Leaderboard · this week</p>
+      <ol class="lb-list" id="overLbList"></ol>
+      <p class="lb-rank" id="overRank"></p>
+    </div>
     <p class="best" id="overBest"></p>
     <button class="btn" id="againBtn" type="button">Swim again</button>
+  </div>
+</section>
+
+<section class="overlay" id="lbOv" hidden>
+  <div class="panel">
+    <h2 class="over-title">Leaderboard</h2>
+    <div class="period" role="group" aria-label="Period">
+      <button type="button" id="lbWeek" aria-pressed="true">This week</button>
+      <button type="button" id="lbAll" aria-pressed="false">All time</button>
+    </div>
+    <ol class="lb-list" id="lbList"></ol>
+    <p class="lb-rank" id="lbRank"></p>
+    <button class="btn" id="lbClose" type="button">Back</button>
   </div>
 </section>
 
@@ -313,6 +360,7 @@ let mode = 'attract';   // attract | play | paused | over
 let fish = [];
 let tally = {}, eatenCount = 0, killer = null;
 let sayilan = {}; // part of this round's tally already added to the lifetime count
+let lbSonuc = null; // this round's score upload + this week's leaderboard
 let best = +store.get('fish.best', 0) || 0;
 // Lifetime count of every fish eaten, species by species (kept with the player's account).
 function toplamOku() { const t = store.get('fish.toplam', {}); return t && typeof t === 'object' ? t : {}; }
@@ -595,6 +643,13 @@ function gameOver(f) {
   sayilmayaniEkle();
   hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
   renderStartBest();
+  // Post the round to the leaderboard, then read this week's table for the game-over screen.
+  lbSonuc = window.Hesap
+    ? Hesap.skor(Math.round(P.l * 10) / 10, { killer: f.sp.name, eaten: eatenCount, tally: Object.assign({}, tally) })
+        .catch(() => {})
+        .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
+        .catch(() => null)
+    : null;
   setTimeout(() => showOver(isBest), 1100);
 }
 function showOver(isBest) {
@@ -608,9 +663,59 @@ function showOver(isBest) {
   const b = $('overBest');
   b.textContent = isBest ? 'New best length' : `Best: ${fmtLenStr(best)}`;
   b.classList.toggle('new', isBest);
+  lbGoster(lbSonuc);
   overOv.hidden = false;
   $('againBtn').focus({ preventScroll: true });
 }
+/* ---------- leaderboard (only with player accounts) ---------- */
+const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function lbSatir(row, rank, me) {
+  const li = mk('li', 'lb-row' + (me ? ' me' : '') + (rank === 1 ? ' first' : ''));
+  const rz = mk('span', 'rz', String(row.name || '?').trim().charAt(0).toLocaleUpperCase('tr'));
+  if (/^#[0-9a-f]{6}$/i.test(row.color || '')) rz.style.setProperty('--rc', row.color);
+  li.append(mk('span', 'n', String(rank)), rz, mk('span', 'ad', row.name), mk('span', 'v', fmtLenStr(+row.best)));
+  li.setAttribute('aria-label', `${rank}. ${row.name}, ${fmtLenStr(+row.best)}${me ? ' (you)' : ''}`);
+  return li;
+}
+function lbCiz(list, rankEl, rows, limit, week) {
+  const me = window.Hesap && Hesap.profil ? Hesap.profil.id : null;
+  list.replaceChildren();
+  rankEl.textContent = '';
+  if (!rows.length) { list.append(mk('li', 'lb-empty', week ? 'No rounds yet this week. Be the first!' : 'No rounds yet.')); return; }
+  const idx = rows.findIndex(r => r.profile_id === me);
+  rows.slice(0, limit).forEach((r, i) => list.append(lbSatir(r, i + 1, r.profile_id === me)));
+  if (idx >= limit) { list.append(mk('li', 'lb-gap', '⋯')); list.append(lbSatir(rows[idx], idx + 1, true)); }
+  if (idx >= 0) rankEl.textContent = `You're #${idx + 1} of ${rows.length} ${week ? 'this week' : 'all time'}.`;
+}
+function lbGoster(promise) {
+  const box = $('overLb'), list = $('overLbList'), rankEl = $('overRank');
+  if (!promise) { box.hidden = true; return; }
+  box.hidden = false;
+  list.replaceChildren(mk('li', 'lb-empty', 'Loading…')); rankEl.textContent = '';
+  promise.then(rows => {
+    if (!rows) { list.replaceChildren(mk('li', 'lb-empty', "Couldn't load the leaderboard.")); return; }
+    lbCiz(list, rankEl, rows, 5, true);
+  });
+}
+let lbHafta = true, lbIstek = 0;
+function lbYukle() {
+  $('lbWeek').setAttribute('aria-pressed', String(lbHafta));
+  $('lbAll').setAttribute('aria-pressed', String(!lbHafta));
+  $('lbList').replaceChildren(mk('li', 'lb-empty', 'Loading…')); $('lbRank').textContent = '';
+  const no = ++lbIstek, hafta = lbHafta;
+  Hesap.siralama({ hafta, limit: 100 }).then(
+    rows => { if (no === lbIstek) lbCiz($('lbList'), $('lbRank'), rows, 10, hafta); },
+    () => { if (no === lbIstek) $('lbList').replaceChildren(mk('li', 'lb-empty', "Couldn't load the leaderboard.")); }
+  );
+}
+if (window.Hesap) {
+  $('lbBtn').hidden = false;
+  $('lbBtn').addEventListener('click', () => { startOv.hidden = true; $('lbOv').hidden = false; document.body.classList.add('lb-acik'); lbYukle(); $('lbClose').focus({ preventScroll: true }); });
+  $('lbWeek').addEventListener('click', () => { lbHafta = true; lbYukle(); });
+  $('lbAll').addEventListener('click', () => { lbHafta = false; lbYukle(); });
+  $('lbClose').addEventListener('click', () => { $('lbOv').hidden = true; document.body.classList.remove('lb-acik'); startOv.hidden = false; $('startBtn').focus({ preventScroll: true }); });
+}
+
 $('startBtn').addEventListener('click', () => startGame(true));
 $('againBtn').addEventListener('click', () => startGame(false));
 $('resumeBtn').addEventListener('click', resume);

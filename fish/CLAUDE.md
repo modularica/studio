@@ -6,6 +6,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 
 - `index.html`: Tek dosya, bağımlılıksız, tek kişilik sürüm. `/fish` adresinde yayında. Hissin ve kuralların referansıdır.
 - `cover.png`: Paylaşım önizlemesi ve ana sayfa kartı (1200×630).
+- Leaderboard: tur bitince boy `Hesap.skor` ile kaydedilir; sıralama `Hesap.siralama` ile okunur (ayrıntı kök `CLAUDE.md`'de). Hesap yoksa (oyun tek başına açılırsa) leaderboard gizlenir.
 - Multiplayer kodu `client/`, `shared/`, `server/` altına gelecek. Multiplayer hazır olana kadar `index.html` yayında kalır.
 
 ## Tek kişilik sürümün yapısı (taşırken bilmen gerekenler)
