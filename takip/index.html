@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kim Ne Oynuyor?</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/defter.css">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-kapi="oturum"></script>
+<style>
+/* Layout: a player summary strip (last 7 days) above a day-by-day log, like a notebook diary */
+.ozet{list-style:none;margin:36px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:14px}
+.ozet li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;padding:14px 16px;background:var(--card);border:1px solid var(--card-line);border-radius:6px;box-shadow:0 8px 18px -12px var(--shadow)}
+.ozet .rozet{grid-row:span 3}
+.ozet .ad{font:700 20px/1.1 var(--font-hand);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ozet .toplam{font-weight:700;font-variant-numeric:tabular-nums}
+.ozet .fav{color:var(--muted);font-size:14px;min-width:0}
+.canli{display:inline-flex;align-items:center;gap:6px;color:var(--live);font-weight:700;font-size:14px}
+.canli::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--live);animation:nabiz 1.6s ease-in-out infinite}
+@keyframes nabiz{50%{opacity:.35}}
+.gun{margin-top:40px}
+.gun h2{font-size:24px;padding-bottom:6px;border-bottom:2px solid var(--margin);display:inline-block}
+.kayitlar{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:2px}
+.kayit{
+  display:grid;grid-template-columns:3.4em auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;
+  padding:10px 4px;border-bottom:1px dashed var(--field-line);
+}
+.kayit time{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.kayit .kim{font-weight:700;white-space:nowrap}
+.kayit .ne{min-width:0}
+.kayit .ne b{font-weight:600}
+.kayit .ne small{display:block;color:var(--muted);font-size:14px}
+.kayit .sure{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+@media (max-width:520px){
+  .kayit{grid-template-columns:3.2em minmax(0,1fr) auto}
+  .kayit .kim{grid-column:2}
+  .kayit .ne{grid-column:2 / 4}
+  .kayit .sure{grid-column:3;grid-row:1}
+}
+.bos{margin-top:36px;max-width:40ch}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar">
+    <a class="mark" href="/">Uzay'ın sayfası</a>
+    <a class="link" href="/">← Oyunlar</a>
+  </div>
+  <h1>Kim ne <span class="u">oynuyor?</span></h1>
+  <p class="lede">Son 7 günde kim, hangi oyunu, ne kadar oynadı. Sayfa kendiliğinden yenilenir.</p>
+
+  <ul class="ozet" id="ozet" aria-label="Oyuncular, son 7 gün"></ul>
+  <div id="gunluk"></div>
+  <p class="foot bos" id="bos" hidden>Henüz kimse oynamadı. Bir oyun açılınca burada görünecek.</p>
+  <p class="hata" id="hata" role="alert"></p>
+</main>
+
+<script>
+(() => {
+  const H = window.Hesap;
+  if (!H) return;
+  const $ = id => document.getElementById(id);
+  const CANLI_SN = 70;           // last_seen bundan yeniyse "şu an oynuyor"
+  const EN_AZ_SN = 15;           // daha kısa oturumlar listede gösterilmez
+  let adlar = {};
+
+  const sure = s => {
+    if (s < 60) return '1 dk’dan az';
+    const m = Math.round(s / 60);
+    if (m < 60) return `${m} dk`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h} sa ${r} dk` : `${h} sa`;
+  };
+  const gunAdi = d => {
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    const g = new Date(d); g.setHours(0, 0, 0, 0);
+    const fark = Math.round((bugun - g) / 86400000);
+    if (fark === 0) return 'Bugün';
+    if (fark === 1) return 'Dün';
+    return g.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+  };
+  const saat = d => new Date(d).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  async function yukle() {
+    const since = new Date(Date.now() - 7 * 86400000).toISOString();
+    const { data, error } = await H.istemci
+      .from('plays')
+      .select('id,game,started_at,last_seen,seconds,note,profile_id,profiles(name,color)')
+      .gte('started_at', since)
+      .order('started_at', { ascending: false })
+      .limit(500);
+    if (error) { $('hata').textContent = 'Kayıtlar yüklenemedi. Sayfayı yenile.'; return; }
+    $('hata').textContent = '';
+    const simdi = Date.now();
+    const satirlar = data
+      .filter(p => p.profiles)
+      .map(p => ({ ...p, canli: simdi - new Date(p.last_seen).getTime() < CANLI_SN * 1000 }))
+      .filter(p => p.canli || p.seconds >= EN_AZ_SN);
+    ozetCiz(satirlar);
+    gunlukCiz(satirlar);
+    $('bos').hidden = satirlar.length > 0;
+  }
+
+  function ozetCiz(satirlar) {
+    const kisiler = new Map();
+    for (const p of satirlar) {
+      const k = kisiler.get(p.profile_id) || { profil: { name: p.profiles.name, color: p.profiles.color }, toplam: 0, oyunlar: {}, canli: null };
+      k.toplam += p.seconds;
+      k.oyunlar[p.game] = (k.oyunlar[p.game] || 0) + p.seconds;
+      if (p.canli && !k.canli) k.canli = p.game;
+      kisiler.set(p.profile_id, k);
+    }
+    const liste = [...kisiler.values()].sort((a, b) => (b.canli ? 1 : 0) - (a.canli ? 1 : 0) || b.toplam - a.toplam);
+    const ul = $('ozet');
+    ul.replaceChildren(...liste.map(k => {
+      const li = el('li');
+      const fav = Object.entries(k.oyunlar).sort((a, b) => b[1] - a[1])[0];
+      li.append(H.rozet(k.profil, 'mid'), el('span', 'ad', k.profil.name), el('span', 'toplam', sure(k.toplam)));
+      li.append(k.canli ? el('span', 'canli', `Şu an ${adlar[k.canli] || k.canli} oynuyor`) : el('span', 'fav', `En çok: ${adlar[fav[0]] || fav[0]}`));
+      return li;
+    }));
+  }
+
+  function gunlukCiz(satirlar) {
+    const kutu = $('gunluk');
+    const gunler = new Map();
+    for (const p of satirlar) {
+      const g = gunAdi(p.started_at);
+      if (!gunler.has(g)) gunler.set(g, []);
+      gunler.get(g).push(p);
+    }
+    kutu.replaceChildren(...[...gunler].map(([g, ps]) => {
+      const s = el('section', 'gun');
+      s.append(el('h2', null, g));
+      const ul = el('ul', 'kayitlar');
+      ul.append(...ps.map(p => {
+        const li = el('li', 'kayit');
+        const t = el('time', null, saat(p.started_at)); t.dateTime = p.started_at;
+        const kim = el('span', 'kim'); kim.append(H.rozet(p.profiles, 'small'), document.createTextNode(' ' + p.profiles.name));
+        const ne = el('span', 'ne'); ne.append(el('b', null, adlar[p.game] || p.game));
+        if (p.note) ne.append(el('small', null, p.note));
+        const sag = p.canli ? el('span', 'sure canli', 'şimdi') : el('span', 'sure', sure(p.seconds));
+        li.append(t, kim, ne, sag);
+        return li;
+      }));
+      s.append(ul);
+      return s;
+    }));
+  }
+
+  H.hazir.then(async () => {
+    const oyunlar = await H.oyunlar();
+    adlar = Object.fromEntries(oyunlar.map(o => [o.slug, o.title]));
+    await yukle();
+    setInterval(() => { if (!document.hidden) yukle(); }, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) yukle(); });
+  });
+})();
+</script>
+</body>
+</html>

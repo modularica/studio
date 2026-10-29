@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Uzay'ın Oyunları</title>
+<meta name="robots" content="noindex">
 <meta name="description" content="Uzay'ın babasıyla birlikte yaptığı oyunlar. Tıkla, oyna, iyi eğlenceler!">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Uzay'ın Oyunları">
@@ -13,56 +14,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/defter.css">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js"></script>
 <style>
-/* Layout: a squared school notebook page with a red margin line; games are photos taped onto the page, one column on phones, two on wider screens */
-:root{
-  --paper:#fbfcfe;
-  --grid:rgba(64,104,190,.14);
-  --margin:#e0564f;
-  --ink:#2343c4;
-  --text:#1d2433;
-  --muted:#596379;
-  --card:#ffffff;
-  --card-line:rgba(29,36,51,.1);
-  --tape:rgba(240,206,104,.72);
-  --shadow:rgba(29,36,51,.14);
-  --font-hand:"Shantell Sans","Comic Sans MS","Chalkboard SE","Segoe Print",cursive;
-  --font-body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  color-scheme:light;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+/* Layout: games are photos taped onto the notebook page, one column on phones, two on wider screens */
+.player{
+  display:inline-flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:999px;
+  background:var(--card);border:1px solid var(--card-line);box-shadow:0 2px 6px -2px var(--shadow);
+  color:var(--text);text-decoration:none;font:700 16px/1 var(--font-body);
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --paper:#131a2c;--grid:rgba(140,168,230,.1);--margin:#e5675f;--ink:#9fb5ff;--text:#e6eaf4;--muted:#9aa5bd;
-    --card:#1b2440;--card-line:rgba(230,234,244,.1);--tape:rgba(214,186,100,.5);--shadow:rgba(0,0,0,.4);
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#131a2c;--grid:rgba(140,168,230,.1);--margin:#e5675f;--ink:#9fb5ff;--text:#e6eaf4;--muted:#9aa5bd;
-  --card:#1b2440;--card-line:rgba(230,234,244,.1);--tape:rgba(214,186,100,.5);--shadow:rgba(0,0,0,.4);
-  color-scheme:dark;
-}
-*,*::before,*::after{box-sizing:border-box}
-[hidden]{display:none!important}
-body{
-  margin:0;min-height:100vh;color:var(--text);font:400 16px/1.55 var(--font-body);
-  background-color:var(--paper);
-  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-  background-size:20px 20px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));
-}
-.page{position:relative;max-width:1040px;margin:0 auto;padding-block:28px 56px;padding-left:28px}
-.page::before{content:"";position:absolute;top:0;bottom:0;left:8px;width:2px;background:var(--margin);opacity:.75}
-.mark{font:700 20px/1 var(--font-hand);color:var(--ink);letter-spacing:.01em;margin:0 0 40px}
-h1{
-  margin:0;font:700 clamp(40px,9vw,78px)/1.02 var(--font-hand);color:var(--ink);
-  text-wrap:balance;max-width:17ch;letter-spacing:-.01em;
-}
-h1 .u{background:linear-gradient(transparent 70%,var(--tape) 70%,var(--tape) 92%,transparent 92%)}
-.lede{margin:18px 0 0;font-size:19px;line-height:1.5;max-width:34ch;color:var(--text);text-wrap:pretty}
+.player small{font:600 13px/1 var(--font-body);color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 .shelf{list-style:none;margin:48px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:40px 32px}
 .card{
   position:relative;background:var(--card);border:1px solid var(--card-line);border-radius:4px;
@@ -75,7 +37,7 @@ h1 .u{background:linear-gradient(transparent 70%,var(--tape) 70%,var(--tape) 92%
 }
 .card:hover,.card:focus-within{transform:rotate(0deg) translateY(-3px);box-shadow:0 18px 32px -14px var(--shadow),0 2px 4px var(--shadow)}
 .cover{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover;border-radius:2px;background:var(--grid)}
-.card h2{margin:14px 4px 0;font:700 28px/1.1 var(--font-hand);color:var(--text)}
+.card h2{margin:14px 4px 0;font-size:28px;line-height:1.1}
 .card p{margin:6px 4px 0;color:var(--muted);font-size:15.5px;line-height:1.5}
 .card .note{margin-top:10px;font:600 12px/1.3 var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .play{
@@ -83,55 +45,52 @@ h1 .u{background:linear-gradient(transparent 70%,var(--tape) 70%,var(--tape) 92%
   background:var(--ink);color:var(--paper);font:700 16px/1 var(--font-body);text-decoration:none;
 }
 .play::after{content:"→";font-weight:700}
-.play:focus-visible{outline:3px solid var(--margin);outline-offset:3px}
 .card a.stretch::before{content:"";position:absolute;inset:0}
-.foot{margin-top:56px;font:600 18px/1.4 var(--font-hand);color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.card{transition:none}}
+.bottom{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:48px}
+.bottom .foot{margin:0}
 </style>
 </head>
 <body>
 <main class="page">
-  <p class="mark">Uzay'ın sayfası</p>
+  <div class="topbar">
+    <p class="mark">Uzay'ın sayfası</p>
+    <a class="player" id="player" href="/giris/?geri=/" hidden></a>
+  </div>
   <h1>Babamla birlikte yaptığımız <span class="u">oyunlar</span></h1>
   <p class="lede">Merhaba, ben Uzay! Bu oyunları babamla birlikte yaptık. Tıkla, oyna, iyi eğlenceler!</p>
 
   <ul class="shelf" id="shelf"></ul>
-  <noscript><p><a href="fish/">Fish</a> · <a href="yelken/">Rüzgâr Kaptanı</a> · <a href="songbox/">SONGbox</a> · <a href="sur-muhafizi/">Sur Muhafızı</a></p></noscript>
 
-  <p class="foot">Yeni oyunlar yolda.</p>
+  <div class="bottom">
+    <p class="foot">Yeni oyunlar yolda.</p>
+    <a class="link" href="/takip/">Kim ne oynuyor? →</a>
+  </div>
 </main>
 
-<!-- Oyun listesi. Yeni oyun = yeni satır. Sadece linkle paylaşılacaklar için "listed": false -->
-<script type="application/json" id="games">
-[
-  { "slug": "fish", "title": "Fish", "listed": true,
-    "desc": "10 cm’lik bir koi olarak başlıyorsun. Küçük balıkları ye, büyüklerden kaç, gölün en büyük balığı ol.",
-    "note": "Telefonda parmakla, bilgisayarda ok tuşlarıyla" },
-  { "slug": "yelken", "title": "Rüzgâr Kaptanı", "listed": true,
-    "desc": "Adım adım yelken okulu. Yeke, seyirler, iskota, tramola, kavança ve balon yelken; sonunda parkur yarışı.",
-    "note": "8 ders ve serbest seyir" },
-  { "slug": "songbox", "title": "SONGbox", "listed": true,
-    "desc": "Karakterleri sahneye diz, her biri kendi ritmini çalsın. Şarkını puanlat, yeni şarkıcıların kilidini aç.",
-    "note": "Kendi karakterini de yapabilirsin · İngilizce" },
-  { "slug": "sur-muhafizi", "title": "Sur Muhafızı", "listed": true,
-    "desc": "Yola duvar ör, okçu, buz büyücüsü ve mancınık kur. 20 dalga boyunca kaleyi goblinlerden, orklardan ve devlerden koru.",
-    "note": "20 dalga · 5 yapı" }
-]
-</script>
 <script>
 (() => {
+  const H = window.Hesap;
+  if (!H) return;
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let games = [];
-  try { games = JSON.parse(document.getElementById('games').textContent); } catch (e) { games = []; }
   const tilts = ['-1.2deg', '0.9deg', '-0.6deg', '1.3deg'];
-  document.getElementById('shelf').innerHTML = games.filter(g => g.listed !== false).map((g, i) => `
-    <li class="card" style="--tilt:${tilts[i % tilts.length]}">
-      <img class="cover" src="${esc(g.slug)}/cover.png" alt="${esc(g.title)} oyunundan bir görüntü" width="1200" height="630" loading="${i < 2 ? 'eager' : 'lazy'}">
-      <h2>${esc(g.title)}</h2>
-      <p>${esc(g.desc)}</p>
-      ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
-      <a class="play stretch" href="${esc(g.slug)}/">Oyna</a>
-    </li>`).join('');
+
+  H.hazir.then(({ profil }) => {
+    const chip = document.getElementById('player');
+    chip.replaceChildren(H.rozet(profil), document.createTextNode(profil.name), Object.assign(document.createElement('small'), { textContent: 'Değiştir' }));
+    chip.setAttribute('aria-label', `Oynayan: ${profil.name}. Oyuncuyu değiştir`);
+    chip.hidden = false;
+  });
+
+  H.oyunlar().then(games => {
+    document.getElementById('shelf').innerHTML = games.filter(g => g.listed !== false).map((g, i) => `
+      <li class="card" style="--tilt:${tilts[i % tilts.length]}">
+        <img class="cover" src="${esc(g.slug)}/cover.png" alt="${esc(g.title)} oyunundan bir görüntü" width="1200" height="630" loading="${i < 2 ? 'eager' : 'lazy'}">
+        <h2>${esc(g.title)}</h2>
+        <p>${esc(g.desc)}</p>
+        ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
+        <a class="play stretch" href="${esc(g.slug)}/">Oyna</a>
+      </li>`).join('');
+  });
 })();
 </script>
 </body>

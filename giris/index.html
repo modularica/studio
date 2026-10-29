@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kim Oynuyor?</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/defter.css">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-kapi="yok"></script>
+<style>
+/* Layout: one notebook page; either the sign-in card, or the "who's playing" shelf of player badges */
+.giris{margin-top:36px}
+.oyuncular{list-style:none;margin:40px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:18px;max-width:720px}
+.oyuncu{
+  width:100%;display:grid;justify-items:center;gap:10px;padding:18px 8px 16px;border-radius:6px;cursor:pointer;
+  background:var(--card);border:1px solid var(--card-line);box-shadow:0 8px 18px -12px var(--shadow),0 1px 3px var(--shadow);
+  color:var(--text);font:700 18px/1.2 var(--font-hand);transition:transform .2s ease;
+}
+.oyuncu:hover{transform:translateY(-3px)}
+.oyuncu .ad{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px}
+.oyuncu.ekle{background:transparent;border:2px dashed var(--field-line);box-shadow:none;color:var(--ink)}
+.oyuncu.ekle .arti{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;border:2px dashed var(--ink);font:700 40px/1 var(--font-hand)}
+.duzenle .oyuncu:not(.ekle){border-style:dashed;border-color:var(--ink)}
+.duzenle .oyuncu:not(.ekle) .ad::after{content:" ✎";color:var(--ink)}
+.panel{margin-top:28px}
+.renkler{display:flex;flex-wrap:wrap;gap:10px}
+.renk{width:40px;height:40px;border-radius:50%;border:0;padding:0;cursor:pointer;background:var(--sc);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14)}
+.renk[aria-pressed="true"]{box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--text)}
+.onay{margin:6px 0 0;padding:12px 14px;border-radius:8px;border:1.5px solid var(--danger);color:var(--text);font-weight:600}
+.alt{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:36px;align-items:center}
+.kim{margin:14px 0 0;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar"><a class="mark" href="/">Uzay'ın sayfası</a></div>
+
+  <p class="foot" id="yukleniyor">Yükleniyor…</p>
+
+  <!-- Sign in -->
+  <section id="girisBolum" hidden>
+    <h1>Giriş <span class="u">yap</span></h1>
+    <p class="lede">Bu oyunları arkadaşlarımızla oynuyoruz. Hesapları babam açıyor; hesabın yoksa ona yaz!</p>
+    <form class="kart tape form giris" id="girisForm" novalidate>
+      <label for="eposta">E-posta</label>
+      <input id="eposta" type="email" inputmode="email" autocomplete="username" required>
+      <label for="sifre">Şifre</label>
+      <input id="sifre" type="password" autocomplete="current-password" required>
+      <p class="hata" id="girisHata" role="alert"></p>
+      <div class="row"><button class="btn" type="submit" id="girisBtn">Giriş yap</button></div>
+    </form>
+  </section>
+
+  <!-- Who's playing -->
+  <section id="secBolum" hidden>
+    <h1>Kim <span class="u">oynuyor?</span></h1>
+    <p class="lede" id="secLede">Kendi resmine dokun.</p>
+    <ul class="oyuncular" id="oyuncular"></ul>
+
+    <form class="kart tape form panel" id="oyuncuForm" hidden novalidate>
+      <h2 id="formBaslik">Yeni oyuncu</h2>
+      <label for="ad">Adı</label>
+      <input id="ad" maxlength="20" autocomplete="off" required>
+      <fieldset>
+        <legend>Rengi</legend>
+        <div class="renkler" id="renkler" role="group" aria-label="Oyuncunun rengi"></div>
+      </fieldset>
+      <p class="hata" id="formHata" role="alert"></p>
+      <div class="row">
+        <button class="btn" type="submit" id="formKaydet">Ekle</button>
+        <button class="btn ghost" type="button" id="formVazgec">Vazgeç</button>
+        <button class="btn ghost" type="button" id="formSil" hidden>Sil</button>
+      </div>
+      <div id="silOnay" hidden>
+        <p class="onay" id="silMetin"></p>
+        <div class="row">
+          <button class="btn danger" type="button" id="silEvet">Evet, sil</button>
+          <button class="btn ghost" type="button" id="silHayir">Vazgeç</button>
+        </div>
+      </div>
+    </form>
+
+    <form class="kart tape form panel" id="sifreForm" hidden novalidate>
+      <h2>Şifreni değiştir</h2>
+      <label for="yeniSifre">Yeni şifre</label>
+      <input id="yeniSifre" type="password" autocomplete="new-password" minlength="6" required>
+      <label for="yeniSifre2">Yeni şifre (tekrar)</label>
+      <input id="yeniSifre2" type="password" autocomplete="new-password" minlength="6" required>
+      <p class="hata" id="sifreHata" role="alert"></p>
+      <p class="tamam" id="sifreTamam" hidden>Şifren değişti.</p>
+      <div class="row">
+        <button class="btn" type="submit">Değiştir</button>
+        <button class="btn ghost" type="button" id="sifreVazgec">Kapat</button>
+      </div>
+    </form>
+
+    <nav class="alt" aria-label="Hesap">
+      <button class="link" type="button" id="duzenleBtn">Oyuncuları düzenle</button>
+      <a class="link" href="/takip/">Kim ne oynuyor?</a>
+      <button class="link" type="button" id="sifreBtn">Şifremi değiştir</button>
+      <button class="link" type="button" id="cikisBtn">Çıkış yap</button>
+    </nav>
+    <p class="kim" id="kim"></p>
+  </section>
+</main>
+
+<script>
+(() => {
+  const H = window.Hesap;
+  if (!H) return;
+  const $ = id => document.getElementById(id);
+  const sb = H.istemci;
+  const RENKLER = ['#f27a32', '#2343c4', '#e0564f', '#2f9e6e', '#8e5bd8', '#e0569b', '#1e9bb0', '#b9800c'];
+
+  const q = new URLSearchParams(location.search).get('geri');
+  const geri = q && q.startsWith('/') && !q.startsWith('//') && !q.startsWith('/giris') ? q : '/';
+
+  let kullanici = null, oyuncular = [], duzenle = false, duzenlenen = null, secilenRenk = RENKLER[0];
+
+  H.hazir.then(({ kullanici: k }) => {
+    $('yukleniyor').hidden = true;
+    if (k) { kullanici = k; secimGoster(); } else girisGoster();
+  });
+
+  /* ---------- sign in ---------- */
+  function girisGoster() {
+    $('secBolum').hidden = true;
+    $('girisBolum').hidden = false;
+    $('eposta').focus({ preventScroll: true });
+  }
+  $('girisForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = $('eposta').value.trim(), password = $('sifre').value;
+    if (!email || !password) { $('girisHata').textContent = 'E-postanı ve şifreni yaz.'; return; }
+    $('girisBtn').disabled = true; $('girisHata').textContent = '';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    $('girisBtn').disabled = false;
+    if (error) {
+      $('girisHata').textContent = /invalid/i.test(error.message)
+        ? 'E-posta ya da şifre yanlış. Tekrar dene.'
+        : 'Giriş yapılamadı. İnternet bağlantını kontrol edip tekrar dene.';
+      return;
+    }
+    kullanici = data.user;
+    $('sifre').value = '';
+    secimGoster();
+  });
+
+  /* ---------- who's playing ---------- */
+  async function secimGoster() {
+    $('girisBolum').hidden = true;
+    $('secBolum').hidden = false;
+    $('kim').textContent = `Giriş yapan: ${kullanici.email}`;
+    // Admins can read every family's players; this screen only lists the signed-in family.
+    const { data, error } = await sb.from('profiles').select('id,name,color,owner_id').eq('owner_id', kullanici.id).order('created_at');
+    if (error) { $('secLede').textContent = 'Oyuncular yüklenemedi. Sayfayı yenile.'; return; }
+    oyuncular = data;
+    ciz();
+    if (!oyuncular.length) formAc(null);
+  }
+
+  function ciz() {
+    $('secLede').textContent = !oyuncular.length
+      ? 'İlk oyuncuyu ekle: kendini ya da çocuğunu.'
+      : duzenle ? 'Düzenlemek istediğin oyuncuya dokun.' : 'Kendi resmine dokun.';
+    $('oyuncular').classList.toggle('duzenle', duzenle);
+    $('duzenleBtn').textContent = duzenle ? 'Düzenlemeyi bitir' : 'Oyuncuları düzenle';
+    $('duzenleBtn').hidden = !oyuncular.length;
+    const liste = $('oyuncular');
+    liste.replaceChildren();
+    for (const p of oyuncular) {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'oyuncu';
+      const ad = document.createElement('span'); ad.className = 'ad'; ad.textContent = p.name;
+      b.append(H.rozet(p, 'big'), ad);
+      b.setAttribute('aria-label', duzenle ? `${p.name} oyuncusunu düzenle` : `${p.name} olarak oyna`);
+      b.addEventListener('click', () => duzenle ? formAc(p) : sec(p));
+      li.append(b); liste.append(li);
+    }
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'oyuncu ekle';
+    const arti = document.createElement('span'); arti.className = 'arti'; arti.textContent = '+'; arti.setAttribute('aria-hidden', 'true');
+    const ad = document.createElement('span'); ad.className = 'ad'; ad.textContent = 'Oyuncu ekle';
+    b.append(arti, ad);
+    b.addEventListener('click', () => formAc(null));
+    li.append(b); liste.append(li);
+  }
+
+  function sec(p) {
+    H.profilSec(p);
+    location.replace(geri);
+  }
+
+  /* ---------- add / edit player ---------- */
+  function renkleriCiz() {
+    const kutu = $('renkler');
+    kutu.replaceChildren();
+    RENKLER.forEach((r, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'renk';
+      b.style.setProperty('--sc', r);
+      b.setAttribute('aria-label', `Renk ${i + 1}`);
+      b.setAttribute('aria-pressed', String(r === secilenRenk));
+      b.addEventListener('click', () => { secilenRenk = r; renkleriCiz(); });
+      kutu.append(b);
+    });
+  }
+  function formAc(p) {
+    duzenlenen = p;
+    $('sifreForm').hidden = true;
+    $('formBaslik').textContent = p ? `${p.name} oyuncusunu düzenle` : 'Yeni oyuncu';
+    $('formKaydet').textContent = p ? 'Kaydet' : 'Ekle';
+    $('formSil').hidden = !p;
+    $('formVazgec').hidden = !p && !oyuncular.length;
+    $('silOnay').hidden = true;
+    $('formHata').textContent = '';
+    $('ad').value = p ? p.name : '';
+    secilenRenk = p ? p.color : RENKLER[oyuncular.length % RENKLER.length];
+    renkleriCiz();
+    $('oyuncuForm').hidden = false;
+    $('ad').focus({ preventScroll: false });
+  }
+  function formKapat() { $('oyuncuForm').hidden = true; duzenlenen = null; }
+
+  $('formVazgec').addEventListener('click', formKapat);
+  $('oyuncuForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = $('ad').value.trim().replace(/\s+/g, ' ');
+    if (!name) { $('formHata').textContent = 'Bir ad yaz.'; return; }
+    $('formKaydet').disabled = true;
+    let r;
+    if (duzenlenen) r = await sb.from('profiles').update({ name, color: secilenRenk }).eq('id', duzenlenen.id).select('id,name,color,owner_id').single();
+    else r = await sb.from('profiles').insert({ name, color: secilenRenk }).select('id,name,color,owner_id').single();
+    $('formKaydet').disabled = false;
+    if (r.error) { $('formHata').textContent = 'Kaydedilemedi. Tekrar dene.'; return; }
+    if (duzenlenen) {
+      oyuncular = oyuncular.map(o => o.id === r.data.id ? r.data : o);
+      if (H.profil && H.profil.id === r.data.id) H.profilSec(r.data);
+    } else oyuncular.push(r.data);
+    formKapat();
+    ciz();
+  });
+
+  $('formSil').addEventListener('click', () => {
+    $('silMetin').textContent = `${duzenlenen.name} silinsin mi? Oyunlardaki kayıtları ve oynama geçmişi de silinir.`;
+    $('silOnay').hidden = false;
+    $('silHayir').focus();
+  });
+  $('silHayir').addEventListener('click', () => { $('silOnay').hidden = true; });
+  $('silEvet').addEventListener('click', async () => {
+    const id = duzenlenen.id;
+    const { error } = await sb.from('profiles').delete().eq('id', id);
+    if (error) { $('formHata').textContent = 'Silinemedi. Tekrar dene.'; $('silOnay').hidden = true; return; }
+    oyuncular = oyuncular.filter(o => o.id !== id);
+    if (H.profil && H.profil.id === id) H.profilSec(null);
+    formKapat();
+    if (!oyuncular.length) duzenle = false;
+    ciz();
+    if (!oyuncular.length) formAc(null);
+  });
+
+  $('duzenleBtn').addEventListener('click', () => { duzenle = !duzenle; formKapat(); ciz(); });
+
+  /* ---------- password ---------- */
+  $('sifreBtn').addEventListener('click', () => {
+    formKapat();
+    $('sifreHata').textContent = ''; $('sifreTamam').hidden = true;
+    $('yeniSifre').value = ''; $('yeniSifre2').value = '';
+    $('sifreForm').hidden = false; $('yeniSifre').focus();
+  });
+  $('sifreVazgec').addEventListener('click', () => { $('sifreForm').hidden = true; });
+  $('sifreForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const a = $('yeniSifre').value, b = $('yeniSifre2').value;
+    $('sifreTamam').hidden = true;
+    if (a.length < 6) { $('sifreHata').textContent = 'Şifre en az 6 karakter olmalı.'; return; }
+    if (a !== b) { $('sifreHata').textContent = 'İki şifre aynı değil.'; return; }
+    const { error } = await sb.auth.updateUser({ password: a });
+    if (error) { $('sifreHata').textContent = /different|same/i.test(error.message) ? 'Yeni şifre eskisiyle aynı olamaz.' : 'Şifre değiştirilemedi. Tekrar dene.'; return; }
+    $('sifreHata').textContent = ''; $('sifreTamam').hidden = false;
+    $('yeniSifre').value = ''; $('yeniSifre2').value = '';
+  });
+
+  $('cikisBtn').addEventListener('click', () => H.cikis());
+})();
+</script>
+</body>
+</html>
