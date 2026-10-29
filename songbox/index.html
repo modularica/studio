@@ -10,7 +10,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="songbox"></script>
+<script src="/hesap/hesap.js" data-oyun="songbox" data-kayit="songbox-unlocked songbox-custom songbox-names songbox-won ritim-orkestrasi-sarkilar"></script>
 </head><body>
 <title>SONGbox</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -930,6 +930,17 @@ const ULK = 'songbox-unlocked';
 const unlocked = new Set(CH.filter(c => !c.tier).map(c => c.id));
 try { JSON.parse(localStorage.getItem(ULK) || '[]').forEach(id => { if (CH_BY[id]) unlocked.add(id); }); } catch (e) {}
 function saveUnlocked(){ try { localStorage.setItem(ULK, JSON.stringify([...unlocked])); } catch (e) {} }
+
+/* Progress note shown on the family "who's playing" page (only when the account script is present) */
+var hesapSayac = null, hesapPuan = null;
+function hesapNotu(){
+  if (!window.Hesap) return;
+  const parts = [];
+  if (hesapSayac) parts.push(`${hesapSayac[0]}/${hesapSayac[1]} karakter`);
+  try { parts.push(`${loadSongs().length} şarkı`); } catch (e) {}
+  if (hesapPuan) { try { parts.push(`son puan ${WORDS[hesapPuan.level]} (${hesapPuan.score})`); } catch (e) {} }
+  try { Hesap.not(parts.join(' · ')); } catch (e) {}
+}
 
 /* ---------- Names you gave the characters, and characters you made (this browser only) ---------- */
 const NAMES_KEY = 'songbox-names', CUSTOM_KEY = 'songbox-custom', NAME_MAX = 12;
@@ -1974,6 +1985,7 @@ function renderBar(){
     if (!list.length) note('No characters of this kind yet. Rate songs to unlock some.');
   }
   $('#count').textContent = `${open.length}/${builtins.length} unlocked`;
+  hesapSayac = [open.length, builtins.length]; hesapNotu();
   $('#filters').innerHTML = FILTERS.map(([k, label]) =>
     `<button class="flt" type="button" data-f="${k}" aria-pressed="${shelf === k}">${k === 'locked' ? `🔒 ${label} ${locked.length}` : k === 'mine' ? `${label} ${mine.length}` : label}</button>`
   ).join('');
@@ -2239,6 +2251,7 @@ function finishPerf(){
 }
 function showVerdict(r, pick){
   lastPick = pick;
+  hesapPuan = { level: r.level, score: r.score }; hesapNotu();
   const w = $('#vWord');
   w.textContent = WORDS[r.level];
   w.className = 'vword ' + r.level;
@@ -2347,6 +2360,7 @@ function saveSongs(list){
 }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 function renderSaved(){
+  hesapNotu();
   $('#saved').innerHTML = loadSongs().map((s, i) =>
     `<span class="chip"><button type="button" data-load="${i}">${esc(s.name)}</button><button class="del" type="button" data-del="${i}" aria-label="Delete ${esc(s.name)}">×</button></span>`
   ).join('');

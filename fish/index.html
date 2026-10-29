@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="fish"></script>
+<script src="/hesap/hesap.js" data-oyun="fish" data-kayit="fish.best fish.toplam"></script>
 </head>
 <body>
 <title>Fish</title>
@@ -312,7 +312,24 @@ const cam = { x: 0, y: 0, scale: 1 };
 let mode = 'attract';   // attract | play | paused | over
 let fish = [];
 let tally = {}, eatenCount = 0, killer = null;
+let sayilan = {}; // part of this round's tally already added to the lifetime count
 let best = +store.get('fish.best', 0) || 0;
+// Lifetime count of every fish eaten, species by species (kept with the player's account).
+function toplamOku() { const t = store.get('fish.toplam', {}); return t && typeof t === 'object' ? t : {}; }
+function toplamaEkle(run) {
+  const t = toplamOku();
+  for (const k in run) t[k] = (t[k] || 0) + run[k];
+  store.set('fish.toplam', t);
+}
+function sayilmayaniEkle() {
+  const yeni = {};
+  for (const k in tally) { const d = tally[k] - (sayilan[k] || 0); if (d > 0) yeni[k] = d; }
+  if (Object.keys(yeni).length) toplamaEkle(yeni);
+  sayilan = Object.assign({}, tally);
+}
+const toplamSayi = () => Object.values(toplamOku()).reduce((a, b) => a + (+b || 0), 0);
+// Short progress line for the family "who's playing" page (only when the account script is present).
+function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (e) {} }
 let soundOn = store.get('fish.sound', true) !== false;
 let time = 0, flash = 0, toastT = 0, spawnT = 0;
 const ripples = [], bubbles = [], labels = [];
@@ -499,7 +516,11 @@ function updateHud() {
 function showToast(text, bad) { toast.textContent = text; toast.classList.toggle('bad', !!bad); toast.hidden = false; toastT = 2.6; }
 function renderStartBest() {
   const el = $('startBest');
-  if (best > 0) { el.textContent = `Your best: ${fmtLenStr(best)}`; el.hidden = false; } else el.hidden = true;
+  const n = toplamSayi();
+  if (best > 0) {
+    el.textContent = `Your best: ${fmtLenStr(best)}` + (n ? ` · ${n} fish eaten so far` : '');
+    el.hidden = false;
+  } else el.hidden = true;
 }
 
 /* ---------- game flow ---------- */
@@ -513,7 +534,7 @@ function startGame(fromAttract) {
   ensureAudio();
   if (!fromAttract) resetPlayer();
   else { P.l = P.lShow = 10; P.lives = 3; P.alive = true; P.invuln = 0; P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length; }
-  tally = {}; eatenCount = 0; killer = null;
+  tally = {}; eatenCount = 0; killer = null; sayilan = {};
   P.grace = 2.5;
   cam.scale = targetScale(P.l);
   fish = fish.filter(f => f.l < P.l * .85);
@@ -522,6 +543,7 @@ function startGame(fromAttract) {
   startOv.hidden = true; overOv.hidden = true; pauseOv.hidden = true;
   hud.hidden = false; toast.hidden = true;
   renderLives(); shownLen = ''; chainKey = ''; updateHud();
+  hesapNotu(`Yeni tur · ${fmtLenStr(P.l)}`);
   lockOn();
 }
 function pause() {
@@ -548,6 +570,7 @@ function eat(f) {
   sfxGulp(f.l / P.l);
   const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
   if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); }
+  hesapNotu(`${fmtLenStr(P.l)} · ${eatenCount} balık yedi`);
 }
 function bitten(f) {
   P.lives--; renderLives();
@@ -569,6 +592,9 @@ function gameOver(f) {
   hud.hidden = true; toast.hidden = true;
   const isBest = P.l > best + .001;
   if (isBest) { best = P.l; store.set('fish.best', best); }
+  sayilmayaniEkle();
+  hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
+  renderStartBest();
   setTimeout(() => showOver(isBest), 1100);
 }
 function showOver(isBest) {
@@ -590,7 +616,11 @@ $('againBtn').addEventListener('click', () => startGame(false));
 $('resumeBtn').addEventListener('click', resume);
 pauseBtn.addEventListener('click', pause);
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
-addEventListener('pagehide', () => { if (mode === 'play' && P.l > best) store.set('fish.best', P.l); });
+addEventListener('pagehide', () => {
+  if (mode !== 'play') return;
+  if (P.l > best) store.set('fish.best', P.l);
+  sayilmayaniEkle(); // count what was eaten in an unfinished round, once
+});
 
 /* ---------- simulation ---------- */
 function steerPlayer(dt) {

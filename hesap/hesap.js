@@ -7,6 +7,10 @@
  * data-oyun   Oyunun kısa adı (klasör adı). Varsa oynama süresi bu adla kaydedilir.
  * data-kapi   "oyuncu" (varsayılan): giriş yapılmış ve oyuncu seçilmiş olmalı.
  *             "oturum": sadece giriş yeterli.  "yok": kapı yok (giriş sayfası).
+ * data-kayit  Oyunun localStorage anahtarları (boşlukla ayrılmış). Bunlar oyuncunun hesabıyla
+ *             eşitlenir: oyun her zamanki gibi localStorage'a yazar, hesap.js bunları hesaba taşır,
+ *             başka cihazda ya da başka oyuncuyla açılınca doğru kaydı geri yükler. Ses gibi cihaz
+ *             tercihlerini buraya koyma.
  *
  * Oyunlar için:
  *   Hesap.hazir            Promise -> { kullanici, profil } (kapı geçilince)
@@ -32,7 +36,32 @@
   var script = document.currentScript;
   var OYUN = (script && script.dataset.oyun) || null;
   var KAPI = (script && script.dataset.kapi) || 'oyuncu';
+  var KAYITLAR = ((script && script.dataset.kayit) || '').split(/[\s,]+/).filter(Boolean);
+  var SENK = !!OYUN && KAYITLAR.length > 0 && KAPI === 'oyuncu';
+  var META_KEY = 'hesap.senk.' + OYUN;
   var html = document.documentElement;
+
+  /* The game script runs before the account answers, so remember now which player the local
+     save belonged to and stop its writes from being uploaded until the first sync decides. */
+  var lsSet = Storage.prototype.setItem, lsRemove = Storage.prototype.removeItem;
+  function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function metaOku() { try { return JSON.parse(lsGet(META_KEY) || 'null'); } catch (e) { return null; } }
+  function metaYaz(m) { try { lsSet.call(window.localStorage, META_KEY, JSON.stringify(m)); } catch (e) {} }
+  var ilkMeta = SENK ? metaOku() : null;
+  var senk = { hazir: false, surum: 0, zamanlayici: null };
+  if (SENK) {
+    var izlenen = function (depo, k) {
+      try { return depo === window.localStorage && KAYITLAR.indexOf(k) >= 0; } catch (e) { return false; }
+    };
+    Storage.prototype.setItem = function (k, v) {
+      lsSet.call(this, k, v);
+      if (izlenen(this, k)) kirlendi();
+    };
+    Storage.prototype.removeItem = function (k) {
+      lsRemove.call(this, k);
+      if (izlenen(this, k)) kirlendi();
+    };
+  }
 
   if (KAPI !== 'yok') {
     var st = document.createElement('style');
@@ -97,9 +126,12 @@
       if (!oturum) return girise();
       if (KAPI === 'oyuncu' && !durum.profil) return girise();
     }
-    html.classList.remove('hesap-bekle');
-    hazirCoz({ kullanici: oturum ? oturum.user : null, profil: durum.profil });
-    if (OYUN && durum.profil) oyunuBaslat();
+    (SENK ? senkBaslat() : Promise.resolve(true)).then(function (goster) {
+      if (!goster) return; // the page is reloading with the account's save
+      html.classList.remove('hesap-bekle');
+      hazirCoz({ kullanici: oturum ? oturum.user : null, profil: durum.profil });
+      if (OYUN && durum.profil) oyunuBaslat();
+    });
   }, function () {
     hataGoster('Giriş bilgisi okunamadı. Sayfayı yenile.');
   });
@@ -155,13 +187,129 @@
       if (!durum.profil) return;
       if (document.hidden) {
         say(); birak(); oyun.gizlendi = Date.now();
+        if (SENK) senkBirak();
       } else {
         if (oyun.gizlendi && Date.now() - oyun.gizlendi > YENI_OTURUM && !oyun.bekliyor) oyunuBaslat();
         else oyun.son = Date.now();
         oyun.gizlendi = 0;
       }
     });
-    window.addEventListener('pagehide', function () { say(); birak(); });
+    window.addEventListener('pagehide', function () { say(); birak(); if (SENK) senkBirak(); });
+  }
+
+  /* ---------- kayıt senkronu (data-kayit) ---------- */
+  function yerelVeri() {
+    var o = {}, dolu = false;
+    KAYITLAR.forEach(function (k) { var v = lsGet(k); if (v !== null) { o[k] = v; dolu = true; } });
+    return dolu ? o : null;
+  }
+  function yereleYaz(keys) {
+    KAYITLAR.forEach(function (k) {
+      try {
+        if (keys && typeof keys[k] === 'string') lsSet.call(window.localStorage, k, keys[k]);
+        else lsRemove.call(window.localStorage, k);
+      } catch (e) {}
+    });
+  }
+  function esit(a, b) {
+    a = a || {}; b = b || {};
+    return KAYITLAR.every(function (k) { return (a[k] == null ? null : a[k]) === (b[k] == null ? null : b[k]); });
+  }
+  function yenidenYukle() {
+    // Guard against a reload loop if storage misbehaves.
+    var anahtar = 'hesap.yenile.' + OYUN, simdi = Date.now(), once = 0;
+    try { once = +sessionStorage.getItem(anahtar) || 0; } catch (e) {}
+    if (simdi - once < 15000) return false;
+    try { sessionStorage.setItem(anahtar, String(simdi)); } catch (e) {}
+    location.reload();
+    return true;
+  }
+  function kirlendi() {
+    if (!senk.hazir || !durum.profil) return;
+    senk.surum++;
+    var m = metaOku() || {};
+    metaYaz({
+      profil: durum.profil.id, guncel: m.profil === durum.profil.id ? (m.guncel || null) : null,
+      kirli: true, degisti: new Date().toISOString()
+    });
+    clearTimeout(senk.zamanlayici);
+    senk.zamanlayici = setTimeout(gonder, 1500);
+  }
+  function gonder() {
+    if (!senk.hazir || !durum.profil) return Promise.resolve();
+    clearTimeout(senk.zamanlayici);
+    var surum = senk.surum, zaman = new Date().toISOString(), profil = durum.profil.id;
+    return istemci.from('saves')
+      .upsert({ profile_id: profil, game: OYUN, data: { v: 1, keys: yerelVeri() || {} }, updated_at: zaman })
+      .then(function (r) {
+        if (r.error) return;
+        var temiz = senk.surum === surum, m = metaOku() || {};
+        metaYaz({ profil: profil, guncel: zaman, kirli: !temiz, degisti: temiz ? null : (m.degisti || null) });
+        if (!temiz) senk.zamanlayici = setTimeout(gonder, 1500);
+      }, function () {});
+  }
+  function senkBirak() {
+    // Leaving the page: send what we have with keepalive; the next load reconciles it.
+    var m = metaOku();
+    if (!senk.hazir || !durum.profil || !durum.oturum || !m || !m.kirli) return;
+    clearTimeout(senk.zamanlayici);
+    var govde = JSON.stringify({ profile_id: durum.profil.id, game: OYUN, data: { v: 1, keys: yerelVeri() || {} }, updated_at: new Date().toISOString() });
+    if (govde.length > 60000) { gonder(); return; }
+    try {
+      fetch(API + '/rest/v1/saves?on_conflict=profile_id,game', {
+        method: 'POST', keepalive: true,
+        headers: {
+          apikey: KEY, Authorization: 'Bearer ' + durum.oturum.access_token,
+          'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal'
+        },
+        body: govde
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  // Decides, before the game is shown, whether this device's save or the account's save wins.
+  // Resolves true to show the game, false when the page is reloading with the account's save.
+  function senkBaslat() {
+    var profil = durum.profil.id;
+    var sorgu = istemci.from('saves').select('data,updated_at').eq('profile_id', profil).eq('game', OYUN).maybeSingle();
+    var zamanAsimi = new Promise(function (res) { setTimeout(function () { res({ zamanAsimi: true }); }, 6000); });
+    return Promise.race([sorgu, zamanAsimi]).then(function (r) {
+      if (r.zamanAsimi || r.error) return true; // offline: play from the local save, decide next time
+      var kayit = r.data, m = ilkMeta, yerel = yerelVeri();
+      var ayni = !!m && m.profil === profil;
+      var hesapta = kayit && kayit.data && kayit.data.keys ? kayit.data.keys : null;
+      if (!kayit) {
+        if (m && !ayni) {
+          // The local save belongs to another player on this device: this player starts fresh.
+          metaYaz({ profil: profil, guncel: null, kirli: false });
+          if (yerel) { yereleYaz(null); if (yenidenYukle()) return false; }
+          senk.hazir = true;
+          return true;
+        }
+        // First time with accounts on this device (old progress moves into the account),
+        // or an earlier upload never landed.
+        metaYaz({ profil: profil, guncel: null, kirli: !!yerel, degisti: null });
+        senk.hazir = true;
+        if (yerel) gonder();
+        return true;
+      }
+      if (ayni && esit(yerel, hesapta)) {
+        metaYaz({ profil: profil, guncel: kayit.updated_at, kirli: false });
+        senk.hazir = true;
+        return true;
+      }
+      if (ayni && m.kirli && (m.guncel === kayit.updated_at || (m.degisti && m.degisti > kayit.updated_at))) {
+        // This device has changes the account has not seen yet.
+        senk.hazir = true;
+        gonder();
+        return true;
+      }
+      // The account wins: put its save on this device and start the game again with it.
+      yereleYaz(hesapta);
+      metaYaz({ profil: profil, guncel: kayit.updated_at, kirli: false });
+      if (yenidenYukle()) return false;
+      senk.hazir = true;
+      return true;
+    }, function () { return true; });
   }
 
   /* ---------- kullanıcı adı ---------- */

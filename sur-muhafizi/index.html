@@ -10,7 +10,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="sur-muhafizi"></script>
+<script src="/hesap/hesap.js" data-oyun="sur-muhafizi" data-kayit="sur-muhafizi-best sur-muhafizi-kayit"></script>
 </head><body>
 <title>Sur Muhafızı</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -165,7 +165,20 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fineHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 /* ---------- world ---------- */
-const COLS = 16, ROWS = 10, MAX_WAVE = 20, BEST_KEY = 'sur-muhafizi-best';
+const COLS = 16, ROWS = 10, MAX_WAVE = 20, BEST_KEY = 'sur-muhafizi-best', SAVE_KEY = 'sur-muhafizi-kayit';
+
+/* ---------- saved battle (resume where you left off) ---------- */
+// Saved whenever the board is clear: when a wave is pushed back and when the next one starts.
+function savasiKaydet() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot())); } catch (_) {} }
+function kaydiSil() { try { localStorage.removeItem(SAVE_KEY); } catch (_) {} }
+function kaydiOku() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    return d && d.v === 1 && Array.isArray(d.towers) && !d.over ? d : null;
+  } catch (_) { return null; }
+}
+// Short progress line for the family "who's playing" page (only when the account script is present).
+function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (_) {} }
 const WAY = [[-1,1],[3,1],[3,6],[6,6],[6,2],[10,2],[10,8],[13,8],[13,4],[15,4]];
 const PATH = [];
 WAY.forEach((p, i) => {
@@ -636,8 +649,9 @@ function pickBuild(k) {
 }
 
 function startWave() {
-  if (S.over || S.queue.length) return;
+  if (S.over || S.queue.length || teklif) return;
   if (!S.endless && S.wave >= MAX_WAVE) return;
+  if (!S.enemies.length) savasiKaydet();
   if (S.enemies.length) { S.gold += 15; text(15.5, 3.6, '+15 erken', C.gold); }
   S.wave++;
   const w = S.wave, list = waveList(w);
@@ -647,6 +661,7 @@ function startWave() {
   const counts = {}; list.forEach(([k]) => counts[k] = (counts[k] || 0) + 1);
   const summary = Object.keys(counts).map(k => `${counts[k]} ${FOES[k].word}`).join(' · ');
   announce(`Dalga ${w}`, INTRO[w] || summary);
+  hesapNotu(`${S.endless ? 'Sonsuz mod · ' : ''}${w}. dalga · ${S.lives} can`);
 }
 
 function spawn(type, w) {
@@ -689,6 +704,10 @@ function doneOne(w) {
   for (const t of S.towers) if (t.type === 'mine') { const v = TOWERS.mine.lv[t.lvl].income; inc += v; text(t.x, t.y - .3, `+${v}`, C.gold); }
   S.gold += bonus + inc;
   announce('Püskürtüldü!', `Dalga ${w} · +${bonus + inc} altın`);
+  if (!S.queue.length && !Object.keys(S.alive).length) {
+    savasiKaydet();
+    hesapNotu(`${S.endless ? 'Sonsuz mod · ' : ''}${w}. dalga bitti · ${S.lives} can`);
+  }
   if (!S.endless && S.wave >= MAX_WAVE && !S.queue.length && !Object.keys(S.alive).length) gameOver('win');
 }
 function splash(x, y, rad, dmg, o) {
@@ -1039,13 +1058,16 @@ function saveBest(n) {
 function gameOver(kind) {
   if (S.over) return;
   S.over = kind; S.build = null; S.sel = null; S.ghost = null;
+  kaydiSil();
   if (kind === 'lose') {
     const best = saveBest(S.wave);
+    hesapNotu(`Surlar ${S.wave}. dalgada yıkıldı · rekor ${best}. dalga`);
     ovT.textContent = 'Kale düştü';
     ovP.textContent = `Surlar ${S.wave}. dalgada yıkıldı. En iyi rekorun: ${best}. dalga.`;
     ovA.textContent = 'Yeniden başla'; ovB.hidden = true;
   } else {
     saveBest(S.wave);
+    hesapNotu(`${MAX_WAVE} dalgayı kazandı · ${S.lives} can`);
     ovT.textContent = 'Kale ayakta!';
     ovP.textContent = `${MAX_WAVE} dalganın hepsini püskürttün, ${S.lives} canın kaldı. İstersen giderek zorlaşan dalgalarla devam et.`;
     ovA.textContent = 'Sonsuz modda devam et'; ovB.textContent = 'Yeniden başla'; ovB.hidden = false;
@@ -1055,11 +1077,30 @@ function gameOver(kind) {
 function restart() {
   S = fresh(); occ.fill(null); ov.hidden = true;
 }
+let teklif = null; // a saved battle waiting for "Devam et"
 ovA.addEventListener('click', () => {
+  if (teklif) {
+    restart(); restore(teklif); teklif = null; ov.hidden = true;
+    hesapNotu(`${S.wave}. dalgadan devam · ${S.lives} can`);
+    return;
+  }
   if (S.over === 'win') { S.endless = true; S.over = null; ov.hidden = true; }
   else restart();
 });
-ovB.addEventListener('click', restart);
+ovB.addEventListener('click', () => {
+  if (teklif) { teklif = null; kaydiSil(); ov.hidden = true; return; }
+  restart();
+});
+function devamTeklifEt() {
+  const k = kaydiOku();
+  if (!k) return;
+  teklif = k;
+  const yapi = k.towers.length;
+  ovT.textContent = 'Kaldığın yerden devam?';
+  ovP.textContent = `${k.wave ? `${k.endless ? 'Sonsuz mod, ' : ''}${k.wave}. dalga bitti` : 'İlk dalga başlamadan'} · ${k.lives} can · ${k.gold} altın · ${yapi} yapı.`;
+  ovA.textContent = 'Devam et'; ovB.textContent = 'Yeni oyun'; ovB.hidden = false;
+  ov.hidden = false; ovA.focus();
+}
 
 goBtn.addEventListener('click', startWave);
 spdBtn.addEventListener('click', () => { S.speed = S.speed === 3 ? 1 : S.speed + 1; });
@@ -1123,17 +1164,20 @@ function snapshot() {
   return { v:1, gold:S.gold, lives:S.lives, wave:S.wave, endless:S.endless, speed:S.speed, over:S.over,
     towers:S.towers.map(t => ({ type:t.type, c:t.c, r:t.r, lvl:t.lvl, spent:t.spent, hp:t.hp })) };
 }
+function restore(data) {
+  if (!(data && data.v === 1 && Array.isArray(data.towers) && !data.over)) return false;
+  S.gold = data.gold; S.lives = data.lives; S.wave = data.wave; S.endless = !!data.endless; S.speed = data.speed || 1;
+  for (const s of data.towers) {
+    if (!TOWERS[s.type] || !inside(s.c, s.r) || occ[at(s.c, s.r)]) continue;
+    const t = build(s.type, s.c, s.r, true);
+    t.lvl = Math.max(0, Math.min(2, s.lvl || 0)); t.spent = s.spent || TOWERS[s.type].cost;
+    if (t.type === 'wall') { t.max = TOWERS.wall.lv[t.lvl].hp; t.hp = Math.min(t.max, s.hp || t.max); }
+  }
+  return true;
+}
 function start(data) {
   restart();
-  if (data && data.v === 1 && Array.isArray(data.towers) && !data.over) {
-    S.gold = data.gold; S.lives = data.lives; S.wave = data.wave; S.endless = !!data.endless; S.speed = data.speed || 1;
-    for (const s of data.towers) {
-      if (!TOWERS[s.type] || !inside(s.c, s.r) || occ[at(s.c, s.r)]) continue;
-      const t = build(s.type, s.c, s.r, true);
-      t.lvl = s.lvl || 0; t.spent = s.spent || TOWERS[s.type].cost;
-      if (t.type === 'wall') { t.max = TOWERS.wall.lv[t.lvl].hp; t.hp = Math.min(t.max, s.hp || t.max); }
-    }
-  }
+  if (!restore(data)) devamTeklifEt();
   layout();
   new ResizeObserver(() => layout()).observe(board);
   let last = performance.now();

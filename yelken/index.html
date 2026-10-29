@@ -10,7 +10,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="yelken"></script>
+<script src="/hesap/hesap.js" data-oyun="yelken" data-kayit="ruzgar-kaptani-yo-tamam ruzgar-kaptani-yo-son ruzgar-kaptani-yo-rekor ruzgar-kaptani-yo-dumen"></script>
 </head><body>
 <title>Rüzgâr Kaptanı</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1258,9 +1258,12 @@ const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', 
 
 function play() { closeModal(); G.phase = 'play'; G.started = true; Snd.init(); keepAwake(); }
 
+function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (e) {} }
+
 function openLesson(i) {
   G.mode = 'lesson'; G.idx = clamp(i, 0, LESSONS.length - 1); G.started = false;
   store.set(K_LAST, String(G.idx));
+  hesapNotu(`${G.idx + 1}. ders: ${LESSONS[G.idx].title} · ${doneSet.size}/${LESSONS.length} bitti`);
   applySetup(LESSONS[G.idx].setup);
   startStep(0);
   showIntro();
@@ -1293,6 +1296,10 @@ function lessonDone() {
     if (!best || G.raceT < best) { store.set(K_BEST, String(G.raceT)); doneNote = best ? 'Yeni rekor!' : 'İlk rekorun kaydedildi.'; }
     else doneNote = 'Rekorun: ' + fmtTime(best) + '.';
   }
+  const rekor = parseFloat(store.get(K_BEST) || '0');
+  hesapNotu(G.timer
+    ? `Parkur ${fmtTime(G.raceT)} · rekor ${fmtTime(rekor || G.raceT)}`
+    : `${G.idx + 1}. ders bitti: ${curLesson().title} · ${doneSet.size}/${LESSONS.length} bitti`);
   showDone();
 }
 function showDone() {
@@ -1311,6 +1318,7 @@ function showDone() {
 function openFree() {
   G.mode = 'free'; G.started = false;
   store.set(K_LAST, 'free');
+  hesapNotu(`Serbest seyir · ${doneSet.size}/${LESSONS.length} ders bitti`);
   const s = Object.assign({}, FREE.setup, { wind: +windDirIn.value, spd: +windSpdIn.value });
   applySetup(s);
   G.ls = { step: 0, st: {}, stepStart: 0 };

@@ -38,8 +38,9 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
    ```html
    <meta name="robots" content="noindex">
    <script src="/hesap/supabase.js"></script>
-   <script src="/hesap/hesap.js" data-oyun="<slug>"></script>
+   <script src="/hesap/hesap.js" data-oyun="<slug>" data-kayit="<oyunun localStorage anahtarları>"></script>
    ```
+   `data-kayit`: oyunun ilerlemesini tuttuğu localStorage anahtarları, boşlukla ayrılmış. Ses, sahne gibi cihaz tercihlerini koyma. İstersen oyunun önemli anlarında `Hesap.not('...')` ile takip sayfasına kısa bir ilerleme notu yaz (`window.Hesap` yoksa çağırma).
 6. `oyunlar.json` listesine bir satır ekle. Sadece linkle paylaşılacak, ana sayfada görünmeyecek oyunlar için `"listed": false` yaz.
 
 ## Hesap sistemi
@@ -52,12 +53,22 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 - Şifre unutulursa e-postayla sıfırlanamaz. SQL ile sıfırlanır:
   `update auth.users set encrypted_password = extensions.crypt('yeni-sifre', extensions.gen_salt('bf')) where email = '<ad>@oyuncu.bringthepoint.com';`
 - Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `admins` (herkesin oynama kaydını görebilen e-postalar; şu an umutguncan@gmail.com).
-- Kurallar: her hesap sadece kendi oyuncularını, kayıtlarını ve oynama geçmişini görür ve yazar. `admins` listesindekiler bütün hesapların oyuncularını ve oynama kayıtlarını okuyabilir (kayıtları değil). Kural yardımcıları `private` şemasında.
+- Kurallar: giriş yapan herkes bütün oyuncuların adını/rengini ve oynama kayıtlarını görür ("Kim ne oynuyor?" herkese açık). Oyun kayıtları (`saves`) sadece sahibine açık. Herkes sadece kendi oyuncularını, kayıtlarını ve oynama kayıtlarını yazar. `admins` tablosu şu an bir şey açmıyor, ileride yönetici özellikleri için duruyor. Kural yardımcıları `private` şemasında.
 - Oyunlardan kullanım (`hesap/hesap.js` başındaki açıklamaya bak):
   - `Hesap.hazir` giriş kapısı geçilince çözülür, `Hesap.profil` seçili oyuncu.
   - `Hesap.yukle()` / `Hesap.kaydet(veri)` bu oyunun kaydı. Kaydı seviye ya da ders sonu gibi anlarda yaz, her karede değil.
   - `Hesap.not('12. dalga')` takip sayfasında görünen kısa ilerleme notu.
-- Oyunların şu anki ilerlemesi hâlâ tarayıcıda (localStorage). Sıradaki iş: oyun oyun `Hesap.kaydet`/`Hesap.yukle` ve `Hesap.not` ile hesaba taşımak.
+- Kayıt eşitleme (`data-kayit`): oyunlar ilerlemeyi her zamanki gibi localStorage'a yazar; `hesap.js` bu anahtarları oyuncunun hesabındaki `saves` satırına (`data.keys`) taşır. Oyun açılırken karar verir, karar verene kadar sayfa gizli kalır:
+  - Hesapta kayıt yok, cihazdaki kayıt bu oyuncunun ya da hesaplardan önceki eski kayıt → hesaba yüklenir (eski ilerleme ilk girişte aktarılır).
+  - Cihazdaki kayıt başka bir oyuncunun → bu oyuncu sıfırdan başlar.
+  - Hesaptaki kayıt farklı → hesaptaki cihaza yazılır ve sayfa bir kez yenilenir. Cihazda hesaba gitmemiş daha yeni değişiklik varsa cihazdaki kazanır.
+  - Cihazdaki eşitleme durumu `hesap.senk.<oyun>` anahtarında. İnternet yoksa oyun cihazdaki kayıtla açılır, karar bir sonraki açılışta verilir.
+  - Aynı oyunda hem `data-kayit` hem `Hesap.kaydet` kullanma: ikisi aynı satıra yazar.
+- Oyun oyun ne kaydediliyor:
+  - Fish: `fish.best` (en iyi boy), `fish.toplam` (şimdiye kadar yenen balıklar, tür tür). Not: boy, yenen balık, yakalayan tür.
+  - Rüzgâr Kaptanı: biten dersler, son ders, parkur rekoru, yeke/dümen dolabı tercihi. Not: açık ders ve kaç ders bittiği, parkur süresi.
+  - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
+  - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
 - Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 
 ## Alan adı bağlanınca
