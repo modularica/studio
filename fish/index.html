@@ -829,7 +829,7 @@ if (window.Hesap) {
 
 /* ---------- rooms: play in one pond with friends (server: fish/sunucu) ---------- */
 // The room server's address. A different one can be tried with localStorage 'fish.sunucu'.
-const ODA_SUNUCU = (() => { try { return localStorage.getItem('fish.sunucu') || ''; } catch (e) { return ''; } })() || '';
+const ODA_SUNUCU = (() => { try { return localStorage.getItem('fish.sunucu') || ''; } catch (e) { return ''; } })() || 'wss://fish-odalar.umutguncan.workers.dev';
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 const odaOv = $('odaOv'), bekleOv = $('bekleOv'), sonOv = $('sonOv'), olumOv = $('olumOv'), odaPanel = $('odaPanel');
 const koiStilleri = {};
