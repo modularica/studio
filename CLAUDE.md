@@ -1,11 +1,13 @@
-# Stüdyo — oyunlar ve stüdyo sitesi
+# Uzay'ın sayfası — oyunlar
 
-Umut ile oğlunun birlikte yaptığı oyunların yayınlandığı tek repo. Ana sayfa stüdyoyu tanıtır ve oyunları listeler. Her oyun kendi klasöründe, kendi adresinde açılır. Stüdyo adı henüz belli değil; repo şimdilik `studio`.
+Uzay ile babası Umut'un birlikte yaptığı oyunların yayınlandığı tek repo. Ana sayfa Uzay'ın sayfasıdır ve oyunları listeler. Her oyun kendi klasöründe, kendi adresinde açılır. Repo adı şimdilik `studio`.
+
+Sitedeki metinler Uzay'ın ağzından yazılır: "Babamla birlikte yaptığımız oyunlar", "Merhaba, ben Uzay!". Yeni metin eklerken bu sesi koru.
 
 ## Yapı
 
 ```
-index.html     stüdyo ana sayfası; oyun listesi bu dosyanın içindeki <script id="games"> bloğunda
+index.html     ana sayfa (Uzay'ın sayfası); oyun listesi bu dosyanın içindeki <script id="games"> bloğunda
 vercel.json    Vercel ayarı (adresler / ile biter: /fish/)
 fish/          Fish: koi oyunu. Multiplayer planı fish/PLAN.md
 yelken/        Rüzgâr Kaptanı: adım adım yelken okulu
@@ -32,7 +34,6 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 ## Alan adı bağlanınca
 
 - Paylaşım görselleri (`og:image`) için göreli `cover.png` yerine tam adres yaz (örnek: `https://alanadi.com/fish/cover.png`). WhatsApp gibi uygulamalar tam adres ister.
-- Ana sayfadaki geçici stüdyo adını (sol üstteki `studio` yazısı ve sayfa başlığı `Oyunlarımız`) gerçek adla değiştir.
 
 ## Çalışma şekli
 

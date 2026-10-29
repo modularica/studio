@@ -1,6 +1,6 @@
 # studio
 
-Games we make together, and the studio site that lists them.
+Uzay's page: the games Uzay and his dad make together.
 
 | Path | Game |
 |---|---|
