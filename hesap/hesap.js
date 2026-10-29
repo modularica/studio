@@ -21,6 +21,10 @@
   var API = 'https://cuihsjlhhbmwnzhldqvp.supabase.co';
   var KEY = 'sb_publishable_vm_w7wu4c5SrNsQXe0CHGA_t2B3YR_i';
   var PROFIL_KEY = 'uzay.oyuncu';
+  // Supabase Auth needs an e-mail. Players sign up with a username only; it becomes
+  // <username>@KULLANICI_ALANI behind the scenes. No mail is ever sent there ("Confirm email" is off).
+  // Never change this: existing accounts would stop matching their usernames.
+  var KULLANICI_ALANI = 'oyuncu.bringthepoint.com';
   var GIRIS = '/giris/';
   var NABIZ = 20000;              // oynama süresi bu aralıkla yazılır
   var YENI_OTURUM = 10 * 60000;   // bu kadar arka planda kalınca yeni oynama kaydı açılır
@@ -160,6 +164,37 @@
     window.addEventListener('pagehide', function () { say(); birak(); });
   }
 
+  /* ---------- kullanıcı adı ---------- */
+  var TR = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'î': 'i', 'û': 'u' };
+  function kullaniciKimligi(ad) {
+    return String(ad || '').trim().toLocaleLowerCase('tr')
+      .replace(/[çğıöşüâîû]/g, function (c) { return TR[c]; })
+      .replace(/\s+/g, '_');
+  }
+  // Username rules: 3-20 characters, letters (Turkish too), digits, _ . -
+  function kullaniciAdiHatasi(ad) {
+    var a = String(ad || '').trim();
+    if (a.length < 3) return 'Kullanıcı adı en az 3 karakter olmalı.';
+    if (a.length > 20) return 'Kullanıcı adı en fazla 20 karakter olabilir.';
+    if (!/^[a-zA-Z0-9çğıöşüÇĞİÖŞÜâîûÂÎÛ_. -]+$/.test(a)) return 'Kullanıcı adında sadece harf, rakam, boşluk, nokta, alt çizgi ve tire olabilir.';
+    var id = kullaniciKimligi(a);
+    if (!/^[a-z0-9]/.test(id)) return 'Kullanıcı adı bir harf ya da rakamla başlamalı.';
+    if (/\.\.|\.$/.test(id)) return 'Kullanıcı adı noktayla bitemez, iki nokta yan yana olamaz.';
+    return '';
+  }
+  // Login field takes a username or, for parents who want it, a real e-mail.
+  function epostaya(girdi) {
+    var g = String(girdi || '').trim();
+    return g.indexOf('@') > 0 ? g.toLowerCase() : kullaniciKimligi(g) + '@' + KULLANICI_ALANI;
+  }
+  function gorunenAd(user) {
+    if (!user) return '';
+    var m = user.user_metadata || {};
+    if (m.kullanici_adi) return m.kullanici_adi;
+    var e = user.email || '';
+    return e.slice(-(KULLANICI_ALANI.length + 1)) === '@' + KULLANICI_ALANI ? e.slice(0, e.indexOf('@')) : e;
+  }
+
   /* ---------- dışarıya açılanlar ---------- */
   var oyunListesi = null;
   window.Hesap = {
@@ -170,6 +205,9 @@
     get kullanici() { return durum.oturum ? durum.oturum.user : null; },
 
     profilSec: function (p) { yazProfil(p); },
+    kullaniciAdiHatasi: kullaniciAdiHatasi,
+    epostaya: epostaya,
+    gorunenAd: gorunenAd,
 
     yukle: function (oyunAdi) {
       oyunAdi = oyunAdi || OYUN;

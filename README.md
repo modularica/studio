@@ -17,4 +17,4 @@ npx serve .
 
 Deployed on Vercel: every push to `main` goes live, other branches get a preview URL. See `CLAUDE.md` for how to add a game.
 
-Every page is behind a sign-in (Supabase Auth, family accounts with player profiles). Play sessions and game saves live in Supabase; `/takip/` shows who played what. See the "Hesap sistemi" section in `CLAUDE.md`.
+Every page is behind a sign-in (Supabase Auth; anyone can sign up with just a username and password, and an account can hold several players). Play sessions and game saves live in Supabase; `/takip/` shows who played what. See the "Hesap sistemi" section in `CLAUDE.md`.

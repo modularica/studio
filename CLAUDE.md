@@ -45,10 +45,14 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 ## Hesap sistemi
 
 - Supabase projesi: `uzay-oyunlar` (Frankfurt, ref `cuihsjlhhbmwnzhldqvp`). Adres ve yayınlanabilir anahtar `hesap/hesap.js` içinde; bu anahtar tarayıcıya açık olabilir, güvenliği satır kuralları (RLS) sağlar.
-- Hesaplar velilere ait (e-posta + şifre). Çocukların e-postası yok; her hesabın altında oyuncular (`profiles`: ad, renk) var. Cihaz bir kere giriş yapar, oyuncu "Kim oynuyor?" ekranından seçilir ve tarayıcıda hatırlanır.
-- Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `admins` (tüm ailelerin oynama kaydını görebilen e-postalar; şu an umutguncan@gmail.com).
-- Kurallar: her aile sadece kendi oyuncularını, kayıtlarını ve oynama geçmişini görür ve yazar. `admins` listesindekiler bütün ailelerin oyuncularını ve oynama kayıtlarını okuyabilir (kayıtları değil). Kural yardımcıları `private` şemasında.
-- Yeni kayıt kapalı tutulur. Yeni aile: Supabase panelinde Authentication → Users → Add user → Create new user (e-posta + şifre, otomatik onaylı). Şifreyi veliye ilet; veli giriş sayfasından değiştirebilir.
+- Herkes kendi hesabını açabilir: sadece kullanıcı adı + şifre, e-posta yok. Supabase e-posta istediği için kullanıcı adı arka planda `<ad>@oyuncu.bringthepoint.com` adresine çevrilir (`hesap.js` → `KULLANICI_ALANI`, `epostaya()`). Bu adrese hiç e-posta gitmez; bu alanı asla değiştirme, yoksa mevcut hesaplar açılmaz. Kullanıcı adı küçük harfe ve Türkçe karaktersiz hale çevrilir: "Uzay" ile "uzay" aynı hesaptır.
+- Supabase ayarları: yeni kayıt açık, "Confirm email" kapalı. "Confirm email" açılırsa kayıt bozulur (onay e-postası gönderilemez).
+- Giriş alanına gerçek bir e-posta da yazılabilir (içinde @ varsa olduğu gibi kullanılır). Yönetici hesabı umutguncan@gmail.com bu yolla açılır.
+- Bir hesabın altında birden fazla oyuncu (`profiles`: ad, renk) olabilir. Hesap açılınca ilk oyuncu kullanıcı adıyla kendiliğinden oluşur. Tek oyunculu hesaplar oyuncu seçmeden doğrudan oyuna döner; "Değiştir" bağlantısı (`?degistir=1`) her zaman "Kim oynuyor?" ekranını açar.
+- Şifre unutulursa e-postayla sıfırlanamaz. SQL ile sıfırlanır:
+  `update auth.users set encrypted_password = extensions.crypt('yeni-sifre', extensions.gen_salt('bf')) where email = '<ad>@oyuncu.bringthepoint.com';`
+- Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `admins` (herkesin oynama kaydını görebilen e-postalar; şu an umutguncan@gmail.com).
+- Kurallar: her hesap sadece kendi oyuncularını, kayıtlarını ve oynama geçmişini görür ve yazar. `admins` listesindekiler bütün hesapların oyuncularını ve oynama kayıtlarını okuyabilir (kayıtları değil). Kural yardımcıları `private` şemasında.
 - Oyunlardan kullanım (`hesap/hesap.js` başındaki açıklamaya bak):
   - `Hesap.hazir` giriş kapısı geçilince çözülür, `Hesap.profil` seçili oyuncu.
   - `Hesap.yukle()` / `Hesap.kaydet(veri)` bu oyunun kaydı. Kaydı seviye ya da ders sonu gibi anlarda yaz, her karede değil.

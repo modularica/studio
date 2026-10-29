@@ -33,6 +33,9 @@
 .onay{margin:6px 0 0;padding:12px 14px;border-radius:8px;border:1.5px solid var(--danger);color:var(--text);font-weight:600}
 .alt{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:36px;align-items:center}
 .kim{margin:14px 0 0;color:var(--muted);font-size:14px}
+.ipucu{margin:-2px 0 6px;color:var(--muted);font-size:14px;line-height:1.4}
+.gecis{margin:22px 0 0;font-size:16px}
+.gecis .link{font-size:16px}
 </style>
 </head>
 <body>
@@ -44,15 +47,35 @@
   <!-- Sign in -->
   <section id="girisBolum" hidden>
     <h1>Giriş <span class="u">yap</span></h1>
-    <p class="lede">Bu oyunları arkadaşlarımızla oynuyoruz. Hesapları babam açıyor; hesabın yoksa ona yaz!</p>
+    <p class="lede">Kullanıcı adınla ve şifrenle gir. Hesabın yoksa hemen aç, e-posta gerekmiyor!</p>
     <form class="kart tape form giris" id="girisForm" novalidate>
-      <label for="eposta">E-posta</label>
-      <input id="eposta" type="email" inputmode="email" autocomplete="username" required>
+      <label for="kAdi">Kullanıcı adı</label>
+      <input id="kAdi" autocomplete="username" autocapitalize="none" spellcheck="false" required>
       <label for="sifre">Şifre</label>
       <input id="sifre" type="password" autocomplete="current-password" required>
       <p class="hata" id="girisHata" role="alert"></p>
       <div class="row"><button class="btn" type="submit" id="girisBtn">Giriş yap</button></div>
     </form>
+    <p class="gecis">Hesabın yok mu? <button class="link" type="button" id="kayitaGec">Hesap aç</button></p>
+  </section>
+
+  <!-- Sign up -->
+  <section id="kayitBolum" hidden>
+    <h1>Hesap <span class="u">aç</span></h1>
+    <p class="lede">Bir kullanıcı adı ve şifre seç, hepsi bu. E-posta gerekmiyor.</p>
+    <form class="kart tape form giris" id="kayitForm" novalidate>
+      <label for="yAdi">Kullanıcı adı</label>
+      <input id="yAdi" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="yAdiIpucu" required>
+      <p class="ipucu" id="yAdiIpucu">3–20 karakter. Oyunlarda bu ad görünür. Soyadını yazma, takma ad da olur.</p>
+      <label for="ySifre">Şifre</label>
+      <input id="ySifre" type="password" autocomplete="new-password" minlength="6" aria-describedby="ySifreIpucu" required>
+      <p class="ipucu" id="ySifreIpucu">En az 6 karakter. Unutursan babama yaz.</p>
+      <label for="ySifre2">Şifre (tekrar)</label>
+      <input id="ySifre2" type="password" autocomplete="new-password" minlength="6" required>
+      <p class="hata" id="kayitHata" role="alert"></p>
+      <div class="row"><button class="btn" type="submit" id="kayitBtn">Hesabımı aç</button></div>
+    </form>
+    <p class="gecis">Hesabın var mı? <button class="link" type="button" id="giriseGec">Giriş yap</button></p>
   </section>
 
   <!-- Who's playing -->
@@ -116,49 +139,102 @@
   const sb = H.istemci;
   const RENKLER = ['#f27a32', '#2343c4', '#e0564f', '#2f9e6e', '#8e5bd8', '#e0569b', '#1e9bb0', '#b9800c'];
 
-  const q = new URLSearchParams(location.search).get('geri');
+  const params = new URLSearchParams(location.search);
+  const q = params.get('geri');
   const geri = q && q.startsWith('/') && !q.startsWith('//') && !q.startsWith('/giris') ? q : '/';
+  const degistir = params.has('degistir');
 
   let kullanici = null, oyuncular = [], duzenle = false, duzenlenen = null, secilenRenk = RENKLER[0];
 
   H.hazir.then(({ kullanici: k }) => {
     $('yukleniyor').hidden = true;
-    if (k) { kullanici = k; secimGoster(); } else girisGoster();
+    // Sent here by a game's sign-in gate: with a single player, go straight back.
+    if (k) { kullanici = k; secimGoster({ otomatik: !degistir }); } else girisGoster();
   });
+
+  function bolum(ad) {
+    for (const b of ['girisBolum', 'kayitBolum', 'secBolum']) $(b).hidden = b !== ad;
+  }
 
   /* ---------- sign in ---------- */
   function girisGoster() {
-    $('secBolum').hidden = true;
-    $('girisBolum').hidden = false;
-    $('eposta').focus({ preventScroll: true });
+    bolum('girisBolum');
+    $('kAdi').focus({ preventScroll: true });
   }
+  function kayitGoster() {
+    bolum('kayitBolum');
+    $('kayitHata').textContent = '';
+    $('yAdi').focus({ preventScroll: true });
+  }
+  $('kayitaGec').addEventListener('click', kayitGoster);
+  $('giriseGec').addEventListener('click', girisGoster);
+
   $('girisForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const email = $('eposta').value.trim(), password = $('sifre').value;
-    if (!email || !password) { $('girisHata').textContent = 'E-postanı ve şifreni yaz.'; return; }
+    const ad = $('kAdi').value.trim(), password = $('sifre').value;
+    if (!ad || !password) { $('girisHata').textContent = 'Kullanıcı adını ve şifreni yaz.'; return; }
     $('girisBtn').disabled = true; $('girisHata').textContent = '';
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    const { data, error } = await sb.auth.signInWithPassword({ email: H.epostaya(ad), password });
     $('girisBtn').disabled = false;
     if (error) {
       $('girisHata').textContent = /invalid/i.test(error.message)
-        ? 'E-posta ya da şifre yanlış. Tekrar dene.'
+        ? 'Kullanıcı adı ya da şifre yanlış. Tekrar dene.'
         : 'Giriş yapılamadı. İnternet bağlantını kontrol edip tekrar dene.';
       return;
     }
     kullanici = data.user;
     $('sifre').value = '';
-    secimGoster();
+    secimGoster({ otomatik: true });
+  });
+
+  /* ---------- sign up ---------- */
+  $('kayitForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const ad = $('yAdi').value.trim().replace(/\s+/g, ' '), a = $('ySifre').value, b = $('ySifre2').value;
+    const adHata = ad.includes('@') ? '' : H.kullaniciAdiHatasi(ad);
+    const hata = adHata || (a.length < 6 ? 'Şifre en az 6 karakter olmalı.' : a !== b ? 'İki şifre aynı değil.' : '');
+    if (hata) { $('kayitHata').textContent = hata; return; }
+    $('kayitBtn').disabled = true; $('kayitHata').textContent = '';
+    const { data, error } = await sb.auth.signUp({ email: H.epostaya(ad), password: a, options: { data: { kullanici_adi: ad } } });
+    $('kayitBtn').disabled = false;
+    if (error) {
+      const m = error.message || '';
+      $('kayitHata').textContent =
+        /already|registered|exists/i.test(m) ? 'Bu kullanıcı adı alınmış. Başka bir tane dene.' :
+        /password/i.test(m) ? 'Bu şifre kabul edilmedi. Daha uzun bir şifre dene.' :
+        /rate|too many/i.test(m) ? 'Çok fazla deneme oldu. Biraz bekleyip tekrar dene.' :
+        'Hesap açılamadı. Biraz sonra tekrar dene.';
+      return;
+    }
+    if (!data.session) {
+      // "Confirm email" is still on in Supabase: the account waits for an e-mail that never comes.
+      $('kayitHata').textContent = 'Hesap açıldı ama giriş yapılamadı. Babama haber ver, bir ayarı düzeltmesi gerekiyor.';
+      return;
+    }
+    kullanici = data.user;
+    $('ySifre').value = ''; $('ySifre2').value = '';
+    // First player of the account carries the username.
+    const r = await sb.from('profiles').insert({ name: ad.includes('@') ? ad.slice(0, ad.indexOf('@')).slice(0, 20) : ad, color: RENKLER[Math.floor(Math.random() * RENKLER.length)] })
+      .select('id,name,color,owner_id').single();
+    if (r.error) { secimGoster({ otomatik: false }); return; }
+    sec(r.data);
   });
 
   /* ---------- who's playing ---------- */
-  async function secimGoster() {
-    $('girisBolum').hidden = true;
-    $('secBolum').hidden = false;
-    $('kim').textContent = `Giriş yapan: ${kullanici.email}`;
-    // Admins can read every family's players; this screen only lists the signed-in family.
+  async function secimGoster({ otomatik }) {
+    bolum('secBolum');
+    $('kim').textContent = `Giriş yapan: ${H.gorunenAd(kullanici)}`;
+    // Admins can read every family's players; this screen only lists the signed-in account.
     const { data, error } = await sb.from('profiles').select('id,name,color,owner_id').eq('owner_id', kullanici.id).order('created_at');
     if (error) { $('secLede').textContent = 'Oyuncular yüklenemedi. Sayfayı yenile.'; return; }
     oyuncular = data;
+    if (otomatik && oyuncular.length === 1) { sec(oyuncular[0]); return; }
+    if (otomatik && !oyuncular.length) {
+      // Account without a player yet (e.g. made in the Supabase dashboard): make one from its name.
+      const ad = (H.gorunenAd(kullanici) || 'Oyuncu').slice(0, 20);
+      const r = await sb.from('profiles').insert({ name: ad, color: RENKLER[0] }).select('id,name,color,owner_id').single();
+      if (!r.error) { sec(r.data); return; }
+    }
     ciz();
     if (!oyuncular.length) formAc(null);
   }
