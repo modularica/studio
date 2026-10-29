@@ -1,0 +1,2562 @@
+<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="description" content="Karakterleri sahneye diz, her biri kendi ritmini çalsın. Şarkını puanlat, yeni şarkıcıların kilidini aç.">
+<meta name="theme-color" content="#150f2a">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SONGbox">
+<meta property="og:description" content="Karakterleri sahneye diz, her biri kendi ritmini çalsın. Şarkını puanlat, yeni şarkıcıların kilidini aç.">
+<meta property="og:image" content="cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+</head><body>
+<title>SONGbox</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: controls on top, eight-silhouette stage + 16-step bar, character shelf, saved songs. Rating opens a verdict card. */
+:root{
+  --bg:#150f2a;--panel:#221b3e;--ink:#f6f1ff;--muted:#a79cc9;--accent:#ffd166;--hot:#f783ac;--gold:#fcc419;--legend:#da77f2;
+  --line:#3a2f5e;--line2:#5a4c8c;--stage-top:#2f2660;--stage-bot:#1f1844;--sil:#3b3170;--sil-hot:#5d4fa8;--on-face:#1c1233;
+  --display:Fredoka,"Trebuchet MS",system-ui,sans-serif;
+  --body:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font:500 15px/1.5 var(--body);
+  padding-block:20px 32px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+h1{font:600 clamp(28px,6vw,40px)/1.05 var(--display);margin:0;letter-spacing:.01em;text-wrap:balance}
+h2{font:600 18px var(--display);margin:0}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.transport{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:700 15px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:#2a1a05;border-color:var(--accent);min-width:110px}
+.btn.rate{--p:0%;min-width:156px;border-color:var(--hot);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--hot) 55%,var(--panel)) var(--p),var(--panel) var(--p))}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.bpm{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:700}
+.bpm input{accent-color:var(--accent);width:110px}
+.bpm output{color:var(--ink);min-width:3ch;font-variant-numeric:tabular-nums}
+
+/* ---------- Stage ---------- */
+#stage{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 6px;
+  background:
+    radial-gradient(120% 60% at 50% 0%,rgba(255,209,102,.08),transparent 70%),
+    linear-gradient(180deg,var(--stage-top),var(--stage-bot));
+  border:1px solid var(--line);border-radius:24px;padding:18px 8px 12px;
+  transition:outline-color .15s;outline:2px dashed transparent;outline-offset:6px;
+}
+#stage.over{outline-color:var(--accent)}
+
+/* ---------- Scenes behind the stage ---------- */
+#stage{position:relative;overflow:hidden;isolation:isolate;--hz:44%}
+@media (max-width:759px){#stage{--hz:17%}}
+.slot{z-index:1}
+.scene{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.scene .sky,.scene .ground{position:absolute;left:0;right:0}
+.scene .sky{top:0;height:var(--hz)}
+.scene .ground{top:var(--hz);bottom:0}
+.scene .horizon{position:absolute;left:0;bottom:calc(100% - var(--hz));width:100%;height:clamp(56px,12vw,120px);display:block}
+.deco{position:absolute;display:block;height:auto}
+.sun{right:7%;top:12%;width:clamp(34px,7vw,70px)}
+.sun.low{left:6%;right:auto;top:auto;bottom:-22%}
+.cloud{width:clamp(60px,12vw,130px);animation:drift 14s ease-in-out infinite alternate}
+.cloud.c1{left:6%;top:12%}
+.cloud.c2{left:42%;top:2%;width:clamp(44px,9vw,96px);animation-duration:18s;animation-direction:alternate-reverse}
+@keyframes drift{to{transform:translateX(40px)}}
+.birds{left:24%;top:18%;width:clamp(40px,7vw,80px)}
+.birds.gulls{left:auto;right:16%}
+.planet{left:5%;top:8%;width:clamp(60px,11vw,120px)}
+.moon{right:8%;top:10%;width:clamp(28px,6vw,60px)}
+.ball{left:50%;top:0;width:clamp(34px,6vw,64px);transform:translateX(-50%)}
+.ball .hl{animation:twinkle 1.4s ease-in-out infinite alternate}
+.beam{position:absolute;top:-2%;width:60%;height:190%;transform-origin:50% 0;animation:sweep 3.4s ease-in-out infinite alternate}
+.beam.l{left:-8%;background:conic-gradient(from 166deg at 50% 0,transparent,rgba(255,61,154,.38) 14deg,transparent 28deg)}
+.beam.r{right:-8%;background:conic-gradient(from 166deg at 50% 0,transparent,rgba(51,214,255,.34) 14deg,transparent 28deg);animation-delay:-1.7s}
+@keyframes sweep{from{transform:rotate(-28deg)}to{transform:rotate(28deg)}}
+.snowfall{position:absolute;inset:0;animation:snow 5s linear infinite;background:
+  radial-gradient(circle,#fff 0 2px,transparent 2.6px) 0 0/44px 44px,
+  radial-gradient(circle,rgba(255,255,255,.85) 0 1.4px,transparent 2px) 22px 9px/31px 31px}
+@keyframes snow{to{background-position:0 44px,22px 40px}}
+
+.scene[data-scene="meadow"] .sky{background:linear-gradient(#6fc0ff,#cdeeff)}
+.scene[data-scene="meadow"] .ground{background:
+  radial-gradient(circle,#fff 0 2px,transparent 2.5px) 0 0/52px 44px,
+  radial-gradient(circle,#ffd43b 0 2px,transparent 2.5px) 26px 22px/52px 44px,
+  repeating-linear-gradient(90deg,#66c262 0 48px,#5db659 48px 96px)}
+.scene[data-scene="park"] .sky{background:linear-gradient(#8ac6f5,#ffe3b3)}
+.scene[data-scene="park"] .ground{background:
+  linear-gradient(transparent 33%,#c9ad7e 33% 34%,#e9cf9f 34% 56%,#c9ad7e 56% 57%,transparent 57%),
+  repeating-linear-gradient(90deg,#57a854 0 40px,#50a04d 40px 80px)}
+.scene[data-scene="disco"] .sky{background:radial-gradient(ellipse at 50% 0,#5b21b6,#160a33 70%)}
+.scene[data-scene="disco"] .ground{--t1:#ff3d9a;--t2:#2a1060;background:
+  linear-gradient(rgba(22,10,51,.6),rgba(22,10,51,0) 70%),
+  conic-gradient(var(--t1) 25%,var(--t2) 0 50%,var(--t1) 0 75%,var(--t2) 0) 0 0/56px 56px}
+.scene[data-beat="1"] .ground{--t1:#2a1060;--t2:#33d6ff}
+.scene[data-beat="2"] .ground{--t1:#ffd43b;--t2:#2a1060}
+.scene[data-beat="3"] .ground{--t1:#2a1060;--t2:#9b5cff}
+.scene[data-scene="beach"] .sky{background:linear-gradient(#ff8f70,#ffc685 65%,#ffe3a8)}
+.scene[data-scene="beach"] .ground{background:linear-gradient(#2c9bd6 0 16%,#8fdcf2 16% 19%,#f3d9a4 19% 100%)}
+.scene[data-scene="space"] .sky{background:
+  radial-gradient(circle,#fff 0 1px,transparent 1.6px) 0 0/37px 41px,
+  radial-gradient(circle,rgba(255,255,255,.6) 0 1px,transparent 1.6px) 17px 23px/53px 47px,
+  linear-gradient(#05040f,#1b1440)}
+.scene[data-scene="space"] .ground{background:
+  radial-gradient(ellipse 34px 10px at 18% 40%,#7c7e8c 0 60%,transparent 64%),
+  radial-gradient(ellipse 54px 14px at 72% 70%,#7c7e8c 0 60%,transparent 64%),
+  radial-gradient(ellipse 26px 8px at 46% 86%,#7c7e8c 0 60%,transparent 64%),
+  linear-gradient(#b5b7c4,#8b8d9a)}
+.scene[data-scene="snow"] .sky{background:linear-gradient(#9fc1e6,#e9f2fc)}
+.scene[data-scene="snow"] .ground{background:radial-gradient(ellipse 60% 30% at 30% 60%,#e3edf9,transparent),linear-gradient(#fbfdff,#dbe7f5)}
+.scene[data-scene="city"] .sky{background:
+  radial-gradient(circle,rgba(255,255,255,.7) 0 1px,transparent 1.6px) 0 0/61px 37px,
+  linear-gradient(#0d1238,#2a2466 75%,#6b3a86)}
+.scene[data-scene="city"] .ground{background:
+  linear-gradient(#5b5577 0 8px,#2b2740 8px 11px,transparent 11px),
+  repeating-linear-gradient(90deg,#3b3652 0 64px,#35314b 64px 66px)}
+
+/* Scene picker */
+.scenebar{display:flex;align-items:center;gap:10px;min-width:0}
+.scenebar .lbl{color:var(--muted);font-weight:700;flex:none}
+.scenes{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0;padding:3px}
+.scn{flex:none;display:inline-flex;align-items:center;gap:6px;font:700 14px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer}
+.scn:hover{border-color:var(--muted)}
+.scn .sw{width:22px;height:22px;border-radius:50%;background:linear-gradient(var(--s1) 50%,var(--s2) 50%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.scn[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
+@media (min-width:760px){#stage{grid-template-columns:repeat(8,minmax(0,1fr));padding:22px 12px 14px}}
+.slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.slot .glow{position:absolute;left:0;right:0;top:4%;height:62%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,var(--c),transparent);opacity:0;filter:blur(6px)}
+.slot.legend .glow{background:radial-gradient(closest-side,#ffd43b,var(--c) 55%,transparent)}
+.fig{appearance:none;border:0;background:none;padding:0;margin:0;width:100%;max-width:118px;display:block;position:relative;z-index:1;color:inherit}
+.slot.filled .fig{cursor:grab;touch-action:none}
+.fig svg{display:block;width:100%;height:auto;overflow:visible}
+.slot.legend .fig::before,.slot.legend .fig::after{content:"✦";position:absolute;font-size:16px;line-height:1;pointer-events:none;
+  color:#ffd43b;animation:twinkle 1.1s ease-in-out infinite alternate}
+.slot.legend .fig::before{left:4%;top:6%}
+.slot.legend .fig::after{right:2%;top:22%;color:var(--hot);animation-delay:.55s}
+@keyframes twinkle{from{opacity:.15;transform:scale(.6)}to{opacity:1;transform:scale(1.15)}}
+/* Legendary singers: a turning rainbow aura and gold stars */
+.slot.mythic .glow{background:conic-gradient(#ff6b6b,#ffd43b,#69db7c,#4dabf7,#da77f2,#ff6b6b);filter:blur(14px);animation:whirl 3s linear infinite}
+@keyframes whirl{to{transform:rotate(360deg)}}
+.slot.mythic .fig::before,.slot.mythic .fig::after{content:"★";position:absolute;font-size:15px;line-height:1;pointer-events:none;animation:twinkle .9s ease-in-out infinite alternate}
+.slot.mythic .fig::before{left:2%;top:4%;color:#ffd43b}
+.slot.mythic .fig::after{right:0;top:18%;color:#fff3bf;animation-delay:.45s}
+.slot.lifting .fig{opacity:.25}
+.slot.muted .fig{opacity:.5}
+.slot.muted .zz{display:inline}
+.silg *{fill:var(--sil);transition:fill .15s}
+.slot.target .silg *{fill:var(--sil-hot)}
+.slot.target.filled .fig svg{filter:drop-shadow(0 0 6px var(--accent))}
+.plus{fill:var(--stage-top);font:600 30px var(--display)}
+.plate{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:80px;width:100%;max-width:112px;
+  background:rgba(21,15,42,.62);border-radius:12px;padding:5px 3px 3px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.plate .nm{appearance:none;border:0;background:none;color:var(--ink);font:600 15px/1.2 var(--display);padding:1px 4px;border-radius:6px;cursor:pointer;
+  max-width:100%;min-width:0;display:flex;align-items:center;gap:3px}
+.plate .nm:hover{background:rgba(255,255,255,.1)}
+.plate .nm .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.plate .nm .pen{flex:none;font-size:11px;color:var(--muted)}
+.nm-edit{width:100%;max-width:104px;font:600 14px/1.2 var(--display);text-align:center;background:var(--bg);color:var(--ink);border:1px solid var(--accent);border-radius:6px;padding:1px 4px}
+.plate .empty{color:var(--muted);font-size:13px;opacity:.7}
+.rhs{display:flex;gap:3px}
+.rh{width:24px;height:24px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--muted);font:800 11px var(--body);padding:0;cursor:pointer}
+.rh.cur{background:var(--ui,var(--c));border-color:var(--ui,var(--c));color:var(--on-face)}
+.volrow{display:flex;align-items:center;gap:3px;width:100%;max-width:100px;padding:0 2px}
+.volrow svg{flex:none;width:13px;height:13px}
+.volrow svg path:first-child{fill:var(--muted)}
+.volrow svg path:last-child{stroke:var(--muted)}
+.vol{flex:1;min-width:0;margin:0;height:22px;accent-color:var(--ui,var(--c));cursor:pointer}
+
+/* 16-step bar, 4 beats */
+.steps{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:4px;padding:0 4px}
+.steps span{height:8px;border-radius:4px;background:var(--line)}
+.steps span:nth-child(4n+1){background:var(--line2)}
+.steps span.cur{background:var(--accent)}
+.steps.rating span.cur{background:var(--hot)}
+
+/* ---------- Character drawings (shared by stage, shelf, drag ghost, reward) ---------- */
+.slot,.icon,.ghost,.reward-fig,.look,.mprev{--skin:var(--c);--leg:var(--c)}
+@supports (color:color-mix(in srgb,red,blue)){
+  .slot,.icon,.ghost,.reward-fig,.look,.mprev{--skin:color-mix(in srgb,var(--c) 40%,#fff4ea);--leg:color-mix(in srgb,var(--c) 55%,#1c1233)}
+}
+.skin,.arm{fill:var(--skin)}
+.torso{fill:var(--c)}
+.leg{fill:var(--leg)}
+.shoe{fill:#f6f1ff}
+.eye,.mouth{fill:var(--on-face)}
+.cheek{fill:#ff6b8a;opacity:.35}
+.shadow{fill:#000;opacity:.35}
+.acc{fill:var(--a)}
+.acc2{fill:var(--a2)}
+.accs{fill:none;stroke:var(--a);stroke-linecap:round}
+.visor{fill:#3bc9db;opacity:.72}
+.glass{fill:#a5d8ff;fill-opacity:.18;stroke:var(--a);stroke-width:3}
+.shine{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;opacity:.6}
+.prop{transform-box:fill-box;transform-origin:center;animation:spin .35s linear infinite}
+@keyframes spin{50%{transform:scaleX(.15)}}
+.zz{display:none;fill:var(--ink);font:700 18px var(--display)}
+
+/* ---------- Character shelf ---------- */
+.band{display:flex;flex-direction:column;gap:12px}
+.bandhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+#count{color:var(--muted);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+#bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}
+.icon{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:8px 2px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink);cursor:grab;touch-action:none;min-width:0;
+  transition:opacity .2s,border-color .2s}
+.icon:hover{border-color:var(--c)}
+.icon.legend{border-color:var(--legend)}
+.icon.mythic,.icon.locked.legendary{border:1px solid transparent;
+  background:linear-gradient(var(--panel),var(--panel)) padding-box,linear-gradient(135deg,#ff6b6b,#ffd43b,#69db7c,#4dabf7,#da77f2) border-box}
+.icon.locked.legendary{--lk:#ffd43b;background:linear-gradient(var(--bg),var(--bg)) padding-box,linear-gradient(135deg,#ff6b6b,#ffd43b,#69db7c,#4dabf7,#da77f2) border-box}
+.icon.locked.legendary .role{background:linear-gradient(90deg,#ffd43b,#ff8fab,#b197fc);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.icon svg{width:100%;max-width:56px;height:auto;display:block;overflow:visible}
+.icon .nm{font:600 15px/1.1 var(--display);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.icon.custom{border-color:color-mix(in srgb,var(--c) 70%,transparent)}
+.icon.add{border-style:dashed;border-color:var(--accent);background:transparent;cursor:pointer;touch-action:auto}
+.icon.add .nm{color:var(--accent)}
+.addc{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:6 5}
+.addp{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round}
+.icon .role{font-size:12px;color:var(--muted);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px;min-width:0}
+.flt{flex:none;font:700 13px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.flt:hover{border-color:var(--muted)}
+.flt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#2a1a05}
+.shelf-empty{grid-column:1/-1;margin:0;padding:14px;text-align:center;color:var(--muted)}
+.icon.locked.summary{border-style:dashed;border-color:var(--line2)}
+.icon.locked.summary .nm{color:var(--ink)}
+.opt.more{opacity:.55;cursor:default}
+.look.more{display:grid;place-items:center;text-align:center;font-size:12px;font-weight:800;color:var(--muted);border-style:dashed;cursor:default;line-height:1.3}
+.icon.used{opacity:.35}
+.icon.locked{cursor:pointer;border-style:dashed;touch-action:auto;background:transparent;--lk:var(--muted)}
+.icon.locked:hover{border-color:var(--line2)}
+.icon.locked .nm{color:var(--muted)}
+.icon.locked.great{--lk:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+.icon.locked.excellent{--lk:var(--legend);border-color:color-mix(in srgb,var(--legend) 55%,transparent)}
+.icon.locked .role{color:var(--lk)}
+.lockg{fill:var(--sil)}
+.lockp{fill:var(--lk)}
+.locks{fill:none;stroke:var(--lk);stroke-width:4}
+.msg{min-height:1.5em;margin:0;text-align:center;color:var(--accent);font-weight:700}
+.tip{color:var(--muted);font-size:14px;margin:0 auto;text-align:center;max-width:62ch;text-wrap:balance}
+
+.ghost{position:fixed;left:0;top:0;width:76px;margin:-40px 0 0 -38px;pointer-events:none;z-index:50}
+.ghost svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
+
+/* ---------- Verdict ---------- */
+.verdict{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(10,6,24,.75);overflow:hidden;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti span{position:absolute;top:-16px;width:8px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.vcard{position:relative;z-index:1;width:100%;max-width:390px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:24px;
+  padding:22px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.vlabel{margin:0;color:var(--muted);font-weight:700}
+.vword{font:600 60px/1 var(--display);margin:0;display:inline-block}
+.vword.bad{color:#ff8787}
+.vword.good{color:var(--accent)}
+.vword.great,.vword.excellent{background:linear-gradient(90deg,#ffd166,#ff8fab,#b197fc);-webkit-background-clip:text;background-clip:text;color:transparent;animation:wiggle .5s ease-in-out infinite alternate}
+.vword.excellent{font-size:clamp(34px,11vw,46px);background-image:linear-gradient(90deg,#ff6b6b,#ffd43b,#69db7c,#4dabf7,#da77f2);animation-duration:.35s}
+.vword.legendary{font-size:clamp(34px,11vw,46px);background:linear-gradient(90deg,#ffd43b,#fff3bf,#fcc419,#ff8fab,#da77f2,#ffd43b) 0 0/200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 12px rgba(255,212,59,.55));
+  animation:wiggle .3s ease-in-out infinite alternate,shimmer 1.6s linear infinite}
+@keyframes shimmer{to{background-position:200% 0}}
+@keyframes wiggle{from{transform:rotate(-3deg)}to{transform:rotate(3deg) scale(1.06)}}
+.ladder{list-style:none;margin:0;padding:0;width:100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.ladder li{background:var(--bg);border-radius:10px;padding:6px 1px;display:flex;flex-direction:column;color:var(--muted);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;min-width:0}
+.ladder li b{font:600 13px/1.2 var(--display);white-space:nowrap}
+@media (max-width:420px){.ladder li b{font-size:11.5px;letter-spacing:-.01em}}
+.ladder li[data-l="legendary"]{--lc:linear-gradient(135deg,#ffd43b,#ff8fab,#da77f2)}
+.ladder li.past{color:var(--ink);opacity:.6}
+.ladder li.on{background:var(--lc);color:var(--on-face)}
+.ladder li[data-l="bad"]{--lc:#ff8787}
+.ladder li[data-l="good"]{--lc:#ffd166}
+.ladder li[data-l="great"]{--lc:#f783ac}
+.ladder li[data-l="excellent"]{--lc:var(--legend)}
+.vscore{margin:0;font-weight:800;font-variant-numeric:tabular-nums}
+.checks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+.checks li{background:var(--bg);border-radius:10px;padding:6px 8px;font-weight:700;font-size:14px;color:var(--muted);text-align:left;display:flex;justify-content:space-between;gap:6px}
+.checks li em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--muted)}
+.checks li.ok{color:var(--ink)}
+.checks li.ok em{color:#69db7c}
+.reward{display:flex;flex-direction:column;align-items:center;gap:6px}
+.reward-fig{width:86px}
+.reward-fig svg{display:block;width:100%;height:auto;overflow:visible}
+.reward p{margin:0;font:600 20px/1.2 var(--display);text-wrap:balance}
+.vtip{margin:0;color:var(--muted);font-size:14px;text-wrap:balance}
+.vbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- Character maker ---------- */
+.maker{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(10,6,24,.75);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.mcard{width:100%;max-width:470px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:24px;
+  padding:20px 18px;display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.mcard h2{font-size:22px}
+.mtop{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:center}
+.mprev-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.mprev{width:96px}
+.mprev svg{display:block;width:100%;height:auto;overflow:visible}
+.mrole{margin:0;font-size:13px;font-weight:700;color:var(--muted)}
+.mfield{display:flex;flex-direction:column;gap:8px;min-width:0;align-items:flex-start}
+.mfield label,.mcard legend{color:var(--muted);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.07em;padding:0}
+#mName{font:600 20px var(--display);background:var(--bg);color:var(--ink);border:1px solid var(--line2);border-radius:12px;padding:8px 12px;width:100%;min-width:0}
+.mcard fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.msounds{display:flex;flex-direction:column;gap:8px}
+.mgroup{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mgroup .gl{flex:0 0 58px;font-size:12px;font-weight:700;color:var(--muted)}
+.opt{font:700 13px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#2a1a05}
+.opt:disabled{opacity:.45;cursor:not-allowed}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{width:30px;height:30px;border-radius:50%;border:0;padding:0;background:var(--sc);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+.looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.look{--lk:var(--muted);appearance:none;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;cursor:pointer}
+.look svg{display:block;width:100%;height:auto;overflow:visible}
+.look[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.look:disabled{cursor:not-allowed;opacity:.6}
+.mmsg{margin:0;min-height:1.2em;color:#ff8787;font-weight:700;font-size:14px}
+.btn.danger{border-color:#ff8787;color:#ff8787}
+
+/* ---------- Saved songs ---------- */
+.songs{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:18px}
+.save{display:flex;gap:8px;flex-wrap:wrap}
+.save input{flex:1 1 160px;min-width:0;font:600 15px var(--body);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+#saved{display:flex;flex-wrap:wrap;gap:8px}
+#saved:empty::before{content:"No saved songs yet.";color:var(--muted);font-size:14px}
+.chip{display:inline-flex;align-items:center;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 12px;font:700 14px var(--body)}
+.chip button{background:none;border:0;color:var(--ink);cursor:pointer;font:inherit;padding:3px 4px;border-radius:999px}
+.chip button.del{color:var(--muted);padding:3px 8px}
+
+@media (prefers-reduced-motion:reduce){
+  .icon,.silg *{transition:none}
+  .vword.great,.vword.excellent,.vword.legendary,.prop,.slot.legend .fig::before,.slot.legend .fig::after,
+  .slot.mythic .glow,.slot.mythic .fig::before,.slot.mythic .fig::after{animation:none}
+  .confetti{display:none}
+  .cloud,.beam,.snowfall,.ball .hl{animation:none}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>SONGbox</h1>
+    <div class="transport">
+      <button class="btn primary" id="play" type="button">▶ Play</button>
+      <label class="bpm" for="bpm">Tempo
+        <input id="bpm" type="range" min="70" max="160" value="100">
+        <output id="bpmv">100</output>
+      </label>
+      <button class="btn rate" id="rate" type="button">★ Rate my song</button>
+      <button class="btn" id="clear" type="button">Clear stage</button>
+    </div>
+  </header>
+
+  <div class="scenebar">
+    <span class="lbl" id="sceneLbl">Scene</span>
+    <div class="scenes" id="scenes" role="group" aria-labelledby="sceneLbl"></div>
+  </div>
+  <section id="stage" aria-label="Stage"></section>
+  <div class="steps" id="steps" aria-hidden="true"></div>
+
+  <section class="band" aria-label="Characters">
+    <div class="bandhead"><h2>Characters</h2><span id="count"></span></div>
+    <div class="filters" id="filters" role="group" aria-label="Show characters"></div>
+    <div id="bar"></div>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <p class="tip">Drag a character onto an empty silhouette, or just tap it. Tap a singer on stage to mute it, use A·B·C to switch its rhythm, slide its speaker bar to set its volume, and drag it off the stage to send it home. Tap a name on stage to rename it, or tap + New to make your own character. Hit ★ Rate my song to unlock new characters: Good, GREAT!!!, EXCELLENT!!! and LEGENDARY!!! (a perfect 100) each unlock better ones, plus more sounds and outfits for the characters you make. Each song wins only once: bring in at least 3 new singers to make a new song.</p>
+  </section>
+
+  <section class="songs">
+    <h2>Your songs</h2>
+    <div class="save">
+      <input id="songName" type="text" value="Song 1" maxlength="40" aria-label="Song name">
+      <button class="btn" id="save" type="button">Save</button>
+    </div>
+    <div id="saved"></div>
+  </section>
+</div>
+
+<div class="verdict" id="verdict" role="dialog" aria-modal="true" aria-labelledby="vWord" hidden>
+  <div class="confetti" id="confetti"></div>
+  <div class="vcard">
+    <p class="vlabel">Your song is…</p>
+    <h2 class="vword" id="vWord"></h2>
+    <ol class="ladder" id="ladder">
+      <li data-l="bad"><b>Bad</b>0+</li>
+      <li data-l="good"><b>Good</b>50+</li>
+      <li data-l="great"><b>Great</b>75+</li>
+      <li data-l="excellent"><b>Excellent</b>90+</li>
+      <li data-l="legendary"><b>Legendary</b>100</li>
+    </ol>
+    <p class="vscore"><span id="vScore">0</span> / 100</p>
+    <ul class="checks" id="vChecks"></ul>
+    <div class="reward" id="vReward"></div>
+    <p class="vtip" id="vTip"></p>
+    <div class="vbtns">
+      <button class="btn primary" id="vStage" type="button">Put on stage</button>
+      <button class="btn" id="vClose" type="button">Keep playing</button>
+    </div>
+  </div>
+</div>
+
+<div class="maker" id="maker" role="dialog" aria-modal="true" aria-labelledby="makerTitle" hidden>
+  <div class="mcard">
+    <h2 id="makerTitle">Make a character</h2>
+    <div class="mtop">
+      <div class="mprev-wrap"><div class="mprev" id="mPrev"></div><p class="mrole" id="mRole"></p></div>
+      <div class="mfield">
+        <label for="mName">Name</label>
+        <input id="mName" type="text" maxlength="12" placeholder="Give it a name" autocomplete="off">
+        <button class="btn" id="mHear" type="button">▶ Hear the sound</button>
+      </div>
+    </div>
+    <fieldset><legend>Sound</legend><div class="msounds" id="mSound"></div></fieldset>
+    <fieldset><legend>Color</legend><div class="swatches" id="mColor"></div></fieldset>
+    <fieldset><legend>Outfit</legend><div class="looks" id="mLook"></div></fieldset>
+    <p class="mmsg" id="mMsg" aria-live="polite"></p>
+    <div class="vbtns">
+      <button class="btn primary" id="mSave" type="button">Create</button>
+      <button class="btn" id="mCancel" type="button">Cancel</button>
+      <button class="btn danger" id="mDelete" type="button" hidden>Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="ghost" id="ghost" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const calm = matchMedia('(prefers-reduced-motion: reduce)');
+
+function star(cx, cy, R, r){
+  const p = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r : R;
+    p.push((cx + rad * Math.cos(a)).toFixed(1) + ',' + (cy + rad * Math.sin(a)).toFixed(1));
+  }
+  return p.join(' ');
+}
+/* A curved stripe around the head (used for the unicorn's rainbow mane) */
+function band(R, r, a1, a2, cx = 50, cy = 58){
+  const p = (rad, a) => { const t = a * Math.PI / 180; return (cx + rad * Math.cos(t)).toFixed(1) + ' ' + (cy + rad * Math.sin(t)).toFixed(1); };
+  return `M${p(R, a1)}A${R} ${R} 0 0 1 ${p(R, a2)}L${p(r, a2)}A${r} ${r} 0 0 0 ${p(r, a1)}Z`;
+}
+const PEARLS =[[32,91],[39,95],[46,97],[54,97],[61,95],[68,91]].map(([x, y]) => `<circle class="acc2" cx="${x}" cy="${y}" r="2.6"/>`).join('');
+
+/* ---------- Characters ----------
+   vars: three 16-step rhythms (A, B, C). Drums: value = hit type. Melodic: value = pentatonic degree + 1, 0 = rest.
+   cat: beat / bass / melody / vocals (used for rating). tier: locked until a Good, GREAT or EXCELLENT rating.
+   mx/mo: mouth width / how wide it opens. hat/chest/back: costume (viewBox 0 0 100 180, head centre 50,58). */
+const PENT = [0,3,5,7,10];
+const BASE = { bass:36, pluck:60, vox:48, lead:72, bell:84, wub:36, ooh:72, chord:60, arp:72, pop:72, strum:48, brass:36, diva:60, pad:48, growl:36, harp:60,
+  lala:60, slap:36, marimba:60, hum:48, kazoo:60, flute:72, sax:48, sub:36, echo:60, strings:48, phoenix:72, siren:72 };
+const CH = [
+  /* Starters */
+  {id:'bum', name:'Boom', role:'Kick', type:'kick', drum:true, cat:'beat', color:'#ff6b5b', a:'#ffd166', a2:'#f08c00', mx:8, mo:10,
+   hat:`<path class="acc" d="M20 48 Q20 20 50 20 Q80 20 80 48 Z"/><path class="acc2" d="M64 42 Q86 38 97 46 L97 49 L64 49 Z"/><circle class="acc2" cx="50" cy="21" r="3"/>`,
+   vars:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0],[1,0,0,1,0,0,1,0,0,0,1,0,1,0,0,0]]},
+  {id:'tak', name:'Tak', role:'Snare', type:'snare', drum:true, cat:'beat', color:'#ffa94d', a:'#e03131', a2:'#fff4e6', mx:6, mo:8,
+   hat:`<path class="acc" d="M21 42 Q50 30 79 42 L80 51 Q50 39 20 51 Z"/><path class="acc" d="M77 45 L94 36 L91 49 Z M77 48 L92 60 L83 62 Z"/><circle class="acc2" cx="34" cy="43" r="1.6"/><circle class="acc2" cx="50" cy="38.5" r="1.6"/><circle class="acc2" cx="66" cy="43" r="1.6"/>`,
+   vars:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,1]]},
+  {id:'tss', name:'Tss', role:'Hi-hat', type:'hat', drum:true, cat:'beat', color:'#ffe066', a:'#1c1233', a2:'#ff922b', mx:9, mo:5,
+   hat:`<path class="acc2" d="M22 46 Q24 20 50 22 Q74 20 79 42 Q66 31 50 35 Q33 31 22 46 Z"/><rect class="acc" x="26" y="50" width="22" height="14" rx="6"/><rect class="acc" x="52" y="50" width="22" height="14" rx="6"/><rect class="acc" x="46" y="54" width="8" height="3"/><path class="shine" d="M30 55 l6 -2 M56 55 l6 -2"/>`,
+   vars:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]},
+  {id:'dum', name:'Dum', role:'Bass', type:'bass', cat:'bass', color:'#69db7c', a:'#f76707', a2:'#fff4e6', mx:7, mo:9,
+   hat:`<path class="acc" d="M19 48 Q19 18 50 18 Q81 18 81 48 Z"/><rect class="acc2" x="17" y="42" width="66" height="10" rx="5"/><circle class="acc2" cx="50" cy="15" r="7"/>`,
+   vars:[[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[1,0,1,0,1,0,1,0,3,0,3,0,1,0,1,0],[1,0,0,0,1,0,0,2,1,0,0,0,1,0,0,0]]},
+  {id:'plk', name:'Plink', role:'Melody', type:'pluck', cat:'melody', color:'#4dd4c4', a:'#f06595', a2:'#f06595', mx:5, mo:7,
+   hat:`<path class="acc" d="M37 34 L33 12 L44 26 L46 3 L52 24 L58 5 L60 26 L68 11 L64 34 Q50 26 37 34 Z"/>`,
+   vars:[[0,0,3,0,0,4,0,0,5,0,0,4,0,0,3,0],[0,0,0,4,0,0,3,0,0,0,5,0,0,4,0,0],[5,0,4,0,3,0,0,2,0,0,3,0,4,0,0,0]]},
+  {id:'aaa', name:'Aaa', role:'Vocals', type:'vox', sustain:true, cat:'vocals', color:'#74c0fc', a:'#f6f1ff', a2:'#ff6b6b', mx:6, mo:9,
+   hat:`<path class="accs" d="M19 62 Q19 22 50 22 Q81 22 81 62" stroke-width="6"/><rect class="acc2" x="11" y="50" width="13" height="25" rx="6"/><rect class="acc2" x="76" y="50" width="13" height="25" rx="6"/>`,
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,5,0,0,0,3,0,0,0]]},
+  {id:'ding', name:'Ding', role:'Bells', type:'bell', cat:'melody', color:'#b197fc', a:'#f6f1ff', a2:'#7048e8', mx:5, mo:7,
+   hat:`<rect class="acc" x="23" y="29" width="54" height="7" rx="3"/><rect class="acc" x="33" y="2" width="34" height="30" rx="3"/><rect class="acc2" x="33" y="22" width="34" height="6"/>`,
+   chest:`<path class="acc2" d="M40 92 L50 98 L60 92 L60 104 L50 98 L40 104 Z"/>`,
+   vars:[[0,0,0,0,5,0,0,0,0,0,0,0,4,0,0,0],[0,0,0,0,3,0,0,0,0,0,0,0,2,0,0,1],[0,0,2,0,0,0,0,0,4,0,0,0,0,0,2,0]]},
+  {id:'vrr', name:'Vrrr', role:'Synth', type:'lead', cat:'melody', color:'#ff8fab', a:'#f6f1ff', a2:'#69db7c', mx:7, mo:8,
+   hat:`<path class="accs" d="M50 29 V11" stroke-width="3"/><circle class="acc2" cx="50" cy="8" r="5"/><rect class="visor" x="23" y="49" width="54" height="16" rx="8"/>`,
+   chest:`<rect class="acc" x="39" y="100" width="22" height="14" rx="3" opacity=".9"/><circle class="acc2" cx="45" cy="107" r="2.4"/><circle cx="55" cy="107" r="2.4" fill="#ff6b6b"/>`,
+   vars:[[0,0,2,0,3,0,0,0,2,0,0,0,5,0,4,0],[4,0,0,0,3,0,5,0,4,0,3,0,2,0,0,0],[0,2,0,0,0,3,0,4,0,0,5,0,0,0,4,0]]},
+
+  {id:'bongo', name:'Bongo', role:'Bongos', type:'bongo', drum:true, cat:'beat', color:'#f76707', a:'#ff6b6b', a2:'#ffd43b', mx:7, mo:9,
+   hat:`<path d="M24 46 Q26 24 50 23 Q64 23 70 30 Q54 28 42 34 Q30 38 24 46 Z" fill="#5c3d2e"/>${[0,72,144,216,288].map(a => `<circle class="acc" cx="${(71 + 7 * Math.cos(a * Math.PI / 180)).toFixed(1)}" cy="${(33 + 7 * Math.sin(a * Math.PI / 180)).toFixed(1)}" r="6"/>`).join('')}<circle class="acc2" cx="71" cy="33" r="4"/>`,
+   chest:[[30,92],[36,97],[43,100],[50,101],[57,100],[64,97],[70,92]].map(([x, y], i) => `<circle class="${i % 2 ? 'acc2' : 'acc'}" cx="${x}" cy="${y}" r="4"/>`).join(''),
+   vars:[[1,0,0,1,0,0,2,0,1,0,0,1,0,0,2,0],[1,0,1,0,2,0,0,1,0,1,2,0,2,0,1,0],[3,0,1,1,2,0,1,0,3,0,1,1,2,0,2,2]]},
+  {id:'mimi', name:'Mimi', role:'La la', type:'lala', sustain:true, cat:'vocals', color:'#ffa8a8', a:'#7c4a2d', a2:'#f06595', mx:5, mo:9,
+   hat:`<ellipse class="acc" cx="15" cy="64" rx="8" ry="16"/><ellipse class="acc" cx="85" cy="64" rx="8" ry="16"/><path class="acc" d="M22 52 Q18 24 50 23 Q82 24 78 52 Q74 38 62 36 Q56 30 50 35 Q44 30 38 36 Q26 38 22 52 Z"/><path class="acc2" d="M12 42 L20 47 L12 52 Z M28 42 L20 47 L28 52 Z"/><circle class="acc2" cx="20" cy="47" r="2.6"/><path class="acc2" d="M72 42 L80 47 L72 52 Z M88 42 L80 47 L88 52 Z"/><circle class="acc2" cx="80" cy="47" r="2.6"/>`,
+   vars:[[1,0,0,3,0,0,5,0,0,0,3,0,0,0,0,0],[5,0,5,0,3,0,0,0,4,0,4,0,2,0,0,0],[1,0,3,0,5,0,6,0,5,0,3,0,1,0,0,0]]},
+  {id:'bop', name:'Bop', role:'Slap bass', type:'slap', cat:'bass', color:'#9c36b5', a:'#e03131', a2:'#3b2a1e', mx:7, mo:8,
+   hat:`<ellipse class="acc" cx="46" cy="31" rx="28" ry="10" transform="rotate(-8 46 31)"/><circle class="acc" cx="43" cy="21" r="3"/><path class="acc2" d="M50 71 Q42 64 33 70 Q40 75 50 72 Q60 75 67 70 Q58 64 50 71 Z"/>`,
+   vars:[[1,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0],[1,0,1,0,0,1,0,1,3,0,0,3,0,1,0,0],[1,1,0,6,0,1,0,0,1,0,6,0,4,0,3,0]]},
+  {id:'miu', name:'Miu', role:'Marimba', type:'marimba', cat:'melody', color:'#99e9f2', a:'#ff8787', a2:'#1c1233', mx:5, mo:7,
+   hat:`<path class="skin" d="M23 44 L25 17 L45 32 Z"/><path class="skin" d="M77 44 L75 17 L55 32 Z"/><path class="acc" d="M28 37 L29 24 L39 32 Z"/><path class="acc" d="M72 37 L71 24 L61 32 Z"/><path class="acc" d="M47.5 66.5 L52.5 66.5 L50 69.5 Z"/><path d="M21 67 L33 69.5 M21 74 L33 72.5 M79 67 L67 69.5 M79 74 L67 72.5" stroke="#1c1233" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>`,
+   vars:[[1,0,3,0,5,0,3,0,1,0,3,0,5,0,6,0],[0,0,5,3,0,0,5,3,0,0,4,2,0,0,4,2],[6,5,3,1,0,0,3,0,5,4,2,0,0,0,1,0]]},
+
+  /* Good unlocks */
+  {id:'snap', name:'Snap', role:'Claps', type:'clap', drum:true, cat:'beat', tier:'good', color:'#a9e34b', a:'#e8590c', a2:'#fff4e6', mx:6, mo:8,
+   hat:`<g class="acc"><circle cx="30" cy="38" r="12"/><circle cx="42" cy="28" r="13"/><circle cx="58" cy="28" r="13"/><circle cx="70" cy="38" r="12"/><circle cx="50" cy="21" r="11"/><circle cx="22" cy="50" r="8"/><circle cx="78" cy="50" r="8"/></g>`,
+   vars:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0]]},
+  {id:'wub', name:'Wub', role:'Wobble', type:'wub', sustain:true, cat:'bass', tier:'good', color:'#5c7cfa', a:'#ffd43b', a2:'#66d9e8', mx:8, mo:9,
+   hat:`<rect class="acc" x="19" y="34" width="62" height="7" rx="3"/><circle class="acc" cx="39" cy="37" r="10"/><circle class="acc" cx="61" cy="37" r="10"/><circle class="acc2" cx="39" cy="37" r="6.5"/><circle class="acc2" cx="61" cy="37" r="6.5"/><path class="shine" d="M36 34 l3 -1 M58 34 l3 -1"/>`,
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,0,0,0,1,0,0,0,0,0,3,0,0,0],[1,0,0,0,1,0,0,0,2,0,0,0,4,0,0,0]]},
+  {id:'ooh', name:'Ooh', role:'Choir', type:'ooh', sustain:true, cat:'vocals', tier:'good', color:'#e599f7', a:'#ffd43b', a2:'#ffd43b', mx:4, mo:7,
+   hat:`<ellipse class="accs" cx="50" cy="16" rx="20" ry="6" stroke-width="4"/>`,
+   vars:[[3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[5,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,3,0,0,0,5,0,4,0]]},
+  {id:'shaka', name:'Shaka', role:'Shaker', type:'shaker', drum:true, cat:'beat', tier:'good', color:'#ffc078', a:'#f5d48a', a2:'#e8590c', mx:6, mo:7,
+   hat:`<ellipse class="acc" cx="50" cy="37" rx="40" ry="8"/><path class="acc" d="M32 38 Q32 14 50 14 Q68 14 68 38 Z"/><rect class="acc2" x="32" y="29" width="36" height="6"/>`,
+   chest:`<rect class="acc2" x="22" y="112" width="56" height="6" opacity=".85"/><rect class="acc" x="22" y="121" width="56" height="4" opacity=".85"/>`,
+   vars:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],[1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,0]]},
+  {id:'pop', name:'Pop', role:'Bubbles', type:'pop', cat:'melody', tier:'good', color:'#63e6be', a:'#fa5252', a2:'#ffd43b', mx:5, mo:8,
+   hat:`<path class="acc" d="M22 46 Q22 22 50 22 Q78 22 78 46 Z"/><path class="acc2" d="M22 46 Q24 25 50 22 L50 46 Z" opacity=".9"/><path class="accs" d="M50 22 V12" stroke-width="3"/><g class="prop"><ellipse class="acc2" cx="40" cy="11" rx="10" ry="3"/><ellipse class="acc2" cx="60" cy="11" rx="10" ry="3"/></g>`,
+   vars:[[1,0,0,3,0,0,5,0,0,3,0,0,1,0,6,0],[0,0,5,0,6,0,0,0,0,0,5,0,3,0,0,0],[8,0,6,0,5,0,3,0,5,0,6,0,8,0,0,0]]},
+
+  {id:'wikka', name:'Wikka', role:'Scratch', type:'scratch', drum:true, cat:'beat', tier:'good', color:'#1098ad', a:'#ffd43b', a2:'#1c1233', mx:8, mo:8,
+   hat:`<path class="acc" d="M29 42 Q29 17 50 17 Q71 17 71 42 Z"/><rect class="acc2" x="29" y="35" width="42" height="4"/><path class="acc" d="M15 47 Q50 34 85 47 L81 53 Q50 42 19 53 Z"/>`,
+   chest:`<path d="M36 91 Q50 108 64 91" fill="none" stroke="#fcc419" stroke-width="3"/><circle cx="50" cy="103" r="4.5" fill="#fcc419"/>`,
+   vars:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,1,0,0,2,0,0,0,1,0,2,0,0,0],[1,0,1,0,2,0,0,1,0,1,0,0,2,0,1,1]]},
+  {id:'hummy', name:'Hummy', role:'Hum', type:'hum', sustain:true, cat:'vocals', tier:'good', color:'#ffc9c9', a:'#f8f9fa', a2:'#748ffc', mx:6, mo:2,
+   hat:`<path d="M19 60 Q19 21 50 21 Q81 21 81 60" fill="none" stroke="#748ffc" stroke-width="4" stroke-linecap="round"/><circle class="acc" cx="17" cy="61" r="11"/><circle class="acc" cx="83" cy="61" r="11"/><circle class="acc" cx="13" cy="54" r="5"/><circle class="acc" cx="87" cy="54" r="5"/><circle class="acc" cx="12" cy="67" r="5"/><circle class="acc" cx="88" cy="67" r="5"/>`,
+   vars:[[1,0,0,0,0,0,0,0,3,0,0,0,2,0,0,0],[5,0,0,0,4,0,0,0,3,0,0,0,1,0,0,0],[1,0,3,0,1,0,3,0,4,0,3,0,1,0,0,0]]},
+  {id:'buzz', name:'Buzz', role:'Kazoo', type:'kazoo', sustain:true, cat:'melody', tier:'good', color:'#82c91e', a:'#4dabf7', a2:'#ffd43b', mx:6, mo:8,
+   hat:`<path class="acc" d="M33 34 L53 -2 L68 31 Z"/><path class="acc2" d="M40 22 L61 16 L63 22 L38 28 Z"/><path class="acc2" d="M46 11 L57 8 L58.5 12 L44.5 15.5 Z"/><circle class="acc2" cx="53" cy="-3" r="5"/><path d="M26 30 l3 -3 M76 22 l3 2 M22 40 l-3 1" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>`,
+   vars:[[1,0,0,1,0,0,3,0,0,0,4,0,3,0,0,0],[5,0,4,0,3,0,1,0,3,0,0,0,1,0,0,0],[1,1,3,0,1,1,4,0,3,3,5,0,4,0,3,0]]},
+
+  /* GREAT unlocks */
+  {id:'maestro', name:'Maestro', role:'Chords', type:'chord', cat:'melody', tier:'great', color:'#7950f2', a:'#fcc419', a2:'#e03131', mx:7, mo:8,
+   hat:`<path class="acc" d="M26 36 L25 13 L37 25 L50 7 L63 25 L75 13 L74 36 Z"/><circle class="acc2" cx="50" cy="27" r="3.5"/><circle class="acc2" cx="34" cy="31" r="2.5"/><circle class="acc2" cx="66" cy="31" r="2.5"/>`,
+   back:`<path class="acc2" d="M26 92 L10 162 Q50 152 90 162 L74 92 Z"/>`,
+   chest:`<circle class="acc" cx="50" cy="104" r="6"/>`,
+   vars:[[0,0,1,0,0,0,1,0,0,0,4,0,0,0,4,0],[1,0,0,1,0,0,1,0,0,0,0,0,3,0,0,0],[1,0,0,0,0,0,0,0,4,0,0,0,3,0,2,0]]},
+  {id:'nova', name:'Nova', role:'Sparkle', type:'arp', cat:'melody', tier:'great', color:'#dee2e6', a:'#f06595', a2:'#ffd43b', mx:6, mo:7,
+   hat:`<polygon class="acc" points="${star(39,57,11,5)}"/><polygon class="acc" points="${star(61,57,11,5)}"/><path class="acc2" d="M50 12 l2.5 7 7 2.5 -7 2.5 -2.5 7 -2.5 -7 -7 -2.5 7 -2.5z"/><path class="acc2" d="M74 22 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z"/>`,
+   vars:[[1,3,5,6,1,3,5,6,2,4,6,7,2,4,6,7],[6,0,5,0,3,0,1,0,6,0,5,0,3,0,1,0],[1,0,3,0,5,0,8,0,6,0,5,0,3,0,0,0]]},
+  {id:'strum', name:'Strum', role:'Guitar', type:'strum', cat:'melody', tier:'great', color:'#d9a066', a:'#a0522d', a2:'#ffd43b', mx:7, mo:8,
+   hat:`<path class="acc" d="M8 40 Q20 47 50 45 Q80 47 92 40 Q86 51 50 51 Q14 51 8 40 Z"/><path class="acc" d="M30 45 Q28 18 40 20 Q50 26 60 20 Q72 18 70 45 Z"/><rect class="acc2" x="30" y="38" width="40" height="5"/>`,
+   chest:`<path class="accs" d="M27 93 L73 134" stroke-width="5"/>`,
+   vars:[[1,0,0,1,0,0,1,0,4,0,0,4,0,0,4,0],[0,0,1,1,0,1,0,0,0,0,3,3,0,3,0,0],[1,0,1,0,3,0,3,0,4,0,4,0,3,0,1,0]]},
+  {id:'toot', name:'Toot', role:'Tuba', type:'brass', cat:'bass', tier:'great', puff:true, color:'#fab005', a:'#e03131', a2:'#f8f9fa', mx:4, mo:6,
+   hat:`<rect class="acc" x="32" y="10" width="36" height="27" rx="4"/><rect class="acc2" x="30" y="33" width="40" height="5" rx="2"/><path class="acc2" d="M50 12 Q42 6 47 0 Q55 4 50 12 Z"/><circle class="acc2" cx="50" cy="22" r="4"/>`,
+   chest:`<circle class="acc" cx="50" cy="100" r="2.6"/><circle class="acc" cx="50" cy="112" r="2.6"/><circle class="acc" cx="50" cy="124" r="2.6"/><path class="accs" d="M24 96 Q36 102 40 92" stroke-width="2.5"/>`,
+   vars:[[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],[1,0,0,1,0,0,4,0,1,0,0,1,0,0,3,0],[1,0,0,0,4,0,0,0,3,0,0,0,2,0,0,0]]},
+
+  {id:'tweet', name:'Tweet', role:'Flute', type:'flute', sustain:true, cat:'melody', tier:'great', color:'#b2f2bb', a:'#a0522d', a2:'#ffd43b', mx:4, mo:6,
+   hat:`<path class="acc" d="M28 34 Q50 48 72 34 Q73 23 50 25 Q27 23 28 34 Z"/><path d="M31 30 L69 33 M33 35 L67 28 M36 27 L64 36" stroke="#7a4a2a" stroke-width="1.4"/><path class="acc2" d="M44 21 L35 16 L41 25 Z"/><ellipse class="acc2" cx="52" cy="20" rx="10" ry="7.5"/><circle class="acc2" cx="59" cy="12" r="5.5"/><path d="M63.5 11.5 L69 13 L63.5 14.5 Z" fill="#f76707"/><circle cx="60.5" cy="11" r="1.2" fill="#1c1233"/>`,
+   vars:[[3,0,0,0,0,0,5,0,0,0,6,0,5,0,0,0],[6,0,5,0,3,0,0,0,5,0,3,0,1,0,0,0],[1,0,3,0,5,0,6,0,8,0,6,0,5,0,3,0]]},
+  {id:'jazzy', name:'Jazzy', role:'Sax', type:'sax', sustain:true, cat:'melody', tier:'great', color:'#c92a2a', a:'#495057', a2:'#fcc419', mx:6, mo:8,
+   hat:`<path class="acc" d="M30 38 Q29 15 50 17 Q71 15 70 38 Z"/><path d="M44 18 Q50 24 56 18" fill="none" stroke="#343a40" stroke-width="2"/><rect class="acc2" x="30" y="31" width="40" height="5"/><path class="acc" d="M13 41 Q50 30 87 41 Q85 47 50 45 Q15 47 13 41 Z"/><path class="acc" d="M46 85 L54 85 L50 93 Z"/>`,
+   vars:[[1,0,0,3,0,0,4,0,0,5,0,4,3,0,0,0],[5,0,0,0,6,0,5,0,4,0,3,0,0,0,1,0],[0,0,3,4,5,0,0,0,6,0,5,0,4,3,1,0]]},
+  {id:'subby', name:'Subby', role:'Sub bass', type:'sub', sustain:true, cat:'bass', tier:'great', color:'#a0522d', a:'#7a3e1d', a2:'#ffc9c9', mx:7, mo:8,
+   hat:`<circle class="acc" cx="27" cy="33" r="10"/><circle class="acc" cx="73" cy="33" r="10"/><circle class="acc2" cx="27" cy="33" r="5"/><circle class="acc2" cx="73" cy="33" r="5"/><ellipse cx="50" cy="66" rx="4.5" ry="3" fill="#3b2a1e"/>`,
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,0,0,0,1,0,0,0,3,0,0,0,0,0],[1,0,0,1,0,0,6,0,0,0,4,0,3,0,2,0]]},
+
+  /* EXCELLENT unlocks: the legends */
+  {id:'diva', name:'Diva', role:'Opera', type:'diva', sustain:true, cat:'vocals', tier:'excellent', color:'#e64980', a:'#ffd43b', a2:'#f8f9fa', mx:5, mo:11,
+   hat:`<path fill="#9c36b5" d="M18 60 Q12 22 50 18 Q88 22 82 60 Q80 36 50 36 Q20 36 18 60 Z"/><circle fill="#9c36b5" cx="50" cy="15" r="13"/><path class="acc" d="M35 34 L38 24 L44 30 L50 20 L56 30 L62 24 L65 34 Z"/><circle class="acc2" cx="50" cy="27" r="2.2"/>`,
+   chest: PEARLS,
+   vars:[[5,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0],[8,0,0,0,0,0,0,0,7,0,0,0,6,0,0,0],[3,0,0,0,5,0,0,0,8,0,0,0,0,0,0,0]]},
+  {id:'cosmo', name:'Cosmo', role:'Space', type:'pad', sustain:true, cat:'melody', tier:'excellent', color:'#91a7ff', a:'#f8f9fa', a2:'#ffd43b', mx:6, mo:7,
+   hat:`<circle class="glass" cx="50" cy="58" r="37"/><path class="shine" d="M27 42 Q33 29 46 25"/><path class="accs" d="M76 30 L84 14" stroke-width="2.5"/><circle class="acc2" cx="85" cy="12" r="4"/>`,
+   chest:`<rect class="acc" x="38" y="98" width="24" height="16" rx="3"/><circle cx="44" cy="106" r="2.5" fill="#ff6b6b"/><circle cx="50" cy="106" r="2.5" fill="#69db7c"/><circle cx="56" cy="106" r="2.5" fill="#4dabf7"/>`,
+   vars:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0]]},
+  {id:'zap', name:'DJ Zap', role:'Lasers', type:'zap', drum:true, cat:'beat', tier:'excellent', color:'#3bc9db', a:'#ffd43b', a2:'#f06595', mx:8, mo:8,
+   hat:`<path class="acc" d="M22 46 L26 22 L34 34 L38 10 L46 30 L52 4 L56 28 L64 12 L66 32 L76 18 L78 46 Q50 30 22 46 Z"/><rect class="acc2" x="24" y="50" width="52" height="12" rx="6"/><path class="shine" d="M30 54 H42 M58 54 H70"/>`,
+   chest:`<path class="accs" d="M30 90 Q50 104 70 90" stroke-width="4"/><circle class="acc2" cx="30" cy="92" r="6"/><circle class="acc2" cx="70" cy="92" r="6"/>`,
+   vars:[[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1],[0,0,0,1,0,0,1,0,0,0,0,0,2,0,0,0],[1,0,0,0,0,0,2,0,0,1,0,0,0,0,2,0]]},
+
+  {id:'echo', name:'Echo', role:'Echoes', type:'echo', cat:'vocals', tier:'excellent', color:'#be4bdb', a:'#3b5bdb', a2:'#ffd43b', mx:6, mo:10,
+   hat:`<path class="acc" d="M28 38 L45 -2 Q56 4 66 -3 Q58 6 56 11 L72 38 Z"/><ellipse class="acc" cx="50" cy="38" rx="31" ry="6"/><polygon class="acc2" points="${star(51,24,5.5,2.4)}"/><polygon class="acc2" points="${star(61,33,3.5,1.5)}"/><polygon class="acc2" points="${star(41,31,3,1.3)}"/>`,
+   vars:[[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[5,0,0,0,0,0,4,0,0,0,0,0,2,0,0,0],[1,0,0,3,0,0,5,0,0,0,6,0,0,0,0,0]]},
+  {id:'viola', name:'Viola', role:'Strings', type:'strings', sustain:true, cat:'melody', tier:'excellent', color:'#0ca678', a:'#5c3d2e', a2:'#ff6b6b', mx:5, mo:8,
+   hat:`<path class="acc" d="M21 50 Q13 80 24 94 Q26 72 29 56 Z"/><path class="acc" d="M79 50 Q87 80 76 94 Q74 72 71 56 Z"/>${[[25,44,9],[29,33,10],[39,26,10],[50,24,10],[61,26,10],[71,33,10],[75,44,9]].map(([x, y, r]) => `<circle class="acc" cx="${x}" cy="${y}" r="${r}"/>`).join('')}<path class="acc2" d="M50 20 L34 9 L35 30 Z M50 20 L66 9 L65 30 Z"/><circle class="acc2" cx="50" cy="20" r="4.5"/>`,
+   vars:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[1,0,0,0,3,0,0,0,4,0,0,0,2,0,0,0]]},
+  {id:'kaboom', name:'Kaboom', role:'Cannons', type:'cannon', drum:true, cat:'beat', tier:'excellent', color:'#a61e4d', a:'#343a40', a2:'#fcc419', mx:8, mo:10,
+   hat:`<path class="acc" d="M15 41 Q29 14 50 21 Q71 14 85 41 Q50 30 15 41 Z"/><path d="M17 40 Q50 30.5 83 40" fill="none" stroke="#fcc419" stroke-width="2"/><circle cx="50" cy="28" r="4" fill="#fff"/><path d="M45 34 L55 30 M45 30 L55 34" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M24 47 L76 43" stroke="#1c1233" stroke-width="2"/><ellipse cx="39" cy="57" rx="7.5" ry="6.5" fill="#1c1233"/>`,
+   vars:[[1,0,0,0,0,0,2,0,0,0,1,0,2,0,0,0],[1,0,2,0,1,0,2,0,1,1,2,2,3,0,0,0],[3,0,0,0,1,0,2,0,3,0,0,1,2,1,2,2]]},
+
+  /* LEGENDARY unlocks: only a perfect song (100 points) brings these */
+  {id:'dragon', name:'Dragon', role:'Roar', type:'growl', sustain:true, cat:'bass', tier:'legendary', color:'#37b24d', a:'#fff3bf', a2:'#ff922b', mx:9, mo:10,
+   hat:`<path class="acc" d="M31 37 Q20 20 26 4 Q34 22 41 31 Z"/><path class="acc" d="M69 37 Q80 20 74 4 Q66 22 59 31 Z"/><path class="acc2" d="M42 31 L46 19 L50 29 L54 19 L58 31 Z"/><circle cx="45" cy="68" r="1.6" fill="#1c1233" opacity=".5"/><circle cx="55" cy="68" r="1.6" fill="#1c1233" opacity=".5"/>`,
+   back:`<path class="acc2" d="M25 96 Q0 76 3 114 Q12 104 16 120 Q21 106 27 118 Z"/><path class="acc2" d="M75 96 Q100 76 97 114 Q88 104 84 120 Q79 106 73 118 Z"/>`,
+   chest:`<path d="M38 99 Q50 94 62 99 L60 134 Q50 139 40 134 Z" fill="#d3f9d8" opacity=".85"/><path d="M41 109 H59 M40 119 H60 M41 128 H59" stroke="#8ce99a" stroke-width="2"/>`,
+   vars:[[1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0],[1,0,0,1,0,0,1,0,0,0,4,0,3,0,0,0],[1,0,1,0,0,0,1,0,1,0,1,0,0,0,2,0]]},
+  {id:'unicorn', name:'Unicorn', role:'Harp', type:'harp', cat:'melody', tier:'legendary', color:'#fcc2d7', a:'#ffd43b', a2:'#f59f00', mx:5, mo:8,
+   hat:`<path class="skin" d="M31 36 L26 20 L40 30 Z"/>${[[37,33,'#ff8787'],[33,29,'#ffd43b'],[29,25,'#69db7c'],[25,21,'#4dabf7']].map(([R, r, col]) => `<path d="${band(R, r, -105, 30)}" fill="${col}"/>`).join('')}<path class="acc" d="M45 31 L50 2 L55 31 Z"/><path d="M46.5 24 L53.5 21 M47.5 16 L52.5 13.5 M48.5 9 L51.5 7.5" stroke="#f59f00" stroke-width="1.5" stroke-linecap="round"/>`,
+   chest:`<polygon points="${star(50,112,8,3.5)}" fill="#ffd43b"/>`,
+   vars:[[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[1,0,0,0,3,0,0,0,5,0,0,0,3,0,0,0],[5,0,0,3,0,0,1,0,0,0,3,0,5,0,6,0]]},
+  {id:'thunder', name:'Thunder', role:'Big Drums', type:'thunder', drum:true, cat:'beat', tier:'legendary', color:'#3b5bdb', a:'#ffd43b', a2:'#dee2e6', mx:8, mo:10,
+   hat:`<g class="acc2"><circle cx="34" cy="30" r="12"/><circle cx="50" cy="21" r="15"/><circle cx="66" cy="30" r="12"/><rect x="28" y="28" width="44" height="12" rx="6"/></g><path class="acc" d="M28 38 L21 50 L27 50 L20 63 L34 46 L28 46 L33 38 Z"/>`,
+   chest:`<path class="acc" d="M54 93 L42 114 L50 114 L45 133 L61 108 L53 108 L58 93 Z"/>`,
+   vars:[[1,0,0,0,2,0,0,0,1,0,1,0,2,0,0,0],[1,0,0,1,0,0,1,0,2,0,0,0,1,0,3,0],[1,0,0,0,2,0,0,1,0,1,0,0,2,0,3,3]]},
+  {id:'phoenix', name:'Phoenix', role:'Fire lead', type:'phoenix', sustain:true, cat:'melody', tier:'legendary', color:'#fa5252', a:'#ffd43b', a2:'#ff922b', mx:6, mo:9,
+   hat:`<path class="acc2" d="M30 36 Q25 16 38 6 Q36 20 44 24 Q42 8 52 -3 Q54 14 60 20 Q62 8 71 3 Q66 18 72 36 Q50 26 30 36 Z"/><path class="acc" d="M38 34 Q36 22 44 16 Q44 26 50 28 Q50 16 56 10 Q58 22 62 26 Q64 18 68 16 Q64 28 64 34 Q50 28 38 34 Z"/>`,
+   back:`<path class="acc2" d="M24 96 Q-2 70 2 104 Q8 96 12 110 Q16 98 20 114 Q22 104 28 112 Z"/><path class="acc2" d="M76 96 Q102 70 98 104 Q92 96 88 110 Q84 98 80 114 Q78 104 72 112 Z"/><path class="acc" d="M24 100 Q8 86 10 104 Q14 100 18 108 Q20 102 26 106 Z"/><path class="acc" d="M76 100 Q92 86 90 104 Q86 100 82 108 Q80 102 74 106 Z"/>`,
+   chest:`<path class="acc" d="M50 98 Q41 108 45 119 Q49 112 50 106 Q52 114 56 117 Q60 106 50 98 Z"/>`,
+   vars:[[1,0,0,3,0,0,5,0,6,0,0,5,0,3,0,0],[8,0,0,0,6,0,5,0,6,0,0,0,3,0,0,0],[1,3,5,6,8,0,6,5,6,0,5,3,5,0,8,0]]},
+  {id:'mermaid', name:'Mermaid', role:'Siren', type:'siren', sustain:true, cat:'vocals', tier:'legendary', color:'#15aabf', a:'#ff6b6b', a2:'#fff0f6', mx:5, mo:10,
+   hat:`<path class="acc" d="M20 58 Q16 22 50 22 Q84 22 80 58 Q86 86 80 106 Q74 88 72 62 Q66 38 50 36 Q34 38 28 62 Q26 88 20 106 Q14 86 20 58 Z"/><path class="acc2" d="M39 31 Q50 12 61 31 Z"/><path d="M50 17 V30 M45 21 L47.5 30 M55 21 L52.5 30" stroke="#f783ac" stroke-width="1.1"/>`,
+   chest:`<path class="acc2" d="M35 101 Q41 92 47 101 Z M53 101 Q59 92 65 101 Z"/>`,
+   tail:`<path d="M28 132 Q30 154 46 162 L40 177 Q50 169 50 166 Q50 169 60 177 L54 162 Q70 154 72 132 Z" fill="#0ca678"/><path d="M36 140 q4 4 8 0 q4 4 8 0 q4 4 8 0 M40 150 q4 4 8 0 q4 4 8 0" fill="none" stroke="#63e6be" stroke-width="1.5"/>`,
+   vars:[[3,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0],[6,0,0,0,0,0,5,0,0,0,3,0,0,0,0,0],[1,0,0,3,0,0,5,0,6,0,0,5,0,0,3,0]]},
+];
+/* ---------- Costume helpers for the big cast ---------- */
+const around = (angles, r, fn) => angles.map(a => { const t = a * Math.PI / 180; return fn(50 + r * Math.cos(t), 58 + r * Math.sin(t), a); }).join('');
+const flowerRing = cols => around([-165, -140, -115, -90, -65, -40, -15], 31, (x, y, a) => {
+  const col = cols[Math.round((a + 165) / 25) % cols.length];
+  return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.6" fill="${col}"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.7" fill="#fff3bf"/>`;
+});
+const sunRays = () => Array.from({length: 12}, (_, i) => {
+  const am = i * 30, p = (r, a) => { const t = a * Math.PI / 180; return (50 + r * Math.cos(t)).toFixed(1) + ' ' + (58 + r * Math.sin(t)).toFixed(1); };
+  return `<path class="${i % 2 ? 'acc2' : 'acc'}" d="M${p(29, am - 7)} L${p(i % 2 ? 41 : 47, am)} L${p(29, am + 7)} Z"/>`;
+}).join('');
+const roundGlasses = col => `<circle cx="39" cy="57" r="7.5" fill="none" stroke="${col}" stroke-width="2"/><circle cx="61" cy="57" r="7.5" fill="none" stroke="${col}" stroke-width="2"/><path d="M46.5 57 H53.5 M31.5 55 L24 52 M68.5 55 L76 52" stroke="${col}" stroke-width="2"/>`;
+const longHair = cls => `<path class="${cls}" d="M20 60 Q16 22 50 22 Q84 22 80 60 Q83 80 78 94 Q72 82 72 62 Q66 40 50 38 Q34 40 28 62 Q28 82 22 94 Q17 80 20 60 Z"/>`;
+const scarf = cls => `<path class="${cls}" d="M30 88 Q50 98 70 88 L70 95 Q50 105 30 95 Z"/><path class="${cls}" d="M58 96 L64 120 L56 118 L52 98 Z"/>`;
+/* A beard with a hole for the mouth, so the singer can still sing */
+const beard = (col, long) => `<path fill-rule="evenodd" fill="${col}" d="M24 64 Q22 ${long ? 108 : 98} 50 ${long ? 122 : 106} Q78 ${long ? 108 : 98} 76 64 Q70 72 64 74 Q58 66 50 66 Q42 66 36 74 Q30 72 24 64 Z M39 75 Q50 93 61 75 Q50 61 39 75 Z"/>`;
+
+/* ---------- The big cast: 60 more characters, each with its own sound recipe ----------
+   Melodic recipes are played by playRecipe(), drum recipes ({1:…, 2:…, 3:…}) by playHit(). */
+const MORE = [
+  /* Normal: open from the start */
+  {id:'rimmy', name:'Rimmy', role:'Rimshot', cat:'beat', drum:true, color:'#fd7e14', a:'#fa5252', a2:'#343a40', mx:7, mo:8,
+   hat:`<path class="acc2" d="M22 46 L24 30 L30 36 L32 20 L40 30 L44 14 L50 28 L56 14 L60 30 L68 20 L70 36 L76 30 L78 46 Q50 34 22 46 Z"/><path class="acc" d="M21 44 Q50 32 79 44 L79 51 Q50 39 21 51 Z"/>`,
+   snd:{1:[{o:['triangle',1800],dec:0.05,gain:0.25,f:['highpass',1200,1]},{n:['bandpass',3500,2],dec:0.04,gain:0.35}],
+        2:[{o:['square',900,600,0.01],dec:0.06,gain:0.12,f:['bandpass',1200,3]},{n:['highpass',5000,1],dec:0.03,gain:0.2}]},
+   vars:[[0,0,1,0,0,0,1,0,0,0,1,0,0,1,0,0],[1,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0],[0,1,0,1,2,0,1,0,0,1,0,1,2,0,2,2]]},
+  {id:'moo', name:'Moo', role:'Cowbell', cat:'beat', drum:true, color:'#f1f3f5', a:'#343a40', a2:'#fff3bf', mx:6, mo:8,
+   hat:`<ellipse class="acc" cx="19" cy="44" rx="10" ry="5" transform="rotate(-25 19 44)"/><ellipse class="acc" cx="81" cy="44" rx="10" ry="5" transform="rotate(25 81 44)"/><path class="acc2" d="M33 32 Q28 22 32 15 Q36 24 41 29 Z M67 32 Q72 22 68 15 Q64 24 59 29 Z"/><ellipse cx="50" cy="68" rx="7" ry="3.6" fill="#ffc9c9"/><circle cx="47.5" cy="68" r="1" fill="#1c1233"/><circle cx="52.5" cy="68" r="1" fill="#1c1233"/>`,
+   chest:`<path d="M30 104 Q36 98 42 104 Q44 112 36 114 Q28 112 30 104 Z M56 118 Q64 112 70 120 Q70 128 60 128 Q54 124 56 118 Z M46 94 Q54 92 56 98 Q52 103 46 94 Z" fill="#343a40"/>`,
+   snd:{1:[{o:['square',587],dec:0.35,gain:0.12,f:['bandpass',800,2]},{o:['square',845],dec:0.35,gain:0.12,f:['bandpass',800,2]}],
+        2:[{o:['square',440],dec:0.3,gain:0.12,f:['bandpass',650,2]},{o:['square',634],dec:0.3,gain:0.12,f:['bandpass',650,2]}]},
+   vars:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[1,0,0,1,0,0,1,0,0,0,1,0,1,0,0,0],[1,0,2,0,1,0,2,1,0,1,2,0,1,0,2,0]]},
+  {id:'tambo', name:'Tambo', role:'Tambourine', cat:'beat', drum:true, color:'#f783ac', a:'#7c4a2d', a2:'#ffd43b', mx:6, mo:8,
+   hat:`<path class="acc" d="M22 48 Q20 26 50 25 Q80 26 78 48 Q70 36 50 35 Q30 36 22 48 Z"/>${flowerRing(['#ff8787','#fff3bf','#74c0fc','#ffd43b'])}`,
+   snd:{1:[{n:['highpass',7000,0.8],dec:0.12,gain:0.22,taps:[0,0.008,0.016]},{o:['square',3200],dec:0.05,gain:0.03,f:['bandpass',5000,4]}],
+        2:[{n:['highpass',6000,0.8],dec:0.25,gain:0.18,taps:[0,0.03,0.06,0.09]}]},
+   vars:[[0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,2,0,0,0],[1,0,1,1,1,0,1,1,1,0,1,1,2,0,0,0]]},
+  {id:'plunk', name:'Plunk', role:'Jazz bass', cat:'bass', color:'#5f3dc4', a:'#343a40', a2:'#1c1233', mx:7, mo:8,
+   hat:`<path class="acc" d="M32 38 Q31 16 50 16 Q69 16 68 38 Z"/><path class="acc" d="M22 40 Q50 32 78 40 Q76 45 50 43 Q24 45 22 40 Z"/>${roundGlasses('#1c1233')}`,
+   snd:{base:36, osc:[['triangle',1,0,0.7],['sine',1,0,0.5],['sawtooth',2,0,0.06]], dec:0.45, peak:0.45, filter:['lowpass',1400,1100,300,1,0.03], noise:['lowpass',300,1,0.12,0.03]},
+   vars:[[1,0,0,0,3,0,0,0,4,0,0,0,5,0,0,0],[1,0,3,0,4,0,5,0,6,0,5,0,4,0,3,0],[1,0,0,1,0,0,4,0,0,0,3,0,1,0,0,0]]},
+  {id:'pia', name:'Pia', role:'Piano', cat:'melody', color:'#ffdeeb', a:'#212529', a2:'#fa5252', mx:5, mo:8,
+   hat:`<path class="acc" d="M19 66 Q14 24 50 22 Q86 24 81 66 Q78 70 74 66 Q75 44 64 38 Q50 44 30 40 Q25 46 26 66 Q22 70 19 66 Z"/><rect class="acc2" x="61" y="33" width="11" height="4" rx="2" transform="rotate(-20 66 35)"/>`,
+   snd:{base:60, osc:[['triangle',1,0,0.6],['sine',2,3,0.25],['sine',3,-3,0.1]], dec:0.9, peak:0.24, filter:['lowpass',4000,3000,900,0.7,0.02]},
+   vars:[[1,0,0,0,3,0,0,0,5,0,0,0,3,0,0,0],[5,0,3,0,1,0,3,0,6,0,5,0,3,0,1,0],[1,3,5,0,6,0,5,0,3,5,6,0,8,0,6,0]]},
+  {id:'twinkle', name:'Twinkle', role:'Music box', cat:'melody', color:'#d0bfff', a:'#ffd43b', a2:'#ff8fab', mx:5, mo:7,
+   hat:`<path d="M21 46 Q50 22 79 46" fill="none" stroke="#ff8fab" stroke-width="4" stroke-linecap="round"/><polygon class="acc" points="${star(50,25,9,4)}"/><polygon class="acc" points="${star(33,32,4.5,2)}"/><polygon class="acc" points="${star(67,32,4.5,2)}"/>`,
+   snd:{base:84, osc:[['sine',1,0,0.6],['sine',3,0,0.08]], dec:0.6, a:0.002, peak:0.14, noise:['highpass',6000,1,0.04,0.01]},
+   vars:[[1,0,3,0,5,0,6,0,5,0,3,0,1,0,0,0],[6,0,0,5,0,0,3,0,1,0,0,3,0,0,5,0],[1,0,1,0,5,0,5,0,6,0,6,0,5,0,0,0]]},
+  {id:'uku', name:'Uku', role:'Ukulele', cat:'melody', color:'#ffec99', a:'#1c1233', a2:'#a9714b', mx:6, mo:8,
+   hat:`<path class="acc2" d="M22 48 Q18 30 30 26 Q34 16 46 20 Q54 12 62 20 Q74 18 76 30 Q84 36 78 48 Q72 36 60 36 Q50 30 40 36 Q28 36 22 48 Z"/><rect class="acc" x="30" y="29" width="16" height="9" rx="4"/><rect class="acc" x="54" y="29" width="16" height="9" rx="4"/><rect class="acc" x="46" y="32" width="8" height="2.5"/>`,
+   snd:{base:60, osc:[['triangle',1,0,0.7],['sawtooth',1,6,0.08]], dec:0.45, peak:0.15, filter:['lowpass',2600,2000,700,0.7,0.02], chord:[2,4], strum:0.018},
+   vars:[[1,0,0,1,0,0,1,0,0,0,4,0,0,4,0,0],[1,0,1,0,3,0,0,3,0,3,4,0,0,0,0,0],[1,1,0,1,1,0,1,0,4,4,0,4,3,0,3,0]]},
+  {id:'doo', name:'Doo', role:'Doo-wop', cat:'vocals', color:'#1971c2', a:'#212529', a2:'#212529', mx:6, mo:9,
+   hat:`<path class="acc" d="M22 50 Q20 30 32 28 Q30 12 52 10 Q74 10 74 24 Q60 18 50 26 Q72 26 78 50 Q72 38 60 36 Q48 34 36 38 Q26 40 22 50 Z"/><path class="acc" d="M21 50 L24 64 L27 52 Z M79 50 L76 64 L73 52 Z"/>`,
+   snd:{base:48, osc:[['sawtooth',1,0,1]], formants:[[300,4,1],[870,5,0.5]], sus:true, max:0.35, a:0.02, rel:0.06, peak:0.55, glide:0.94, glideT:0.05},
+   vars:[[1,0,0,0,1,0,0,0,4,0,0,0,4,0,0,0],[1,0,0,1,0,0,1,0,3,0,0,3,0,0,3,0],[1,0,1,0,4,0,4,0,3,0,3,0,1,0,0,0]]},
+  {id:'yay', name:'Yay', role:'Shouts', cat:'vocals', color:'#d6336c', a:'#f59f00', a2:'#ffd43b', mx:7, mo:11,
+   hat:`<path class="acc" d="M66 26 Q90 10 92 34 Q88 48 80 56 Q84 40 76 30 Z"/><path class="acc" d="M21 48 Q19 24 50 23 Q81 24 79 48 Q70 34 50 34 Q30 34 21 48 Z"/><circle class="acc2" cx="70" cy="25" r="4"/><polygon class="acc2" points="${star(30,70,4,1.8)}"/><polygon class="acc2" points="${star(70,70,4,1.8)}"/>`,
+   snd:{base:60, osc:[['sawtooth',1,0,1]], formants:[[600,3,1],[1800,4,0.7]], dec:0.24, peak:0.75, glide:1.15, glideT:0.12},
+   vars:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0],[0,0,1,0,0,0,3,0,0,0,1,0,3,0,5,0]]},
+  {id:'peep', name:'Peep', role:'Whistle', cat:'melody', color:'#a5d8ff', a:'#f8f9fa', a2:'#1864ab', mx:3, mo:4,
+   hat:`<path class="acc" d="M30 38 Q28 25 50 25 Q72 25 70 38 Z" stroke="#ced4da" stroke-width="1"/><path class="acc" d="M24 40 Q50 31 76 40 L74 45 Q50 37 26 45 Z" stroke="#ced4da" stroke-width="1"/>`,
+   chest:`<path class="acc2" d="M30 88 L50 108 L70 88 L64 88 L50 100 L36 88 Z"/><path d="M45 103 L50 108 L55 103 L52 116 L48 116 Z" fill="#e03131"/>`,
+   snd:{base:84, osc:[['sine',1,0,1]], vib:[5.5,0.012,0.1], glide:0.97, glideT:0.04, sus:true, max:0.5, a:0.02, rel:0.05, peak:0.16, noise:['bandpass',4000,2,0.02,0.05]},
+   vars:[[1,0,0,3,0,0,5,0,0,0,6,0,5,0,0,0],[5,0,6,0,5,0,3,0,1,0,0,0,0,0,0,0],[1,0,3,0,5,0,8,0,6,0,5,0,3,0,1,0]]},
+
+  /* Good unlocks */
+  {id:'clank', name:'Clank', role:'Woodblock', cat:'beat', drum:true, tier:'good', color:'#ced4da', a:'#fcc419', a2:'#fd7e14', mx:7, mo:8,
+   hat:`<path class="acc" d="M24 44 Q24 18 50 18 Q76 18 76 44 Z"/><path class="acc" d="M18 44 H82 Q82 49 78 49 H22 Q18 49 18 44 Z"/><rect x="47" y="18" width="6" height="26" fill="#fff" opacity=".35"/>`,
+   chest:`<path class="acc2" d="M24 104 Q24 90 38 89 L44 138 H24 Z M76 104 Q76 90 62 89 L56 138 H76 Z"/><path d="M24 118 H44 M56 118 H76" stroke="#f8f9fa" stroke-width="4"/>`,
+   snd:{1:[{o:['sine',1100,900,0.01],dec:0.08,gain:0.35},{o:['triangle',2200],dec:0.03,gain:0.1}],2:[{o:['sine',800,650,0.01],dec:0.09,gain:0.35}]},
+   vars:[[1,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0],[0,0,1,0,2,0,0,1,0,0,1,0,2,0,0,0],[1,0,2,1,0,2,1,0,1,2,0,1,2,0,1,2]]},
+  {id:'tink', name:'Tink', role:'Triangle', cat:'beat', drum:true, tier:'good', color:'#96f2d7', a:'#fcc419', a2:'#a5d8ff', mx:5, mo:7,
+   hat:`<circle class="acc" cx="50" cy="20" r="9"/><path class="acc" d="M22 48 Q20 26 50 24 Q80 26 78 48 Q70 34 50 33 Q30 34 22 48 Z"/>`,
+   back:`<path class="acc2" d="M30 98 Q4 70 6 98 Q8 112 30 108 Z M70 98 Q96 70 94 98 Q92 112 70 108 Z" opacity=".8"/><path class="acc2" d="M30 108 Q12 118 18 130 Q26 128 32 114 Z M70 108 Q88 118 82 130 Q74 128 68 114 Z" opacity=".8"/>`,
+   snd:{1:[{o:['sine',1600],dec:1,gain:0.08},{o:['sine',4100],dec:0.6,gain:0.04},{o:['sine',6600],dec:0.3,gain:0.02}],2:[{o:['sine',1600],dec:0.12,gain:0.08},{o:['sine',4100],dec:0.1,gain:0.03}]},
+   vars:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,2,0,0,0,2,0,0,0,2,0,0,0,1,0],[1,0,2,2,0,0,2,0,1,0,2,2,0,0,2,0]]},
+  {id:'stomp', name:'Stomp', role:'Stomps', cat:'beat', drum:true, tier:'good', color:'#d9480f', a:'#adb5bd', a2:'#fff3bf', mx:8, mo:10,
+   hat:`<path class="acc2" d="M24 38 Q8 30 10 12 Q18 28 30 30 Z M76 38 Q92 30 90 12 Q82 28 70 30 Z"/><path class="acc" d="M22 46 Q22 18 50 18 Q78 18 78 46 Z"/><rect class="acc" x="20" y="42" width="60" height="7" rx="3"/><path d="M50 18 V46" stroke="#868e96" stroke-width="3"/>${beard('#f08c00')}`,
+   snd:{1:[{o:['sine',90,50,0.08],dec:0.3,gain:0.9},{n:['lowpass',400,0.7],dec:0.12,gain:0.4}],2:[{n:['bandpass',1500,0.8],dec:0.15,gain:0.5,taps:[0,0.01,0.022]},{n:['bandpass',2500,1],dec:0.06,gain:0.2}]},
+   vars:[[1,0,0,0,1,0,0,0,2,0,0,0,0,0,0,0],[1,0,1,0,2,0,0,0,1,0,1,0,2,0,0,0],[1,1,0,0,2,0,1,0,1,1,0,0,2,0,2,0]]},
+  {id:'snappy', name:'Snappy', role:'Snaps', cat:'beat', drum:true, tier:'good', color:'#339af0', a:'#e64980', a2:'#ffd43b', mx:6, mo:8,
+   hat:`<path class="acc" d="M20 48 L18 70 Q24 72 28 66 L28 50 Z M80 48 L82 70 Q76 72 72 66 L72 50 Z"/><path class="acc" d="M21 50 Q20 20 50 20 Q80 20 79 50 Z"/><rect class="acc2" x="21" y="40" width="58" height="5"/><circle class="acc2" cx="50" cy="17" r="6"/><path d="M18 70 L16 80 M82 70 L84 80" stroke="#ffd43b" stroke-width="2" stroke-linecap="round"/>`,
+   snd:{1:[{n:['bandpass',2200,3],dec:0.05,gain:0.6},{o:['sine',1500,800,0.01],dec:0.02,gain:0.15}],2:[{n:['bandpass',2200,3],dec:0.05,gain:0.6,taps:[0,0.07]}]},
+   vars:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,1,0,0,2,0,0,0,0,1,0,2,0]]},
+  {id:'squelch', name:'Squelch', role:'Acid bass', cat:'bass', tier:'good', color:'#94d82d', a:'#5c940d', a2:'#ff6b6b', mx:7, mo:9,
+   hat:`<path d="M40 30 Q34 16 28 10 M60 30 Q66 16 72 10" fill="none" stroke="#5c940d" stroke-width="3" stroke-linecap="round"/><circle class="acc2" cx="28" cy="9" r="5"/><circle class="acc2" cx="72" cy="9" r="5"/><circle class="acc" cx="36" cy="40" r="3" opacity=".5"/><circle class="acc" cx="64" cy="38" r="2.5" opacity=".5"/>`,
+   snd:{base:36, osc:[['sawtooth',1,0,1]], dec:0.28, peak:0.2, filter:['lowpass',300,2600,400,14,0.03], drive:1.5},
+   vars:[[1,0,1,0,6,0,1,0,1,0,4,0,1,0,6,0],[1,1,0,1,6,0,1,4,0,1,3,0,1,1,6,0],[1,0,0,6,0,0,4,0,1,0,6,0,3,0,4,0]]},
+  {id:'boing', name:'Boing', role:'Boing bass', cat:'bass', tier:'good', color:'#40c057', a:'#f8f9fa', a2:'#1c1233', mx:9, mo:9,
+   hat:`<circle class="skin" cx="34" cy="31" r="11"/><circle class="skin" cx="66" cy="31" r="11"/><circle class="acc" cx="34" cy="29" r="7"/><circle class="acc" cx="66" cy="29" r="7"/><circle class="acc2" cx="35" cy="29" r="3.5"/><circle class="acc2" cx="67" cy="29" r="3.5"/>`,
+   snd:{base:36, osc:[['sine',1,0,1],['triangle',2,0,0.3]], glide:2.5, glideT:0.12, dec:0.4, peak:0.45, drive:1.2},
+   vars:[[1,0,0,0,0,0,1,0,0,0,4,0,0,0,0,0],[1,0,0,1,0,0,0,0,3,0,0,3,0,0,0,0],[1,0,4,0,1,0,6,0,1,0,3,0,4,0,6,0]]},
+  {id:'ella', name:'Ella', role:'Organ', cat:'melody', tier:'good', color:'#cc5de8', a:'#7c4a2d', a2:'#ffd43b', mx:5, mo:8,
+   hat:`<circle class="acc" cx="50" cy="19" r="9"/><path class="acc" d="M21 50 Q19 24 50 23 Q81 24 79 50 Q74 36 56 34 Q40 40 28 38 Q23 42 21 50 Z"/><path d="M42 17 L58 21" stroke="#ffd43b" stroke-width="2"/>${roundGlasses('#495057')}`,
+   snd:{base:60, osc:[['sine',1,0,0.5],['sine',2,0,0.35],['sine',3,0,0.2],['sine',4,0,0.12],['sine',8,0,0.05]], chord:[2,4], sus:true, max:1.5, a:0.01, rel:0.06, peak:0.06, trem:[6,0.25]},
+   vars:[[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[1,0,0,0,0,0,1,0,0,0,3,0,0,0,0,0],[1,0,0,1,0,0,1,0,4,0,0,4,0,0,3,0]]},
+  {id:'twang', name:'Twang', role:'Banjo', cat:'melody', tier:'good', color:'#e67700', a:'#f59f00', a2:'#1971c2', mx:6, mo:8,
+   hat:`<path class="acc" d="M22 48 Q18 26 34 24 Q36 16 46 20 Q52 12 58 20 Q68 16 70 26 Q82 28 78 48 Q72 38 64 38 Q56 32 48 38 Q38 34 30 40 Q24 42 22 48 Z"/><g fill="#c2672b" opacity=".6"><circle cx="34" cy="65" r="1.2"/><circle cx="37.5" cy="67.5" r="1.2"/><circle cx="31" cy="67.5" r="1.2"/><circle cx="66" cy="65" r="1.2"/><circle cx="62.5" cy="67.5" r="1.2"/><circle cx="69" cy="67.5" r="1.2"/></g>`,
+   chest:`<path class="acc2" d="M30 108 H70 V138 H30 Z M30 108 L34 89 L39 89 L36 108 Z M70 108 L66 89 L61 89 L64 108 Z"/><circle cx="36" cy="111" r="2" fill="#ffd43b"/><circle cx="64" cy="111" r="2" fill="#ffd43b"/>`,
+   snd:{base:60, osc:[['sawtooth',1,0,0.5],['square',2,0,0.15]], dec:0.3, peak:0.5, filter:['bandpass',1600,1400,900,0.8,0.02]},
+   vars:[[1,0,3,5,1,0,3,5,4,0,6,8,4,0,6,8],[5,3,1,0,5,3,1,0,6,4,3,0,6,4,3,0],[1,0,5,0,3,0,5,0,4,0,8,0,6,0,8,0]]},
+  {id:'glim', name:'Glim', role:'Chimes', cat:'melody', tier:'good', color:'#adb5bd', a:'#adb5bd', a2:'#ffc9c9', mx:5, mo:7,
+   hat:`<circle class="acc" cx="25" cy="31" r="13"/><circle class="acc" cx="75" cy="31" r="13"/><circle class="acc2" cx="25" cy="31" r="8"/><circle class="acc2" cx="75" cy="31" r="8"/><circle cx="50" cy="67" r="3" fill="#ff8fab"/><path d="M22 68 L34 70 M22 74 L34 72.5 M78 68 L66 70 M78 74 L66 72.5" stroke="#495057" stroke-width="1" opacity=".5"/>`,
+   snd:{base:84, osc:[['sine',1,0,0.7],['sine',2.76,0,0.15],['sine',5.4,0,0.05]], dec:0.9, a:0.001, peak:0.12},
+   vars:[[1,0,0,0,5,0,0,0,3,0,0,0,6,0,0,0],[6,0,5,0,3,0,1,0,3,0,5,0,6,0,8,0],[1,0,3,0,0,5,0,3,6,0,0,5,0,3,0,0]]},
+  {id:'chip', name:'Chip', role:'8-bit', cat:'melody', tier:'good', color:'#1c7ed6', a:'#1c1233', a2:'#ffd43b', mx:7, mo:8,
+   hat:`<path class="acc2" d="M22 44 V36 H26 V30 H34 V26 H66 V30 H74 V36 H78 V44 H70 V38 H62 V34 H38 V38 H30 V44 Z"/><path class="acc" d="M27 51 H73 V56 H69 V60 H65 V64 H55 V60 H53 V56 H47 V60 H45 V64 H35 V60 H31 V56 H27 Z"/><rect x="35" y="56" width="4" height="4" fill="#fff" opacity=".6"/><rect x="57" y="56" width="4" height="4" fill="#fff" opacity=".6"/>`,
+   snd:{base:72, osc:[['square',1,0,1]], dec:0.15, peak:0.07, arp:[0,2,4]},
+   vars:[[1,0,1,0,3,0,3,0,4,0,4,0,3,0,3,0],[1,3,5,8,5,3,1,0,4,6,8,6,4,0,0,0],[8,0,6,0,5,0,3,0,1,0,3,0,5,0,6,0]]},
+  {id:'wah', name:'Wah', role:'Ooh-wah', cat:'vocals', tier:'good', color:'#ae3ec9', a:'#5c3d2e', a2:'#ffd43b', mx:6, mo:10,
+   hat:`${longHair('acc')}<path class="acc2" d="M21 46 Q50 30 79 46 L79 51 Q50 35 21 51 Z"/>`,
+   snd:{base:48, osc:[['sawtooth',1,0,1]], formants:[[300,4,1,730],[870,5,0.6,1090]], fT:0.25, sus:true, max:0.6, a:0.03, rel:0.08, peak:0.5, vib:[5,0.008,0.15]},
+   vars:[[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[3,0,0,0,1,0,0,0,4,0,0,0,3,0,0,0],[1,0,0,3,0,0,5,0,0,0,4,0,3,0,0,0]]},
+  {id:'scat', name:'Scat', role:'Scat', cat:'vocals', tier:'good', color:'#748ffc', a:'#868e96', a2:'#343a40', mx:6, mo:9,
+   hat:`<path class="acc" d="M20 44 Q18 22 50 20 Q84 20 82 42 Q60 36 20 44 Z"/><path class="acc" d="M22 44 Q12 52 30 51 Q48 48 54 42 Z"/><circle class="acc2" cx="50" cy="21" r="2.5"/>`,
+   snd:{base:48, osc:[['sawtooth',1,0,1]], vowel:true, dec:0.14, peak:0.8, glide:1.06, glideT:0.03},
+   vars:[[1,0,2,4,0,3,0,0,1,0,2,4,0,5,0,0],[3,3,0,4,0,5,0,1,3,3,0,4,0,6,0,0],[1,2,3,4,0,0,5,0,4,3,2,1,0,0,1,0]]},
+  {id:'lulla', name:'Lulla', role:'Lullaby', cat:'vocals', tier:'good', color:'#bac8ff', a:'#748ffc', a2:'#fff3bf', mx:5, mo:7,
+   hat:`<path class="acc" d="M21 46 Q20 20 52 21 Q80 22 88 44 Q92 56 94 66 L86 64 Q82 52 74 44 Q66 36 50 36 Q32 36 21 46 Z"/><circle class="acc2" cx="91" cy="68" r="5"/><path d="M22 46 Q50 34 74 44" stroke="#f8f9fa" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+   snd:{base:72, osc:[['sine',1,0,1],['triangle',2,0,0.1]], sus:true, max:1.2, a:0.15, rel:0.3, peak:0.13, vib:[4.5,0.006,0.3], noise:['bandpass',1200,1,0.015,0.3]},
+   vars:[[3,0,0,0,0,0,2,0,1,0,0,0,0,0,0,0],[5,0,0,0,3,0,0,0,4,0,0,0,2,0,0,0],[1,0,0,3,0,0,5,0,0,0,3,0,1,0,0,0]]},
+  {id:'reed', name:'Reed', role:'Harmonica', cat:'melody', tier:'good', color:'#2b8a3e', a:'#1971c2', a2:'#f8f9fa', mx:6, mo:7,
+   hat:`<path class="acc" d="M20 48 Q20 20 50 20 Q80 20 80 48 Z"/><path class="acc2" d="M30 46 Q30 24 50 24 Q60 24 64 30 Q58 40 30 46 Z"/><path class="acc" d="M14 48 Q50 40 86 48 L84 53 Q50 46 16 53 Z"/>`,
+   chest:`<g opacity=".3" stroke="#1c1233" stroke-width="2"><path d="M32 91 V138 M44 89 V138 M56 89 V138 M68 91 V138 M22 104 H78 M22 116 H78 M22 128 H78"/></g>`,
+   snd:{base:60, osc:[['square',1,0,0.6],['sawtooth',1,8,0.3]], formants:[[1500,1.5,1]], trem:[7,0.3], sus:true, max:0.6, a:0.03, rel:0.05, peak:0.13, chord:[2]},
+   vars:[[1,0,0,1,0,0,3,0,0,0,1,0,0,0,0,0],[3,0,3,0,1,0,0,0,4,0,4,0,3,0,0,0],[1,1,0,3,0,1,0,0,4,4,0,3,0,1,0,0]]},
+  {id:'fuzz', name:'Fuzz', role:'Rock guitar', cat:'melody', tier:'good', color:'#e03131', a:'#212529', a2:'#fcc419', mx:7, mo:10,
+   hat:`<path class="acc" d="M20 60 Q14 26 30 22 L34 12 L40 22 L48 8 L54 22 L62 12 L66 24 Q86 26 80 60 Q86 84 80 100 Q72 84 72 62 Q66 40 50 38 Q34 40 28 62 Q28 84 20 100 Q14 84 20 60 Z"/><path class="acc2" d="M21 46 Q50 32 79 46 L79 50 Q50 36 21 50 Z"/>`,
+   snd:{base:48, osc:[['sawtooth',1,0,0.6],['sawtooth',1.5,5,0.3]], drive:3, filter:['lowpass',3500,3000,1200,1,0.02], dec:0.6, peak:0.07},
+   vars:[[1,0,0,1,0,0,1,0,4,0,0,4,0,0,3,0],[1,1,1,0,0,0,3,3,4,4,4,0,0,0,3,0],[1,0,0,0,0,0,0,0,6,0,0,0,4,0,0,0]]},
+
+  /* GREAT unlocks */
+  {id:'timba', name:'Timba', role:'Timbales', cat:'beat', drum:true, tier:'great', color:'#20c997', a:'#e64980', a2:'#f8f9fa', mx:7, mo:9,
+   hat:`<path class="acc" d="M20 46 Q8 44 4 52 L22 52 Z"/><path class="acc" d="M20 48 Q20 20 50 20 Q80 20 80 48 Z"/><circle class="acc2" cx="50" cy="21" r="3"/><path d="M50 22 V46" stroke="#fff" stroke-width="1.5" opacity=".4"/>`,
+   chest:`<text x="50" y="124" text-anchor="middle" font-size="22" font-weight="700" font-family="Fredoka,system-ui,sans-serif" fill="#f8f9fa">7</text>`,
+   snd:{1:[{o:['triangle',520,420,0.04],dec:0.25,gain:0.4},{n:['bandpass',3000,1.5],dec:0.06,gain:0.25}],2:[{o:['triangle',380,300,0.04],dec:0.3,gain:0.4},{n:['bandpass',2500,1.5],dec:0.06,gain:0.2}],3:[{o:['square',2400],dec:0.2,gain:0.05,f:['bandpass',3000,6]}]},
+   vars:[[1,0,0,1,0,0,2,0,0,0,1,0,2,0,0,0],[3,0,3,0,3,3,0,3,1,0,2,0,1,2,0,0],[1,1,2,2,1,0,2,0,3,0,3,3,1,2,1,2]]},
+  {id:'tick', name:'Tick', role:'Tick tock', cat:'beat', drum:true, tier:'great', color:'#c5f6fa', a:'#f8f9fa', a2:'#ffc9c9', mx:5, mo:7,
+   hat:`<ellipse class="acc" cx="38" cy="14" rx="7" ry="20" transform="rotate(-10 38 14)" stroke="#dee2e6"/><ellipse class="acc" cx="62" cy="14" rx="7" ry="20" transform="rotate(10 62 14)" stroke="#dee2e6"/><ellipse class="acc2" cx="38" cy="15" rx="3.5" ry="14" transform="rotate(-10 38 15)"/><ellipse class="acc2" cx="62" cy="15" rx="3.5" ry="14" transform="rotate(10 62 15)"/>`,
+   chest:`<path d="M38 96 Q46 104 50 109" stroke="#fcc419" stroke-width="1.5" fill="none"/><circle cx="50" cy="116" r="7" fill="#fcc419"/><circle cx="50" cy="116" r="5" fill="#fff9db"/><path d="M50 116 V112.5 M50 116 L52.5 117" stroke="#1c1233" stroke-width="1"/>`,
+   snd:{1:[{o:['sine',2400],dec:0.03,gain:0.25},{n:['highpass',5000,1],dec:0.015,gain:0.15}],2:[{o:['sine',1700],dec:0.035,gain:0.25},{n:['highpass',4000,1],dec:0.015,gain:0.12}],3:[{o:['sine',2400],dec:0.8,gain:0.1},{o:['sine',3600],dec:0.6,gain:0.05}]},
+   vars:[[1,0,0,0,2,0,0,0,1,0,0,0,2,0,0,0],[1,0,2,0,1,0,2,0,1,0,2,0,1,0,2,0],[1,2,1,2,1,2,1,2,1,2,1,2,3,0,0,0]]},
+  {id:'gongo', name:'Gongo', role:'Gong', cat:'beat', drum:true, tier:'great', color:'#ff8787', a:'#3b2a1e', a2:'#f8f9fa', mx:7, mo:9,
+   hat:`<path d="M38 36 Q46 31 56 33" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".6"/><path class="acc" d="M50 70 Q42 64 34 69 Q28 66 27 61 Q26 70 34 73 Q42 74 50 71 Q58 74 66 73 Q74 70 73 61 Q72 66 66 69 Q58 64 50 70 Z"/>`,
+   chest:`<path class="acc2" d="M22 106 H78 V112 H22 Z M22 120 H78 V126 H22 Z" opacity=".9"/>`,
+   snd:{1:[{o:['sine',90,80,0.4],dec:2.5,gain:0.35},{o:['sine',143,140,0.4],dec:2,gain:0.2},{o:['sine',221],dec:1.4,gain:0.12},{o:['sine',367],dec:0.9,gain:0.06},{n:['lowpass',800,0.7],dec:0.5,gain:0.15}],2:[{o:['sine',180,170,0.2],dec:0.9,gain:0.25},{o:['sine',287],dec:0.6,gain:0.1}]},
+   vars:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0],[2,0,0,2,0,0,2,0,0,0,0,0,1,0,0,0]]},
+  {id:'glitch', name:'Glitch', role:'Glitch', cat:'beat', drum:true, tier:'great', color:'#0b7285', a:'#f8f9fa', a2:'#212529', mx:7, mo:8,
+   hat:`<path class="acc2" d="M22 48 Q20 24 50 22 Q80 24 78 44 Q70 30 46 34 Q30 36 22 48 Z"/><rect class="acc" x="26" y="49" width="48" height="15" rx="3"/><rect x="29" y="51" width="18" height="11" rx="2" fill="#fa5252" opacity=".85"/><rect x="53" y="51" width="18" height="11" rx="2" fill="#22b8cf" opacity=".85"/>`,
+   snd:{1:[{o:['square',3000,200,0.03],dec:0.04,gain:0.12}],2:[{o:['sawtooth',120,60,0.05],dec:0.08,gain:0.2,f:['lowpass',2000,2]},{n:['bandpass',8000,4],dec:0.02,gain:0.2,taps:[0,0.025,0.05]}],3:[{o:['square',800],dec:0.03,gain:0.1,taps:[0,0.04,0.08]}]},
+   vars:[[1,0,0,2,0,0,1,0,0,2,0,0,1,0,2,0],[0,1,1,0,2,0,0,3,0,1,0,2,0,3,3,3],[2,0,1,1,1,1,0,0,2,0,3,0,1,1,1,0]]},
+  {id:'reese', name:'Reese', role:'Reese bass', cat:'bass', tier:'great', color:'#868e96', a:'#5c636a', a2:'#f8f9fa', mx:6, mo:8,
+   hat:`<path class="acc" d="M16 62 Q14 20 50 18 Q86 20 84 62 Q84 82 76 90 L72 86 Q78 72 76 58 Q74 34 50 33 Q26 34 24 58 Q22 72 28 86 L24 90 Q16 82 16 62 Z"/>`,
+   chest:`<path d="M44 90 V108 M56 90 V108" stroke="#f8f9fa" stroke-width="2"/><circle cx="44" cy="109" r="2" fill="#f8f9fa"/><circle cx="56" cy="109" r="2" fill="#f8f9fa"/><path d="M34 122 H66 L62 134 H38 Z" fill="#000" opacity=".15"/>`,
+   snd:{base:36, osc:[['sawtooth',1,-18,0.5],['sawtooth',1,18,0.5],['sawtooth',0.5,0,0.3]], filter:['lowpass',500,900,400,2,0.2], sus:true, max:1.2, a:0.01, rel:0.08, peak:0.15, drive:1.5},
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,0,0,0,1,0,0,0,3,0,0,0,0,0],[1,0,0,1,0,0,1,0,6,0,0,4,0,0,3,0]]},
+  {id:'zoom', name:'Zoom', role:'Rocket', cat:'bass', tier:'great', color:'#e8590c', a:'#adb5bd', a2:'#ffd43b', mx:7, mo:9,
+   hat:`<path d="M21 40 Q50 30 79 40" stroke="#343a40" stroke-width="5" fill="none"/><circle cx="38" cy="38" r="7" fill="#343a40"/><circle cx="62" cy="38" r="7" fill="#343a40"/><circle class="acc2" cx="38" cy="38" r="4.5"/><circle class="acc2" cx="62" cy="38" r="4.5"/>`,
+   back:`<rect class="acc" x="6" y="92" width="16" height="34" rx="6"/><rect class="acc" x="78" y="92" width="16" height="34" rx="6"/><path class="acc2" d="M8 126 L14 146 L20 126 Z M80 126 L86 146 L92 126 Z"/><path d="M11 126 L14 138 L17 126 Z M83 126 L86 138 L89 126 Z" fill="#fa5252"/>`,
+   snd:{base:36, osc:[['sawtooth',1,0,0.6],['square',0.5,0,0.4]], glide:4, glideT:0.18, filter:['lowpass',3000,3000,400,1,0.05], dec:0.45, peak:0.16, drive:1.3},
+   vars:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[1,0,0,0,0,0,4,0,0,0,1,0,0,0,0,0],[1,0,0,1,0,0,6,0,0,1,0,0,4,0,3,0]]},
+  {id:'blare', name:'Blare', role:'Trumpet', cat:'melody', tier:'great', color:'#4263eb', a:'#212529', a2:'#e03131', mx:4, mo:8,
+   hat:`<path class="acc" d="M24 46 L24 22 Q24 18 28 18 H72 Q76 18 76 22 L76 46 Q70 34 50 34 Q30 34 24 46 Z"/>`,
+   chest:`<path d="M42 88 L50 100 L58 88 Z" fill="#f8f9fa"/><path class="acc2" d="M40 92 L50 98 L60 92 L60 104 L50 98 L40 104 Z"/>`,
+   snd:{base:60, osc:[['sawtooth',1,0,1]], filter:['lowpass',600,3200,1800,2,0.04], peq:[1300,2,6], sus:true, max:0.8, a:0.025, rel:0.06, peak:0.1, vib:[5.5,0.006,0.25], glide:0.97, glideT:0.04},
+   vars:[[1,0,1,0,3,0,0,0,5,0,0,3,5,0,0,0],[5,0,0,0,6,0,5,0,3,0,0,0,1,0,0,0],[1,1,1,3,0,1,3,5,0,3,5,6,0,8,0,0]]},
+  {id:'vibe', name:'Vibe', role:'Vibraphone', cat:'melody', tier:'great', color:'#364fc7', a:'#1c1233', a2:'#3b2a1e', mx:6, mo:7,
+   hat:`<path class="acc2" d="M22 46 Q20 22 50 21 Q80 22 78 46 Q72 34 50 33 Q28 34 22 46 Z"/><circle class="acc" cx="39" cy="57" r="7.5"/><circle class="acc" cx="61" cy="57" r="7.5"/><path d="M46.5 56 H53.5" stroke="#1c1233" stroke-width="2"/><circle cx="37" cy="55" r="2" fill="#fff" opacity=".5"/><circle cx="59" cy="55" r="2" fill="#fff" opacity=".5"/><path class="acc2" d="M48 86 H52 L50 90 Z"/>`,
+   chest:`<path d="M34 88 Q50 96 66 88 L66 94 Q50 102 34 94 Z" fill="#000" opacity=".2"/>`,
+   snd:{base:60, osc:[['sine',1,0,0.8],['sine',4,0,0.06]], dec:1.4, a:0.002, peak:0.18, trem:[5.5,0.4]},
+   vars:[[1,0,0,0,3,0,0,0,5,0,0,0,6,0,0,0],[3,0,5,0,0,6,0,5,3,0,0,0,1,0,0,0],[5,0,3,0,1,0,3,0,6,0,5,0,3,0,1,0]]},
+  {id:'pan', name:'Pan', role:'Steel drum', cat:'melody', tier:'great', color:'#66d9e8', a:'#51cf66', a2:'#ffd43b', mx:6, mo:9,
+   hat:`<path d="M30 40 Q34 24 50 22 Q66 24 70 40 Q60 34 50 34 Q40 34 30 40 Z" fill="#5c3d2e"/><path class="acc" d="M21 42 Q50 30 79 42 L79 47 Q50 35 21 47 Z"/><path class="acc" d="M30 44 Q50 40 70 44 Q66 51 50 49 Q34 51 30 44 Z" opacity=".85"/>`,
+   chest:`<g class="acc2"><path d="M30 104 Q38 96 44 106 Q36 110 30 104 Z"/><path d="M56 118 Q64 110 70 120 Q62 124 56 118 Z"/><path d="M40 126 Q46 118 52 128 Q46 132 40 126 Z"/></g>`,
+   snd:{base:72, osc:[['sine',1,0,0.7],['sine',2,0,0.3],['sine',2.92,0,0.15],['sine',4,0,0.05]], dec:0.7, a:0.003, peak:0.14, glide:1.01, glideT:0.02},
+   vars:[[1,0,3,0,5,3,0,1,0,3,5,0,6,0,5,0],[5,0,5,0,6,0,5,0,3,0,3,0,1,0,0,0],[1,3,0,5,0,6,0,5,3,0,1,0,3,0,5,0]]},
+  {id:'flutter', name:'Flutter', role:'Kalimba', cat:'melody', tier:'great', color:'#ffd8a8', a:'#cc5de8', a2:'#ff922b', mx:5, mo:7,
+   hat:`<path d="M21 46 Q50 28 79 46" stroke="#69db7c" stroke-width="4" fill="none" stroke-linecap="round"/>${[[33,37],[50,32],[67,37]].map(([x, y]) => `<circle class="acc2" cx="${x}" cy="${y}" r="4"/><circle cx="${x}" cy="${y}" r="1.6" fill="#fff3bf"/>`).join('')}`,
+   back:`<path class="acc" d="M28 100 Q0 66 4 104 Q8 116 28 110 Z M72 100 Q100 66 96 104 Q92 116 72 110 Z"/><path class="acc" d="M28 110 Q8 118 12 134 Q22 136 30 118 Z M72 110 Q92 118 88 134 Q78 136 70 118 Z" opacity=".85"/><circle class="acc2" cx="13" cy="94" r="4"/><circle class="acc2" cx="87" cy="94" r="4"/>`,
+   snd:{base:72, osc:[['sine',1,0,0.8],['triangle',5.9,0,0.04]], dec:0.6, a:0.002, peak:0.2, noise:['bandpass',3000,2,0.03,0.01]},
+   vars:[[1,0,3,0,1,0,5,0,3,0,1,0,6,0,5,0],[6,0,5,0,3,0,5,0,1,0,3,0,0,0,0,0],[1,3,5,6,5,3,1,0,3,5,6,8,6,5,3,0]]},
+  {id:'theo', name:'Theo', role:'Theremin', cat:'melody', tier:'great', color:'#e9ecef', a:'#f1f3f5', a2:'#ced4da', mx:6, mo:9,
+   hat:`<path class="acc" stroke="#ced4da" stroke-width="1" d="M18 56 Q8 40 18 34 Q14 20 28 22 Q30 8 44 16 Q52 4 60 16 Q74 8 74 22 Q88 22 82 36 Q92 44 82 56 Q78 42 68 38 Q50 30 32 38 Q22 42 18 56 Z"/>${roundGlasses('#495057')}`,
+   chest:`<path d="M38 88 L50 112 L62 88" fill="none" stroke="#ced4da" stroke-width="2.5"/><rect x="62" y="104" width="10" height="10" fill="none" stroke="#ced4da" stroke-width="1.5"/><path d="M65 104 V98 M69 104 V99" stroke="#e03131" stroke-width="2"/>`,
+   snd:{base:72, osc:[['sine',1,0,1],['sine',2,0,0.08]], porta:true, glideT:0.15, vib:[6.5,0.02,0.05], sus:true, max:1.4, a:0.05, rel:0.15, peak:0.12},
+   vars:[[3,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0],[1,0,0,0,8,0,0,0,5,0,0,0,3,0,0,0],[5,0,6,0,8,0,6,0,5,0,3,0,1,0,3,0]]},
+  {id:'robo', name:'Robo', role:'Vocoder', cat:'vocals', tier:'great', color:'#b0b8c4', a:'#868e96', a2:'#ff6b6b', mx:8, mo:8,
+   hat:`<path d="M50 24 V12" stroke="#868e96" stroke-width="3"/><circle class="acc2" cx="50" cy="10" r="4"/><rect class="acc" x="18" y="24" width="64" height="12" rx="4"/><rect class="acc" x="15" y="48" width="7" height="18" rx="2"/><rect class="acc" x="78" y="48" width="7" height="18" rx="2"/><circle class="acc2" cx="18.5" cy="57" r="2.5"/><circle class="acc2" cx="81.5" cy="57" r="2.5"/>`,
+   tail:`<rect x="44" y="134" width="12" height="16" fill="#868e96"/><circle cx="50" cy="160" r="13" fill="#343a40"/><circle cx="50" cy="160" r="6" fill="#adb5bd"/><circle cx="50" cy="160" r="2" fill="#343a40"/>`,
+   snd:{base:48, osc:[['square',1,0,0.6],['sawtooth',1,10,0.4]], vowel:true, chord:[4], sus:true, max:0.5, a:0.01, rel:0.04, peak:0.32},
+   vars:[[1,0,0,0,1,0,0,0,3,0,0,0,3,0,0,0],[1,0,1,0,0,3,0,3,4,0,4,0,0,3,0,0],[1,0,3,0,5,0,3,0,4,0,6,0,5,0,3,0]]},
+  {id:'yodi', name:'Yodi', role:'Yodel', cat:'vocals', tier:'great', color:'#fff3bf', a:'#2b8a3e', a2:'#e03131', mx:6, mo:11,
+   hat:`<path class="acc2" d="M66 30 Q80 12 88 6 Q80 22 70 34 Z"/><path class="acc" d="M30 38 Q32 18 50 18 Q68 18 70 38 Z"/><path class="acc" d="M20 40 Q50 32 80 40 Q78 45 50 43 Q22 45 20 40 Z"/><rect x="31" y="33" width="38" height="4" fill="#fcc419"/>`,
+   chest:`<path d="M32 89 L36 138 M68 89 L64 138" stroke="#e03131" stroke-width="5"/><path d="M33 112 H67" stroke="#e03131" stroke-width="4"/>`,
+   snd:{base:60, osc:[['sawtooth',1,0,1]], vowel:true, porta:true, glideT:0.05, sus:true, max:0.4, a:0.02, rel:0.05, peak:0.4},
+   vars:[[1,0,6,0,3,0,8,0,1,0,6,0,5,0,3,0],[1,6,0,3,8,0,6,1,0,3,8,0,6,0,0,0],[3,0,8,0,6,0,1,0,3,0,8,0,6,0,1,0]]},
+  {id:'bari', name:'Bari', role:'Baritone', cat:'vocals', tier:'great', color:'#5c940d', a:'#5c3d2e', a2:'#5c3d2e', mx:6, mo:10,
+   hat:`<path class="acc" d="M21 52 Q16 26 34 22 Q50 14 66 22 Q84 26 79 52 Q74 36 62 34 Q50 40 38 34 Q26 36 21 52 Z"/>${beard('#5c3d2e')}`,
+   snd:{base:48, osc:[['sawtooth',1,0,1]], formants:[[600,4,1],[1040,5,0.5],[2250,6,0.15]], sus:true, max:1.2, a:0.06, rel:0.15, peak:0.55, vib:[5,0.01,0.25]},
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,0,3,0,0,0,4,0,0,0,3,0,0,0],[1,0,0,3,0,0,4,0,5,0,0,4,0,0,3,0]]},
+
+  /* EXCELLENT unlocks */
+  {id:'duke', name:'Duke', role:'Big piano', cat:'melody', tier:'excellent', color:'#343a40', a:'#212529', a2:'#1c1233', mx:5, mo:8,
+   hat:`<path class="acc" d="M22 48 Q20 22 50 22 Q80 22 78 48 Q72 32 48 32 Q34 34 22 48 Z"/><path d="M40 24 Q44 30 46 32" stroke="#495057" stroke-width="1.5" fill="none"/><circle cx="61" cy="57" r="8" fill="none" stroke="#fcc419" stroke-width="2"/><path d="M69 59 Q72 70 70 82" stroke="#fcc419" stroke-width="1" fill="none"/>`,
+   chest:`<path d="M38 88 L50 120 L62 88 Z" fill="#f8f9fa"/><path class="acc2" d="M42 92 L50 97 L58 92 L58 102 L50 97 L42 102 Z"/><circle cx="50" cy="108" r="1.5" fill="#1c1233"/><circle cx="50" cy="114" r="1.5" fill="#1c1233"/>`,
+   snd:{base:48, osc:[['triangle',1,0,0.6],['sine',2,2,0.3],['sine',3,-2,0.12],['sine',4,0,0.06]], chord:[2,4], strum:0.012, dec:1.6, peak:0.1, filter:['lowpass',5000,4000,1200,0.7,0.02]},
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,1,0,0,1,0,3,0,0,3,0,0,3,0],[1,0,3,0,5,0,3,0,4,0,6,0,5,0,3,0]]},
+  {id:'aria', name:'Aria', role:'Soprano', cat:'vocals', tier:'excellent', color:'#faa2c1', a:'#fcc419', a2:'#ff8787', mx:5, mo:12,
+   hat:`${longHair('acc')}${flowerRing(['#ff8787','#f8f9fa','#ff8787','#fff3bf'])}`,
+   snd:{base:72, osc:[['sawtooth',1,0,1],['triangle',1,0,0.3]], formants:[[800,3,1],[1150,4,0.6],[2900,5,0.25]], sus:true, max:1.6, a:0.08, rel:0.2, peak:0.3, vib:[6,0.014,0.2]},
+   vars:[[6,0,0,0,0,0,5,0,0,0,3,0,0,0,0,0],[8,0,0,0,6,0,0,0,5,0,0,0,6,0,0,0],[3,0,5,0,6,0,8,0,6,0,5,0,3,0,0,0]]},
+  {id:'bello', name:'Bello', role:'Tenor', cat:'vocals', tier:'excellent', color:'#e7f5ff', a:'#3b2a1e', a2:'#e03131', mx:6, mo:12,
+   hat:`<path class="acc" d="M21 50 Q18 22 50 21 Q82 22 79 50 Q76 36 64 32 Q50 30 38 36 Q26 40 21 50 Z"/><path class="acc" d="M50 70 Q44 65 37 68 Q32 70 33 66 Q30 72 37 73 Q44 73 50 71 Q56 73 63 73 Q70 72 67 66 Q68 70 63 68 Q56 65 50 70 Z"/>`,
+   chest: scarf('acc2'),
+   snd:{base:48, osc:[['sawtooth',1,0,1]], formants:[[650,4,1],[1080,5,0.55],[2650,6,0.2]], sus:true, max:1.4, a:0.06, rel:0.18, peak:0.45, vib:[5.5,0.012,0.2]},
+   vars:[[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[3,0,0,0,5,0,0,0,4,0,0,0,3,0,0,0],[1,0,3,0,5,0,6,0,5,0,3,0,1,0,0,0]]},
+  {id:'vamp', name:'Vamp', role:'Haunted', cat:'melody', tier:'excellent', color:'#862e9c', a:'#212529', a2:'#c92a2a', mx:6, mo:9,
+   hat:`<path class="acc" d="M21 48 Q18 22 50 21 Q82 22 79 48 Q72 36 60 34 L50 44 L40 34 Q28 36 21 48 Z"/><path d="M45 77 L47 82 L49 77 Z M51 77 L53 82 L55 77 Z" fill="#fff"/>`,
+   back:`<path class="acc" d="M22 92 L8 162 Q50 150 92 162 L78 92 Z"/><path class="acc2" d="M25 96 L14 156 Q50 146 86 156 L75 96 Z" opacity=".9"/><path class="acc" d="M26 92 L12 70 L38 86 Z M74 92 L88 70 L62 86 Z"/>`,
+   snd:{base:48, osc:[['sine',1,0,0.5],['sine',2,0,0.35],['sine',3,0,0.25],['square',1,0,0.04]], chord:[2,4], trem:[5,0.35], sus:true, max:1.6, a:0.02, rel:0.1, peak:0.06},
+   vars:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0],[1,0,0,0,3,0,0,0,2,0,0,0,0,0,0,0]]},
+  {id:'boo', name:'Boo', role:'Ghost choir', cat:'vocals', tier:'excellent', color:'#f1f3f5', a:'#f1f3f5', a2:'#ced4da', mx:6, mo:12,
+   hat:`<path class="acc" stroke="#dee2e6" stroke-width="1" d="M50 29 Q43 18 50 9 Q56 18 50 29 Z"/>`,
+   tail:`<path d="M22 128 V152 Q28 162 34 152 Q40 164 46 152 Q52 164 58 152 Q64 164 70 152 Q76 162 78 152 V128 Z" fill="#f1f3f5"/>`,
+   snd:{base:60, osc:[['sine',1,0,0.7],['triangle',2,4,0.15]], formants:[[300,3,1,600],[870,4,0.5,900]], porta:true, glideT:0.2, vib:[4,0.02,0.1], sus:true, max:1.6, a:0.25, rel:0.4, peak:0.25, echo:[3,0.4]},
+   vars:[[3,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[5,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0],[1,0,0,0,3,0,0,0,6,0,0,0,5,0,0,0]]},
+  {id:'clang', name:'Sir Tin', role:'Anvil', cat:'beat', drum:true, tier:'excellent', color:'#1864ab', a:'#ced4da', a2:'#e03131', mx:7, mo:9,
+   hat:`<path class="acc2" d="M50 20 Q54 4 72 2 Q60 10 58 20 Z"/><path class="acc" d="M18 64 Q14 22 50 20 Q86 22 82 64 L76 64 Q76 40 50 38 Q24 40 24 64 Z"/><rect class="acc" x="22" y="37" width="56" height="6" rx="2"/>`,
+   chest:`<path d="M40 100 H60 V112 Q60 122 50 126 Q40 122 40 112 Z" fill="#fcc419"/><polygon points="${star(50,112,6,2.6)}" fill="#1864ab"/>`,
+   snd:{1:[{o:['square',1250],dec:0.5,gain:0.05,f:['bandpass',2500,8]},{o:['triangle',3150],dec:0.4,gain:0.06},{o:['sine',2000],dec:0.3,gain:0.08},{n:['highpass',4000,1],dec:0.03,gain:0.25}],2:[{o:['triangle',900],dec:0.3,gain:0.08},{o:['sine',1430],dec:0.25,gain:0.06},{n:['bandpass',3000,1],dec:0.03,gain:0.2}]},
+   vars:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,2,0,0,1,0,0,2,0,0,1,0,2,0],[1,0,2,0,1,0,2,2,1,0,2,0,1,2,1,2]]},
+  {id:'vroom', name:'Vroom', role:'Turbo bass', cat:'bass', tier:'excellent', color:'#f03e3e', a:'#f8f9fa', a2:'#1c1233', mx:7, mo:9,
+   hat:`<path class="acc" d="M16 66 Q12 20 50 18 Q88 20 84 66 L78 66 Q78 42 50 40 Q22 42 22 66 Z"/><path d="M22 32 Q50 22 78 32" stroke="#f03e3e" stroke-width="5" fill="none"/><path class="acc2" d="M24 41 Q50 31 76 41 L74 47 Q50 39 26 47 Z" opacity=".85"/>`,
+   chest:`<rect x="22" y="110" width="56" height="12" fill="#f8f9fa"/>${[0,1,2,3,4,5,6].map(i => `<rect x="${22 + i * 8}" y="${i % 2 ? 116 : 110}" width="8" height="6" fill="#1c1233"/>`).join('')}`,
+   snd:{base:36, osc:[['sawtooth',1,0,0.7],['square',1,7,0.3]], glide:0.5, glideT:0.15, filter:['lowpass',200,2200,600,6,0.1], sus:true, max:0.6, a:0.01, rel:0.05, peak:0.16, drive:1.5},
+   vars:[[1,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0],[1,0,0,0,4,0,0,0,1,0,0,0,6,0,4,0],[1,1,0,1,1,0,4,0,1,1,0,1,6,0,3,0]]},
+  {id:'gusto', name:'Gusto', role:'Pans', cat:'beat', drum:true, tier:'excellent', color:'#ffffff', a:'#ffffff', a2:'#e03131', mx:7, mo:9,
+   hat:`<path class="acc" stroke="#ced4da" stroke-width="1.5" d="M28 40 L30 26 Q18 22 22 10 Q28 0 40 6 Q46 -4 58 4 Q70 -2 76 10 Q82 22 70 26 L72 40 Z"/><path d="M30 34 H70" stroke="#ced4da" stroke-width="1.5"/><path d="M50 71 Q44 66 38 69 Q42 74 50 72 Q58 74 62 69 Q56 66 50 71 Z" fill="#3b2a1e"/>`,
+   chest:`<path class="acc2" d="M38 88 L50 98 L62 88 Z"/><path d="M32 106 H68 V138 H32 Z" fill="#fff" stroke="#ced4da" stroke-width="1"/><path d="M32 106 L28 96 M68 106 L72 96" stroke="#ced4da" stroke-width="1.5"/>`,
+   snd:{1:[{o:['triangle',523],dec:0.4,gain:0.12},{o:['triangle',1245],dec:0.3,gain:0.08},{o:['sine',2093],dec:0.2,gain:0.05},{n:['bandpass',4000,2],dec:0.05,gain:0.2}],2:[{o:['triangle',330],dec:0.35,gain:0.14},{o:['triangle',870],dec:0.25,gain:0.08},{n:['bandpass',2000,2],dec:0.05,gain:0.2}],3:[{n:['highpass',6000,1],dec:0.25,gain:0.15,taps:[0,0.02,0.05,0.09]}]},
+   vars:[[1,0,0,2,0,0,1,0,0,0,2,0,0,0,0,0],[1,0,2,0,3,0,2,0,1,0,2,0,3,0,0,0],[1,1,2,0,1,0,2,2,3,0,1,0,2,1,3,0]]},
+  {id:'ace', name:'Ace', role:'Synth brass', cat:'melody', tier:'excellent', color:'#a9714b', a:'#6f4e37', a2:'#f8f9fa', mx:6, mo:9,
+   hat:`<path class="acc" d="M19 62 Q14 22 50 20 Q86 22 81 62 Q80 70 74 70 L74 52 Q72 36 50 35 Q28 36 26 52 L26 70 Q20 70 19 62 Z"/><rect x="44" y="34" width="12" height="3" fill="#495057"/><circle cx="38" cy="36" r="7" fill="#495057"/><circle cx="62" cy="36" r="7" fill="#495057"/><circle cx="38" cy="36" r="4.5" fill="#a5d8ff"/><circle cx="62" cy="36" r="4.5" fill="#a5d8ff"/>`,
+   chest:`<path class="acc2" d="M30 88 Q50 98 70 88 L70 95 Q50 105 30 95 Z"/><path class="acc2" d="M66 92 Q86 96 94 88 Q90 100 70 102 Z"/>`,
+   snd:{base:60, osc:[['sawtooth',1,-8,0.5],['sawtooth',1,8,0.5]], filter:['lowpass',400,3500,1500,1.5,0.08], chord:[2,4], sus:true, max:0.5, a:0.03, rel:0.08, peak:0.06},
+   vars:[[1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,4,0,0,0,0,0,1,0,0,0],[1,0,1,0,0,3,0,0,4,0,4,0,0,6,0,0]]},
+  {id:'frosty', name:'Frosty', role:'Ice bells', cat:'melody', tier:'excellent', color:'#d0ebff', a:'#a5d8ff', a2:'#4dabf7', mx:5, mo:8,
+   hat:`<path class="acc" stroke="#e7f5ff" stroke-width="1" d="M26 38 L30 20 L36 32 L42 12 L48 30 L50 6 L52 30 L58 12 L64 32 L70 20 L74 38 Q50 30 26 38 Z"/>`,
+   chest:`${scarf('acc2')}<g stroke="#f8f9fa" stroke-width="2" stroke-linecap="round"><path d="M40 110 V128 M32 115 L48 123 M32 123 L48 115"/></g>`,
+   snd:{base:84, osc:[['sine',1,0,0.6],['sine',2.4,0,0.2],['sine',6.3,0,0.06]], dec:1.4, a:0.002, peak:0.1, echo:[3,0.35]},
+   vars:[[1,0,0,0,0,0,5,0,0,0,0,0,3,0,0,0],[6,0,0,5,0,0,3,0,0,1,0,0,3,0,0,0],[1,0,3,0,6,0,8,0,6,0,3,0,1,0,0,0]]},
+  {id:'gator', name:'Gator', role:'Swamp', cat:'bass', tier:'excellent', color:'#087f5b', a:'#37b24d', a2:'#f8f9fa', mx:8, mo:10,
+   hat:`<path class="acc" d="M16 62 Q12 26 34 20 L30 6 Q50 -2 70 6 L66 20 Q88 26 84 62 L78 62 Q78 40 50 38 Q22 40 22 62 Z"/><circle cx="38" cy="13" r="5" fill="#fcc419"/><circle cx="62" cy="13" r="5" fill="#fcc419"/><circle cx="38" cy="13" r="2" fill="#1c1233"/><circle cx="62" cy="13" r="2" fill="#1c1233"/><path class="acc2" d="M24 40 L28 46 L32 40 L36 46 L40 40 L44 46 L48 40 L52 46 L56 40 L60 46 L64 40 L68 46 L72 40 L76 46 L76 40 Z"/>`,
+   snd:{base:36, osc:[['sawtooth',1,0,0.7],['square',1,0,0.3]], filter:['lowpass',250,1600,300,9,0.12], dec:0.5, peak:0.2},
+   vars:[[1,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0],[1,0,1,0,0,4,0,0,1,0,3,0,0,1,0,0],[1,0,0,6,0,0,1,0,4,0,0,3,0,0,1,0]]},
+  {id:'jinx', name:'Jinx', role:'Jingles', cat:'beat', drum:true, tier:'excellent', color:'#fcc419', a:'#e03131', a2:'#1971c2', mx:7, mo:10,
+   hat:`<path class="acc" d="M30 32 Q10 30 8 8 Q20 22 42 26 Z"/><path class="acc2" d="M70 32 Q90 30 92 8 Q80 22 58 26 Z"/><path class="acc" d="M22 46 Q22 24 50 24 V46 Z"/><path class="acc2" d="M78 46 Q78 24 50 24 V46 Z"/><circle cx="8" cy="7" r="4" fill="#fcc419"/><circle cx="92" cy="7" r="4" fill="#fcc419"/><path d="M21 44 Q50 34 79 44 L79 49 Q50 39 21 49 Z" fill="#fcc419"/>`,
+   chest:`<path d="M38 100 L44 108 L38 116 L32 108 Z M62 100 L68 108 L62 116 L56 108 Z M50 112 L56 120 L50 128 L44 120 Z" fill="#e03131"/>`,
+   snd:{1:[{n:['highpass',7500,1],dec:0.18,gain:0.18,taps:[0,0.01,0.02]},{o:['sine',3800],dec:0.2,gain:0.03},{o:['sine',5100],dec:0.15,gain:0.02}],2:[{o:['sine',2600],dec:0.5,gain:0.06},{o:['sine',3900],dec:0.4,gain:0.04},{n:['highpass',6000,1],dec:0.1,gain:0.1}]},
+   vars:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,1,0,0,0,1,1,0,0,1,0,2,0,0,0],[1,1,1,0,2,0,1,1,1,0,2,0,1,1,2,0]]},
+
+  /* LEGENDARY unlocks */
+  {id:'sunny', name:'Sunny', role:'Sunshine', cat:'melody', tier:'legendary', color:'#ffd43b', a:'#fcc419', a2:'#ff922b', mx:7, mo:10,
+   back: sunRays(),
+   hat:`<path d="M26 52 H74 V56 Q72 64 62 64 Q54 64 52 56 H48 Q46 64 38 64 Q28 64 26 56 Z" fill="#1c1233"/><path d="M30 55 L36 53 M56 55 L62 53" stroke="#fff" stroke-width="1.5" opacity=".6"/>`,
+   snd:{base:60, osc:[['sawtooth',1,-12,0.2],['sawtooth',1,-5,0.2],['sawtooth',1,0,0.2],['sawtooth',1,5,0.2],['sawtooth',1,12,0.2]], chord:[2,4], filter:['lowpass',1200,5000,2500,1,0.1], sus:true, max:0.5, a:0.01, rel:0.1, peak:0.08, echo:[2,0.3]},
+   vars:[[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],[1,0,0,0,0,0,3,0,0,0,0,0,4,0,0,0],[1,0,1,0,3,0,3,0,4,0,4,0,6,0,5,0]]},
+  {id:'luna', name:'Luna', role:'Moon choir', cat:'vocals', tier:'legendary', color:'#4c6ef5', a:'#fff3bf', a2:'#1c2a6b', mx:5, mo:11,
+   back:`<path class="acc2" d="M24 92 L10 164 Q50 152 90 164 L76 92 Z"/>${[[18,140],[30,124],[70,128],[82,146],[40,152],[62,154]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="#fff"/>`).join('')}`,
+   hat:`<path d="M20 60 Q16 22 50 22 Q84 22 80 60 Q83 80 78 94 Q72 82 72 62 Q66 40 50 38 Q34 40 28 62 Q28 82 22 94 Q17 80 20 60 Z" fill="#e5dbff"/><path class="acc" d="M43 26 A10 10 0 1 0 57 12 A7.5 7.5 0 1 1 43 26 Z"/><polygon class="acc" points="${star(32,32,3.5,1.5)}"/><polygon class="acc" points="${star(68,32,3.5,1.5)}"/>`,
+   snd:{base:60, osc:[['sawtooth',1,0,1]], formants:[[300,3,1,450],[870,4,0.5,800]], chord:[2,4], sus:true, max:2, a:0.3, rel:0.5, peak:0.15, vib:[4.5,0.008,0.3], echo:[4,0.35]},
+   vars:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,2,0,0,0,1,0,0,0]]},
+  {id:'inky', name:'Inky', role:'Deep sea', cat:'bass', tier:'legendary', color:'#9775fa', a:'#7950f2', a2:'#e5dbff', mx:7, mo:10,
+   hat:`<path class="acc" d="M18 56 Q12 6 50 4 Q88 6 82 56 Q76 40 50 38 Q24 40 18 56 Z"/><circle class="acc2" cx="34" cy="22" r="4"/><circle class="acc2" cx="60" cy="14" r="3"/><circle class="acc2" cx="70" cy="30" r="3.5"/>`,
+   tail:`<path class="acc" d="M24 132 Q18 150 8 156 Q18 160 26 150 Q30 142 32 134 Z M38 134 Q36 156 28 168 Q38 168 42 156 Q44 144 44 134 Z M56 134 Q56 144 58 156 Q62 168 72 168 Q64 156 62 134 Z M68 134 Q70 142 74 150 Q82 160 92 156 Q82 150 76 132 Z"/>`,
+   snd:{base:36, osc:[['sine',1,0,0.8],['sawtooth',1,0,0.3]], filter:['lowpass',400,900,300,6,0.05], wob:[2,500], sus:true, max:1.2, a:0.02, rel:0.1, peak:0.22, drive:1.3},
+   vars:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[1,0,0,0,0,0,4,0,0,0,3,0,0,0,0,0],[1,0,0,1,0,0,6,0,0,0,4,0,0,0,1,0]]},
+  {id:'titan', name:'Titan', role:'Mega kit', cat:'beat', drum:true, tier:'legendary', color:'#495057', a:'#adb5bd', a2:'#22b8cf', mx:8, mo:10,
+   hat:`<path class="acc" d="M44 16 L50 2 L56 16 Z"/><path class="acc" d="M16 64 Q12 18 50 16 Q88 18 84 64 L78 64 Q78 40 50 38 Q22 40 22 64 Z"/><path d="M30 29 H70" stroke="#22b8cf" stroke-width="3" stroke-linecap="round"/><rect class="acc2" x="14" y="52" width="6" height="10" rx="2"/><rect class="acc2" x="80" y="52" width="6" height="10" rx="2"/>`,
+   chest:`<path class="acc" d="M16 94 Q28 84 38 92 L36 100 Q26 96 18 102 Z M84 94 Q72 84 62 92 L64 100 Q74 96 82 102 Z"/><circle class="acc2" cx="50" cy="110" r="7"/><circle cx="50" cy="110" r="3.5" fill="#e3fafc"/>`,
+   snd:{1:[{o:['sine',150,40,0.12],dec:0.6,gain:1},{n:['lowpass',2000,0.7],dec:0.05,gain:0.4}],2:[{n:['bandpass',1800,0.7],dec:0.3,gain:0.7},{o:['triangle',220,160,0.05],dec:0.15,gain:0.4},{n:['highpass',6000,1],dec:0.15,gain:0.2}],3:[{o:['square',2000,100,0.15],dec:0.18,gain:0.1,f:['lowpass',3000,1]}]},
+   vars:[[1,0,0,1,2,0,0,0,1,0,0,1,2,0,3,0],[1,0,1,0,2,0,1,0,1,1,0,1,2,0,3,3],[1,1,1,1,2,0,2,0,1,0,3,3,2,2,2,2]]},
+  {id:'pixie', name:'Pixie', role:'Fairy dust', cat:'melody', tier:'legendary', color:'#c3fae8', a:'#e599f7', a2:'#fcc419', mx:5, mo:8,
+   back:`<path class="acc" d="M30 98 Q0 62 4 100 Q8 114 30 108 Z M70 98 Q100 62 96 100 Q92 114 70 108 Z" opacity=".85"/><path class="acc" d="M30 108 Q10 120 16 136 Q26 134 32 114 Z M70 108 Q90 120 84 136 Q74 134 68 114 Z" opacity=".85"/>${[[12,86],[88,86],[8,104],[92,104],[20,128],[80,128]].map(([x, y]) => `<polygon class="acc2" points="${star(x,y,3,1.2)}"/>`).join('')}`,
+   hat:`<path class="skin" d="M21 54 L5 42 L23 63 Z M79 54 L95 42 L77 63 Z"/><path d="M22 46 Q20 26 50 25 Q80 26 78 46 Q70 36 50 35 Q30 36 22 46 Z" fill="#ffd8a8"/>${flowerRing(['#ff8fab','#fcc419','#e599f7','#74c0fc'])}`,
+   snd:{base:84, osc:[['sine',1,0,0.6],['triangle',2,0,0.15]], arp:[0,2,4,7], arpT:0.04, dec:0.5, peak:0.09, echo:[3,0.4]},
+   vars:[[1,0,0,0,3,0,0,0,5,0,0,0,3,0,0,0],[6,0,0,5,0,0,3,0,0,1,0,0,3,0,0,0],[1,0,3,0,5,0,6,0,8,0,6,0,5,0,3,0]]},
+  {id:'yeti', name:'Yeti', role:'Avalanche', cat:'beat', drum:true, tier:'legendary', color:'#e3fafc', a:'#ced4da', a2:'#74c0fc', mx:9, mo:11,
+   hat:`<path d="M30 26 Q24 14 28 6 Q32 16 38 22 Z M70 26 Q76 14 72 6 Q68 16 62 22 Z" fill="#74c0fc"/><path class="acc" d="M20 50 Q14 34 24 30 Q22 16 36 20 Q40 8 50 16 Q60 8 64 20 Q78 16 76 30 Q86 34 80 50 Q74 38 50 36 Q26 38 20 50 Z"/>`,
+   chest:`<path d="M34 100 Q50 92 66 100 Q70 120 64 134 Q50 140 36 134 Q30 120 34 100 Z" fill="#f8f9fa"/>`,
+   snd:{1:[{o:['sine',80,35,0.2],dec:0.8,gain:1},{n:['lowpass',300,0.7],dec:0.6,gain:0.5}],2:[{n:['highpass',3000,0.7],dec:0.6,gain:0.25,taps:[0,0.05,0.12,0.2]},{n:['lowpass',800,0.7],dec:0.4,gain:0.3}],3:[{o:['triangle',4200],dec:0.5,gain:0.04,taps:[0,0.07,0.15]}]},
+   vars:[[1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0],[1,0,0,0,2,0,0,3,1,0,0,0,2,0,3,0],[1,0,1,0,2,0,0,0,1,0,1,1,2,0,3,3]]},
+  {id:'seraph', name:'Seraph', role:'Heavenly', cat:'vocals', tier:'legendary', color:'#fff9db', a:'#fcc419', a2:'#f8f9fa', mx:5, mo:11,
+   back:`<path class="acc2" stroke="#dee2e6" stroke-width="1" d="M26 96 Q-4 60 2 112 Q10 104 14 118 Q18 108 22 120 Q24 110 28 114 Z M74 96 Q104 60 98 112 Q90 104 86 118 Q82 108 78 120 Q76 110 72 114 Z"/>`,
+   hat:`${[[26,44,8],[30,33,9],[40,27,9],[50,25,9],[60,27,9],[70,33,9],[74,44,8]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#ffd8a8"/>`).join('')}<ellipse cx="50" cy="13" rx="18" ry="5" fill="none" stroke="#fcc419" stroke-width="4"/>`,
+   snd:{base:72, osc:[['sawtooth',1,0,1]], formants:[[800,3,1],[1150,4,0.6]], chord:[2,4], sus:true, max:2, a:0.3, rel:0.5, peak:0.11, vib:[5,0.008,0.3], echo:[3,0.4]},
+   vars:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[1,0,0,0,3,0,0,0,4,0,0,0,6,0,0,0]]},
+  {id:'golem', name:'Golem', role:'Rock bass', cat:'bass', tier:'legendary', color:'#8d7f72', a:'#51cf66', a2:'#495057', mx:8, mo:10,
+   hat:`<path class="acc" d="M24 40 Q28 26 40 28 Q46 20 56 26 Q68 24 74 36 Q66 32 58 34 Q50 30 42 34 Q32 34 24 40 Z"/><circle cx="44" cy="26" r="2" fill="#fff3bf"/><circle cx="64" cy="29" r="2" fill="#ffc9c9"/><path d="M28 46 L34 51 L31 56 M72 46 L66 52" stroke="#495057" stroke-width="1.5" fill="none"/>`,
+   chest:`<path d="M30 96 L38 106 L34 116 M70 100 L62 110 L66 122 M44 130 L50 122 L56 130" stroke="#495057" stroke-width="2" fill="none"/><circle cx="50" cy="108" r="4" fill="#22b8cf" opacity=".85"/>`,
+   snd:{base:36, osc:[['sawtooth',1,0,0.6],['square',0.5,0,0.4]], drive:4, filter:['lowpass',800,1500,500,3,0.03], sus:true, max:0.6, a:0.005, rel:0.05, peak:0.11},
+   vars:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,1,0,4,0,4,0,3,0,3,0,1,0,1,0],[1,0,0,1,0,0,6,0,0,4,0,0,3,0,1,0]]},
+  {id:'merlin', name:'Merlin', role:'Spells', cat:'melody', tier:'legendary', color:'#6741d9', a:'#7048e8', a2:'#fcc419', mx:6, mo:9,
+   hat:`<path class="acc" d="M26 38 L50 -12 L74 38 Z"/><ellipse class="acc" cx="50" cy="38" rx="32" ry="6"/><path class="acc2" d="M51 6 A7 7 0 1 0 60 17 A5.5 5.5 0 1 1 51 6 Z"/><polygon class="acc2" points="${star(42,26,4,1.7)}"/>${beard('#f1f3f5', true)}`,
+   chest:[[34,126],[66,124],[58,134]].map(([x, y]) => `<polygon class="acc2" points="${star(x,y,4,1.7)}"/>`).join(''),
+   snd:{base:72, osc:[['triangle',1,0,0.5],['sine',2,0,0.2]], arp:[0,2,4,7], arpT:0.05, dec:0.6, peak:0.11, echo:[3,0.45]},
+   vars:[[1,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0],[1,0,0,0,3,0,0,0,6,0,0,0,4,0,0,0],[8,0,0,6,0,0,5,0,3,0,0,1,0,0,3,0]]},
+];
+MORE.forEach(c => { c.type = c.drum ? 'hit' : 'recipe'; c.sustain = !c.drum && !!c.snd.sus; });
+CH.push(...MORE);
+const CH_BY = Object.fromEntries(CH.map(c => [c.id, c]));
+CH.forEach(c => { c.v = 0; c.vol = 1; c.muted = false; c.hit = -1e9; c.holdUntil = 0; c.blinkAt = performance.now() + Math.random() * 3000; c.phase = Math.random() * 6; });
+const TIERS = ['good', 'great', 'excellent', 'legendary'];
+
+/* Unlock progress lives in this browser only */
+const ULK = 'songbox-unlocked';
+const unlocked = new Set(CH.filter(c => !c.tier).map(c => c.id));
+try { JSON.parse(localStorage.getItem(ULK) || '[]').forEach(id => { if (CH_BY[id]) unlocked.add(id); }); } catch (e) {}
+function saveUnlocked(){ try { localStorage.setItem(ULK, JSON.stringify([...unlocked])); } catch (e) {} }
+
+/* ---------- Names you gave the characters, and characters you made (this browser only) ---------- */
+const NAMES_KEY = 'songbox-names', CUSTOM_KEY = 'songbox-custom', NAME_MAX = 12;
+const PALETTE = ['#ff6b5b','#ffa94d','#ffe066','#a9e34b','#69db7c','#38d9a9','#4dd4c4','#74c0fc','#5c7cfa','#b197fc','#e599f7','#ff8fab','#e64980','#d9a066','#dee2e6'];
+const PLAIN = { id:'plain', name:'Plain', a:'#1c1233', a2:'#fff4e6', hat:'', mx:6, mo:8 };
+const loadJSON = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fallback : v; } catch (e) { return fallback; } };
+const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const isOpen = c => !!c && (c.custom || unlocked.has(c.id));
+const lookOf = id => (id !== 'plain' && CH_BY[id] && !CH_BY[id].custom) ? CH_BY[id] : PLAIN;
+CH.forEach(c => { c.orig = c.name; });
+const givenNames = loadJSON(NAMES_KEY, {});
+CH.forEach(c => {
+  const n = givenNames[c.id];
+  if (typeof n === 'string' && n.trim()) c.name = n.trim().slice(0, NAME_MAX);
+});
+function saveNames(){
+  const m = {};
+  CH.forEach(c => { if (!c.custom && c.name !== c.orig) m[c.id] = c.name; });
+  saveJSON(NAMES_KEY, m);
+}
+/* A made character borrows its sound and rhythms from one character and its outfit from another */
+function buildCustom(d){
+  const s = CH_BY[d.sound], l = lookOf(d.look);
+  const c = CH_BY[d.id] || { v:0, vol:1, muted:false, hit:-1e9, holdUntil:0, blinkAt:performance.now() + Math.random() * 3000 };
+  return Object.assign(c, {
+    id:d.id, name:d.name, orig:d.name, custom:true, voice:d.sound,
+    role:s.role, type:s.type, drum:!!s.drum, sustain:!!s.sustain, puff:!!s.puff, cat:s.cat, vars:s.vars, snd:s.snd,
+    color:d.color, a:l.a, a2:l.a2, mx:l.mx || 6, mo:l.mo || 8, hat:l.hat || '', chest:l.chest || '', back:l.back || '', tail:l.tail || ''
+  });
+}
+let customData = loadJSON(CUSTOM_KEY, []);
+if (!Array.isArray(customData)) customData = [];
+customData = customData.filter(d => d && /^u[a-z0-9]+$/.test(d.id) && typeof d.name === 'string' && d.name.trim()
+  && CH_BY[d.sound] && !CH_BY[d.sound].custom);
+customData.forEach(d => {
+  d.name = d.name.trim().slice(0, NAME_MAX);
+  if (!PALETTE.includes(d.color)) d.color = PALETTE[0];
+  const c = buildCustom(d);
+  CH.push(c);
+  CH_BY[c.id] = c;
+});
+
+/* ---------- Drawings ---------- */
+function headSVG(c){
+  return `<circle class="skin" cx="50" cy="58" r="30"/>
+    <circle class="cheek" cx="31" cy="69" r="5"/><circle class="cheek" cx="69" cy="69" r="5"/>
+    <ellipse class="eye" cx="39" cy="57" rx="4" ry="5"/><ellipse class="eye" cx="61" cy="57" rx="4" ry="5"/>
+    <ellipse class="mouth" cx="50" cy="75" rx="${c.mx}" ry="3"/>
+    ${c.hat}
+    <text class="zz" x="82" y="30">z</text>`;
+}
+function figureSVG(c){
+  return `<svg viewBox="0 0 100 180" aria-hidden="true">
+    <ellipse class="shadow" cx="50" cy="173" rx="30" ry="5"/>
+    <g class="body">
+      ${c.back || ''}
+      ${c.tail || `<rect class="leg" x="33" y="130" width="13" height="38" rx="6"/>
+      <rect class="leg" x="54" y="130" width="13" height="38" rx="6"/>
+      <ellipse class="shoe" cx="38" cy="168" rx="10" ry="5"/>
+      <ellipse class="shoe" cx="62" cy="168" rx="10" ry="5"/>`}
+      <g class="armL"><rect class="arm" x="12" y="92" width="12" height="38" rx="6"/></g>
+      <g class="armR"><rect class="arm" x="76" y="92" width="12" height="38" rx="6"/></g>
+      <path class="torso" d="M22 138 V104 Q22 88 38 88 H62 Q78 88 78 104 V138 Z"/>
+      ${c.chest || ''}
+      <g class="head">${headSVG(c)}</g>
+    </g>
+  </svg>`;
+}
+const SIL_SVG = `<svg viewBox="0 0 100 180" aria-hidden="true">
+  <ellipse class="shadow" cx="50" cy="173" rx="30" ry="5"/>
+  <g class="silg">
+    <rect x="33" y="130" width="13" height="38" rx="6"/><rect x="54" y="130" width="13" height="38" rx="6"/>
+    <rect x="12" y="92" width="12" height="38" rx="6"/><rect x="76" y="92" width="12" height="38" rx="6"/>
+    <path d="M22 138 V104 Q22 88 38 88 H62 Q78 88 78 104 V138 Z"/>
+    <circle cx="50" cy="58" r="30"/>
+  </g>
+  <text class="plus" x="50" y="68" text-anchor="middle">+</text>
+</svg>`;
+const LOCK_SVG = `<svg viewBox="6 0 92 96" aria-hidden="true">
+  <circle class="lockg" cx="50" cy="58" r="30"/>
+  <path class="locks" d="M42 58 V50 a8 8 0 0 1 16 0 V58"/>
+  <rect class="lockp" x="37" y="56" width="26" height="20" rx="4"/>
+</svg>`;
+const iconSVG = c => `<svg viewBox="6 0 92 96" aria-hidden="true">${headSVG(c)}</svg>`;
+/* Stage controls sit on a dark plate, so very dark body colors get a lighter tint there */
+function uiTone(hex){
+  const n = parseInt(String(hex).slice(1), 16);
+  if (isNaN(n)) return hex;
+  const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const L = 0.2126 * lin(n >> 16) + 0.7152 * lin(n >> 8 & 255) + 0.0722 * lin(n & 255);
+  return L < 0.16 ? `color-mix(in srgb, ${hex} 50%, #fff)` : hex;
+}
+function paint(el, c){
+  el.style.setProperty('--c', c.color);
+  el.style.setProperty('--a', c.a);
+  el.style.setProperty('--a2', c.a2);
+  el.style.setProperty('--ui', uiTone(c.color));
+}
+
+/* ---------- Sound engine (Web Audio, all synthesized) ---------- */
+let ac = null, master = null, bus = null, noiseBuf = null; /* bus = where the voice being played is routed */
+function ensureAudio(){
+  if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  master = ac.createGain(); master.gain.value = 0.7;
+  bus = master;
+  const comp = ac.createDynamicsCompressor();
+  master.connect(comp); comp.connect(ac.destination);
+  noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+}
+function freq(d, base){
+  const k = Math.floor(d / 5), i = ((d % 5) + 5) % 5;
+  return 440 * Math.pow(2, (base + PENT[i] + 12 * k - 69) / 12);
+}
+function tone(t, f, dur, {type='sine', gain=0.3, cutoff=null, attack=0.005, decay=0.2, detune=0} = {}){
+  const o = ac.createOscillator();
+  o.type = type; o.frequency.value = f; o.detune.value = detune;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur + decay);
+  let node = o;
+  if (cutoff) {
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = cutoff;
+    o.connect(lp); node = lp;
+  }
+  node.connect(g); g.connect(bus);
+  o.start(t); o.stop(t + dur + decay + 0.05);
+}
+function noise(t, dur, {type='bandpass', freq=1000, q=1, gain=0.3} = {}){
+  const s = ac.createBufferSource(); s.buffer = noiseBuf;
+  const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(bus);
+  s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.05);
+}
+function envGain(t, len, peak, attack, release){
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  g.gain.setValueAtTime(peak, t + Math.max(attack + 0.01, len - 0.1));
+  g.gain.linearRampToValueAtTime(0.0001, t + len + release);
+  return g;
+}
+/* Soft-clip curve that gives the dragon's growl its grit */
+const DRIVE = (() => { const n = 1024, c = new Float32Array(n); for (let i = 0; i < n; i++) c[i] = Math.tanh(3.5 * (i / (n / 2) - 1)); return c; })();
+/* A sung vowel: a buzzy tone shaped by two vowel formants */
+function voiceChop(t, f, f1, f2, dur, amp){
+  const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+  const out = ac.createGain();
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(0.55 * amp, t + 0.02);
+  out.gain.setValueAtTime(0.55 * amp, t + dur * 0.6);
+  out.gain.linearRampToValueAtTime(0.0001, t + dur);
+  [[f1, 4, 1], [f2, 5, 0.6]].forEach(([fr, q, a]) => {
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fr; bp.Q.value = q;
+    const bg = ac.createGain(); bg.gain.value = a;
+    o.connect(bp); bp.connect(bg); bg.connect(out);
+  });
+  out.connect(bus);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+let sirenLast = 0; /* the mermaid glides from her last note to the next */
+
+/* ---------- Recipe instruments (the big cast) ----------
+   Melodic recipe: base (C note), osc [[type, ratio, detune, gain]], sus+max or dec, a, rel, peak,
+   glide/glideT or porta (slide from the last note), vib [rate, depth, delay], trem [rate, depth],
+   filter [type, start, peak, end, q, peakTime], wob [beats, Hz], peq [freq, q, dB], drive,
+   formants [[freq, q, gain, endFreq]] or vowel, noise [type, freq, q, gain, dur], echo [steps, gain],
+   chord [degrees], strum (s), arp [degrees], arpT (s). */
+const VOWELS = [[730, 1090], [300, 870], [530, 1840], [570, 840]];
+function recipeNote(r, t, d, len, stepDur){
+  const f = freq(d, r.base);
+  const dur = r.sus ? Math.max(0.08, Math.min(len || 0.3, r.max || 2)) : (r.dec || 0.3);
+  const a = r.a ?? 0.005, peak = r.peak ?? 0.15, rel = Math.min(r.rel ?? 0.08, dur * 0.5);
+  const end = t + dur + 0.06;
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.linearRampToValueAtTime(peak, t + a);
+  if (r.sus) {
+    env.gain.setValueAtTime(peak, t + Math.max(a + 0.005, dur - rel));
+    env.gain.linearRampToValueAtTime(0.0001, t + dur);
+  } else {
+    env.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(a + 0.02, dur));
+  }
+  const head = ac.createGain();
+  let node = head;
+  if (r.drive) {
+    const pre = ac.createGain(); pre.gain.value = r.drive;
+    const sh = ac.createWaveShaper(); sh.curve = DRIVE;
+    node.connect(pre); pre.connect(sh); node = sh;
+  }
+  if (r.filter) {
+    const [type, f0, f1, f2, q, t1 = 0.05] = r.filter;
+    const fl = ac.createBiquadFilter(); fl.type = type; fl.Q.value = q || 1;
+    fl.frequency.setValueAtTime(f0, t);
+    fl.frequency.exponentialRampToValueAtTime(f1, t + t1);
+    fl.frequency.exponentialRampToValueAtTime(Math.max(30, f2), t + Math.max(t1 + 0.01, dur));
+    if (r.wob) {
+      const lfo = ac.createOscillator(); lfo.frequency.value = bpm / 60 * r.wob[0];
+      const lg = ac.createGain(); lg.gain.value = r.wob[1];
+      lfo.connect(lg); lg.connect(fl.frequency);
+      lfo.start(t); lfo.stop(end);
+    }
+    node.connect(fl); node = fl;
+  }
+  if (r.peq) {
+    const pk = ac.createBiquadFilter(); pk.type = 'peaking';
+    pk.frequency.value = r.peq[0]; pk.Q.value = r.peq[1]; pk.gain.value = r.peq[2];
+    node.connect(pk); node = pk;
+  }
+  const forms = r.vowel ? VOWELS[((d % 4) + 4) % 4].map((fr, i) => [fr, i ? 5 : 4, i ? 0.6 : 1]) : r.formants;
+  if (forms) {
+    const mix = ac.createGain();
+    forms.forEach(([fr, q, g, frEnd]) => {
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
+      bp.frequency.setValueAtTime(fr, t);
+      if (frEnd) bp.frequency.linearRampToValueAtTime(frEnd, t + (r.fT || dur));
+      const bg = ac.createGain(); bg.gain.value = g;
+      node.connect(bp); bp.connect(bg); bg.connect(mix);
+    });
+    node = mix;
+  }
+  node.connect(env);
+  let out = env;
+  if (r.trem) {
+    const tg = ac.createGain(); tg.gain.value = 1 - r.trem[1] / 2;
+    const lfo = ac.createOscillator(); lfo.frequency.value = r.trem[0];
+    const lg = ac.createGain(); lg.gain.value = r.trem[1] / 2;
+    lfo.connect(lg); lg.connect(tg.gain);
+    env.connect(tg); out = tg;
+    lfo.start(t); lfo.stop(end);
+  }
+  out.connect(bus);
+  if (r.echo) {
+    const dl = ac.createDelay(2); dl.delayTime.value = Math.min(1.9, stepDur * r.echo[0]);
+    const dg = ac.createGain(); dg.gain.value = r.echo[1];
+    out.connect(dl); dl.connect(dg); dg.connect(bus);
+  }
+  const from = r.porta ? (r._last ? r._last / f : 1) : (r.glide || 1);
+  if (r.porta) r._last = f;
+  let vg = null;
+  if (r.vib) {
+    const lfo = ac.createOscillator(); lfo.frequency.value = r.vib[0];
+    vg = ac.createGain();
+    vg.gain.setValueAtTime(0, t);
+    vg.gain.linearRampToValueAtTime(f * r.vib[1], t + (r.vib[2] || 0) + 0.01);
+    lfo.connect(vg); lfo.start(t); lfo.stop(end);
+  }
+  r.osc.forEach(([type, ratio, det, g]) => {
+    const o = ac.createOscillator(); o.type = type; o.detune.value = det || 0;
+    const target = f * ratio;
+    o.frequency.setValueAtTime(target * from, t);
+    if (from !== 1) o.frequency.exponentialRampToValueAtTime(target, t + (r.glideT || 0.06));
+    if (vg) vg.connect(o.frequency);
+    const og = ac.createGain(); og.gain.value = g;
+    o.connect(og); og.connect(head);
+    o.start(t); o.stop(end);
+  });
+  if (r.noise) {
+    const [type, nf, q, g, nd] = r.noise;
+    noise(t, nd || 0.05, {type, freq: nf, q, gain: g});
+  }
+  return dur;
+}
+function playRecipe(r, t, d, len, stepDur){
+  if (r.arp) {
+    const step = r.arpT || stepDur / 3;
+    r.arp.forEach((off, i) => recipeNote(r, t + i * step, d + off, len, stepDur));
+    return Math.min(0.4, step * r.arp.length);
+  }
+  let dur = 0;
+  [0, ...(r.chord || [])].forEach((off, i) => { dur = recipeNote(r, t + i * (r.strum || 0), d + off, len, stepDur); });
+  return dur;
+}
+/* Drum recipe: {1: layers, 2: layers, 3: layers}; a layer is a pitched hit {o:[type, f0, f1, ft], f:[filter]} or a noise burst {n:[type, freq, q]}, with dec, gain, taps */
+function playHit(r, t, v){
+  [].concat(r[v] || r[1]).forEach(L => (L.taps || [0]).forEach(off => {
+    const at = t + off;
+    if (L.o) {
+      const [type, f0, f1, ft] = L.o;
+      const o = ac.createOscillator(); o.type = type;
+      o.frequency.setValueAtTime(f0, at);
+      if (f1) o.frequency.exponentialRampToValueAtTime(f1, at + (ft || 0.05));
+      const g = ac.createGain();
+      g.gain.setValueAtTime(L.gain, at);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + L.dec);
+      let node = o;
+      if (L.f) {
+        const fl = ac.createBiquadFilter(); fl.type = L.f[0]; fl.frequency.value = L.f[1]; fl.Q.value = L.f[2] || 1;
+        o.connect(fl); node = fl;
+      }
+      node.connect(g); g.connect(bus);
+      o.start(at); o.stop(at + L.dec + 0.03);
+    } else if (L.n) {
+      noise(at, L.dec, {type: L.n[0], freq: L.n[1], q: L.n[2] || 1, gain: L.gain});
+    }
+  }));
+}
+const VOICES = {
+  bongo(t, v){
+    const f = v === 2 ? 220 : 330, dec = v === 3 ? 0.08 : 0.22;
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f * 1.6, t);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.03);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dec);
+    o.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + dec + 0.03);
+    if (v === 3) noise(t, 0.04, {type:'bandpass', freq:2500, q:1, gain:0.3});
+  },
+  lala(t, d, len){
+    const f = freq(d, BASE.lala), dur = Math.max(0.12, Math.min(len, 0.4));
+    const o = ac.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f * 0.94, t);
+    o.frequency.linearRampToValueAtTime(f, t + 0.04);
+    const out = ac.createGain();
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(0.5, t + 0.03);
+    out.gain.setValueAtTime(0.5, t + dur * 0.6);
+    out.gain.linearRampToValueAtTime(0.0001, t + dur);
+    const b1 = ac.createBiquadFilter(); b1.type = 'bandpass'; b1.Q.value = 3;
+    b1.frequency.setValueAtTime(380, t);
+    b1.frequency.linearRampToValueAtTime(760, t + 0.06);
+    const b2 = ac.createBiquadFilter(); b2.type = 'bandpass'; b2.Q.value = 4; b2.frequency.value = 1150;
+    const g2 = ac.createGain(); g2.gain.value = 0.6;
+    o.connect(b1); b1.connect(out); o.connect(b2); b2.connect(g2); g2.connect(out); out.connect(bus);
+    o.start(t); o.stop(t + dur + 0.02);
+    return dur;
+  },
+  slap(t, d){
+    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq(d, BASE.slap);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 4;
+    lp.frequency.setValueAtTime(2400, t);
+    lp.frequency.exponentialRampToValueAtTime(260, t + 0.12);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.3, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(lp); lp.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.32);
+  },
+  marimba(t, d){
+    const f = freq(d, BASE.marimba);
+    tone(t, f, 0.01, {type:'sine', gain:0.28, decay:0.35});
+    tone(t, f * 4, 0.005, {type:'sine', gain:0.06, decay:0.08});
+  },
+  scratch(t, v){
+    const s = ac.createBufferSource(); s.buffer = noiseBuf;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 6;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    if (v === 2) {
+      bp.frequency.setValueAtTime(300, t);
+      bp.frequency.exponentialRampToValueAtTime(3000, t + 0.18);
+      g.gain.linearRampToValueAtTime(0.8, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    } else {
+      bp.frequency.setValueAtTime(500, t);
+      bp.frequency.exponentialRampToValueAtTime(2200, t + 0.05);
+      bp.frequency.exponentialRampToValueAtTime(400, t + 0.1);
+      bp.frequency.exponentialRampToValueAtTime(1800, t + 0.14);
+      g.gain.linearRampToValueAtTime(0.8, t + 0.01);
+      g.gain.setValueAtTime(0.8, t + 0.13);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    }
+    s.connect(bp); bp.connect(g); g.connect(bus);
+    s.start(t, Math.random() * 0.5); s.stop(t + 0.25);
+  },
+  hum(t, d, len){
+    const f = freq(d, BASE.hum);
+    const vib = ac.createOscillator(); vib.frequency.value = 4.5;
+    const vg = ac.createGain(); vg.gain.value = f * 0.006;
+    vib.connect(vg);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650;
+    const g = envGain(t, len, 0.16, 0.08, 0.12);
+    [['sine', 1, 1], ['triangle', 2, 0.25]].forEach(([type, m, amp]) => {
+      const o = ac.createOscillator(); o.type = type; o.frequency.value = f * m;
+      vg.connect(o.frequency);
+      const og = ac.createGain(); og.gain.value = amp;
+      o.connect(og); og.connect(lp);
+      o.start(t); o.stop(t + len + 0.15);
+    });
+    lp.connect(g); g.connect(bus);
+    vib.start(t); vib.stop(t + len + 0.15);
+  },
+  kazoo(t, d, len){
+    const f = freq(d, BASE.kazoo), dur = Math.max(0.1, Math.min(len, 0.5));
+    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+    const vib = ac.createOscillator(); vib.frequency.value = 6;
+    const vg = ac.createGain(); vg.gain.value = f * 0.012;
+    vib.connect(vg); vg.connect(o.frequency);
+    const sh = ac.createWaveShaper(); sh.curve = DRIVE;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1100; bp.Q.value = 1.2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.13, t + 0.02);
+    g.gain.setValueAtTime(0.13, t + Math.max(0.03, dur - 0.04));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(sh); sh.connect(bp); bp.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + dur + 0.02); vib.start(t); vib.stop(t + dur + 0.02);
+    return dur;
+  },
+  flute(t, d, len){
+    const f = freq(d, BASE.flute), dur = Math.max(0.12, Math.min(len, 0.9));
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+    const o2 = ac.createOscillator(); o2.type = 'triangle'; o2.frequency.value = f * 2;
+    const vib = ac.createOscillator(); vib.frequency.value = 5;
+    const vg = ac.createGain();
+    vg.gain.setValueAtTime(0, t);
+    vg.gain.linearRampToValueAtTime(f * 0.007, t + 0.25);
+    vib.connect(vg); vg.connect(o.frequency);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.06);
+    g.gain.setValueAtTime(0.2, t + Math.max(0.07, dur - 0.06));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    const g2 = ac.createGain(); g2.gain.value = 0.08;
+    o2.connect(g2); g2.connect(g); o.connect(g); g.connect(bus);
+    noise(t, 0.08, {type:'bandpass', freq:f * 2, q:2, gain:0.08});
+    [o, o2, vib].forEach(x => { x.start(t); x.stop(t + dur + 0.02); });
+    return dur;
+  },
+  sax(t, d, len){
+    const f = freq(d, BASE.sax), dur = Math.max(0.12, Math.min(len, 0.9));
+    const o = ac.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f * 0.97, t);
+    o.frequency.linearRampToValueAtTime(f, t + 0.05);
+    const vib = ac.createOscillator(); vib.frequency.value = 5.5;
+    const vg = ac.createGain();
+    vg.gain.setValueAtTime(0, t);
+    vg.gain.linearRampToValueAtTime(f * 0.01, t + 0.3);
+    vib.connect(vg); vg.connect(o.frequency);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2;
+    lp.frequency.setValueAtTime(700, t);
+    lp.frequency.linearRampToValueAtTime(2200, t + 0.05);
+    lp.frequency.exponentialRampToValueAtTime(1300, t + dur);
+    const pk = ac.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1400; pk.Q.value = 2; pk.gain.value = 8;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.03);
+    g.gain.setValueAtTime(0.12, t + Math.max(0.04, dur - 0.05));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(lp); lp.connect(pk); pk.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + dur + 0.02); vib.start(t); vib.stop(t + dur + 0.02);
+    return dur;
+  },
+  sub(t, d, len){
+    const f = freq(d, BASE.sub), dur = Math.max(0.15, Math.min(len, 1.2));
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f * 1.8, t);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.06);
+    const pre = ac.createGain(); pre.gain.value = 0.9;
+    const sh = ac.createWaveShaper(); sh.curve = DRIVE;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.42, t + 0.008);
+    g.gain.setValueAtTime(0.42, t + dur * 0.6);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(pre); pre.connect(sh); sh.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + dur + 0.02);
+    return dur;
+  },
+  echo(t, d, len, stepDur){
+    const f = freq(d, BASE.echo);
+    const vowels = [[730, 1090], [530, 1840], [570, 840], [300, 2200]];
+    const [f1, f2] = vowels[((d % 4) + 4) % 4];
+    [1, 0.45, 0.2, 0.09].forEach((amp, i) => voiceChop(t + i * stepDur * 3, f, f1, f2, 0.22, amp));
+    return 0.22;
+  },
+  strings(t, d, len){
+    const dur = Math.max(0.2, len);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800; lp.Q.value = 0.7;
+    const g = envGain(t, dur, 0.1, Math.min(0.25, dur * 0.4), 0.3);
+    lp.connect(g); g.connect(bus);
+    const vib = ac.createOscillator(); vib.frequency.value = 5.2;
+    const vg = ac.createGain(); vg.gain.value = 8;
+    vib.connect(vg);
+    [0, 2].forEach(s => {
+      const f = freq(d + s, BASE.strings);
+      [-10, 0, 10].forEach(det => {
+        const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+        vg.connect(o.detune);
+        const og = ac.createGain(); og.gain.value = 0.3;
+        o.connect(og); og.connect(lp);
+        o.start(t); o.stop(t + dur + 0.35);
+      });
+    });
+    vib.start(t); vib.stop(t + dur + 0.35);
+  },
+  cannon(t, v){
+    const [f0, f1, dec] = v === 2 ? [260, 130, 0.4] : v === 3 ? [90, 40, 0.8] : [170, 75, 0.6];
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + 0.2);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.85, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dec);
+    o.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + dec + 0.05);
+    noise(t, v === 3 ? 0.5 : 0.06, {type:'lowpass', freq: v === 3 ? 900 : 1600, q:0.7, gain: v === 3 ? 0.6 : 0.25});
+  },
+  phoenix(t, d, len, stepDur){
+    const f = freq(d, BASE.phoenix), dur = Math.max(0.12, Math.min(len, 0.7));
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3;
+    lp.frequency.setValueAtTime(800, t);
+    lp.frequency.exponentialRampToValueAtTime(4200, t + 0.12);
+    lp.frequency.exponentialRampToValueAtTime(1600, t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.06, t + 0.02);
+    g.gain.setValueAtTime(0.06, t + Math.max(0.03, dur - 0.05));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    lp.connect(g); g.connect(bus);
+    [-14, -6, 0, 6, 14].forEach(det => {
+      const o = ac.createOscillator(); o.type = 'sawtooth'; o.detune.value = det;
+      o.frequency.setValueAtTime(f * 0.89, t);
+      o.frequency.exponentialRampToValueAtTime(f, t + 0.06);
+      o.connect(lp); o.start(t); o.stop(t + dur + 0.02);
+    });
+    tone(t + stepDur * 2, f * 2, 0.02, {type:'triangle', gain:0.05, decay:0.3});
+    return dur;
+  },
+  siren(t, d, len, stepDur){
+    const f = freq(d, BASE.siren), dur = Math.max(0.2, len);
+    const from = sirenLast || f;
+    sirenLast = f;
+    const vib = ac.createOscillator(); vib.frequency.value = 5.5;
+    const vg = ac.createGain();
+    vg.gain.setValueAtTime(0, t);
+    vg.gain.linearRampToValueAtTime(f * 0.012, t + 0.3);
+    vib.connect(vg);
+    const g = envGain(t, dur, 0.16, 0.1, 0.4);
+    [['sine', 1, 1], ['triangle', 2, 0.15]].forEach(([type, m, amp]) => {
+      const o = ac.createOscillator(); o.type = type;
+      o.frequency.setValueAtTime(from * m, t);
+      o.frequency.exponentialRampToValueAtTime(f * m, t + 0.12);
+      vg.connect(o.frequency);
+      const og = ac.createGain(); og.gain.value = amp;
+      o.connect(og); og.connect(g);
+      o.start(t); o.stop(t + dur + 0.45);
+    });
+    const dl = ac.createDelay(1); dl.delayTime.value = Math.min(0.9, stepDur * 3);
+    const dg = ac.createGain(); dg.gain.value = 0.4;
+    g.connect(bus); g.connect(dl); dl.connect(dg); dg.connect(bus);
+    vib.start(t); vib.stop(t + dur + 0.45);
+  },
+  kick(t){
+    const o = ac.createOscillator();
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    o.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.5);
+  },
+  snare(t){
+    noise(t, 0.18, {type:'bandpass', freq:1800, q:0.8, gain:0.5});
+    tone(t, 190, 0.02, {type:'triangle', gain:0.25, decay:0.08});
+  },
+  hat(t){ noise(t, 0.05, {type:'highpass', freq:7000, q:0.7, gain:0.18}); },
+  clap(t){
+    [0, 0.012, 0.024].forEach(o => noise(t + o, 0.03, {type:'bandpass', freq:1300, q:1.4, gain:0.35}));
+    noise(t + 0.036, 0.16, {type:'bandpass', freq:1300, q:1.1, gain:0.28});
+  },
+  shaker(t){
+    const s = ac.createBufferSource(); s.buffer = noiseBuf;
+    const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 5500;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.15, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    s.connect(f); f.connect(g); g.connect(bus);
+    s.start(t, Math.random() * 0.5); s.stop(t + 0.12);
+  },
+  zap(t, v){
+    const up = v === 2, dur = up ? 0.22 : 0.16;
+    const o = ac.createOscillator(); o.type = 'square';
+    o.frequency.setValueAtTime(up ? 150 : 2000, t);
+    o.frequency.exponentialRampToValueAtTime(up ? 2200 : 110, t + dur);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3500;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.1, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.04);
+    o.connect(lp); lp.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + dur + 0.06);
+  },
+  bass(t, d){ tone(t, freq(d, BASE.bass), 0.2, {type:'sawtooth', gain:0.28, cutoff:500, decay:0.12}); },
+  wub(t, d, len){
+    const f = freq(d, BASE.wub);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 9; lp.frequency.value = 500;
+    const lfo = ac.createOscillator(); lfo.frequency.value = bpm / 60 * 2;
+    const lg = ac.createGain(); lg.gain.value = 420;
+    lfo.connect(lg); lg.connect(lp.frequency);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+    g.gain.setValueAtTime(0.2, t + Math.max(0.03, len - 0.06));
+    g.gain.linearRampToValueAtTime(0.0001, t + len);
+    lp.connect(g); g.connect(bus);
+    const oscs = [0, 7].map(det => { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(lp); return o; });
+    [...oscs, lfo].forEach(o => { o.start(t); o.stop(t + len + 0.05); });
+  },
+  brass(t, d){
+    const f = freq(d, BASE.brass);
+    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2;
+    lp.frequency.setValueAtTime(180, t);
+    lp.frequency.linearRampToValueAtTime(1100, t + 0.05);
+    lp.frequency.exponentialRampToValueAtTime(300, t + 0.3);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.32, t + 0.025);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    o.connect(lp); lp.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.36);
+  },
+  pluck(t, d){ tone(t, freq(d, BASE.pluck), 0.1, {type:'triangle', gain:0.25, decay:0.4}); },
+  pop(t, d){
+    const f = freq(d, BASE.pop);
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f * 0.5, t);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.03);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.25, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.2);
+  },
+  lead(t, d){ tone(t, freq(d, BASE.lead), 0.14, {type:'square', gain:0.08, cutoff:2400, decay:0.08}); },
+  vox(t, d, len){
+    const f = freq(d, BASE.vox);
+    tone(t, f, len, {type:'sawtooth', gain:0.1, cutoff:900, attack:0.06, decay:0.12});
+    tone(t, f, len, {type:'sawtooth', gain:0.08, cutoff:900, attack:0.06, decay:0.12, detune:12});
+  },
+  ooh(t, d, len){
+    const f = freq(d, BASE.ooh);
+    const vib = ac.createOscillator(); vib.frequency.value = 5.5;
+    const vg = ac.createGain(); vg.gain.value = f * 0.008;
+    vib.connect(vg);
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400;
+    const g = envGain(t, len, 0.09, 0.15, 0.15);
+    [[1, 'triangle', 1], [2, 'sine', 0.35]].forEach(([m, type, amp]) => {
+      const o = ac.createOscillator(); o.type = type; o.frequency.value = f * m;
+      vg.connect(o.frequency);
+      const og = ac.createGain(); og.gain.value = amp;
+      o.connect(og); og.connect(lp);
+      o.start(t); o.stop(t + len + 0.2);
+    });
+    lp.connect(g); g.connect(bus);
+    vib.start(t); vib.stop(t + len + 0.2);
+  },
+  diva(t, d, len){
+    const f = freq(d, BASE.diva);
+    const vib = ac.createOscillator(); vib.frequency.value = 6;
+    const vg = ac.createGain(); vg.gain.value = f * 0.016;
+    vib.connect(vg);
+    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+    const body = ac.createOscillator(); body.type = 'triangle'; body.frequency.value = f;
+    vg.connect(o.frequency); vg.connect(body.frequency);
+    const out = envGain(t, len, 0.45, 0.12, 0.2);
+    [[800, 2.5, 1], [1150, 3, 0.7], [2900, 4, 0.25]].forEach(([fr, q, amp]) => {
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fr; bp.Q.value = q;
+      const bg = ac.createGain(); bg.gain.value = amp;
+      o.connect(bp); bp.connect(bg); bg.connect(out);
+    });
+    const bodyG = ac.createGain(); bodyG.gain.value = 0.15;
+    body.connect(bodyG); bodyG.connect(out);
+    out.connect(bus);
+    [o, body, vib].forEach(x => { x.start(t); x.stop(t + len + 0.25); });
+  },
+  pad(t, d, len){
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(400, t);
+    lp.frequency.linearRampToValueAtTime(1800, t + len * 0.7);
+    const g = envGain(t, len, 0.16, Math.min(0.5, len * 0.3), 0.4);
+    lp.connect(g); g.connect(bus);
+    [0, 2, 4].forEach(s => {
+      const f = freq(d + s, BASE.pad);
+      [-8, 8].forEach(det => {
+        const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+        const og = ac.createGain(); og.gain.value = 0.18;
+        o.connect(og); og.connect(lp);
+        o.start(t); o.stop(t + len + 0.45);
+      });
+    });
+    const sh = ac.createOscillator(); sh.type = 'sine'; sh.frequency.value = freq(d + 4, BASE.pad) * 2;
+    const sg = ac.createGain(); sg.gain.value = 0.25;
+    sh.connect(sg); sg.connect(lp);
+    sh.start(t); sh.stop(t + len + 0.45);
+  },
+  growl(t, d, len){
+    const f = freq(d, BASE.growl);
+    const dur = Math.max(0.12, Math.min(len, 0.8));
+    const pre = ac.createGain(); pre.gain.value = 2.2;
+    const sh = ac.createWaveShaper(); sh.curve = DRIVE; sh.oversample = '2x';
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 7;
+    lp.frequency.setValueAtTime(220, t);
+    lp.frequency.exponentialRampToValueAtTime(1700, t + 0.07);
+    lp.frequency.exponentialRampToValueAtTime(280, t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.012);
+    g.gain.setValueAtTime(0.16, t + Math.max(0.02, dur - 0.05));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    pre.connect(sh); sh.connect(lp); lp.connect(g); g.connect(bus);
+    [['sawtooth', 0], ['square', 9]].forEach(([type, det]) => {
+      const o = ac.createOscillator(); o.type = type; o.frequency.value = f; o.detune.value = det;
+      o.connect(pre); o.start(t); o.stop(t + dur + 0.05);
+    });
+    return dur;
+  },
+  harp(t, d){
+    for (let i = 0; i < 4; i++) {
+      const f = freq(d + i, BASE.harp);
+      tone(t + i * 0.035, f, 0.02, {type:'triangle', gain:0.11, decay:0.7});
+      tone(t + i * 0.035, f * 2, 0.01, {type:'sine', gain:0.03, decay:0.4});
+    }
+  },
+  thunder(t, v){
+    if (v === 1) {
+      const o = ac.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(130, t);
+      o.frequency.exponentialRampToValueAtTime(38, t + 0.35);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.95, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1);
+      o.connect(g); g.connect(bus);
+      o.start(t); o.stop(t + 1.05);
+      noise(t, 0.02, {type:'highpass', freq:3000, q:0.7, gain:0.15});
+    } else if (v === 2) {
+      noise(t, 0.25, {type:'bandpass', freq:1500, q:0.6, gain:0.55});
+      noise(t + 0.06, 0.35, {type:'bandpass', freq:900, q:0.5, gain:0.25});
+      noise(t + 0.14, 0.45, {type:'lowpass', freq:600, q:0.5, gain:0.18});
+    } else {
+      noise(t, 0.6, {type:'lowpass', freq:220, q:0.7, gain:0.5});
+    }
+  },
+  bell(t, d){
+    const f = freq(d, BASE.bell);
+    tone(t, f, 0.05, {type:'sine', gain:0.16, decay:1.2});
+    tone(t, f * 2.76, 0.02, {type:'sine', gain:0.04, decay:0.5});
+  },
+  chord(t, d){
+    [0, 2, 4].forEach((s, i) => tone(t, freq(d + s, BASE.chord), 0.08, {type:'sawtooth', gain:0.05, cutoff:1800, decay:0.28, detune:i * 3}));
+  },
+  strum(t, d){
+    [0, 2, 4, 5].forEach((s, i) => tone(t + i * 0.012, freq(d + s, BASE.strum), 0.04, {type:'sawtooth', gain:0.045, cutoff:2200, decay:0.35}));
+  },
+  arp(t, d, len, stepDur){
+    const f = freq(d, BASE.arp);
+    tone(t, f, 0.03, {type:'triangle', gain:0.1, decay:0.25});
+    tone(t + stepDur * 3, f, 0.03, {type:'triangle', gain:0.04, decay:0.25});
+  }
+};
+
+/* ---------- Sequencer ---------- */
+const SLOTS = 8;
+let slots = ['bum', 'tss', 'dum', null, null, null, null, null];
+CH_BY.tss.v = 1;
+let bpm = 100, playing = false, timer = null, nextT = 0, cur = 0, playhead = 0, stepAt = 0;
+
+function busFor(c){
+  if (!c.bus) { c.bus = ac.createGain(); c.bus.gain.value = c.vol; c.bus.connect(master); }
+  return c.bus;
+}
+function hitChar(c, s, t, stepDur){
+  const pat = c.vars[c.v], val = pat[s];
+  if (!val) return;
+  let len = 0;
+  if (c.sustain) {
+    let j = 1;
+    while (j < 16 && !pat[(s + j) % 16]) j++;
+    len = j * stepDur;
+  }
+  bus = busFor(c);
+  const played = c.snd
+    ? (c.drum ? playHit(c.snd, t, val) : playRecipe(c.snd, t, val - 1, len, stepDur))
+    : (c.drum ? VOICES[c.type](t, val) : VOICES[c.type](t, val - 1, len, stepDur));
+  bus = master;
+  if (typeof played === 'number') len = played;
+  const delay = Math.max(0, (t - ac.currentTime) * 1000);
+  setTimeout(() => {
+    c.hit = performance.now();
+    if (len) c.holdUntil = c.hit + len * 1000 - 80;
+  }, delay);
+}
+function scheduleStep(s, t){
+  const stepDur = 60 / bpm / 4;
+  const delay = Math.max(0, (t - ac.currentTime) * 1000);
+  setTimeout(() => {
+    playhead = s; stepAt = performance.now();
+    if (perf && playing) {
+      perf.steps++;
+      updateRateBtn();
+      if (perf.steps >= PERF_STEPS) finishPerf();
+    }
+  }, delay);
+  for (const id of slots) {
+    if (!id) continue;
+    const c = CH_BY[id];
+    if (!c.muted) hitChar(c, s, t, stepDur);
+  }
+}
+function tick(){
+  const stepDur = 60 / bpm / 4;
+  while (nextT < ac.currentTime + 0.15) {
+    scheduleStep(cur, nextT);
+    nextT += stepDur;
+    cur = (cur + 1) % 16;
+  }
+}
+function play(){
+  ensureAudio();
+  playing = true;
+  cur = 0;
+  nextT = ac.currentTime + 0.06;
+  clearInterval(timer);
+  timer = setInterval(tick, 25);
+  tick();
+  $('#play').textContent = '■ Stop';
+}
+function stop(){
+  playing = false;
+  clearInterval(timer); timer = null;
+  $('#play').textContent = '▶ Play';
+  if (perf) { perf = null; updateRateBtn(); say('Rating stopped because the music stopped.'); }
+}
+function preview(c){
+  ensureAudio();
+  const stepDur = 60 / bpm / 4, t0 = ac.currentTime + 0.05;
+  for (let s = 0; s < 16; s++) hitChar(c, s, t0 + s * stepDur, stepDur);
+}
+
+/* ---------- Stage actions ---------- */
+let perf = null;
+const PERF_STEPS = 32; /* listens for 2 bars */
+const onStage = id => slots.indexOf(id);
+function placeAt(id, idx){
+  const from = onStage(id);
+  if (from === idx) return;
+  if (from >= 0) { slots[from] = slots[idx]; }
+  else if (slots[idx]) { CH_BY[slots[idx]].muted = false; }
+  slots[idx] = id;
+  if (!playing) play();
+}
+function addChar(id){
+  if (onStage(id) >= 0) return;
+  const idx = slots.indexOf(null);
+  placeAt(id, idx < 0 ? SLOTS - 1 : idx);
+}
+function removeChar(id){
+  const i = onStage(id);
+  if (i < 0) return;
+  slots[i] = null;
+  CH_BY[id].muted = false;
+}
+function toggleChar(id){ onStage(id) >= 0 ? removeChar(id) : addChar(id); }
+function toggleMute(id){ CH_BY[id].muted = !CH_BY[id].muted; }
+function setVar(c, v){
+  c.v = v;
+  if (!playing) preview(c);
+}
+
+/* ---------- UI ---------- */
+const stageEl = $('#stage');
+const barEl = $('#bar');
+const stepsEl = $('#steps');
+const rateBtn = $('#rate');
+for (let i = 0; i < 16; i++) stepsEl.appendChild(document.createElement('span'));
+const stepEls = [...stepsEl.children];
+for (let i = 0; i < SLOTS; i++) {
+  const el = document.createElement('div');
+  el.className = 'slot';
+  el.dataset.slot = i;
+  stageEl.appendChild(el);
+}
+const slotEls = [...stageEl.children];
+
+/* ---------- Scenes ---------- */
+const SUN = `<svg class="deco sun" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#ffe066" opacity=".35"/><circle cx="50" cy="50" r="32" fill="#ffd43b"/></svg>`;
+const cloud = cls => `<svg class="deco cloud ${cls}" viewBox="0 0 130 56"><g fill="#fff"><ellipse cx="40" cy="36" rx="32" ry="17"/><ellipse cx="72" cy="26" rx="30" ry="22"/><ellipse cx="98" cy="38" rx="24" ry="14"/></g></svg>`;
+const birds = cls => `<svg class="deco birds ${cls}" viewBox="0 0 80 30"><path d="M4 14q6-8 12 0q6-8 12 0M40 22q5-7 10 0q5-7 10 0M56 6q4-5 8 0q4-5 8 0" fill="none" stroke="#3b3a52" stroke-width="2" stroke-linecap="round"/></svg>`;
+const MOON = `<svg class="deco moon" viewBox="0 0 60 60"><defs><mask id="moonmask"><rect width="60" height="60" fill="#fff"/><circle cx="41" cy="23" r="19" fill="#000"/></mask></defs><circle cx="30" cy="30" r="22" fill="#fff3bf" mask="url(#moonmask)"/></svg>`;
+const tree = (x, s) => `<rect x="${x - 4*s}" y="${120 - 36*s}" width="${8*s}" height="${36*s}" fill="#7a5230"/><circle cx="${x}" cy="${120 - 52*s}" r="${26*s}" fill="#3f9a43"/><circle cx="${x - 15*s}" cy="${120 - 40*s}" r="${18*s}" fill="#4cae4f"/><circle cx="${x + 16*s}" cy="${120 - 42*s}" r="${17*s}" fill="#46a649"/>`;
+const pine = (x, s) => `<g transform="translate(${x} 120) scale(${s})"><rect x="-4" y="-14" width="8" height="14" fill="#6b4a2b"/><path d="M0-86L22-46H12L30-14H-30L-12-46H-22Z" fill="#2b8a3e"/><path d="M0-86L10-68L4-66L0-70L-4-66L-10-68Z" fill="#fff"/></g>`;
+const palm = (x, f) => `<path d="M${x} 122Q${x + 6*f} 76 ${x + 30*f} 30" fill="none" stroke="#6b4226" stroke-width="9" stroke-linecap="round"/><g transform="translate(${x + 30*f} 30)" fill="#2f9e44">${[-165,-125,-85,-45,-5,25,155].map(a => `<ellipse cx="22" cy="0" rx="24" ry="6" transform="rotate(${a})"/>`).join('')}</g>`;
+const speaker = x => `<rect x="${x}" y="38" width="62" height="82" rx="5" fill="#1b1033" stroke="#6b3fd1" stroke-width="2"/><circle cx="${x + 31}" cy="60" r="11" fill="#2d1a55" stroke="#ff3d9a" stroke-width="2"/><circle cx="${x + 31}" cy="96" r="17" fill="#2d1a55" stroke="#33d6ff" stroke-width="2"/>`;
+function skyline(){
+  let seed = 7, x = 0, out = '';
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  while (x < 1000) {
+    const w = 50 + Math.floor(rnd() * 60), h = 40 + Math.floor(rnd() * 76), y = 120 - h;
+    out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${rnd() > .5 ? '#1c1840' : '#231e4d'}"/>`;
+    for (let wy = y + 8; wy < 112; wy += 12)
+      for (let wx = x + 7; wx < x + w - 8; wx += 11)
+        if (rnd() > .62) out += `<rect x="${wx}" y="${wy}" width="5" height="6" fill="#ffd76a" opacity="${(.6 + rnd() * .4).toFixed(2)}"/>`;
+    x += w + 4 + Math.floor(rnd() * 8);
+  }
+  return out;
+}
+const SNOWMAN = `<g transform="translate(420 120)"><circle cy="-16" r="16" fill="#fff"/><circle cy="-42" r="12" fill="#fff"/><circle cy="-62" r="9" fill="#fff"/><path d="M0-62l11 2-11 2z" fill="#ff922b"/><circle cx="-3" cy="-65" r="1.4" fill="#222"/><circle cx="3" cy="-65" r="1.4" fill="#222"/><rect x="-8" y="-80" width="16" height="10" fill="#343a40"/><rect x="-11" y="-71" width="22" height="3" fill="#343a40"/><path d="M-9-50Q0-46 9-50" stroke="#e03131" stroke-width="4" fill="none"/></g>`;
+const SCENES = {
+  meadow:{ name:'Meadow', sw:['#6fc0ff','#62bd5e'], sky: SUN + cloud('c1') + cloud('c2'),
+    horizon:`<path d="M0 120V64Q130 22 280 58T560 52T820 40T1000 60V120Z" fill="#a3e39e"/><rect x="742" y="22" width="6" height="22" fill="#7a5230"/><circle cx="745" cy="18" r="15" fill="#5fbf5b"/><path d="M0 120V92Q170 64 340 88T690 82T1000 90V120Z" fill="#7dd179"/>` },
+  park:{ name:'Park', sw:['#ffd8a0','#57a854'], sky: SUN.replace('deco sun', 'deco sun low') + birds(''),
+    horizon:`<path d="M0 120V104Q250 90 500 102T1000 98V120Z" fill="#62b05e"/>${tree(60, 1.1)}${tree(215, .8)}<g fill="#8b5a2b"><rect x="310" y="94" width="72" height="6" rx="2"/><rect x="310" y="82" width="72" height="5" rx="2"/><rect x="316" y="100" width="4" height="20"/><rect x="372" y="100" width="4" height="20"/></g>${tree(480, 1.25)}<rect x="598" y="48" width="4" height="72" fill="#2f2f3a"/><circle cx="600" cy="46" r="8" fill="#fff3bf"/>${tree(720, .9)}${tree(910, 1.15)}` },
+  disco:{ name:'Disco', sw:['#2a1060','#ff3d9a'],
+    sky:`<svg class="deco ball" viewBox="0 0 60 80"><line x1="30" y1="0" x2="30" y2="22" stroke="#c9c2e6" stroke-width="1.5"/><circle cx="30" cy="48" r="26" fill="#b9c2d6"/><g stroke="#7f88a3" stroke-width="1" fill="none"><ellipse cx="30" cy="48" rx="26" ry="9"/><ellipse cx="30" cy="48" rx="26" ry="18"/><ellipse cx="30" cy="48" rx="9" ry="26"/><ellipse cx="30" cy="48" rx="18" ry="26"/><path d="M4 48H56M30 22V74"/></g><g class="hl" fill="#fff"><rect x="15" y="33" width="6" height="6"/><rect x="36" y="54" width="5" height="5"/><rect x="40" y="36" width="4" height="4"/></g></svg>`,
+    horizon: speaker(30) + speaker(908) + `<rect x="0" y="117" width="1000" height="3" fill="#ff3d9a" opacity=".8"/>`,
+    over:`<div class="beam l"></div><div class="beam r"></div>` },
+  beach:{ name:'Beach', sw:['#ff9a76','#f3d9a4'], sky: birds('gulls'),
+    horizon:`<circle cx="500" cy="124" r="100" fill="#ffd36b" opacity=".25"/><circle cx="500" cy="124" r="76" fill="#ffd36b"/>${palm(90, 1)}${palm(905, -1)}<g fill="#fff"><path d="M684 112H728L721 119H691Z"/><path d="M706 111V82L725 108Z"/></g>` },
+  space:{ name:'Space', sw:['#0b0820','#a3a5b2'],
+    sky:`<svg class="deco planet" viewBox="0 0 120 80"><ellipse cx="60" cy="40" rx="56" ry="12" fill="none" stroke="#ffc078" stroke-width="4" opacity=".7"/><circle cx="60" cy="40" r="24" fill="#b197fc"/><circle cx="52" cy="32" r="6" fill="#d0bfff" opacity=".7"/><path d="M4 40A56 12 0 0 0 116 40" fill="none" stroke="#ffc078" stroke-width="4"/></svg>`,
+    horizon:`<path d="M0 120V96L80 78L150 92L260 70L340 88L470 74L560 92L690 66L780 86L880 72L1000 90V120Z" fill="#a9abb8"/><line x1="200" y1="80" x2="200" y2="40" stroke="#dee2e6" stroke-width="2"/><rect x="200" y="40" width="26" height="16" fill="#ff6b6b"/><g transform="translate(830 30)"><path d="M15 0Q32 22 30 56H0Q-2 22 15 0Z" fill="#f1f3f5"/><circle cx="15" cy="26" r="6" fill="#4dabf7" stroke="#495057" stroke-width="2"/><path d="M0 40L-10 62L0 56ZM30 40L40 62L30 56Z" fill="#fa5252"/><path d="M6 56H24L15 74Z" fill="#ffa94d"/></g>` },
+  snow:{ name:'Snow', sw:['#a9c7e8','#f8fbff'], sky: cloud('c1'),
+    horizon:`<path d="M0 120V76Q160 40 330 70T680 60T1000 72V120Z" fill="#eef4fb"/>${pine(70, 1)}${pine(150, .75)}${SNOWMAN}${pine(620, 1.1)}${pine(700, .8)}${pine(880, 1.2)}${pine(960, .7)}`,
+    over:`<div class="snowfall"></div>` },
+  city:{ name:'City', sw:['#141b4d','#3b3652'], sky: MOON, horizon: skyline() },
+};
+const SCN_KEY = 'songbox-scene';
+const sceneEl = document.createElement('div');
+sceneEl.className = 'scene';
+sceneEl.setAttribute('aria-hidden', 'true');
+stageEl.prepend(sceneEl);
+const scenesEl = $('#scenes');
+scenesEl.innerHTML = Object.entries(SCENES).map(([id, s]) =>
+  `<button class="scn" type="button" data-scene="${id}" aria-pressed="false"><span class="sw" style="--s1:${s.sw[0]};--s2:${s.sw[1]}"></span>${s.name}</button>`
+).join('');
+let sceneId = 'meadow';
+function setScene(id){
+  if (!SCENES[id]) id = 'meadow';
+  sceneId = id;
+  const s = SCENES[id];
+  sceneEl.dataset.scene = id;
+  sceneEl.dataset.beat = '0';
+  sceneEl.innerHTML = `<div class="sky">${s.sky || ''}</div><div class="ground"></div>` +
+    `<svg class="horizon" viewBox="0 0 1000 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${s.horizon}</svg>${s.over || ''}`;
+  scenesEl.querySelectorAll('.scn').forEach(b => b.setAttribute('aria-pressed', b.dataset.scene === id));
+  try { localStorage.setItem(SCN_KEY, id); } catch (e) {}
+}
+scenesEl.addEventListener('click', e => {
+  const b = e.target.closest('.scn');
+  if (b) setScene(b.dataset.scene);
+});
+let startScene = 'meadow';
+try { startScene = localStorage.getItem(SCN_KEY) || 'meadow'; } catch (e) {}
+setScene(startScene);
+
+let msgTimer;
+function say(text){
+  const m = $('#msg');
+  m.textContent = text;
+  clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => { m.textContent = ''; }, 3500);
+}
+
+const TIER_LABEL = { good:'Good', great:'★ Great', excellent:'Excellent', legendary:'Legendary' };
+const ADD_SVG = `<svg viewBox="6 0 92 96" aria-hidden="true"><circle class="addc" cx="50" cy="58" r="30"/><path class="addp" d="M50 45v26M37 58h26"/></svg>`;
+/* Shelf filters keep the big cast easy to browse (the choice is remembered in this browser) */
+const SHELF_KEY = 'songbox-shelf';
+const FILTERS = [['all', 'All'], ['beat', 'Beat'], ['bass', 'Bass'], ['melody', 'Melody'], ['vocals', 'Vocals'], ['mine', 'Yours'], ['locked', 'Locked']];
+let shelf = 'all';
+try { const s = localStorage.getItem(SHELF_KEY); if (s !== 'locked' && FILTERS.some(f => f[0] === s)) shelf = s; } catch (e) {}
+const rankOf = c => c.tier ? TIERS.indexOf(c.tier) + 1 : 0;
+function setShelf(f){
+  shelf = f;
+  try { localStorage.setItem(SHELF_KEY, f); } catch (e) {}
+  renderBar();
+  render();
+}
+/* All: unlocked characters, the ones you made, + New, and one tile that opens the locked list */
+function renderBar(){
+  barEl.innerHTML = '';
+  CH.forEach(c => { c.icon = null; });
+  const builtins = CH.filter(c => !c.custom);
+  const open = builtins.filter(c => unlocked.has(c.id)).sort((x, y) => rankOf(x) - rankOf(y));
+  const mine = CH.filter(c => c.custom);
+  const locked = builtins.filter(c => !unlocked.has(c.id)).sort((x, y) => rankOf(x) - rankOf(y));
+  const note = text => { const p = document.createElement('p'); p.className = 'shelf-empty'; p.textContent = text; barEl.appendChild(p); };
+  const addIcon = c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.id = c.id;
+    b.className = 'icon' + (c.tier === 'excellent' ? ' legend' : c.tier === 'legendary' ? ' mythic' : '') + (c.custom ? ' custom' : '');
+    b.setAttribute('aria-label', `${c.name}, ${c.role}: add to or remove from the stage`);
+    paint(b, c);
+    b.innerHTML = `${iconSVG(c)}<span class="nm">${esc(c.name)}</span><span class="role">${c.role}</span>`;
+    barEl.appendChild(b);
+    c.icon = b;
+  };
+  const addNew = () => {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'icon add';
+    add.id = 'newChar';
+    add.setAttribute('aria-label', 'Make your own character');
+    add.innerHTML = `${ADD_SVG}<span class="nm">New</span><span class="role">Make one</span>`;
+    barEl.appendChild(add);
+  };
+  const addLocked = c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.id = c.id;
+    b.className = 'icon locked ' + c.tier;
+    b.dataset.tier = c.tier;
+    b.setAttribute('aria-label', `Locked character. Get a ${TIER_LABEL[c.tier].replace('★ ', '')} rating to unlock it.`);
+    b.innerHTML = `${LOCK_SVG}<span class="nm">???</span><span class="role">${TIER_LABEL[c.tier]}</span>`;
+    barEl.appendChild(b);
+    c.icon = b;
+  };
+  if (shelf === 'all') {
+    open.forEach(addIcon);
+    mine.forEach(addIcon);
+    addNew();
+    if (locked.length) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'icon locked summary';
+      b.setAttribute('aria-label', `${locked.length} locked characters. Show them.`);
+      b.innerHTML = `${LOCK_SVG}<span class="nm">+${locked.length}</span><span class="role">Locked</span>`;
+      barEl.appendChild(b);
+    }
+  } else if (shelf === 'mine') {
+    mine.forEach(addIcon);
+    addNew();
+  } else if (shelf === 'locked') {
+    locked.forEach(addLocked);
+    if (!locked.length) note('Everyone is unlocked. Legend!');
+  } else {
+    const list = [...open, ...mine].filter(c => c.cat === shelf);
+    list.forEach(addIcon);
+    if (!list.length) note('No characters of this kind yet. Rate songs to unlock some.');
+  }
+  $('#count').textContent = `${open.length}/${builtins.length} unlocked`;
+  $('#filters').innerHTML = FILTERS.map(([k, label]) =>
+    `<button class="flt" type="button" data-f="${k}" aria-pressed="${shelf === k}">${k === 'locked' ? `🔒 ${label} ${locked.length}` : k === 'mine' ? `${label} ${mine.length}` : label}</button>`
+  ).join('');
+}
+const nameBtn = c => `<button class="nm" type="button" aria-label="${c.custom ? 'Edit' : 'Rename'} ${esc(c.name)}"><span class="t">${esc(c.name)}</span><span class="pen" aria-hidden="true">✎</span></button>`;
+/* Make the stage rebuild a character's slot (after a rename or an edit) */
+function refreshChar(id){ slotEls.forEach(el => { if (el.dataset.id === id) el.dataset.id = ''; }); }
+function startRename(slot, c){
+  const btn = slot.querySelector('.plate .nm');
+  if (!btn) return;
+  const inp = document.createElement('input');
+  inp.className = 'nm-edit';
+  inp.maxLength = NAME_MAX;
+  inp.value = c.name;
+  inp.placeholder = c.orig;
+  inp.setAttribute('aria-label', `New name for ${c.name}. Leave it empty to go back to ${c.orig}.`);
+  btn.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  let done = false;
+  const finish = keep => {
+    if (done) return;
+    done = true;
+    if (keep) {
+      c.name = inp.value.trim().slice(0, NAME_MAX) || c.orig;
+      saveNames();
+    }
+    refreshChar(c.id);
+    renderBar();
+    render();
+  };
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+  inp.addEventListener('blur', () => finish(true));
+}
+
+function render(){
+  slotEls.forEach((el, i) => {
+    const id = slots[i] || '';
+    if (el.dataset.id !== id) {
+      el.dataset.id = id;
+      if (id) {
+        const c = CH_BY[id];
+        paint(el, c);
+        el.innerHTML =
+          `<div class="glow"></div>
+           <button class="fig" type="button" aria-label="${esc(c.name)}: mute or unmute">${figureSVG(c)}</button>
+           <div class="plate">${nameBtn(c)}<span class="rhs">${
+             [0,1,2].map(j => `<button class="rh" type="button" data-var="${j}" aria-label="${esc(c.name)} rhythm ${'ABC'[j]}">${'ABC'[j]}</button>`).join('')
+           }</span><label class="volrow" title="${Math.round(c.vol * 100)}%"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"/><path d="M11 5.5q2 2.5 0 5" fill="none" stroke-width="1.6" stroke-linecap="round"/></svg><input class="vol" type="range" min="0" max="150" step="5" value="${Math.round(c.vol * 100)}" aria-label="${esc(c.name)} volume"></label></div>`;
+        const q = s => el.querySelector(s);
+        el._r = { body:q('.body'), head:q('.head'), mouth:q('.mouth'), eyes:[...el.querySelectorAll('.eye')],
+                  cheeks:[...el.querySelectorAll('.cheek')], armL:q('.armL'), armR:q('.armR'), glow:q('.glow') };
+      } else {
+        el.innerHTML = `<div class="fig sil">${SIL_SVG}</div><div class="plate"><span class="empty">empty</span></div>`;
+        el._r = null;
+      }
+    }
+    const c = id && CH_BY[id];
+    el.classList.toggle('filled', !!c);
+    el.classList.toggle('muted', !!(c && c.muted));
+    el.classList.toggle('legend', !!(c && c.tier === 'excellent'));
+    el.classList.toggle('mythic', !!(c && c.tier === 'legendary'));
+    if (c) el.querySelectorAll('.rh').forEach((b, j) => {
+      b.classList.toggle('cur', j === c.v);
+      b.setAttribute('aria-pressed', j === c.v);
+    });
+    const vi = c && el.querySelector('.vol');
+    if (vi && document.activeElement !== vi) vi.value = Math.round(c.vol * 100);
+  });
+  CH.forEach(c => { if (c.icon) c.icon.classList.toggle('used', onStage(c.id) >= 0); });
+}
+
+/* ---------- Drag and drop / tap ---------- */
+const ghost = $('#ghost');
+let drag = null, hoverSlot = null;
+function slotAt(x, y){
+  const el = document.elementFromPoint(x, y);
+  return el ? el.closest('.slot') : null;
+}
+function overStage(x, y){
+  const r = stageEl.getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+function setHover(el){
+  if (hoverSlot === el) return;
+  hoverSlot && hoverSlot.classList.remove('target');
+  hoverSlot = el;
+  hoverSlot && hoverSlot.classList.add('target');
+}
+document.addEventListener('pointerdown', e => {
+  if (e.button > 0 || e.target.closest('.rh')) return;
+  const icon = e.target.closest('.icon:not(.locked):not(.add)');
+  const fig = e.target.closest('.slot.filled .fig');
+  if (!icon && !fig) return;
+  const slot = fig && fig.closest('.slot');
+  drag = {
+    id: icon ? icon.dataset.id : slot.dataset.id,
+    from: icon ? 'bar' : 'stage',
+    slotEl: slot, moved: false, x: e.clientX, y: e.clientY
+  };
+  e.preventDefault();
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+    drag.moved = true;
+    const c = CH_BY[drag.id];
+    paint(ghost, c);
+    ghost.innerHTML = iconSVG(c);
+    ghost.hidden = false;
+    drag.slotEl && drag.slotEl.classList.add('lifting');
+  }
+  if (drag.moved) {
+    ghost.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    const over = overStage(e.clientX, e.clientY);
+    stageEl.classList.toggle('over', over);
+    setHover(over ? slotAt(e.clientX, e.clientY) : null);
+  }
+});
+function endDrag(e){
+  if (!drag) return;
+  const d = drag; drag = null;
+  ghost.hidden = true;
+  stageEl.classList.remove('over');
+  setHover(null);
+  d.slotEl && d.slotEl.classList.remove('lifting');
+  if (e.type === 'pointercancel') return;
+  ensureAudio();
+  if (!d.moved) {
+    if (d.from === 'bar') toggleChar(d.id); else toggleMute(d.id);
+  } else {
+    const target = overStage(e.clientX, e.clientY) ? slotAt(e.clientX, e.clientY) : null;
+    if (target) placeAt(d.id, +target.dataset.slot);
+    else if (overStage(e.clientX, e.clientY)) addChar(d.id);
+    else if (d.from === 'stage') removeChar(d.id);
+  }
+  render();
+}
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+
+/* Rhythm buttons + keyboard (Enter/Space clicks arrive with detail === 0) */
+stageEl.addEventListener('click', e => {
+  const slot = e.target.closest('.slot');
+  if (!slot || !slot.dataset.id) return;
+  const c = CH_BY[slot.dataset.id];
+  if (e.target.closest('.plate .nm')) { c.custom ? openMaker(c.id) : startRename(slot, c); return; }
+  const rh = e.target.closest('.rh');
+  ensureAudio();
+  if (rh) { setVar(c, +rh.dataset.var); render(); }
+  else if (e.detail === 0 && e.target.closest('.fig')) { toggleMute(c.id); render(); }
+});
+/* Volume sliders: change a singer's own channel live */
+stageEl.addEventListener('input', e => {
+  const inp = e.target.closest('.vol');
+  if (!inp) return;
+  const c = CH_BY[inp.closest('.slot').dataset.id];
+  c.vol = +inp.value / 100;
+  inp.closest('.volrow').title = inp.value + '%';
+  inp.setAttribute('aria-valuetext', inp.value + '%');
+  if (c.bus) c.bus.gain.setTargetAtTime(c.vol, ac.currentTime, 0.02);
+});
+$('#filters').addEventListener('click', e => {
+  const b = e.target.closest('.flt');
+  if (b) setShelf(b.dataset.f);
+});
+barEl.addEventListener('click', e => {
+  const icon = e.target.closest('.icon');
+  if (!icon) return;
+  if (icon.classList.contains('add')) { openMaker(null); return; }
+  if (icon.classList.contains('summary')) { setShelf('locked'); return; }
+  if (icon.classList.contains('locked')) {
+    const t = icon.dataset.tier;
+    say(t === 'legendary' ? 'Locked legend. Only a LEGENDARY!!! song (a perfect 100) unlocks it.'
+      : t === 'excellent' ? 'Locked. Rate a song EXCELLENT!!! or better to unlock it.'
+      : t === 'great' ? 'Locked. Rate a song GREAT!!! or better to unlock it.'
+      : 'Locked. Rate a song Good or better to unlock it.');
+    return;
+  }
+  if (e.detail !== 0) return;
+  ensureAudio();
+  toggleChar(icon.dataset.id);
+  render();
+});
+
+/* ---------- Rating ----------
+   Sound types: beat, bass, melody, vocals = 15 each (60)
+   Singers on stage: 3 each, up to 8 (24)
+   Rhythm mix: 2 different rhythms = 8, all three A·B·C = 16 (16)
+   Bad < 50 ≤ Good < 75 ≤ Great < 90 ≤ Excellent < 100 = Legendary (a perfect song) */
+function updateRateBtn(){
+  stepsEl.classList.toggle('rating', !!perf);
+  if (perf) {
+    const bar = Math.min(2, Math.floor(perf.steps / 16) + 1);
+    rateBtn.textContent = `Listening… ${bar}/2`;
+    rateBtn.style.setProperty('--p', (perf.steps / PERF_STEPS * 100).toFixed(1) + '%');
+  } else {
+    rateBtn.textContent = '★ Rate my song';
+    rateBtn.style.setProperty('--p', '0%');
+  }
+}
+function startPerf(){
+  if (!slots.some(id => id && !CH_BY[id].muted)) { say('Put some singers on stage first.'); return; }
+  if (!playing) play();
+  perf = { steps: 0 };
+  updateRateBtn();
+}
+function judge(){
+  const active = slots.filter(id => id && !CH_BY[id].muted && CH_BY[id].vol > 0).map(id => CH_BY[id]);
+  const cats = ['beat', 'bass', 'melody', 'vocals'];
+  const has = Object.fromEntries(cats.map(k => [k, active.some(c => c.cat === k)]));
+  const n = Math.min(8, active.length);
+  const kinds = new Set(active.map(c => c.v)).size;
+  const mix = kinds >= 3 ? 16 : kinds === 2 ? 8 : 0;
+  const score = cats.filter(k => has[k]).length * 15 + n * 3 + mix;
+  const level = score >= 100 ? 'legendary' : score >= 90 ? 'excellent' : score >= 75 ? 'great' : score >= 50 ? 'good' : 'bad';
+  return { score, level, has, n, kinds, mix, key: songKey(active) };
+}
+/* Each song wins a character only once. A song counts as new when it brings in at least 3 singers
+   (or all of them, for a smaller song) that were not in each earlier winning song.
+   Your own characters count as the sound they use. */
+const WON_KEY = 'songbox-won', NEW_NEED = 3;
+let wonSongs = loadJSON(WON_KEY, []);
+if (!Array.isArray(wonSongs)) wonSongs = [];
+function songKey(active){ return [...new Set(active.map(c => c.voice || c.id))].sort(); }
+function newness(key){
+  const need = Math.min(NEW_NEED, key.length);
+  let closest = Infinity;
+  wonSongs.forEach(w => { if (Array.isArray(w)) closest = Math.min(closest, key.filter(id => !w.includes(id)).length); });
+  return { isNew: closest >= need, same: closest === 0, more: Math.max(0, need - closest) };
+}
+function reward(level){
+  if (level === 'bad') return null;
+  for (let i = TIERS.indexOf(level); i >= 0; i--) {
+    const pick = CH.find(c => c.tier === TIERS[i] && !unlocked.has(c.id));
+    if (pick) {
+      unlocked.add(pick.id);
+      saveUnlocked();
+      renderBar();
+      render();
+      return pick;
+    }
+  }
+  return null;
+}
+const WORDS = { bad:'Bad', good:'Good', great:'GREAT!!!', excellent:'EXCELLENT!!!', legendary:'LEGENDARY!!!' };
+const UNLOCK_LINE = { good:'New character', great:'Great unlock', excellent:'Excellent unlock', legendary:'LEGENDARY unlock' };
+let lastPick = null;
+function finishPerf(){
+  perf = null;
+  updateRateBtn();
+  const r = judge();
+  r.fresh = newness(r.key);
+  let pick = null;
+  if (r.level !== 'bad' && r.fresh.isNew) {
+    pick = reward(r.level);
+    if (pick) { wonSongs.push(r.key); saveJSON(WON_KEY, wonSongs.slice(-300)); }
+  }
+  showVerdict(r, pick);
+}
+function showVerdict(r, pick){
+  lastPick = pick;
+  const w = $('#vWord');
+  w.textContent = WORDS[r.level];
+  w.className = 'vword ' + r.level;
+  $('#vScore').textContent = r.score;
+  const order = ['bad', 'good', 'great', 'excellent', 'legendary'];
+  const lv = order.indexOf(r.level);
+  $('#ladder').querySelectorAll('li').forEach((li, i) => {
+    li.classList.toggle('on', i === lv);
+    li.classList.toggle('past', i < lv);
+  });
+
+  const items = [
+    ['Beat', r.has.beat, r.has.beat ? '+15' : '0'],
+    ['Bass', r.has.bass, r.has.bass ? '+15' : '0'],
+    ['Melody', r.has.melody, r.has.melody ? '+15' : '0'],
+    ['Vocals', r.has.vocals, r.has.vocals ? '+15' : '0'],
+    [`Singers ${r.n}/8`, r.n === 8, '+' + r.n * 3],
+    [`A·B·C ${r.kinds}/3`, r.kinds >= 3, '+' + r.mix],
+  ];
+  $('#vChecks').innerHTML = items.map(([t, ok, pts]) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✓' : '·'} ${t}</span><em>${pts}</em></li>`).join('');
+
+  let line;
+  if (r.level === 'bad') line = 'No new character this time.';
+  else if (pick) line = `${UNLOCK_LINE[pick.tier]}: ${esc(pick.name)}!${pick.tier === 'legendary' ? '!!' : pick.tier === 'excellent' ? '!' : ''}`;
+  else if (r.fresh && !r.fresh.isNew) {
+    const m = r.fresh.more, who = m === 1 ? 'singer' : 'singers';
+    line = r.fresh.same
+      ? `This song already won a character. Bring in ${m} new ${who} to make a new song and win again!`
+      : `Close to a song that already won. Bring in ${m} more new ${who} to win again!`;
+  }
+  else if (CH.every(isOpen)) line = 'You have unlocked everyone. Legend!';
+  else line = `Every ${TIER_LABEL[r.level].replace('★ ', '')} character is already yours. Aim higher!`;
+  const rw = $('#vReward');
+  rw.innerHTML = (pick ? `<div class="reward-fig">${figureSVG(pick)}</div>` : '') + `<p>${line}</p>`;
+  if (pick) paint(rw.querySelector('.reward-fig'), pick);
+
+  const tips = [];
+  if (r.level !== 'legendary') {
+    if (!r.has.beat) tips.push('add a beat');
+    if (!r.has.bass) tips.push('add bass');
+    if (!r.has.melody) tips.push('add a melody');
+    if (!r.has.vocals) tips.push('add vocals');
+    if (r.n < 8) tips.push(r.level === 'excellent' ? 'fill all 8 spots for a perfect LEGENDARY song' : 'put more singers on stage');
+    if (r.kinds < 3) tips.push('use all three rhythms A, B and C');
+  }
+  $('#vTip').textContent = tips.length ? 'Next time: ' + tips.slice(0, 2).join(', ') + '.' : '';
+  $('#vStage').hidden = !pick;
+
+  const conf = $('#confetti');
+  conf.innerHTML = '';
+  if (['great', 'excellent', 'legendary'].includes(r.level) && !calm.matches) {
+    const cols = r.level === 'legendary'
+      ? ['#ffd43b', '#fcc419', '#fff3bf', '#ff8fab', '#74c0fc', '#da77f2']
+      : ['#ffd166', '#ff8fab', '#69db7c', '#74c0fc', '#b197fc', '#ff6b6b'];
+    const count = { great: 60, excellent: 140, legendary: 240 }[r.level];
+    const spread = { great: 0.6, excellent: 1.4, legendary: 2.4 }[r.level];
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('span');
+      s.style.left = (Math.random() * 100) + '%';
+      s.style.background = cols[i % cols.length];
+      s.style.animationDuration = (1.8 + Math.random() * 2) + 's';
+      s.style.animationDelay = (Math.random() * spread) + 's';
+      conf.appendChild(s);
+    }
+  }
+  $('#verdict').hidden = false;
+  (pick ? $('#vStage') : $('#vClose')).focus();
+}
+function closeVerdict(){
+  $('#verdict').hidden = true;
+  $('#confetti').innerHTML = '';
+  rateBtn.focus();
+}
+rateBtn.addEventListener('click', () => {
+  ensureAudio();
+  if (perf) { perf = null; updateRateBtn(); say('Rating cancelled.'); return; }
+  startPerf();
+});
+$('#vClose').addEventListener('click', closeVerdict);
+$('#vStage').addEventListener('click', () => {
+  if (lastPick) { addChar(lastPick.id); render(); }
+  closeVerdict();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#verdict').hidden) closeVerdict();
+  else if (e.key === 'Escape' && !maker.hidden) closeMaker();
+});
+
+/* ---------- Controls ---------- */
+$('#play').addEventListener('click', () => { playing ? stop() : play(); });
+$('#bpm').addEventListener('input', e => { bpm = +e.target.value; $('#bpmv').textContent = bpm; });
+$('#clear').addEventListener('click', () => {
+  slots = Array(SLOTS).fill(null);
+  CH.forEach(c => { c.muted = false; });
+  stop();
+  render();
+});
+
+/* ---------- Saved songs (this browser only) ---------- */
+const KEY = 'ritim-orkestrasi-sarkilar';
+function loadSongs(){
+  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; }
+}
+function saveSongs(list){
+  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {}
+}
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+function renderSaved(){
+  $('#saved').innerHTML = loadSongs().map((s, i) =>
+    `<span class="chip"><button type="button" data-load="${i}">${esc(s.name)}</button><button class="del" type="button" data-del="${i}" aria-label="Delete ${esc(s.name)}">×</button></span>`
+  ).join('');
+}
+$('#save').addEventListener('click', () => {
+  const name = $('#songName').value.trim() || 'Song';
+  const song = {
+    name, bpm, scene: sceneId, slots: [...slots],
+    v: Object.fromEntries(CH.map(c => [c.id, c.v])),
+    vol: Object.fromEntries(CH.map(c => [c.id, c.vol])),
+    muted: CH.filter(c => c.muted).map(c => c.id)
+  };
+  const list = loadSongs().filter(s => s.name !== name);
+  list.unshift(song);
+  saveSongs(list.slice(0, 12));
+  renderSaved();
+  const m = name.match(/^(.*?)(\d+)$/);
+  $('#songName').value = m ? m[1] + (+m[2] + 1) : name + ' 2';
+});
+$('#saved').addEventListener('click', e => {
+  const list = loadSongs();
+  const ld = e.target.closest('[data-load]'), dl = e.target.closest('[data-del]');
+  if (ld) {
+    const s = list[+ld.dataset.load];
+    if (!s) return;
+    bpm = s.bpm || 100; $('#bpm').value = bpm; $('#bpmv').textContent = bpm;
+    if (s.scene) setScene(s.scene);
+    CH.forEach(c => {
+      c.v = (s.v && s.v[c.id]) || 0;
+      c.muted = !!(s.muted && s.muted.includes(c.id));
+      c.vol = (s.vol && s.vol[c.id] != null) ? s.vol[c.id] : 1;
+      if (c.bus) c.bus.gain.value = c.vol;
+    });
+    const src = s.slots || s.stage || [];
+    slots = Array.from({length: SLOTS}, (_, i) => (src[i] && isOpen(CH_BY[src[i]])) ? src[i] : null);
+    $('#songName').value = s.name;
+    render();
+    if (!playing && slots.some(Boolean)) play();
+  } else if (dl) {
+    list.splice(+dl.dataset.del, 1);
+    saveSongs(list);
+    renderSaved();
+  }
+});
+
+/* ---------- Character maker ---------- */
+const maker = $('#maker');
+const SOUND_GROUPS = [['beat', 'Beat'], ['bass', 'Bass'], ['melody', 'Melody'], ['vocals', 'Vocals']];
+let draft = null, delArmed = false;
+function openMaker(id){
+  const d = id ? customData.find(x => x.id === id) : null;
+  draft = d ? { ...d } : { id: null, name: '', sound: 'bum', look: 'plain', color: PALETTE[Math.floor(Math.random() * PALETTE.length)] };
+  delArmed = false;
+  $('#makerTitle').textContent = d ? 'Edit your character' : 'Make a character';
+  $('#mSave').textContent = d ? 'Save' : 'Create';
+  $('#mDelete').hidden = !d;
+  $('#mDelete').textContent = 'Delete';
+  $('#mName').value = draft.name;
+  $('#mMsg').textContent = '';
+  const builtins = CH.filter(c => !c.custom);
+  /* Sounds and outfits come from characters you have unlocked */
+  $('#mSound').innerHTML = SOUND_GROUPS.map(([cat, label]) => {
+    const inCat = builtins.filter(c => c.cat === cat).sort((x, y) => rankOf(x) - rankOf(y));
+    const open = inCat.filter(c => unlocked.has(c.id));
+    const more = inCat.length - open.length;
+    return `<div class="mgroup"><span class="gl">${label}</span>${open.map(c =>
+      `<button class="opt" type="button" data-sound="${c.id}">${c.role}</button>`).join('')}${more
+      ? `<span class="opt more" title="Unlock more characters to get these sounds">🔒 +${more}</span>` : ''}</div>`;
+  }).join('');
+  $('#mColor').innerHTML = PALETTE.map(col =>
+    `<button class="swatch" type="button" data-color="${col}" style="--sc:${col}" aria-label="Color ${col}"></button>`).join('');
+  const openLooks = builtins.filter(c => unlocked.has(c.id)).sort((x, y) => rankOf(x) - rankOf(y));
+  const lockedLooks = builtins.length - openLooks.length;
+  $('#mLook').innerHTML = [PLAIN, ...openLooks].map(l =>
+    `<button class="look" type="button" data-look="${l.id}" aria-label="${esc(l === PLAIN ? 'No outfit' : `${l.name}’s outfit`)}">${iconSVG(l)}</button>`
+  ).join('') + (lockedLooks ? `<span class="look more" title="Unlock more characters to get these outfits">🔒<br>+${lockedLooks}</span>` : '');
+  syncMaker();
+  maker.hidden = false;
+  $('#mName').focus();
+}
+function syncMaker(){
+  maker.querySelectorAll('[data-sound]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sound === draft.sound));
+  maker.querySelectorAll('[data-color]').forEach(b => b.setAttribute('aria-pressed', b.dataset.color === draft.color));
+  maker.querySelectorAll('[data-look]').forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.look === draft.look);
+    const l = lookOf(b.dataset.look);
+    paint(b, { color: draft.color, a: l.a, a2: l.a2 });
+  });
+  const l = lookOf(draft.look);
+  const fig = { color: draft.color, a: l.a, a2: l.a2, mx: l.mx || 6, mo: l.mo || 8, hat: l.hat || '', chest: l.chest || '', back: l.back || '', tail: l.tail || '' };
+  const pv = $('#mPrev');
+  paint(pv, fig);
+  pv.innerHTML = figureSVG(fig);
+  $('#mRole').textContent = CH_BY[draft.sound].role;
+}
+function hearDraft(){
+  ensureAudio();
+  const s = CH_BY[draft.sound];
+  const temp = { type: s.type, drum: s.drum, sustain: s.sustain, vars: s.vars, snd: s.snd, v: 0, vol: 1, hit: 0, holdUntil: 0 };
+  const stepDur = 60 / bpm / 4, t0 = ac.currentTime + 0.05;
+  for (let st = 0; st < 16; st++) hitChar(temp, st, t0 + st * stepDur, stepDur);
+}
+function closeMaker(){
+  maker.hidden = true;
+  draft = null;
+  const add = $('#newChar');
+  if (add) add.focus();
+}
+maker.addEventListener('click', e => {
+  if (!draft) return;
+  const s = e.target.closest('[data-sound]'), col = e.target.closest('[data-color]'), lk = e.target.closest('[data-look]');
+  if (s) { draft.sound = s.dataset.sound; syncMaker(); hearDraft(); }
+  else if (col) { draft.color = col.dataset.color; syncMaker(); }
+  else if (lk) { draft.look = lk.dataset.look; syncMaker(); }
+});
+$('#mName').addEventListener('input', () => { $('#mMsg').textContent = ''; });
+$('#mName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#mSave').click(); } });
+$('#mHear').addEventListener('click', hearDraft);
+$('#mCancel').addEventListener('click', closeMaker);
+$('#mSave').addEventListener('click', () => {
+  const name = $('#mName').value.trim().slice(0, NAME_MAX);
+  if (!name) { $('#mMsg').textContent = 'Give your character a name first.'; $('#mName').focus(); return; }
+  draft.name = name;
+  ensureAudio();
+  if (draft.id) {
+    const i = customData.findIndex(x => x.id === draft.id);
+    if (i >= 0) customData[i] = { ...draft };
+    buildCustom(draft);
+    refreshChar(draft.id);
+    say(`${name} is updated.`);
+  } else {
+    draft.id = 'u' + Date.now().toString(36);
+    customData.push({ ...draft });
+    const c = buildCustom(draft);
+    CH.push(c);
+    CH_BY[c.id] = c;
+    addChar(c.id);
+    say(`${name} joined the band!`);
+  }
+  saveJSON(CUSTOM_KEY, customData);
+  renderBar();
+  render();
+  closeMaker();
+});
+$('#mDelete').addEventListener('click', () => {
+  if (!draft || !draft.id) return;
+  if (!delArmed) { delArmed = true; $('#mDelete').textContent = 'Tap again to delete'; return; }
+  const id = draft.id, name = draft.name;
+  removeChar(id);
+  customData = customData.filter(x => x.id !== id);
+  const i = CH.findIndex(c => c.id === id);
+  if (i >= 0) CH.splice(i, 1);
+  delete CH_BY[id];
+  saveJSON(CUSTOM_KEY, customData);
+  renderBar();
+  render();
+  say(`${name} has left the band.`);
+  closeMaker();
+});
+
+/* The custom-sound feature is gone: clear any sound file an earlier version kept in this browser */
+try { indexedDB.deleteDatabase('songbox'); } catch (e) {}
+
+/* ---------- Animation: mouths, blinking, head bobbing ---------- */
+let lastStep = -1;
+function frame(now){
+  const stepMs = 60000 / bpm / 4;
+  const frac = playing ? Math.min(1, (now - stepAt) / stepMs) : 0;
+  if (playing && playhead !== lastStep) {
+    if (lastStep >= 0) stepEls[lastStep].classList.remove('cur');
+    stepEls[playhead].classList.add('cur');
+    lastStep = playhead;
+  } else if (!playing && lastStep >= 0) {
+    stepEls[lastStep].classList.remove('cur');
+    lastStep = -1;
+  }
+  const beatNo = playing && !calm.matches ? String(Math.floor(playhead / 4)) : '0';
+  if (sceneEl.dataset.beat !== beatNo) sceneEl.dataset.beat = beatNo; /* disco floor flashes on the beat */
+  const bp = ((playhead + frac) % 4) / 4;
+  const beatBob = playing && !calm.matches ? 3 * Math.pow(1 - bp, 3) : 0;
+  const move = calm.matches ? 0 : 1;
+
+  slotEls.forEach(el => {
+    const r = el._r;
+    if (!r) return;
+    const c = CH_BY[el.dataset.id];
+    let k = 0;
+    if (!c.muted) k = now < c.holdUntil ? 0.75 + 0.25 * Math.sin(now / 45) : Math.max(0, 1 - (now - c.hit) / 200);
+    k *= Math.min(1.15, c.vol); /* quieter singers sing smaller */
+    if (now > c.blinkAt + 140) c.blinkAt = now + 1800 + Math.random() * 3500;
+    const closed = c.muted || now > c.blinkAt;
+    const eyeRy = closed ? 0.8 : 5 - 1.5 * k;
+    r.eyes.forEach(e => e.setAttribute('ry', eyeRy.toFixed(2)));
+    r.mouth.setAttribute('ry', (c.muted ? 1 : 1.6 + k * c.mo).toFixed(2));
+    r.mouth.setAttribute('rx', (c.mx * (1 - 0.2 * k)).toFixed(2));
+    if (c.puff) r.cheeks.forEach(ch => ch.setAttribute('r', (5 + 4 * k).toFixed(2)));
+    const sx = 1 + 0.03 * k * move, sy = 1 - 0.05 * k * move;
+    const hover = c.tier === 'legendary' && move ? Math.sin(now / 380 + c.phase) * 3 - 3 : 0; /* legends float above their shadow */
+    r.body.setAttribute('transform', `translate(0 ${hover.toFixed(2)}) translate(50 170) scale(${sx.toFixed(3)} ${sy.toFixed(3)}) translate(-50 -170)`);
+    const bob = c.muted ? 0 : beatBob + k * 2 * move;
+    r.head.setAttribute('transform', `translate(0 ${bob.toFixed(2)})`);
+    r.armL.setAttribute('transform', `rotate(${(-k * 16 * move).toFixed(1)} 18 96)`);
+    r.armR.setAttribute('transform', `rotate(${(k * 16 * move).toFixed(1)} 82 96)`);
+    r.glow.style.opacity = c.muted ? 0 : ((c.tier === 'legendary' ? 0.55 : 0.3) + (c.tier === 'legendary' ? 0.45 : 0.6) * k).toFixed(2);
+  });
+  requestAnimationFrame(frame);
+}
+
+renderBar();
+render();
+renderSaved();
+updateRateBtn();
+requestAnimationFrame(frame);
+</script>
+
+</body></html>

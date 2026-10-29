@@ -9,6 +9,8 @@ index.html     stüdyo ana sayfası; oyun listesi bu dosyanın içindeki <script
 vercel.json    Vercel ayarı (adresler / ile biter: /fish/)
 fish/          Fish: koi oyunu. Multiplayer planı fish/PLAN.md
 yelken/        Rüzgâr Kaptanı: adım adım yelken okulu
+songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
+sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
 ```
 
 Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışırken onu da oku.
