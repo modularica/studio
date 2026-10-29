@@ -1,14 +1,7 @@
 [
-  { "slug": "fish", "title": "Fish", "listed": true,
-    "desc": "10 cm’lik bir koi olarak başlıyorsun. Küçük balıkları ye, büyüklerden kaç, gölün en büyük balığı ol.",
-    "note": "Telefonda parmakla, bilgisayarda ok tuşlarıyla" },
-  { "slug": "yelken", "title": "Rüzgâr Kaptanı", "listed": true,
-    "desc": "Adım adım yelken okulu. Yeke, seyirler, iskota, tramola, kavança ve balon yelken; sonunda parkur yarışı.",
-    "note": "8 ders ve serbest seyir" },
-  { "slug": "songbox", "title": "SONGbox", "listed": true,
-    "desc": "Karakterleri sahneye diz, her biri kendi ritmini çalsın. Şarkını puanlat, yeni şarkıcıların kilidini aç.",
-    "note": "Kendi karakterini de yapabilirsin · İngilizce" },
-  { "slug": "sur-muhafizi", "title": "Sur Muhafızı", "listed": true,
-    "desc": "Yola duvar ör, okçu, buz büyücüsü ve mancınık kur. 20 dalga boyunca kaleyi goblinlerden, orklardan ve devlerden koru.",
-    "note": "20 dalga · 5 yapı" }
+  {"slug": "fish", "title": "Fish", "listed": true, "desc": "10 cm’lik bir koi olarak başlıyorsun. Küçük balıkları ye, büyüklerden kaç, gölün en büyük balığı ol.", "note": "Telefonda parmakla, bilgisayarda ok tuşlarıyla"},
+  {"slug": "yelken", "title": "Rüzgâr Kaptanı", "listed": true, "desc": "Adım adım yelken okulu. Yeke, seyirler, iskota, tramola, kavança ve balon yelken; sonunda parkur yarışı.", "note": "8 ders ve serbest seyir"},
+  {"slug": "songbox", "title": "SONGbox", "listed": true, "desc": "Karakterleri sahneye diz, her biri kendi ritmini çalsın. Şarkını puanlat, yeni şarkıcıların kilidini aç.", "note": "Kendi karakterini de yapabilirsin · İngilizce"},
+  {"slug": "sur-muhafizi", "title": "Sur Muhafızı", "listed": true, "desc": "Yola duvar ör, okçu, buz büyücüsü ve mancınık kur. 20 dalga boyunca kaleyi goblinlerden, orklardan ve devlerden koru.", "note": "20 dalga · 5 yapı"},
+  {"slug": "sekme", "title": "Sekme", "listed": true, "desc": "Topu geri çekip bırak, duvarlardan sektirerek hedefi vur. Beş bölüm, elli seviye; ne kadar az atış, o kadar çok yıldız.", "note": "50 seviye · her biri öncekini geçince açılır"}
 ]

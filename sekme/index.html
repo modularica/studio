@@ -1,0 +1,1773 @@
+<!doctype html><html lang="tr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="description" content="Topu geri çekip bırak, duvarlardan sektirerek hedefi vur. Beş bölüm, elli seviye; ne kadar az atış, o kadar çok yıldız.">
+<meta name="theme-color" content="#16273A">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sekme">
+<meta property="og:description" content="Topu geri çekip bırak, duvarlardan sektirerek hedefi vur. Beş bölüm, elli seviye; ne kadar az atış, o kadar çok yıldız.">
+<meta property="og:image" content="cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noindex">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-oyun="sekme" data-kayit="sekme.v1"></script>
+</head><body>
+<title>Sekme</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Martian+Mono:wght@400;600;800&display=swap">
+<style>
+/* Layout: one portrait drafting sheet (400×640 field) centred between a slim level/shot bar and a caption strip for the tip and angle readout. */
+:root {
+  --paper: #E8EEF2;
+  --sheet: #F5F8FA;
+  --paper-2: #DAE3EA;
+  --grid: #D7E1E8;
+  --grid-major: #B6C7D3;
+  --ink: #16273A;
+  --ink-soft: #5A6D7F;
+  --ball: #D3175D;
+  --target: #06806A;
+  --danger: #DD5410;
+  --glass: #6BB9D6;
+  --boost: #2F5BE0;
+  --portal: #7A3FD8;
+  --font-display: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --field-w: 420px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0A1826; --sheet: #0F2338; --paper-2: #15304A; --grid: #163049; --grid-major: #24476A;
+    --ink: #DCE7F0; --ink-soft: #8FA4B8; --ball: #FF5C95; --target: #43DCAE; --danger: #FF8A3D;
+    --glass: #7FD3EE; --boost: #6E92FF; --portal: #B48CFF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0A1826; --sheet: #0F2338; --paper-2: #15304A; --grid: #163049; --grid-major: #24476A;
+  --ink: #DCE7F0; --ink-soft: #8FA4B8; --ball: #FF5C95; --target: #43DCAE; --danger: #FF8A3D;
+  --glass: #7FD3EE; --boost: #6E92FF; --portal: #B48CFF;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px;
+  overflow: hidden; overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+
+.app {
+  height: 100%;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.bar, .foot { width: 100%; max-width: max(var(--field-w), 320px); margin-inline: auto; }
+
+.bar { display: flex; align-items: center; gap: 8px; padding-block: 10px 4px; }
+.lvl { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.lvl-no { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.lvl-of { font-family: var(--font-display); font-size: 11px; color: var(--ink-soft); margin-left: -6px; }
+.lvl-name { font-weight: 600; font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat { display: grid; justify-items: end; line-height: 1.05; margin-right: 4px; }
+.stat-k { font-family: var(--font-display); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+.stat-v { font-family: var(--font-display); font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
+
+.icon-btn {
+  flex: none; width: 40px; height: 40px; display: grid; place-items: center;
+  background: transparent; border: 1.5px solid var(--ink); border-radius: 9px; cursor: pointer;
+}
+.icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn:hover { background: var(--paper-2); }
+.icon-btn:active { transform: translate(1px, 1px); }
+.icon-btn[aria-pressed="false"] .on, .icon-btn[aria-pressed="true"] .off { display: none; }
+:focus-visible { outline: 2.5px solid var(--ball); outline-offset: 2px; }
+
+.stage {
+  position: relative; min-height: 0; display: grid; place-items: center; padding-block: 6px;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+canvas { display: block; cursor: crosshair; max-width: 100%; }
+.toast {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--sheet); padding: 7px 14px; border-radius: 999px;
+  font-family: var(--font-display); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase;
+  pointer-events: none; white-space: nowrap; animation: toast 1.6s ease forwards;
+}
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -6px); } 12%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+
+.foot { display: grid; gap: 3px; padding-block: 4px 14px; min-height: 62px; align-content: start; }
+.tip { margin: 0; font-size: 15px; line-height: 1.4; text-wrap: pretty; }
+.chip {
+  display: inline-block; vertical-align: 1px; margin-right: 8px; padding: 2px 7px 3px;
+  font-family: var(--font-display); font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--sheet); background: var(--ball); border-radius: 5px; white-space: nowrap;
+}
+.readout {
+  margin: 0; font-family: var(--font-display); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-soft); font-variant-numeric: tabular-nums; min-height: 1.4em;
+}
+.readout b { color: var(--ball); font-weight: 600; }
+
+/* Overlays */
+.overlay {
+  position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+}
+.overlay[hidden] { display: none; }
+.card {
+  width: 100%; max-width: 380px; max-height: 100%; overflow: auto;
+  background: var(--sheet); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 6px 6px 0 var(--ink);
+  padding: 22px 20px 20px; display: grid; gap: 16px;
+  animation: pop 0.28s cubic-bezier(.2, 1.3, .4, 1);
+}
+@keyframes pop { from { transform: scale(0.94); opacity: 0; } }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 44px; height: 30px; flex: none; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: -0.03em; }
+.lede { margin: 0; line-height: 1.45; text-wrap: pretty; }
+.eyebrow { margin: 0; font-family: var(--font-display); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+.card h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 25px; letter-spacing: -0.03em; text-wrap: balance; }
+
+.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.tab {
+  min-width: 0; padding: 6px 2px 7px; display: grid; justify-items: center; gap: 3px; cursor: pointer;
+  background: transparent; border: 1.5px solid var(--ink); border-radius: 8px;
+}
+.tab-n { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1; height: 15px; display: grid; place-items: center; }
+.tab-name { font-family: var(--font-display); font-size: 8.5px; line-height: 1.6; letter-spacing: 0.02em; text-transform: uppercase; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab:hover:not(:disabled) { background: var(--paper-2); }
+.tab[aria-selected="true"], .tab[aria-selected="true"]:hover { background: var(--ink); color: var(--sheet); }
+.tab:disabled { cursor: not-allowed; border-style: dashed; color: var(--ink-soft); border-color: var(--ink-soft); }
+.lock { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
+.grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.lv {
+  aspect-ratio: 1 / 1.12; max-width: 100%; border: 1.5px solid var(--ink); border-radius: 9px; background: var(--paper);
+  display: grid; place-items: center; align-content: center; gap: 5px; cursor: pointer; padding: 0;
+}
+.lv-n { font-family: var(--font-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.pips { display: flex; gap: 2px; }
+.pips svg { width: 9px; height: 9px; }
+.pips .lock { width: 12px; height: 12px; }
+.lv:hover:not(:disabled) { background: var(--paper-2); }
+.lv.current, .lv.current:hover { background: var(--ink); color: var(--sheet); }
+.lv.current .star-off { stroke: var(--sheet); opacity: 0.5; }
+.lv:disabled { cursor: not-allowed; border-style: dashed; color: var(--ink-soft); border-color: var(--ink-soft); background: transparent; }
+.lv:disabled .lv-n { opacity: 0.6; }
+
+.star-on { fill: var(--ball); stroke: var(--ink); stroke-width: 1.2; }
+.star-off { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.stars { display: flex; gap: 10px; }
+.stars svg { width: 36px; height: 36px; }
+.stars svg.star-in { animation: starIn 0.4s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes starIn { from { transform: scale(0.2) rotate(-40deg); opacity: 0; } }
+
+.meta { margin: 0; font-family: var(--font-display); font-size: 11px; letter-spacing: 0.04em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.result { margin: 0; font-size: 16px; line-height: 1.4; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  flex: 1 1 120px; min-height: 46px; padding: 10px 14px; cursor: pointer;
+  font-family: var(--font-display); font-weight: 600; font-size: 12.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  background: transparent; border: 2px solid var(--ink); border-radius: 10px;
+}
+.btn.primary { background: var(--ink); color: var(--sheet); }
+.btn:hover { background: var(--paper-2); }
+.btn.primary:hover { background: var(--ink); opacity: 0.9; }
+.btn:active { transform: translate(1px, 1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .toast, .stars svg.star-in { animation: none; }
+}
+@media (max-height: 560px) {
+  .tip { font-size: 13.5px; }
+  .foot { min-height: 0; padding-block: 2px 8px; }
+}
+</style>
+
+<div class="app" id="app" lang="tr">
+  <header class="bar">
+    <button class="icon-btn" id="btnLevels" type="button" aria-label="Seviyeler" title="Seviyeler">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.2"/></svg>
+    </button>
+    <div class="lvl">
+      <span class="lvl-no" id="lvlNo">01</span><span class="lvl-of" id="lvlOf">/50</span>
+      <span class="lvl-name" id="lvlName">Isınma</span>
+    </div>
+    <div class="stat"><span class="stat-k">Atış</span><span class="stat-v" id="tries">0</span></div>
+    <button class="icon-btn" id="btnReset" type="button" aria-label="Topu başa al" title="Topu başa al">
+      <svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSound" type="button" aria-label="Ses" aria-pressed="true" title="Ses">
+      <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><g class="on"><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></g><g class="off"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g></svg>
+    </button>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="cv" role="img" aria-label="Oyun alanı: top, duvarlar ve hedef"></canvas>
+  </main>
+
+  <footer class="foot">
+    <p class="tip"><span class="chip" id="chip" hidden></span><span id="tip">Ortadaki duvar yolu kesiyor. Yan duvardan sektir.</span></p>
+    <p class="readout" id="readout" aria-live="polite">Ekranda geri çek, bırak</p>
+  </footer>
+
+  <div class="overlay" id="ovLevels" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden>
+    <div class="card">
+      <div class="brand">
+        <svg viewBox="0 0 44 30" aria-hidden="true"><polyline points="2,26 13,4 24,26 35,4" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="3 3.5"/><circle cx="38" cy="10" r="4.5" fill="var(--ball)"/></svg>
+        <h1 id="lvTitle">Sekme</h1>
+      </div>
+      <p class="lede">Topu geri çekip bırak. Duvarlardan sektirerek hedefi vur. Beş bölüm, elli seviye. Ne kadar az atış, o kadar çok yıldız.</p>
+      <div class="tabs" id="lvTabs" role="tablist" aria-label="Bölümler"></div>
+      <div class="grid" id="lvGrid"></div>
+      <p class="meta" id="lvTotal">Temel: 0 / 30 · Toplam 0 / 150 yıldız</p>
+      <div class="actions"><button class="btn primary" id="btnPlay" type="button">Oyna</button></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovWin" role="dialog" aria-modal="true" aria-labelledby="winTitle" hidden>
+    <div class="card">
+      <p class="eyebrow" id="winEyebrow">Seviye 01 · Isınma</p>
+      <h2 id="winTitle">Hedef vuruldu</h2>
+      <div class="stars" id="winStars"></div>
+      <p class="result" id="winResult"></p>
+      <p class="meta" id="winRule"></p>
+      <div class="actions">
+        <button class="btn" id="btnAgain" type="button">Tekrar</button>
+        <button class="btn primary" id="btnNext" type="button">Sonraki seviye</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Sekme physics: deterministic fixed-step simulation shared by the game and the level checker.
+// Wall kinds: segment {x1,y1,x2,y2}, pillar {cx,cy,r}, rotor {px,py,len,a0,spin|swing}.
+// Flags: dead (absorbs ball), glass (breaks on first contact), boost (bumper kick).
+// Level extras: portals [{a:{x,y},b:{x,y},r}], target.need (bounces before the target counts).
+const SIM = (() => {
+  const W = 400, H = 640, R = 9, HW = 6, DT = 1 / 240;
+  const DRAG = 0.5, DECEL = 24, LOSS = 0.85, VMIN = 16, TMAX = 9;
+  const SPEED_MIN = 200, SPEED_MAX = 1200, KICK = 240, VCAP = 1250;
+  const TAU = Math.PI * 2;
+
+  function osc(m, t) { return m ? Math.sin(TAU * t / m.period + (m.phase || 0)) : 0; }
+  function offX(m, t) { return m && m.dx ? m.dx * Math.sin(TAU * t / m.period + (m.phase || 0)) : 0; }
+  function offY(m, t) { return m && m.dy ? m.dy * Math.sin(TAU * t / m.period + (m.phase || 0) + (m.py || 0)) : 0; }
+
+  function rotorAngle(w, t) {
+    let a = (w.a0 || 0) + (w.spin || 0) * t;
+    if (w.swing) a += w.swing.amp * Math.sin(TAU * t / w.swing.period + (w.swing.phase || 0));
+    return a;
+  }
+  function segAt(w, t) {
+    if (w.px != null) {
+      const a = rotorAngle(w, t), h = w.len / 2, c = Math.cos(a) * h, s = Math.sin(a) * h;
+      return { x1: w.px - c, y1: w.py - s, x2: w.px + c, y2: w.py + s };
+    }
+    if (!w.move) return w;
+    const dx = offX(w.move, t), dy = offY(w.move, t);
+    return { x1: w.x1 + dx, y1: w.y1 + dy, x2: w.x2 + dx, y2: w.y2 + dy };
+  }
+  function pillarAt(w, t) {
+    if (!w.move) return { x: w.cx, y: w.cy, r: w.r };
+    return { x: w.cx + offX(w.move, t), y: w.cy + offY(w.move, t), r: w.r };
+  }
+  function pointAt(p, t) { return p.move ? { x: p.x + offX(p.move, t), y: p.y + offY(p.move, t) } : p; }
+  function targetAt(L, t) { const T = L.target, p = pointAt(T, t); return { x: p.x, y: p.y, r: T.r }; }
+  // Back-compat for callers that only know segments and pillars.
+  function wallAt(w, t) { return w.cx != null ? w : segAt(w, t); }
+
+  function speedFor(power) { return SPEED_MIN + (SPEED_MAX - SPEED_MIN) * power; }
+
+  function launch(L, angle, power, t0) {
+    const sp = speedFor(power);
+    return { x: L.start[0], y: L.start[1], vx: Math.cos(angle) * sp, vy: Math.sin(angle) * sp, t: t0 || 0, age: 0, bounces: 0, done: false, result: null, gone: null, cool: -1 };
+  }
+  function clone(s) { const c = Object.assign({}, s); if (s.gone) c.gone = Object.assign({}, s.gone); return c; }
+
+  // Reflect off a surface with normal (nx,ny). Returns true when the ball was approaching it.
+  function bounceOff(s, nx, ny, cx, cy, onEvent, type) {
+    const vn = s.vx * nx + s.vy * ny;
+    if (vn >= 0) return false;
+    const hard = -vn > 25, k = hard ? LOSS : 1, ix = s.vx, iy = s.vy;
+    s.vx = (s.vx - 2 * vn * nx) * k;
+    s.vy = (s.vy - 2 * vn * ny) * k;
+    if (hard) s.bounces++;
+    if (onEvent && (hard || type !== 'bounce')) onEvent(type, cx, cy, nx, ny, -vn, ix, iy, hard);
+    return true;
+  }
+
+  function step(s, L, onEvent) {
+    if (s.done) return;
+    s.x += s.vx * DT; s.y += s.vy * DT; s.t += DT; s.age += DT;
+    const sp = Math.hypot(s.vx, s.vy);
+    let ns = sp * (1 - DRAG * DT) - DECEL * DT;
+    if (ns < 0) ns = 0;
+    if (sp > 0) { const k = ns / sp; s.vx *= k; s.vy *= k; }
+
+    if (s.x < R) { s.x = R; bounceOff(s, 1, 0, 0, s.y, onEvent, 'bounce'); }
+    else if (s.x > W - R) { s.x = W - R; bounceOff(s, -1, 0, W, s.y, onEvent, 'bounce'); }
+    if (s.y < R) { s.y = R; bounceOff(s, 0, 1, s.x, 0, onEvent, 'bounce'); }
+    else if (s.y > H - R) { s.y = H - R; bounceOff(s, 0, -1, s.x, H, onEvent, 'bounce'); }
+
+    const walls = L.walls;
+    for (let i = 0; i < walls.length; i++) {
+      if (s.gone && s.gone[i]) continue;
+      const w = walls[i];
+      let qx, qy, rad;
+      if (w.cx != null) {
+        qx = w.cx; qy = w.cy; rad = w.r;
+        if (w.move) { qx += offX(w.move, s.t); qy += offY(w.move, s.t); }
+      } else {
+        let x1, y1, x2, y2;
+        if (w.px != null || w.move) { const g = segAt(w, s.t); x1 = g.x1; y1 = g.y1; x2 = g.x2; y2 = g.y2; }
+        else { x1 = w.x1; y1 = w.y1; x2 = w.x2; y2 = w.y2; }
+        const ex = x2 - x1, ey = y2 - y1;
+        let u = ((s.x - x1) * ex + (s.y - y1) * ey) / (ex * ex + ey * ey);
+        u = u < 0 ? 0 : u > 1 ? 1 : u;
+        qx = x1 + ex * u; qy = y1 + ey * u; rad = HW;
+      }
+      const dx = s.x - qx, dy = s.y - qy, d2 = dx * dx + dy * dy, m = R + rad;
+      if (d2 < m * m) {
+        const d = Math.sqrt(d2) || 1e-6, nx = dx / d, ny = dy / d;
+        s.x = qx + nx * m; s.y = qy + ny * m;
+        const cx = qx + nx * rad, cy = qy + ny * rad;
+        if (w.dead) {
+          s.vx = 0; s.vy = 0; s.done = true; s.result = 'dead';
+          if (onEvent) onEvent('dead', cx, cy, nx, ny, 0);
+          return;
+        }
+        if (w.boost) {
+          const vn = s.vx * nx + s.vy * ny;
+          if (vn < 0) {
+            const ix = s.vx, iy = s.vy;
+            s.vx += (-2 * vn + KICK) * nx; s.vy += (-2 * vn + KICK) * ny;
+            const v = Math.hypot(s.vx, s.vy);
+            if (v > VCAP) { s.vx *= VCAP / v; s.vy *= VCAP / v; }
+            s.bounces++;
+            if (onEvent) onEvent('bump', cx, cy, nx, ny, -vn, ix, iy, true, i);
+          }
+        } else if (w.glass) {
+          if (bounceOff(s, nx, ny, cx, cy, onEvent, 'break')) { if (!s.gone) s.gone = {}; s.gone[i] = 1; }
+        } else {
+          bounceOff(s, nx, ny, cx, cy, onEvent, 'bounce');
+        }
+      }
+    }
+
+    const P = L.portals;
+    if (P) {
+      if (s.cool >= 0) {
+        const q = P[s.cool], a = pointAt(q.a, s.t), b = pointAt(q.b, s.t), lim = (q.r + R) * (q.r + R);
+        const da = (s.x - a.x) ** 2 + (s.y - a.y) ** 2, db = (s.x - b.x) ** 2 + (s.y - b.y) ** 2;
+        if (da > lim && db > lim) s.cool = -1;
+      }
+      for (let j = 0; j < P.length; j++) {
+        if (j === s.cool) continue;
+        const q = P[j], a = pointAt(q.a, s.t), b = pointAt(q.b, s.t), r2 = q.r * q.r;
+        const inA = (s.x - a.x) ** 2 + (s.y - a.y) ** 2 < r2, inB = !inA && (s.x - b.x) ** 2 + (s.y - b.y) ** 2 < r2;
+        if (inA || inB) {
+          const from = inA ? a : b, to = inA ? b : a;
+          const fx = s.x, fy = s.y;
+          s.x = to.x + (s.x - from.x); s.y = to.y + (s.y - from.y);
+          s.cool = j;
+          if (onEvent) onEvent('portal', fx, fy, s.x, s.y, 0);
+          break;
+        }
+      }
+    }
+
+    const T = L.target;
+    if (!T.need || s.bounces >= T.need) {
+      let tx = T.x, ty = T.y;
+      if (T.move) { tx += offX(T.move, s.t); ty += offY(T.move, s.t); }
+      const hx = s.x - tx, hy = s.y - ty, mr = R + T.r;
+      if (hx * hx + hy * hy < mr * mr) {
+        s.done = true; s.result = 'hit';
+        if (onEvent) onEvent('hit', tx, ty, 0, 0, 0);
+        return;
+      }
+    }
+    if (Math.hypot(s.vx, s.vy) < VMIN || s.age > TMAX) { s.done = true; s.result = 'miss'; }
+  }
+
+  function run(L, angle, power, t0) {
+    const s = launch(L, angle, power, t0);
+    while (!s.done) step(s, L);
+    return s;
+  }
+
+  function isTimed(L) {
+    return !!(L.target.move || L.walls.some(w => w.move || w.px != null) || (L.portals && L.portals.some(q => q.a.move || q.b.move)));
+  }
+
+  return { W, H, R, HW, DT, SPEED_MIN, SPEED_MAX, TMAX, osc, offX, offY, rotorAngle, segAt, pillarAt, pointAt, wallAt, targetAt, speedFor, launch, clone, step, run, isTimed };
+})();
+
+// Field is 400 × 640. Walls: segments {x1,y1,x2,y2}, pillars {cx,cy,r}, rotors {px,py,len,a0,spin|swing}.
+// Flags: dead (absorbs the ball), glass (breaks on first contact), boost (bumper). Portals pair two rings.
+// target.need = bounces required before the target counts. intro = mechanic introduced by this level.
+const LEVELS = [
+  // ───────── Bölüm 1 · Temel ─────────
+  {
+    name: 'Isınma',
+    tip: 'Ortadaki duvar yolu kesiyor. Yan duvardan sektir.',
+    start: [200, 580], target: { x: 200, y: 110, r: 18 },
+    walls: [
+      { x1: 110, y1: 330, x2: 290, y2: 330 }
+    ]
+  },
+  {
+    name: 'Cep',
+    tip: 'Hedef bir cebin içinde. Sağ duvarı kullan.',
+    start: [90, 560], target: { x: 330, y: 110, r: 17 },
+    walls: [
+      { x1: 260, y1: -20, x2: 260, y2: 300 }
+    ]
+  },
+  {
+    name: 'Zikzak',
+    tip: 'İki duvar, iki boşluk. Önce sola, sonra sağa sektir.',
+    start: [200, 590], target: { x: 80, y: 100, r: 17 },
+    walls: [
+      { x1: -20, y1: 220, x2: 245, y2: 220 },
+      { x1: 175, y1: 420, x2: 420, y2: 420 }
+    ]
+  },
+  {
+    name: 'Tavan',
+    tip: 'Duvarın üstünden aş. Tavan da sektirir.',
+    start: [340, 600], target: { x: 70, y: 500, r: 17 },
+    walls: [
+      { x1: 200, y1: 170, x2: 200, y2: 660 },
+      { cx: 300, cy: 300, r: 22 }
+    ]
+  },
+  {
+    name: 'Periskop',
+    intro: 'Kırmızı duvar',
+    tip: 'Eğik aynalar topu 90° çevirir. Kırmızı çizgi topu yutar.',
+    start: [75, 590], target: { x: 325, y: 580, r: 17 },
+    walls: [
+      { x1: 200, y1: 190, x2: 200, y2: 660 },
+      { x1: 10, y1: 140, x2: 140, y2: 10 },
+      { x1: 260, y1: 10, x2: 390, y2: 140 },
+      { x1: 140, y1: 3, x2: 260, y2: 3, dead: true }
+    ]
+  },
+  {
+    name: 'Sütunlar',
+    tip: 'Yuvarlak sütunlar topu beklenmedik yöne savurur.',
+    start: [200, 600], target: { x: 200, y: 95, r: 16 },
+    walls: [
+      { x1: 140, y1: 150, x2: 260, y2: 150 },
+      { cx: 50, cy: 340, r: 20 },
+      { cx: 125, cy: 340, r: 20 },
+      { cx: 200, cy: 340, r: 20 },
+      { cx: 275, cy: 340, r: 20 },
+      { cx: 350, cy: 340, r: 20 }
+    ]
+  },
+  {
+    name: 'Kayan hedef',
+    intro: 'Kayan hedef',
+    tip: 'Hedef sağa sola kayıyor. Atışı doğru ana denk getir.',
+    start: [320, 590], target: { x: 200, y: 100, r: 17, move: { dx: 120, period: 3.2 } },
+    walls: [
+      { x1: 70, y1: 340, x2: 420, y2: 340 }
+    ]
+  },
+  {
+    name: 'Kırmızı bölge',
+    tip: 'Yan duvarların alt yarısı topu yutar. Topu kutuya üstten düşür.',
+    start: [200, 600], target: { x: 200, y: 330, r: 16 },
+    walls: [
+      { x1: 140, y1: 250, x2: 140, y2: 390 },
+      { x1: 260, y1: 250, x2: 260, y2: 390 },
+      { x1: 140, y1: 390, x2: 260, y2: 390, dead: true },
+      { x1: 3, y1: 320, x2: 3, y2: 640, dead: true },
+      { x1: 397, y1: 320, x2: 397, y2: 640, dead: true }
+    ]
+  },
+  {
+    name: 'Kapı',
+    intro: 'Kayan kapı',
+    tip: 'Kapı açılıp kapanıyor. Topu açık ana yetiştir.',
+    start: [80, 590], target: { x: 330, y: 90, r: 16 },
+    walls: [
+      { x1: -20, y1: 210, x2: 160, y2: 210 },
+      { x1: 240, y1: 210, x2: 420, y2: 210 },
+      { x1: 160, y1: 210, x2: 240, y2: 210, move: { dx: 90, period: 2.6 } },
+      { cx: 240, cy: 430, r: 24 }
+    ]
+  },
+  {
+    name: 'Üç bölme',
+    tip: 'Üç bölme, iki sekme, kayan hedef. Önce sağ duvar.',
+    start: [60, 600], target: { x: 330, y: 100, r: 18, move: { dy: 30, period: 3 } },
+    walls: [
+      { x1: -20, y1: 460, x2: 290, y2: 460 },
+      { x1: 110, y1: 290, x2: 420, y2: 290 },
+      { x1: 200, y1: 3, x2: 397, y2: 3, dead: true },
+      { x1: 397, y1: 20, x2: 397, y2: 180, dead: true },
+      { cx: 240, cy: 410, r: 16, dead: true }
+    ]
+  },
+
+  // ───────── Bölüm 2 · Geometri ─────────
+  {
+    name: 'Koridor',
+    tip: 'Dar koridordan çık. Üstteki sütun topu yana savurur.',
+    start: [200, 600], target: { x: 70, y: 130, r: 17 },
+    walls: [
+      { x1: 150, y1: 230, x2: 150, y2: 660 },
+      { x1: 250, y1: 230, x2: 250, y2: 660 },
+      { cx: 200, cy: 110, r: 22 }
+    ]
+  },
+  {
+    name: 'Bilardo',
+    tip: 'Sütun üçgeni topu dağıtır. Açıyı ince ayarla.',
+    start: [200, 600], target: { x: 200, y: 100, r: 17 },
+    walls: [
+      { x1: 110, y1: 200, x2: 290, y2: 200 },
+      { cx: 200, cy: 300, r: 15 },
+      { cx: 176, cy: 342, r: 15 },
+      { cx: 224, cy: 342, r: 15 },
+      { cx: 152, cy: 384, r: 15 },
+      { cx: 200, cy: 384, r: 15 },
+      { cx: 248, cy: 384, r: 15 }
+    ]
+  },
+  {
+    name: 'Alttan',
+    tip: 'Raf hedefi kapatıyor. Topu yerden sektirip altından sok.',
+    start: [70, 160], target: { x: 330, y: 575, r: 17 },
+    walls: [
+      { x1: 220, y1: 470, x2: 420, y2: 470 },
+      { x1: 220, y1: 470, x2: 220, y2: 525 }
+    ]
+  },
+  {
+    name: 'Elmas',
+    tip: 'Elmasın yüzleri 45°. Yan duvarların önünde sütun var.',
+    start: [200, 600], target: { x: 200, y: 90, r: 17 },
+    walls: [
+      { x1: 200, y1: 230, x2: 290, y2: 320 },
+      { x1: 290, y1: 320, x2: 200, y2: 410 },
+      { x1: 200, y1: 410, x2: 110, y2: 320 },
+      { x1: 110, y1: 320, x2: 200, y2: 230 },
+      { cx: 40, cy: 340, r: 18 },
+      { cx: 360, cy: 340, r: 18 }
+    ]
+  },
+  {
+    name: 'Cam',
+    intro: 'Cam',
+    tip: 'Açık mavi cam ilk çarpmada kırılır, sonra aradan geçebilirsin. Dümdüz yukarı atmayı dene.',
+    start: [200, 580], target: { x: 200, y: 140, r: 18 },
+    walls: [
+      { x1: 110, y1: -20, x2: 110, y2: 250 },
+      { x1: 290, y1: -20, x2: 290, y2: 250 },
+      { x1: 110, y1: 250, x2: 290, y2: 250, glass: true }
+    ]
+  },
+  {
+    name: 'Labirent',
+    tip: 'Hedefin arkası kırmızı. Kutuya alttan gir.',
+    start: [60, 600], target: { x: 335, y: 320, r: 16 },
+    walls: [
+      { x1: 120, y1: 660, x2: 120, y2: 460 },
+      { x1: 120, y1: 460, x2: 290, y2: 460 },
+      { x1: -20, y1: 330, x2: 220, y2: 330 },
+      { x1: 270, y1: 240, x2: 420, y2: 240 },
+      { x1: 270, y1: 240, x2: 270, y2: 380 },
+      { x1: 397, y1: 250, x2: 397, y2: 400, dead: true },
+      { x1: 340, y1: 410, x2: 397, y2: 410 },
+      { cx: 200, cy: 150, r: 20 }
+    ]
+  },
+  {
+    name: 'Kırmızı zemin',
+    tip: 'Zemin topu yutar. Hedefe yandan, rafın altından gir.',
+    start: [200, 90], target: { x: 60, y: 560, r: 17 },
+    walls: [
+      { x1: 0, y1: 637, x2: 400, y2: 637, dead: true },
+      { x1: 140, y1: 430, x2: 140, y2: 640 },
+      { x1: -20, y1: 300, x2: 200, y2: 300 }
+    ]
+  },
+  {
+    name: 'Merdiven',
+    tip: 'Üç kat, her katta bir boşluk. Sol, sağ, sol.',
+    start: [330, 600], target: { x: 320, y: 90, r: 18 },
+    walls: [
+      { x1: -20, y1: 490, x2: 200, y2: 490 },
+      { x1: 200, y1: 350, x2: 420, y2: 350 },
+      { x1: -20, y1: 210, x2: 200, y2: 210 }
+    ]
+  },
+  {
+    name: 'Huni',
+    tip: 'Yukarıdan aşağı at. Huni topu ortadaki deliğe yönlendirir.',
+    start: [200, 90], target: { x: 200, y: 575, r: 18 },
+    walls: [
+      { x1: 40, y1: 200, x2: 160, y2: 440 },
+      { x1: 360, y1: 200, x2: 240, y2: 440 },
+      { x1: -20, y1: 200, x2: 40, y2: 200 },
+      { x1: 360, y1: 200, x2: 420, y2: 200 },
+      { cx: 200, cy: 230, r: 16 }
+    ]
+  },
+  {
+    name: 'Vitrin',
+    tip: 'Hedef iki camın arasında. Alttaki camı kır, dönüşte içeri gir.',
+    start: [80, 600], target: { x: 330, y: 120, r: 17 },
+    walls: [
+      { x1: 250, y1: 40, x2: 250, y2: 200 },
+      { x1: 250, y1: 40, x2: 420, y2: 40, glass: true },
+      { x1: 250, y1: 200, x2: 420, y2: 200, glass: true },
+      { cx: 200, cy: 420, r: 22 }
+    ]
+  },
+
+  // ───────── Bölüm 3 · Hareket ─────────
+  {
+    name: 'Sarkaç',
+    intro: 'Gezen sütun',
+    tip: 'Sütun sağa sola gidip geliyor. Önünden geçeceği anı kolla.',
+    start: [200, 600], target: { x: 200, y: 100, r: 17 },
+    walls: [
+      { x1: 120, y1: 230, x2: 280, y2: 230 },
+      { cx: 200, cy: 400, r: 24, move: { dx: 140, period: 3 } }
+    ]
+  },
+  {
+    name: 'Yörünge',
+    tip: 'Sütun hedefin çevresinde dönüyor. Arkadan dolan.',
+    start: [200, 600], target: { x: 200, y: 200, r: 16 },
+    walls: [
+      { x1: 110, y1: 300, x2: 290, y2: 300 },
+      { cx: 200, cy: 200, r: 18, move: { dx: 70, dy: 70, period: 2.6, py: 1.5708 } }
+    ]
+  },
+  {
+    name: 'Asansör',
+    tip: 'Hedef asansörde inip çıkıyor. Pencereden içeri sektir.',
+    start: [80, 600], target: { x: 350, y: 300, r: 16, move: { dy: 180, period: 4 } },
+    walls: [
+      { x1: 300, y1: -20, x2: 300, y2: 250 },
+      { x1: 300, y1: 350, x2: 300, y2: 660 },
+      { x1: 90, y1: 420, x2: 300, y2: 420 }
+    ]
+  },
+  {
+    name: 'Pervane',
+    intro: 'Pervane',
+    tip: 'Pervane dönüyor. Ya arasından geç ya da ona çarpıp sektir.',
+    start: [200, 600], target: { x: 200, y: 100, r: 17 },
+    walls: [
+      { x1: -20, y1: 260, x2: 130, y2: 260 },
+      { x1: 270, y1: 260, x2: 420, y2: 260 },
+      { px: 200, py: 260, len: 110, spin: 1 },
+      { cx: 200, cy: 450, r: 20 }
+    ]
+  },
+  {
+    name: 'Değirmen',
+    tip: 'Uzun pervane yavaş dönüyor, hedef kayıyor.',
+    start: [200, 600], target: { x: 200, y: 90, r: 17, move: { dx: 110, period: 3.4 } },
+    walls: [
+      { px: 200, py: 330, len: 240, spin: 0.8 },
+      { x1: -20, y1: 200, x2: 100, y2: 200 },
+      { x1: 300, y1: 200, x2: 420, y2: 200 },
+      { cx: 200, cy: 480, r: 26 }
+    ]
+  },
+  {
+    name: 'Saat',
+    tip: 'Hedef kutuda, girişler çaprazda. Kenarlar kırmızı.',
+    start: [200, 600], target: { x: 200, y: 320, r: 15 },
+    walls: [
+      { px: 110, py: 190, len: 110, spin: 0.9 },
+      { px: 290, py: 190, len: 110, spin: -0.9 },
+      { px: 110, py: 450, len: 110, spin: -0.9 },
+      { px: 290, py: 450, len: 110, spin: 0.9 },
+      { x1: 150, y1: 390, x2: 250, y2: 390 },
+      { x1: 150, y1: 250, x2: 250, y2: 250 },
+      { x1: 150, y1: 250, x2: 150, y2: 310 },
+      { x1: 250, y1: 330, x2: 250, y2: 390 },
+      { x1: 3, y1: 250, x2: 3, y2: 390, dead: true },
+      { x1: 397, y1: 250, x2: 397, y2: 390, dead: true }
+    ]
+  },
+  {
+    name: 'Çift pervane',
+    tip: 'İki pervane ters yöne dönüyor. Ortadaki sütun düz yolu kapatıyor.',
+    start: [200, 600], target: { x: 200, y: 90, r: 17 },
+    walls: [
+      { x1: -20, y1: 300, x2: 60, y2: 300 },
+      { x1: 160, y1: 300, x2: 240, y2: 300 },
+      { x1: 340, y1: 300, x2: 420, y2: 300 },
+      { px: 110, py: 300, len: 88, spin: 1.3 },
+      { px: 290, py: 300, len: 88, spin: -1.3 },
+      { cx: 200, cy: 450, r: 22 }
+    ]
+  },
+  {
+    name: 'Salınım',
+    tip: 'Üstteki ayna sallanıyor. Açısı doğruyken çarp.',
+    start: [70, 600], target: { x: 330, y: 580, r: 17 },
+    walls: [
+      { x1: 200, y1: 170, x2: 200, y2: 660 },
+      { px: 200, py: 70, len: 130, a0: 0, swing: { amp: 0.6, period: 3 } }
+    ]
+  },
+  {
+    name: 'Kayan kapılar',
+    tip: 'İki kapı ters zamanda açılıyor. Hedefin altı kapalı, sağ duvardan dön.',
+    start: [80, 600], target: { x: 320, y: 90, r: 16 },
+    walls: [
+      { x1: -20, y1: 420, x2: 110, y2: 420 },
+      { x1: 230, y1: 420, x2: 420, y2: 420 },
+      { x1: 120, y1: 420, x2: 220, y2: 420, move: { dx: 90, period: 3 } },
+      { x1: -20, y1: 220, x2: 150, y2: 220 },
+      { x1: 270, y1: 220, x2: 420, y2: 220 },
+      { x1: 160, y1: 220, x2: 260, y2: 220, move: { dx: 90, period: 3, phase: 3.14 } },
+      { x1: 220, y1: 150, x2: 330, y2: 150 }
+    ]
+  },
+  {
+    name: 'Trafik',
+    tip: 'Üç kayan duvar. Boşlukların hizalandığı anı yakala.',
+    start: [200, 600], target: { x: 200, y: 80, r: 17 },
+    walls: [
+      { x1: -20, y1: 460, x2: 260, y2: 460, move: { dx: 70, period: 3 } },
+      { x1: 140, y1: 320, x2: 420, y2: 320, move: { dx: 70, period: 2.4, phase: 3.14 } },
+      { x1: -20, y1: 180, x2: 260, y2: 180, move: { dx: 70, period: 3.6, phase: 1.5 } }
+    ]
+  },
+
+  // ───────── Bölüm 4 · Tampon ve kilit ─────────
+  {
+    name: 'Tampon',
+    intro: 'Tampon',
+    tip: 'Mavi tampon topu hızlandırarak geri iter. Yavaşlayan topa can verir.',
+    start: [200, 600], target: { x: 200, y: 90, r: 18 },
+    walls: [
+      { x1: 90, y1: 200, x2: 310, y2: 200 },
+      { cx: 70, cy: 330, r: 24, boost: true },
+      { cx: 330, cy: 330, r: 24, boost: true },
+      { cx: 200, cy: 420, r: 20 }
+    ]
+  },
+  {
+    name: 'Langırt',
+    tip: 'Beş tampon bir arada. Hedef sağ üstteki dar cepte.',
+    start: [200, 600], target: { x: 338, y: 80, r: 15 },
+    walls: [
+      { x1: 275, y1: -20, x2: 275, y2: 200 },
+      { x1: 275, y1: 200, x2: 350, y2: 200 },
+      { cx: 120, cy: 300, r: 18, boost: true },
+      { cx: 200, cy: 250, r: 18, boost: true },
+      { cx: 280, cy: 300, r: 18, boost: true },
+      { cx: 160, cy: 380, r: 18, boost: true },
+      { cx: 240, cy: 380, r: 18, boost: true }
+    ]
+  },
+  {
+    name: 'Kilit',
+    intro: 'Kilitli hedef',
+    tip: 'Hedefteki sayı kadar sekmeden vurursan sayılmaz. Kilitliyken top içinden geçer.',
+    start: [200, 590], target: { x: 200, y: 200, r: 20, need: 2 },
+    walls: [
+      { cx: 100, cy: 400, r: 18 },
+      { cx: 300, cy: 400, r: 18 }
+    ]
+  },
+  {
+    name: 'Üç sekme',
+    tip: 'Hedef cebin içinde ve üç sekme istiyor. Kestirme yok.',
+    start: [200, 600], target: { x: 330, y: 110, r: 17, need: 3 },
+    walls: [
+      { x1: 260, y1: -20, x2: 260, y2: 220 },
+      { x1: 60, y1: 380, x2: 200, y2: 380 }
+    ]
+  },
+  {
+    name: 'Kayan kilit',
+    tip: 'Hedef hem kayıyor hem iki sekme istiyor.',
+    start: [200, 600], target: { x: 200, y: 110, r: 17, need: 2, move: { dx: 120, period: 3.6 } },
+    walls: [
+      { x1: 60, y1: 300, x2: 340, y2: 300 },
+      { cx: 200, cy: 470, r: 20 }
+    ]
+  },
+  {
+    name: 'Cam tampon',
+    tip: 'Hedef camlı rafın içinde. Tamponlarla hız kazan.',
+    start: [200, 600], target: { x: 330, y: 330, r: 16, need: 3 },
+    walls: [
+      { x1: 260, y1: 260, x2: 420, y2: 260, glass: true },
+      { x1: 260, y1: 400, x2: 420, y2: 400, glass: true },
+      { x1: 260, y1: 260, x2: 260, y2: 400 },
+      { cx: 90, cy: 150, r: 22, boost: true },
+      { cx: 90, cy: 500, r: 22, boost: true }
+    ]
+  },
+  {
+    name: 'Fincan',
+    tip: 'Hedef fincanın dibinde, dört sekme istiyor. Tamponlar topu yukarıda tutar.',
+    start: [200, 600], target: { x: 200, y: 340, r: 16, need: 4 },
+    walls: [
+      { cx: 60, cy: 90, r: 22, boost: true },
+      { cx: 340, cy: 90, r: 22, boost: true },
+      { x1: 150, y1: 280, x2: 150, y2: 380 },
+      { x1: 250, y1: 280, x2: 250, y2: 380 },
+      { x1: 150, y1: 380, x2: 250, y2: 380 }
+    ]
+  },
+  {
+    name: 'Dörtlü',
+    tip: 'Köşelerde 45° aynalar var. Dört sekme, sonra ortadaki hedef.',
+    start: [200, 600], target: { x: 200, y: 320, r: 20, need: 4 },
+    walls: [
+      { x1: 0, y1: 90, x2: 90, y2: 0 },
+      { x1: 310, y1: 0, x2: 400, y2: 90 },
+      { x1: 0, y1: 550, x2: 90, y2: 640 },
+      { x1: 310, y1: 640, x2: 400, y2: 550 },
+      { x1: 150, y1: 260, x2: 250, y2: 260 },
+      { x1: 150, y1: 380, x2: 250, y2: 380 }
+    ]
+  },
+  {
+    name: 'Cam kasa',
+    tip: 'Hedef iki camın arasında, üç sekme istiyor. Alttaki camı kır, üsttekine çarp.',
+    start: [200, 600], target: { x: 200, y: 135, r: 17, need: 3 },
+    walls: [
+      { x1: 120, y1: 60, x2: 120, y2: 210 },
+      { x1: 280, y1: 60, x2: 280, y2: 210 },
+      { x1: 120, y1: 210, x2: 280, y2: 210, glass: true },
+      { x1: 120, y1: 60, x2: 280, y2: 60, glass: true },
+      { cx: 200, cy: 430, r: 18 }
+    ]
+  },
+  {
+    name: 'Langırt finali',
+    tip: 'Pervane, tampon, kırmızı kenarlar ve beş sekme. Bölümün sonu.',
+    start: [200, 610], target: { x: 200, y: 80, r: 16, need: 5 },
+    walls: [
+      { px: 200, py: 260, len: 150, spin: 1 },
+      { cx: 80, cy: 400, r: 20, boost: true },
+      { cx: 320, cy: 400, r: 20, boost: true },
+      { x1: 3, y1: 440, x2: 3, y2: 640, dead: true },
+      { x1: 397, y1: 440, x2: 397, y2: 640, dead: true },
+      { x1: 150, y1: 160, x2: 250, y2: 160 }
+    ]
+  },
+
+  // ───────── Bölüm 5 · Geçit ─────────
+  {
+    name: 'Geçit',
+    intro: 'Geçit',
+    tip: 'Mor halkaya giren top eşinden çıkar, yönü aynı kalır. Hedef kapalı kutuda.',
+    start: [200, 600], target: { x: 310, y: 120, r: 17 },
+    walls: [
+      { x1: 220, y1: 40, x2: 380, y2: 40 },
+      { x1: 220, y1: 200, x2: 380, y2: 200 },
+      { x1: 220, y1: 40, x2: 220, y2: 200 },
+      { x1: 380, y1: 40, x2: 380, y2: 200 }
+    ],
+    portals: [
+      { a: { x: 100, y: 330 }, b: { x: 265, y: 155 }, r: 20 }
+    ]
+  },
+  {
+    name: 'Tampon geçit',
+    tip: 'Tampon topu geçide fırlatır. İki sekme gerek.',
+    start: [200, 600], target: { x: 200, y: 90, r: 16, need: 2 },
+    walls: [
+      { x1: -20, y1: 300, x2: 420, y2: 300 },
+      { cx: 330, cy: 470, r: 22, boost: true },
+      { cx: 200, cy: 190, r: 20 }
+    ],
+    portals: [
+      { a: { x: 70, y: 420 }, b: { x: 330, y: 220 }, r: 20 }
+    ]
+  },
+  {
+    name: 'Duvarın ardı',
+    tip: 'Duvar boydan boya. Öbür tarafa tek yol geçit.',
+    start: [200, 600], target: { x: 80, y: 100, r: 17 },
+    walls: [
+      { x1: -20, y1: 320, x2: 420, y2: 320 }
+    ],
+    portals: [
+      { a: { x: 330, y: 430 }, b: { x: 200, y: 220 }, r: 20 }
+    ]
+  },
+  {
+    name: 'Pervane geçit',
+    tip: 'Geçitten çıkınca pervane karşılıyor.',
+    start: [200, 600], target: { x: 320, y: 110, r: 16 },
+    walls: [
+      { x1: -20, y1: 330, x2: 420, y2: 330 },
+      { px: 250, py: 200, len: 130, spin: 1.2 },
+      { x1: 200, y1: -20, x2: 200, y2: 90 }
+    ],
+    portals: [
+      { a: { x: 80, y: 440 }, b: { x: 80, y: 240 }, r: 20 }
+    ]
+  },
+  {
+    name: 'Kilitli geçit',
+    tip: 'Üç sekme gerek. Geçitten defalarca geçebilirsin.',
+    start: [200, 600], target: { x: 200, y: 120, r: 17, need: 3 },
+    walls: [
+      { x1: -20, y1: 300, x2: 420, y2: 300 },
+      { cx: 200, cy: 500, r: 18 }
+    ],
+    portals: [
+      { a: { x: 200, y: 400 }, b: { x: 200, y: 220 }, r: 20 }
+    ]
+  },
+  {
+    name: 'Geçit ve cam',
+    tip: 'Geçit seni camın altına çıkarır. Camı kır, sonra geri dön.',
+    start: [200, 600], target: { x: 70, y: 100, r: 18 },
+    walls: [
+      { x1: -20, y1: 320, x2: 420, y2: 320 },
+      { x1: 150, y1: -20, x2: 150, y2: 200 },
+      { x1: -20, y1: 200, x2: 150, y2: 200, glass: true }
+    ],
+    portals: [
+      { a: { x: 200, y: 440 }, b: { x: 75, y: 265 }, r: 22 }
+    ]
+  },
+  {
+    name: 'Zincir',
+    tip: 'Üç kat, iki geçit. Hedef en üst katta.',
+    start: [60, 600], target: { x: 340, y: 170, r: 16 },
+    walls: [
+      { x1: -20, y1: 440, x2: 420, y2: 440 },
+      { x1: -20, y1: 220, x2: 420, y2: 220 }
+    ],
+    portals: [
+      { a: { x: 330, y: 540 }, b: { x: 70, y: 380 }, r: 24 },
+      { a: { x: 330, y: 300 }, b: { x: 70, y: 140 }, r: 24 }
+    ]
+  },
+  {
+    name: 'Gezgin geçit',
+    tip: 'Alt geçit sağa sola kayıyor. Hedef sağ üstteki cepte.',
+    start: [60, 600], target: { x: 330, y: 100, r: 17 },
+    walls: [
+      { x1: -20, y1: 330, x2: 420, y2: 330 },
+      { x1: 260, y1: -20, x2: 260, y2: 200 }
+    ],
+    portals: [
+      { a: { x: 200, y: 460, move: { dx: 130, period: 3.2 } }, b: { x: 100, y: 200 }, r: 20 }
+    ]
+  },
+  {
+    name: 'Her şey',
+    tip: 'Cam, tampon, pervane, geçit. Hepsi bir arada.',
+    start: [60, 610], target: { x: 320, y: 90, r: 16, need: 2, move: { dx: 40, period: 3 } },
+    walls: [
+      { x1: -20, y1: 450, x2: 300, y2: 450 },
+      { x1: 100, y1: 280, x2: 420, y2: 280, glass: true },
+      { px: 200, py: 365, len: 90, spin: 1.1 },
+      { cx: 340, cy: 560, r: 20, boost: true },
+      { x1: 397, y1: 300, x2: 397, y2: 440, dead: true }
+    ],
+    portals: [
+      { a: { x: 60, y: 370 }, b: { x: 60, y: 150 }, r: 18 }
+    ]
+  },
+  {
+    name: 'Son',
+    tip: 'Elli seviyenin sonuncusu. Üç kat, geçit, pervane, kilit.',
+    start: [200, 615], target: { x: 200, y: 75, r: 16, need: 3, move: { dx: 60, period: 3.4 } },
+    walls: [
+      { x1: -20, y1: 470, x2: 420, y2: 470 },
+      { x1: -20, y1: 250, x2: 420, y2: 250 },
+      { px: 200, py: 360, len: 120, spin: -1 },
+      { cx: 70, cy: 545, r: 20, boost: true },
+      { x1: 120, y1: 150, x2: 280, y2: 150, glass: true },
+      { x1: 3, y1: 260, x2: 3, y2: 460, dead: true },
+      { x1: 397, y1: 260, x2: 397, y2: 460, dead: true }
+    ],
+    portals: [
+      { a: { x: 330, y: 545 }, b: { x: 70, y: 400 }, r: 20 },
+      { a: { x: 330, y: 320 }, b: { x: 330, y: 200 }, r: 20 }
+    ]
+  }
+];
+
+const CHAPTERS = [
+  { name: 'Temel', from: 0 },
+  { name: 'Geometri', from: 10 },
+  { name: 'Hareket', from: 20 },
+  { name: 'Tampon', from: 30 },
+  { name: 'Geçit', from: 40 }
+];
+
+(() => {
+  const W = SIM.W, H = SIM.H, R = SIM.R, HW = SIM.HW, DT = SIM.DT, M = 8;
+  const MAX_PULL = 150, MIN_PULL = 12, TAU = Math.PI * 2;
+  const $ = id => document.getElementById(id);
+  const app = $('app'), stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STAR_PATH = 'M12 2.6l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 16.9 6.2 20.1l1.4-6.4L2.7 9.3l6.5-.7z';
+  const N = LEVELS.length, PER = 10;
+
+  // ---------- storage (per-viewer convenience only) ----------
+  const KEY = 'sekme.v1';
+  function load() {
+    try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d && Array.isArray(d.stars)) return d; } catch (e) {}
+    return { stars: Array(N).fill(0), last: 0, sound: true };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
+  const prog = load();
+  while (prog.stars.length < N) prog.stars.push(0);
+  if (prog.sound === undefined) prog.sound = true;
+  const unlocked = i => i === 0 || prog.stars[i - 1] > 0;
+  const totalStars = () => prog.stars.reduce((a, b) => a + b, 0);
+  const chapterOf = i => { let c = 0; CHAPTERS.forEach((ch, k) => { if (i >= ch.from) c = k; }); return c; };
+  const chapterEnd = c => c + 1 < CHAPTERS.length ? CHAPTERS[c + 1].from : N;
+  const chapterStars = c => prog.stars.slice(CHAPTERS[c].from, chapterEnd(c)).reduce((a, b) => a + b, 0);
+
+  // ---------- theme colours ----------
+  let C = {};
+  const TOKENS = ['paper', 'sheet', 'paper-2', 'grid', 'grid-major', 'ink', 'ink-soft', 'ball', 'target', 'danger', 'glass', 'boost', 'portal'];
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of TOKENS) C[k] = cs.getPropertyValue('--' + k).trim();
+  }
+  readColors();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+  new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+
+  // ---------- sizing ----------
+  let scale = 1, dpr = 1;
+  function resize() {
+    const r = stage.getBoundingClientRect(), cs = getComputedStyle(stage);
+    const aw = r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const ah = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    scale = Math.max(0.2, Math.min(aw / (W + 2 * M), ah / (H + 2 * M)));
+    const cw = Math.floor((W + 2 * M) * scale), ch = Math.floor((H + 2 * M) * scale);
+    dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+    app.style.setProperty('--field-w', cw + 'px');
+  }
+  new ResizeObserver(resize).observe(stage);
+
+  // ---------- sound ----------
+  let ac = null, noiseBuf = null;
+  function audio() {
+    if (!prog.sound) return null;
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function tone(freq, dur, type, vol, when, glideTo) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime + (when || 0), o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function noise(dur, vol, hp) {
+    const a = audio(); if (!a) return;
+    if (!noiseBuf) {
+      noiseBuf = a.createBuffer(1, a.sampleRate * 0.5, a.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+    s.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp || 2500;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); s.stop(t + dur + 0.02);
+  }
+  const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
+  const note = n => 392 * Math.pow(2, PENTA[Math.max(0, Math.min(n - 1, PENTA.length - 1))] / 12);
+  const sfx = {
+    shoot: p => tone(180 + p * 160, 0.09, 'sine', 0.12),
+    bounce: (n, sp) => tone(note(n), 0.22, 'triangle', Math.min(0.24, 0.07 + sp / 2500)),
+    bump: n => { tone(note(n) * 2, 0.12, 'square', 0.06); tone(note(n), 0.2, 'triangle', 0.14); },
+    glass: n => { noise(0.25, 0.22, 3000); tone(note(n) * 2, 0.3, 'sine', 0.08); },
+    portal: () => tone(260, 0.28, 'sine', 0.12, 0, 900),
+    unlock: () => { tone(880, 0.16, 'triangle', 0.12); tone(1318.5, 0.3, 'triangle', 0.12, 0.08); },
+    hit: () => [0, 4, 7, 12, 16].forEach((s, i) => tone(523.25 * Math.pow(2, s / 12), 0.5, 'triangle', 0.16, i * 0.07)),
+    dead: () => { tone(150, 0.28, 'sawtooth', 0.07); tone(100, 0.4, 'square', 0.05, 0.06); },
+    miss: () => tone(130, 0.18, 'sine', 0.12)
+  };
+
+  // ---------- game state ----------
+  let li = 0, L = LEVELS[0], clock = 0, tries = 0;
+  let mode = 'idle';            // idle | aim | fly | settle | won
+  let ball = { x: 0, y: 0 };
+  let aim = null;
+  let kb = { angle: -Math.PI / 2, power: 0.6 };
+  let marks = [], trail = [], path = [], ghost = null, fx = [], flash = {};
+  let settleAt = 0, winTimer = 0, stepCount = 0;
+
+  const fmtNo = n => String(n).padStart(2, '0');
+  const degOf = a => Math.round(((-a * 180 / Math.PI) % 360 + 360) % 360) % 360;
+  const need = () => L.target.need || 0;
+
+  function setReadout(html) { $('readout').innerHTML = html; }
+  function idleReadout() { setReadout(tries === 0 ? 'Ekranda geri çek, bırak · klavyede ← → ↑ ↓ ve boşluk' : 'Önceki atış kesik çizgiyle duruyor'); }
+  function bounceReadout() {
+    const n = need();
+    setReadout('Sekme <b>' + ball.bounces + '</b>' + (n ? ' / ' + n + (ball.bounces >= n ? ' · hedef açık' : '') : ''));
+  }
+
+  function updateHud() {
+    $('lvlNo').textContent = fmtNo(li + 1);
+    $('lvlOf').textContent = '/' + N;
+    $('lvlName').textContent = L.name;
+    $('tries').textContent = tries;
+    $('tip').textContent = L.tip;
+    const chip = $('chip');
+    if (L.intro) { chip.textContent = 'Yeni · ' + L.intro; chip.hidden = false; } else chip.hidden = true;
+  }
+
+  function resetBall() {
+    ball = { x: L.start[0], y: L.start[1], bounces: 0, gone: null };
+    mode = 'idle'; aim = null; trail = [];
+    idleReadout();
+  }
+
+  function loadLevel(i) {
+    li = Math.max(0, Math.min(N - 1, i)); L = LEVELS[li];
+    clock = 0; tries = 0; marks = []; path = []; ghost = null; fx = []; flash = {};
+    prog.last = li; save();
+    hesapNotu(`${li + 1}. seviye: ${L.name} · toplam ${totalStars()}/${N * 3} yıldız`);
+    clearTimeout(winTimer);
+    resetBall(); updateHud();
+  }
+
+  function toast(text) {
+    stage.querySelectorAll('.toast').forEach(t => t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast'; t.textContent = text; stage.appendChild(t);
+    setTimeout(() => t.remove(), 1700);
+  }
+
+  function shoot(angle, power) {
+    if (mode !== 'aim' && mode !== 'idle') return;
+    tries++; $('tries').textContent = tries;
+    ball = SIM.launch(L, angle, power, clock);
+    marks = []; trail = []; path = [[ball.x, ball.y]]; stepCount = 0; flash = {};
+    mode = 'fly'; aim = null;
+    sfx.shoot(power);
+    bounceReadout();
+  }
+
+  function rings(x, y, color, n, r0, r1, life) {
+    if (reduceMotion) return;
+    for (let k = 0; k < n; k++) fx.push({ kind: 'ring', x, y, t: -k * 0.12, life, color, r0, r1 });
+  }
+
+  function counted(cx, cy, nx, ny) {
+    marks.push({ x: cx, y: cy, nx, ny, n: ball.bounces });
+    bounceReadout();
+    const n = need();
+    if (n && ball.bounces === n) {
+      const p = SIM.targetAt(L, ball.t);
+      rings(p.x, p.y, 'target', 2, L.target.r, L.target.r + 26, 0.5);
+      sfx.unlock();
+    }
+  }
+
+  function onEvent(type, cx, cy, nx, ny, sp, ix, iy, hard, idx) {
+    if (type === 'bounce') {
+      rings(cx, cy, 'ink-soft', 1, 2, 16, 0.35);
+      sfx.bounce(ball.bounces, sp);
+      counted(cx, cy, nx, ny);
+    } else if (type === 'bump') {
+      flash[idx] = clock;
+      rings(cx, cy, 'boost', 2, 4, 30, 0.4);
+      sfx.bump(ball.bounces);
+      counted(cx, cy, nx, ny);
+    } else if (type === 'break') {
+      sfx.glass(ball.bounces);
+      if (!reduceMotion) for (let k = 0; k < 14; k++) {
+        const a = Math.atan2(ny, nx) + (Math.random() - 0.5) * 2.4, v = 40 + Math.random() * 150;
+        fx.push({ kind: 'shard', x: cx + (Math.random() - 0.5) * 30, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, rot: Math.random() * 6, t: 0, life: 0.7 + Math.random() * 0.4 });
+      }
+      if (hard) counted(cx, cy, nx, ny);
+    } else if (type === 'portal') {
+      // cx,cy = entry point; nx,ny = exit point
+      path.push(null, [nx, ny]); trail = [];
+      rings(cx, cy, 'portal', 1, 6, 30, 0.4);
+      rings(nx, ny, 'portal', 1, 30, 6, 0.4);
+      sfx.portal();
+    } else if (type === 'dead') {
+      fx.push({ kind: 'cross', x: cx, y: cy, t: 0, life: 0.9 });
+      sfx.dead();
+    } else if (type === 'hit') {
+      rings(cx, cy, 'target', 3, 10, 60, 0.7);
+      if (!reduceMotion) for (let k = 0; k < 22; k++) {
+        const a = Math.random() * TAU, v = 60 + Math.random() * 160;
+        fx.push({ kind: 'dot', x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: 0.8 + Math.random() * 0.4, color: k % 2 ? 'ball' : 'target' });
+      }
+      sfx.hit();
+    }
+  }
+
+  function finishShot() {
+    ghost = path.slice();
+    if (ball.result === 'hit') return win();
+    mode = 'settle'; settleAt = clock + 0.8;
+    if (ball.result === 'dead') toast('Kırmızı duvar topu yuttu');
+    else {
+      const n = need();
+      toast(n && ball.bounces < n ? 'Iska · ' + ball.bounces + ' / ' + n + ' sekme' : ball.bounces ? 'Iska · ' + ball.bounces + ' sekme' : 'Iska');
+      sfx.miss();
+    }
+  }
+
+  function starsFor(n) { return n <= 1 ? 3 : n <= 3 ? 2 : 1; }
+  // Short progress line for the family "who's playing" page (only when the account script is present).
+  function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (e) {} }
+
+  function win() {
+    mode = 'won';
+    const s = starsFor(tries), prev = prog.stars[li];
+    prog.stars[li] = Math.max(prev, s); save();
+    hesapNotu(`${li + 1}. seviye geçildi, ${s} yıldız · toplam ${totalStars()}/${N * 3} yıldız`);
+    setReadout('Vuruldu · <b>' + ball.bounces + '</b> sekme');
+    winTimer = setTimeout(() => showWin(s, ball.bounces), reduceMotion ? 300 : 850);
+  }
+
+  function starSvg(on, cls) {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '><path class="' + (on ? 'star-on' : 'star-off') + '" d="' + STAR_PATH + '"/></svg>';
+  }
+
+  function showWin(stars, bounces) {
+    const last = li === N - 1, c = chapterOf(li), chapterDone = !last && li + 1 === chapterEnd(c);
+    $('winEyebrow').textContent = 'Bölüm ' + (c + 1) + ' · Seviye ' + fmtNo(li + 1) + ' · ' + L.name;
+    const st = $('winStars');
+    st.innerHTML = [0, 1, 2].map(i => starSvg(i < stars, 'star-in')).join('');
+    st.setAttribute('aria-label', stars + ' yıldız');
+    [...st.children].forEach((el, i) => { el.style.animationDelay = (i * 0.12) + 's'; });
+    const bounceTxt = bounces === 0 ? 'hiç sekmeden' : bounces + ' sekmeyle';
+    const shot = tries + '. atışta, ' + bounceTxt + ' vurdun.';
+    if (last) {
+      $('winTitle').textContent = 'Hepsi tamam';
+      $('winResult').textContent = shot + ' ' + N + ' seviyenin hepsini bitirdin: toplam ' + totalStars() + ' / ' + N * 3 + ' yıldız.';
+      $('btnNext').textContent = 'Seviyeler';
+    } else if (chapterDone) {
+      $('winTitle').textContent = 'Bölüm ' + (c + 1) + ' bitti';
+      $('winResult').textContent = shot + ' ' + CHAPTERS[c].name + ' bölümünden ' + chapterStars(c) + ' / 30 yıldız topladın. Sıradaki bölüm: ' + CHAPTERS[c + 1].name + '.';
+      $('btnNext').textContent = 'Sonraki bölüm';
+    } else {
+      $('winTitle').textContent = 'Hedef vuruldu';
+      $('winResult').textContent = shot;
+      $('btnNext').textContent = 'Sonraki seviye';
+    }
+    $('winRule').textContent = stars < 3 ? 'Üç yıldız için tek atışta vur.' : 'Tek atış. Kusursuz.';
+    openOverlay('ovWin', $('btnNext'));
+  }
+
+  // ---------- overlays ----------
+  let openId = null, tabSel = 0;
+  function openOverlay(id, focusEl) {
+    closeOverlay();
+    $(id).hidden = false; openId = id;
+    if (focusEl) setTimeout(() => focusEl.focus({ preventScroll: true }), 30);
+  }
+  function closeOverlay() { if (openId) { $(openId).hidden = true; openId = null; } }
+
+  const LOCK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="6" y="11" width="12" height="9" rx="1.5"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>';
+
+  function renderTabs() {
+    const tabs = $('lvTabs');
+    tabs.innerHTML = '';
+    CHAPTERS.forEach((ch, c) => {
+      const b = document.createElement('button');
+      const open = unlocked(ch.from);
+      b.type = 'button'; b.className = 'tab'; b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', c === tabSel ? 'true' : 'false');
+      b.disabled = !open;
+      b.setAttribute('aria-label', 'Bölüm ' + (c + 1) + ', ' + ch.name + (open ? ', ' + chapterStars(c) + ' / 30 yıldız' : ', kilitli'));
+      b.innerHTML = '<span class="tab-n">' + (open ? c + 1 : LOCK_SVG) + '</span><span class="tab-name">' + ch.name + '</span>';
+      b.addEventListener('click', () => { tabSel = c; renderLevels(); });
+      tabs.appendChild(b);
+    });
+  }
+
+  function renderLevels() {
+    renderTabs();
+    const g = $('lvGrid'), from = CHAPTERS[tabSel].from, to = chapterEnd(tabSel);
+    g.innerHTML = '';
+    for (let i = from; i < to; i++) {
+      const lv = LEVELS[i], b = document.createElement('button');
+      b.type = 'button'; b.className = 'lv' + (i === li ? ' current' : '');
+      b.disabled = !unlocked(i);
+      const s = prog.stars[i];
+      b.setAttribute('aria-label', 'Seviye ' + (i + 1) + ', ' + lv.name + (b.disabled ? ', kilitli' : ', ' + s + ' yıldız'));
+      b.title = lv.name;
+      b.innerHTML = '<span class="lv-n">' + fmtNo(i + 1) + '</span>' +
+        (b.disabled ? '<span class="pips">' + LOCK_SVG + '</span>' : '<span class="pips">' + [0, 1, 2].map(k => starSvg(k < s)).join('') + '</span>');
+      b.addEventListener('click', () => { closeOverlay(); loadLevel(i); });
+      g.appendChild(b);
+    }
+    $('lvTotal').textContent = CHAPTERS[tabSel].name + ': ' + chapterStars(tabSel) + ' / 30 · Toplam ' + totalStars() + ' / ' + N * 3 + ' yıldız';
+  }
+  function showLevels() { tabSel = chapterOf(li); renderLevels(); openOverlay('ovLevels', $('btnPlay')); }
+
+  $('btnLevels').addEventListener('click', showLevels);
+  $('btnPlay').addEventListener('click', () => { closeOverlay(); if (mode === 'won') nextUnplayed(); });
+  $('btnReset').addEventListener('click', () => {
+    if (mode === 'won') return;
+    if (mode === 'fly') { ghost = path.slice(); }
+    resetBall();
+  });
+  $('btnAgain').addEventListener('click', () => { closeOverlay(); loadLevel(li); });
+  $('btnNext').addEventListener('click', () => {
+    closeOverlay();
+    if (li === N - 1) { loadLevel(li); showLevels(); }
+    else loadLevel(li + 1);
+  });
+  function syncSoundBtn() { $('btnSound').setAttribute('aria-pressed', prog.sound ? 'true' : 'false'); $('btnSound').setAttribute('aria-label', prog.sound ? 'Sesi kapat' : 'Sesi aç'); }
+  $('btnSound').addEventListener('click', () => { prog.sound = !prog.sound; save(); syncSoundBtn(); if (prog.sound) sfx.bounce(3, 400); });
+  function nextUnplayed() {
+    for (let i = 0; i < N; i++) if (unlocked(i) && prog.stars[i] === 0) return loadLevel(i);
+    loadLevel(li);
+  }
+
+  // ---------- input ----------
+  function computeAim() {
+    const dx = aim.sx - aim.cx, dy = aim.sy - aim.cy, len = Math.hypot(dx, dy);
+    aim.valid = len >= MIN_PULL;
+    if (!aim.valid) { setReadout('Biraz daha geri çek'); return; }
+    aim.angle = Math.atan2(dy, dx);
+    aim.power = Math.min(1, Math.max(0.04, (len - MIN_PULL) / (MAX_PULL - MIN_PULL)));
+    setReadout('Açı <b>' + String(degOf(aim.angle)).padStart(3, '0') + '°</b> · Güç <b>%' + Math.round(aim.power * 100) + '</b>');
+  }
+
+  stage.addEventListener('pointerdown', e => {
+    if (openId || (e.button !== undefined && e.button > 0)) return;
+    audio();
+    if (mode === 'settle') { resetBall(); }
+    if (mode !== 'idle' && mode !== 'aim') return;
+    try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+    aim = { src: 'ptr', id: e.pointerId, sx: e.clientX, sy: e.clientY, cx: e.clientX, cy: e.clientY, valid: false };
+    mode = 'aim';
+    setReadout('Geri çek, bırak');
+  });
+  stage.addEventListener('pointermove', e => {
+    if (!aim || aim.src !== 'ptr' || e.pointerId !== aim.id) return;
+    aim.cx = e.clientX; aim.cy = e.clientY; computeAim();
+  });
+  function endPointer(e, cancel) {
+    if (!aim || aim.src !== 'ptr' || e.pointerId !== aim.id) return;
+    if (!cancel && aim.valid) shoot(aim.angle, aim.power);
+    else { mode = 'idle'; aim = null; idleReadout(); }
+  }
+  stage.addEventListener('pointerup', e => endPointer(e, false));
+  stage.addEventListener('pointercancel', e => endPointer(e, true));
+
+  window.addEventListener('keydown', e => {
+    if (openId) { if (e.key === 'Escape' && openId === 'ovLevels') closeOverlay(); return; }
+    if (e.target && e.target.closest && e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (mode === 'settle' && e.key.startsWith('Arrow')) resetBall();
+    if (mode !== 'idle' && mode !== 'aim') return;
+    const step = (e.shiftKey ? 5 : 1) * Math.PI / 180;
+    let used = true;
+    if (e.key === 'ArrowLeft') kb.angle -= step;
+    else if (e.key === 'ArrowRight') kb.angle += step;
+    else if (e.key === 'ArrowUp') kb.power = Math.min(1, kb.power + 0.05);
+    else if (e.key === 'ArrowDown') kb.power = Math.max(0.05, kb.power - 0.05);
+    else if ((e.key === ' ' || e.key === 'Enter') && aim && aim.src === 'kb') { shoot(kb.angle, kb.power); e.preventDefault(); return; }
+    else if (e.key === 'Escape' && aim) { mode = 'idle'; aim = null; idleReadout(); return; }
+    else used = false;
+    if (!used) return;
+    e.preventDefault(); audio();
+    aim = { src: 'kb', angle: kb.angle, power: kb.power, valid: true };
+    mode = 'aim';
+    setReadout('Açı <b>' + String(degOf(kb.angle)).padStart(3, '0') + '°</b> · Güç <b>%' + Math.round(kb.power * 100) + '</b> · boşlukla at');
+  });
+
+  // ---------- preview: straight line up to the first contact, through portals ----------
+  function preview(angle, power) {
+    const s = SIM.launch(L, angle, power, clock);
+    const pts = [[s.x, s.y]];
+    let first = null, firstIdx = -1, after = 0, px = s.x, py = s.y, n = 0;
+    const ev = (type, cx, cy, nx, ny, sp, ix, iy) => {
+      if (type === 'portal') { if (!first) pts.push([cx, cy], null, [nx, ny]); px = nx; py = ny; return; }
+      if (!first && (type === 'bounce' || type === 'dead' || type === 'bump' || type === 'break')) first = { type, cx, cy, nx, ny, ix, iy, bx: s.x, by: s.y };
+    };
+    while (!s.done && n < 2400) {
+      SIM.step(s, L, ev); n++;
+      if (first) {
+        if (firstIdx < 0) { pts.push([first.bx, first.by]); firstIdx = pts.length - 1; }
+        after += Math.hypot(s.x - px, s.y - py);
+        if (after > 140) break;
+      }
+      px = s.x; py = s.y;
+      if (n % 2 === 0 && pts[pts.length - 1] !== null) pts.push([s.x, s.y]);
+    }
+    pts.push([s.x, s.y]);
+    return { pts, first, firstIdx, end: { x: s.x, y: s.y, result: s.result, done: s.done } };
+  }
+
+  // ---------- drawing ----------
+  function drawGrid() {
+    ctx.fillStyle = C.sheet; ctx.fillRect(0, 0, W, H);
+    ctx.lineWidth = 1 / scale;
+    ctx.strokeStyle = C.grid; ctx.beginPath();
+    for (let x = 20; x < W; x += 20) if (x % 100) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = 20; y < H; y += 20) if (y % 100) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    ctx.strokeStyle = C['grid-major']; ctx.beginPath();
+    for (let x = 100; x < W; x += 100) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = 100; y < H; y += 100) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+  }
+
+  function hatchStroke(x1, y1, x2, y2) {
+    ctx.save();
+    ctx.strokeStyle = C.danger; ctx.lineWidth = HW * 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.strokeStyle = C.sheet; ctx.lineWidth = 2.4; ctx.lineCap = 'butt'; ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.restore();
+  }
+
+  function track(m, x, y, color) {
+    const dx = m.dx || 0, dy = m.dy || 0;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    if (dx && dy && m.py) ctx.ellipse(x, y, Math.abs(dx), Math.abs(dy), 0, 0, TAU);
+    else { ctx.moveTo(x - dx, y - dy); ctx.lineTo(x + dx, y + dy); }
+    ctx.stroke(); ctx.restore();
+  }
+
+  function drawWalls() {
+    const gone = ball.gone;
+    L.walls.forEach((w, i) => {
+      if (w.cx != null) {
+        if (w.move) track(w.move, w.cx, w.cy, C['ink-soft']);
+        const p = SIM.pillarAt(w, clock);
+        if (w.dead) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fillStyle = C.danger; ctx.fill();
+          ctx.save(); ctx.clip();
+          ctx.strokeStyle = C.sheet; ctx.lineWidth = 2.2; ctx.beginPath();
+          for (let k = -p.r * 2; k < p.r * 2; k += 7) { ctx.moveTo(p.x + k - p.r, p.y + p.r); ctx.lineTo(p.x + k + p.r, p.y - p.r); }
+          ctx.stroke(); ctx.restore();
+        } else if (w.boost) {
+          const ft = flash[i] != null ? (clock - flash[i]) / 0.25 : 1, pop = ft < 1 ? 1 + 0.18 * (1 - ft) : 1, r = p.r * pop;
+          ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fillStyle = C.boost; ctx.fill();
+          ctx.strokeStyle = C.sheet; ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.66, 0, TAU); ctx.stroke();
+          ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.28, 0, TAU); ctx.fillStyle = C.sheet; ctx.fill();
+          if (ft < 1) { ctx.beginPath(); ctx.arc(p.x, p.y, r + 3, 0, TAU); ctx.strokeStyle = C.boost; ctx.lineWidth = 2; ctx.globalAlpha = 1 - ft; ctx.stroke(); ctx.globalAlpha = 1; }
+        } else {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fillStyle = w.move ? C.ball : C.ink; ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 0.42, 0, TAU); ctx.fillStyle = w.move ? C.ink : C.sheet; ctx.fill();
+        }
+        return;
+      }
+      if (w.move) {
+        const dx = w.move.dx || 0, dy = w.move.dy || 0;
+        ctx.save(); ctx.strokeStyle = C['ink-soft']; ctx.lineWidth = 1.4; ctx.setLineDash([2, 4]);
+        ctx.strokeRect(Math.min(w.x1, w.x2) - Math.abs(dx) - HW, Math.min(w.y1, w.y2) - Math.abs(dy) - HW - 4,
+          Math.abs(w.x2 - w.x1) + 2 * Math.abs(dx) + 2 * HW, Math.abs(w.y2 - w.y1) + 2 * Math.abs(dy) + 2 * HW + 8);
+        ctx.restore();
+      }
+      if (w.px != null) {
+        // rotor sweep circle
+        ctx.save(); ctx.strokeStyle = C['ink-soft']; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.2; ctx.setLineDash([2, 5]);
+        ctx.beginPath();
+        if (w.swing) { const a0 = w.a0 || 0, A = w.swing.amp, h = w.len / 2; ctx.arc(w.px, w.py, h, a0 - A, a0 + A); ctx.moveTo(w.px - Math.cos(a0 - A) * h, w.py - Math.sin(a0 - A) * h); ctx.arc(w.px, w.py, h, a0 - A + Math.PI, a0 + A + Math.PI); }
+        else ctx.arc(w.px, w.py, w.len / 2, 0, TAU);
+        ctx.stroke(); ctx.restore();
+      }
+      const g = SIM.segAt(w, clock);
+      if (w.dead) { hatchStroke(g.x1, g.y1, g.x2, g.y2); return; }
+      if (w.glass) {
+        if (gone && gone[i]) {
+          ctx.save(); ctx.strokeStyle = C.glass; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.2; ctx.setLineDash([1.5, 5]);
+          ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke(); ctx.restore();
+          return;
+        }
+        ctx.strokeStyle = C.glass; ctx.lineWidth = HW * 2; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke();
+        // glints
+        const ex = g.x2 - g.x1, ey = g.y2 - g.y1, len = Math.hypot(ex, ey), ux = ex / len, uy = ey / len;
+        ctx.strokeStyle = C.sheet; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.beginPath();
+        for (let d = 14; d < len - 8; d += 26) {
+          const cx = g.x1 + ux * d, cy = g.y1 + uy * d;
+          ctx.moveTo(cx - ux * 3 - uy * 3.5, cy - uy * 3 + ux * 3.5); ctx.lineTo(cx + ux * 3 + uy * 3.5, cy + uy * 3 - ux * 3.5);
+        }
+        ctx.stroke();
+        ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.globalAlpha = 0.35; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.moveTo(g.x1 - uy * HW, g.y1 + ux * HW); ctx.lineTo(g.x2 - uy * HW, g.y2 + ux * HW);
+        ctx.moveTo(g.x1 + uy * HW, g.y1 - ux * HW); ctx.lineTo(g.x2 + uy * HW, g.y2 - ux * HW); ctx.stroke(); ctx.globalAlpha = 1;
+        return;
+      }
+      const moving = w.move || w.px != null;
+      ctx.strokeStyle = moving ? C.ball : C.ink; ctx.lineWidth = HW * 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke();
+      if (moving) { ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke(); }
+      if (w.px != null) {
+        ctx.beginPath(); ctx.arc(w.px, w.py, 4.5, 0, TAU); ctx.fillStyle = C.sheet; ctx.fill();
+        ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.stroke();
+      }
+    });
+  }
+
+  function drawPortals() {
+    const P = L.portals; if (!P) return;
+    P.forEach((q, j) => {
+      for (const end of [q.a, q.b]) {
+        if (end.move) track(end.move, end.x, end.y, C.portal);
+        const p = SIM.pointAt(end, clock), r = q.r;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fillStyle = C.portal; ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 1;
+        ctx.strokeStyle = C.portal; ctx.lineWidth = 3; ctx.setLineDash([7, 4.5]);
+        ctx.lineDashOffset = reduceMotion ? 0 : -clock * 18 * (j % 2 ? -1 : 1);
+        ctx.stroke();
+        ctx.setLineDash([]); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.5, 0, TAU); ctx.stroke();
+        ctx.restore();
+        if (P.length > 1) label(String(j + 1), p.x, p.y, C.portal, 11, 'center');
+      }
+    });
+  }
+
+  function drawTarget() {
+    const T = L.target, p = SIM.targetAt(L, clock), n = need();
+    if (T.move) {
+      const dx = T.move.dx || 0, dy = T.move.dy || 0;
+      ctx.save(); ctx.strokeStyle = C.target; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.5; ctx.setLineDash([2, 5]);
+      ctx.beginPath(); ctx.moveTo(T.x - dx, T.y - dy); ctx.lineTo(T.x + dx, T.y + dy); ctx.stroke();
+      ctx.setLineDash([]);
+      for (const sgn of [-1, 1]) { ctx.beginPath(); ctx.arc(T.x + sgn * dx, T.y + sgn * dy, 2.5, 0, TAU); ctx.fillStyle = C.target; ctx.fill(); }
+      ctx.restore();
+    }
+    const flying = mode === 'fly' || mode === 'settle' || mode === 'won';
+    const left = n ? Math.max(0, n - (flying ? ball.bounces || 0 : 0)) : 0;
+    if (left > 0) {
+      ctx.fillStyle = C.sheet; ctx.beginPath(); ctx.arc(p.x, p.y, T.r, 0, TAU); ctx.fill();
+      ctx.save(); ctx.strokeStyle = C.target; ctx.lineWidth = 2.5; ctx.setLineDash([4, 4]);
+      ctx.lineDashOffset = reduceMotion ? 0 : clock * 8; ctx.stroke(); ctx.restore();
+      label(String(left), p.x, p.y + 0.5, C.target, 15, 'center', 800);
+      label('B', p.x + T.r + 5, p.y - T.r - 2, C.target);
+      return;
+    }
+    if (!reduceMotion && mode !== 'won') {
+      const ph = (clock % 1.6) / 1.6;
+      ctx.beginPath(); ctx.arc(p.x, p.y, T.r + ph * 14, 0, TAU);
+      ctx.strokeStyle = C.target; ctx.globalAlpha = (1 - ph) * 0.5; ctx.lineWidth = 1.5; ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = C.sheet; ctx.beginPath(); ctx.arc(p.x, p.y, T.r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = C.target; ctx.lineWidth = 3; ctx.stroke();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, T.r * 0.58, 0, TAU); ctx.stroke();
+    ctx.fillStyle = C.target; ctx.beginPath(); ctx.arc(p.x, p.y, T.r * 0.22, 0, TAU); ctx.fill();
+    label('B', p.x + T.r + 5, p.y - T.r - 2, C.target);
+  }
+
+  function label(text, x, y, color, size, align, weight) {
+    ctx.font = (weight || 600) + ' ' + (size || 11) + 'px "Martian Mono", ui-monospace, Menlo, monospace';
+    ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+  }
+
+  function drawStart() {
+    const [x, y] = L.start;
+    ctx.strokeStyle = C['ink-soft']; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x - 16, y); ctx.lineTo(x - 11, y); ctx.moveTo(x + 11, y); ctx.lineTo(x + 16, y);
+    ctx.moveTo(x, y - 16); ctx.lineTo(x, y - 11); ctx.moveTo(x, y + 11); ctx.lineTo(x, y + 16); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 12.5, 0, TAU); ctx.setLineDash([2, 3]); ctx.stroke(); ctx.setLineDash([]);
+    label('A', x - 26, y - 14, C['ink-soft']);
+  }
+
+  // Polyline that treats null entries as pen-up (portal jumps).
+  function polyline(pts, from, to) {
+    ctx.beginPath();
+    let pen = false;
+    for (let i = from; i <= to; i++) {
+      const p = pts[i];
+      if (!p) { pen = false; continue; }
+      if (!pen) { ctx.moveTo(p[0], p[1]); pen = true; } else ctx.lineTo(p[0], p[1]);
+    }
+    ctx.stroke();
+  }
+
+  function drawGhost() {
+    if (!ghost || ghost.length < 2 || mode === 'fly') return;
+    ctx.save(); ctx.strokeStyle = C['ink-soft']; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.5; ctx.setLineDash([1.5, 4]); ctx.lineCap = 'round';
+    polyline(ghost, 0, ghost.length - 1);
+    ctx.restore();
+  }
+
+  function drawMarks() {
+    for (const m of marks) {
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(m.x - 4, m.y - 4); ctx.lineTo(m.x + 4, m.y + 4); ctx.moveTo(m.x + 4, m.y - 4); ctx.lineTo(m.x - 4, m.y + 4); ctx.stroke();
+      label(String(m.n), m.x + m.nx * 14, m.y + m.ny * 14, C.ink, 9, 'center');
+    }
+  }
+
+  function drawBall() {
+    if (mode === 'fly' && trail.length > 1) {
+      ctx.lineCap = 'round';
+      for (let i = 1; i < trail.length; i++) {
+        ctx.globalAlpha = (i / trail.length) * 0.5; ctx.strokeStyle = C.ball; ctx.lineWidth = R * 1.4 * (i / trail.length);
+        ctx.beginPath(); ctx.moveTo(trail[i - 1][0], trail[i - 1][1]); ctx.lineTo(trail[i][0], trail[i][1]); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (mode === 'won') return;
+    ctx.fillStyle = C.ball; ctx.beginPath(); ctx.arc(ball.x, ball.y, R, 0, TAU); ctx.fill();
+    ctx.fillStyle = C.sheet; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.arc(ball.x - 2.8, ball.y - 2.8, 2.4, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  function arcBetween(cx, cy, r, a1, a2) {
+    let d = a2 - a1; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
+    ctx.beginPath(); ctx.arc(cx, cy, r, a1, a1 + d, d < 0); ctx.stroke();
+  }
+
+  function drawAim() {
+    if (mode !== 'aim' || !aim || !aim.valid) return;
+    const angle = aim.src === 'kb' ? kb.angle : aim.angle, power = aim.src === 'kb' ? kb.power : aim.power;
+    const pullLen = 14 + 56 * power;
+    ctx.save();
+    ctx.strokeStyle = C['ink-soft']; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(ball.x, ball.y); ctx.lineTo(ball.x - Math.cos(angle) * pullLen, ball.y - Math.sin(angle) * pullLen); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(ball.x - Math.cos(angle) * pullLen, ball.y - Math.sin(angle) * pullLen, 3.5, 0, TAU); ctx.fillStyle = C['ink-soft']; ctx.fill();
+    ctx.strokeStyle = C.ball; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(ball.x, ball.y, R + 7, -Math.PI / 2, -Math.PI / 2 + TAU * power); ctx.stroke();
+
+    const pv = preview(angle, power), pts = pv.pts;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = C.ball; ctx.lineWidth = 2.2; ctx.setLineDash([7, 6]);
+    const cut = pv.firstIdx >= 0 ? pv.firstIdx : pts.length - 1;
+    if (cut > 0) polyline(pts, 0, cut);
+    const f = pv.first;
+    if (pv.firstIdx >= 0 && f.type !== 'dead' && pts.length - 1 > cut) {
+      ctx.globalAlpha = 0.45; ctx.setLineDash([3, 6]); polyline(pts, cut, pts.length - 1); ctx.globalAlpha = 1;
+    }
+    ctx.setLineDash([]);
+    if (f && f.type !== 'dead') {
+      ctx.strokeStyle = C.ball; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(f.bx, f.by, R, 0, TAU); ctx.stroke();
+      const an = Math.atan2(f.ny, f.nx), ai = Math.atan2(-f.iy, -f.ix);
+      const dot = f.ix * f.nx + f.iy * f.ny, ox = f.ix - 2 * dot * f.nx, oy = f.iy - 2 * dot * f.ny, ao = Math.atan2(oy, ox);
+      const theta = Math.round(Math.acos(Math.max(-1, Math.min(1, -dot / Math.hypot(f.ix, f.iy)))) * 180 / Math.PI);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(f.cx, f.cy); ctx.lineTo(f.cx + f.nx * 46, f.cy + f.ny * 46); ctx.stroke();
+      ctx.setLineDash([]); ctx.lineWidth = 1.3;
+      if (theta > 2) { arcBetween(f.cx, f.cy, 22, an, ai); arcBetween(f.cx, f.cy, 26, an, ao); }
+      const lx = f.cx + f.nx * 56, ly = f.cy + f.ny * 56;
+      label(theta + '°', Math.max(14, Math.min(W - 14, lx)), Math.max(10, Math.min(H - 10, ly)), C.ink, 10, 'center');
+    } else if (f && f.type === 'dead') {
+      ctx.strokeStyle = C.danger; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(f.cx - 6, f.cy - 6); ctx.lineTo(f.cx + 6, f.cy + 6); ctx.moveTo(f.cx + 6, f.cy - 6); ctx.lineTo(f.cx - 6, f.cy + 6); ctx.stroke();
+    } else if (pv.end.done && pv.end.result === 'miss') {
+      ctx.strokeStyle = C.ball; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(pv.end.x, pv.end.y, R, 0, TAU); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawFx(dt) {
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const e = fx[i]; e.t += dt;
+      if (e.t >= e.life) { fx.splice(i, 1); continue; }
+      if (e.t < 0) continue;
+      const k = e.t / e.life;
+      if (e.kind === 'ring') {
+        ctx.strokeStyle = C[e.color]; ctx.globalAlpha = 1 - k; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(0.5, e.r0 + (e.r1 - e.r0) * k), 0, TAU); ctx.stroke();
+      } else if (e.kind === 'dot') {
+        e.x += e.vx * dt; e.y += e.vy * dt; e.vx *= 0.96; e.vy *= 0.96;
+        ctx.fillStyle = C[e.color]; ctx.globalAlpha = 1 - k;
+        ctx.beginPath(); ctx.arc(e.x, e.y, 3 * (1 - k * 0.5), 0, TAU); ctx.fill();
+      } else if (e.kind === 'shard') {
+        e.x += e.vx * dt; e.y += e.vy * dt; e.vx *= 0.95; e.vy = e.vy * 0.95 + 160 * dt; e.rot += dt * 8;
+        ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.rot);
+        ctx.fillStyle = C.glass; ctx.globalAlpha = 1 - k;
+        ctx.beginPath(); ctx.moveTo(-4, -2); ctx.lineTo(4, -3); ctx.lineTo(1, 3); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      } else if (e.kind === 'cross') {
+        ctx.strokeStyle = C.danger; ctx.globalAlpha = 1 - k * k; ctx.lineWidth = 3; const s = 8 + 6 * k;
+        ctx.beginPath(); ctx.moveTo(e.x - s, e.y - s); ctx.lineTo(e.x + s, e.y + s); ctx.moveTo(e.x + s, e.y - s); ctx.lineTo(e.x - s, e.y + s); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawFrame(dt) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = C.paper; ctx.fillRect(0, 0, cv.width, cv.height);
+    const k = dpr * scale;
+    ctx.setTransform(k, 0, 0, k, k * M, k * M);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+    drawGrid();
+    drawStart();
+    drawGhost();
+    drawPortals();
+    drawWalls();
+    drawTarget();
+    drawMarks();
+    drawBall();
+    drawAim();
+    drawFx(dt);
+    ctx.restore();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.lineJoin = 'miter'; ctx.setLineDash([]);
+    ctx.strokeRect(-2, -2, W + 4, H + 4);
+  }
+
+  // ---------- loop ----------
+  let lastT = performance.now(), acc = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; acc += dt;
+    while (acc >= DT) {
+      acc -= DT; clock += DT;
+      if (mode === 'fly') {
+        SIM.step(ball, L, onEvent); stepCount++;
+        if (stepCount % 3 === 0) path.push([ball.x, ball.y]);
+        if (ball.done) { path.push([ball.x, ball.y]); finishShot(); }
+      }
+    }
+    if (mode === 'fly') { trail.push([ball.x, ball.y]); if (trail.length > 16) trail.shift(); }
+    if (mode === 'settle' && clock >= settleAt) resetBall();
+    drawFrame(dt);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- boot ----------
+  function start(data) {
+    syncSoundBtn();
+    resize();
+    let first = typeof prog.last === 'number' && prog.last < N && unlocked(prog.last) ? prog.last : 0;
+    if (data && typeof data.li === 'number' && data.li < N && unlocked(data.li)) first = data.li;
+    loadLevel(first);
+    if (data && typeof data.tries === 'number') { tries = data.tries; $('tries').textContent = tries; }
+    if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ li, tries }));
+    requestAnimationFrame(t => { lastT = t; frame(t); });
+  }
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+
+</script>
+
+</body></html>

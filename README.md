@@ -8,6 +8,7 @@ Uzay's page: the games Uzay and his dad make together.
 | `/yelken/` | Rüzgâr Kaptanı: a step-by-step sailing school |
 | `/songbox/` | SONGbox: put characters on stage and build a song |
 | `/sur-muhafizi/` | Sur Muhafızı: a 20-wave tower defense |
+| `/sekme/` | Sekme: bounce the ball off walls to hit the target, 50 levels |
 
 ## Run locally
 
