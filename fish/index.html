@@ -190,9 +190,68 @@ body.lb-acik .chain{display:none}
 .period button[aria-pressed="true"]{background:var(--koi);color:var(--koi-ink)}
 .period button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
+/* Rooms: list, waiting room, the shared pond's HUD, results */
+.rz{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--rc,var(--ink-dim));color:#fff;font:800 15px/1 var(--font-ui);text-shadow:0 1px 1px rgba(0,0,0,.25)}
+.oda-list{list-style:none;margin:0;padding:2px;display:grid;gap:6px;width:100%;max-width:380px;max-height:min(46vh,440px);overflow-y:auto;overscroll-behavior:contain}
+.oda-row{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-line);text-align:left}
+.oda-row b{display:block;font-weight:800;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.oda-row small{display:block;margin-top:2px;color:var(--ink-dim);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.oda-row.oyunda small{color:var(--koi)}
+.oda-bos{color:var(--ink-dim);font-size:15px;line-height:1.45;padding:14px 8px;text-wrap:balance}
+.btn.mini{padding:11px 18px;min-height:42px;font-size:15px;margin:0;box-shadow:0 3px 0 var(--koi-deep)}
+.btn.mini:disabled{opacity:.45;cursor:default;transform:none}
+.btn:disabled{cursor:default}
+.oda-durum{margin:0;min-height:1.35em;font-size:14px;font-weight:600;color:var(--ink-dim);text-wrap:balance}
+.oda-durum.bad{color:var(--danger)}
+.lb-row .tag{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:rgba(238,243,234,.14);color:var(--ink-dim)}
+.lb-row .tag.host{background:var(--koi);color:var(--koi-ink)}
+.lb-row .sub{display:block;font-size:12.5px;font-weight:600;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.wait-dots::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:dots 1.4s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
+.odapanel{
+  position:fixed;z-index:5;pointer-events:none;
+  top:calc(env(safe-area-inset-top,0px) + 66px);right:max(16px,env(safe-area-inset-right,0px));
+  width:min(168px,42vw);display:grid;gap:8px;
+}
+.op-kart{padding:8px 10px 9px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.op-ust{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.op-ust .lbl{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+.op-sure{font-weight:800;font-size:16px;line-height:1;font-variant-numeric:tabular-nums}
+.op-sure.az{color:var(--danger)}
+.op-list{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.op-row{display:grid;grid-template-columns:1.1em 10px minmax(0,1fr) auto;align-items:center;gap:6px;font-size:13px;font-weight:700;line-height:1.35}
+.op-row .n{color:var(--ink-dim);font-variant-numeric:tabular-nums;text-align:right}
+.op-row i{width:10px;height:10px;border-radius:50%;background:var(--rc,var(--ink-dim))}
+.op-row .ad{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.op-row .v{font-variant-numeric:tabular-nums}
+.op-row.me .ad,.op-row.me .v{color:var(--koi)}
+.op-row.olu{opacity:.5}
+.op-harita{display:block;width:100%;aspect-ratio:1;border-radius:10px}
+body.odada #pauseBtn{display:none}
+body.odada .toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
+body:not(.odada) #cikBtn{display:none}
+
+.olum{position:fixed;inset:0;z-index:8;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;pointer-events:none;background:radial-gradient(70% 50% at 50% 50%,rgba(8,36,39,.55),rgba(8,36,39,0))}
+.olum .over-title{font-size:clamp(38px,11vw,58px)}
+
+.podyum{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;width:100%;max-width:340px}
+.podyum li{grid-row:1;display:grid;justify-items:center;gap:6px;min-width:0}
+.podyum .p1{grid-column:2}.podyum .p2{grid-column:1}.podyum .p3{grid-column:3}
+.podyum .rz{width:44px;height:44px;font-size:20px}
+.podyum .p1 .rz{width:54px;height:54px;font-size:24px}
+.podyum .ad{font-weight:800;font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podyum .v{font-weight:700;font-size:13px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.podyum .blok{width:100%;border-radius:12px 12px 4px 4px;background:var(--glass);border:1px solid var(--glass-line);display:grid;place-items:center;font:400 28px/1 var(--font-display);color:var(--ink-dim)}
+.podyum .p1 .blok{height:92px;background:var(--koi);border-color:transparent;color:var(--koi-ink)}
+.podyum .p2 .blok{height:66px}
+.podyum .p3 .blok{height:48px}
+#sonList{max-height:min(34vh,320px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
+
 @media (prefers-reduced-motion:reduce){
   .title span{animation:none}
   .marker{transition:none}
+  .wait-dots::after{animation:none;content:"…"}
 }
 </style>
 
@@ -209,10 +268,26 @@ body.lb-acik .chain{display:none}
     <button class="icon-btn" id="pauseBtn" type="button" aria-label="Pause">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
     </button>
+    <button class="icon-btn" id="cikBtn" type="button" aria-label="Leave the pond">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
+    </button>
   </div>
 </header>
 
 <div class="toast" id="toast" role="status" hidden></div>
+
+<aside class="odapanel" id="odaPanel" hidden aria-label="This pond">
+  <div class="op-kart">
+    <div class="op-ust"><span class="lbl">Biggest koi</span><span class="op-sure" id="opSure" aria-label="Time left">5:00</span></div>
+    <ol class="op-list" id="opList"></ol>
+  </div>
+  <div class="op-kart"><canvas class="op-harita" id="opHarita" aria-label="Map of the pond"></canvas></div>
+</aside>
+
+<div class="olum" id="olumOv" hidden role="status">
+  <p class="over-title" id="olumBaslik"></p>
+  <p class="stat" id="olumSayac"></p>
+</div>
 
 <div class="chain" aria-hidden="true">
   <div class="chain-inner">
@@ -228,6 +303,7 @@ body.lb-acik .chain{display:none}
     <p class="lede">You are a 10&nbsp;cm koi in a crowded pond. Eat fish smaller than you, keep away from bigger ones, and see how big you can grow.</p>
     <div class="how"><span>Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
+    <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
     <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
     <p class="best" id="startBest" hidden></p>
   </div>
@@ -269,6 +345,41 @@ body.lb-acik .chain{display:none}
     <ol class="lb-list" id="lbList"></ol>
     <p class="lb-rank" id="lbRank"></p>
     <button class="btn" id="lbClose" type="button">Back</button>
+  </div>
+</section>
+
+<section class="overlay" id="odaOv" hidden>
+  <div class="panel">
+    <h2 class="over-title">Rooms</h2>
+    <p class="lede">Swim in the same pond with your friends. Make a room, or jump into one below.</p>
+    <ul class="oda-list" id="odaList" aria-live="polite"></ul>
+    <p class="oda-durum" id="odaDurum" role="status"></p>
+    <button class="btn" id="odaKur" type="button">Make a room</button>
+    <button class="btn ghost" id="odaGeri" type="button">Back</button>
+  </div>
+</section>
+
+<section class="overlay" id="bekleOv" hidden>
+  <div class="panel">
+    <p class="eyebrow">Room</p>
+    <h2 class="over-title" id="bekleAd"></h2>
+    <ul class="lb-list" id="bekleList"></ul>
+    <p class="stat" id="bekleNot"></p>
+    <button class="btn" id="baslaBtn" type="button" hidden>Start the round</button>
+    <button class="btn ghost" id="ayrilBtn" type="button">Leave the room</button>
+    <p class="best">Five-minute rounds · up to 8 koi · bigger koi eat smaller ones</p>
+  </div>
+</section>
+
+<section class="overlay" id="sonOv" hidden>
+  <div class="panel">
+    <h2 class="over-title">Round over</h2>
+    <ol class="podyum" id="podyum"></ol>
+    <p class="lb-rank" id="sonSira"></p>
+    <ol class="lb-list" id="sonList"></ol>
+    <p class="best" id="sonOdul"></p>
+    <button class="btn" id="odayaDon" type="button">Back to the room</button>
+    <button class="btn ghost" id="sonAyril" type="button">Leave the room</button>
   </div>
 </section>
 
@@ -485,7 +596,7 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
 addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
-  if (k && mode === 'play') { keys[k] = true; e.preventDefault(); }
+  if (k && (mode === 'play' || mode === 'oda')) { keys[k] = true; e.preventDefault(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && (mode === 'play' || mode === 'paused')) { mode === 'play' ? pause() : resume(); e.preventDefault(); }
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
@@ -716,6 +827,578 @@ if (window.Hesap) {
   $('lbClose').addEventListener('click', () => { $('lbOv').hidden = true; document.body.classList.remove('lb-acik'); startOv.hidden = false; $('startBtn').focus({ preventScroll: true }); });
 }
 
+/* ---------- rooms: play in one pond with friends (server: fish/sunucu) ---------- */
+// The room server's address. A different one can be tried with localStorage 'fish.sunucu'.
+const ODA_SUNUCU = (() => { try { return localStorage.getItem('fish.sunucu') || ''; } catch (e) { return ''; } })() || '';
+const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
+const odaOv = $('odaOv'), bekleOv = $('bekleOv'), sonOv = $('sonOv'), olumOv = $('olumOv'), odaPanel = $('odaPanel');
+const koiStilleri = {};
+function koiStil(renk) {
+  const r = /^#[0-9a-f]{6}$/i.test(renk || '') ? renk : KOI.patch;
+  return koiStilleri[r] || (koiStilleri[r] = Object.assign({}, KOI, { patch: r }));
+}
+const oda = {
+  lobi: null, lobiPing: 0, liste: [], listeT: 0, listeSaat: 0,
+  ws: null, ping: 0, id: null, kur: false, ben: 0, kurucu: 0, durum: null, oyuncular: [], kimler: new Map(),
+  ayriliyor: false, tekrar: 0,
+  R: 900, bitisT: 0, npc: new Map(), rakip: new Map(), stil: KOI,
+  hayat: 0, gonderT: 0, olumT: 0, tabloT: 0, tabloKey: '', haritaT: 0, cikT: 0, notT: 0,
+  tally: {}, sayilan: {}, yedigi: 0, koi: 0, enBuyuk: 10
+};
+const odaAcik = () => !!(window.Hesap && ODA_SUNUCU && 'WebSocket' in window);
+const adi = no => (oda.kimler.get(no) || {}).ad || 'a koi';
+const pondName = no => `${(oda.kimler.get(no) || {}).ad || 'Koi'}’s pond`;
+function sureStr(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function rozet(ad, renk, cls) {
+  const e = mk('span', 'rz' + (cls ? ' ' + cls : ''), String(ad || '?').trim().charAt(0).toLocaleUpperCase('tr'));
+  if (/^#[0-9a-f]{6}$/i.test(renk || '')) e.style.setProperty('--rc', renk);
+  e.setAttribute('aria-hidden', 'true');
+  return e;
+}
+function anahtar() {
+  try { return window.Hesap && Hesap.anahtar ? Hesap.anahtar().catch(() => null) : Promise.resolve(null); }
+  catch (e) { return Promise.resolve(null); }
+}
+function hepsiniGizle() {
+  for (const o of [startOv, pauseOv, overOv, $('lbOv'), odaOv, bekleOv, sonOv]) o.hidden = true;
+  document.body.classList.remove('lb-acik');
+}
+function yeniId() {
+  const harf = 'abcdefghijkmnpqrstuvwxyz23456789', b = new Uint8Array(8);
+  try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 8; i++) b[i] = Math.random() * 256; }
+  return Array.from(b, x => harf[x % harf.length]).join('');
+}
+
+/* room list */
+function odaDurum(text, bad) { const e = $('odaDurum'); e.textContent = text || ''; e.classList.toggle('bad', !!bad); }
+function lobiAc(mesaj) {
+  hepsiniGizle(); odaOv.hidden = false; document.body.classList.add('lb-acik');
+  odaDurum(mesaj || 'Looking for rooms…', !!mesaj);
+  $('odaKur').disabled = false;
+  if (!mesaj) { $('odaList').replaceChildren(); odaSatir.clear(); }
+  lobiBaglan();
+  $('odaKur').focus({ preventScroll: true });
+}
+async function lobiBaglan() {
+  lobiKapat();
+  const token = await anahtar();
+  if (odaOv.hidden) return;
+  let ws;
+  try { ws = new WebSocket(ODA_SUNUCU + '/lobi'); } catch (e) { odaDurum("Couldn't reach the rooms.", true); return; }
+  oda.lobi = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token }));
+  ws.onmessage = e => {
+    if (e.data === 'pong' || oda.lobi !== ws) return;
+    let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+    if (m.t === 'liste') { oda.liste = m.odalar || []; oda.listeT = performance.now(); listeCiz(); }
+    else if (m.t === 'hata') odaDurum(m.neden === 'giris' ? 'Sign in again to see the rooms.' : "Couldn't load the rooms.", true);
+  };
+  ws.onclose = () => {
+    if (oda.lobi !== ws) return;
+    oda.lobi = null;
+    if (!odaOv.hidden) { odaDurum("Lost the room list. Trying again…", true); setTimeout(() => { if (!odaOv.hidden && !oda.lobi && !oda.ws) lobiBaglan(); }, 3000); }
+  };
+  clearInterval(oda.lobiPing);
+  oda.lobiPing = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch (e) {} }, 25000);
+}
+function lobiKapat() {
+  clearInterval(oda.lobiPing);
+  const ws = oda.lobi; oda.lobi = null;
+  if (ws) { try { ws.close(1000); } catch (e) {} }
+}
+const odaSatir = new Map(); // room id -> its row, updated in place so a tap on Join never lands on a replaced button
+function listeCiz() {
+  const list = $('odaList');
+  odaDurum('');
+  if (!oda.liste.length) {
+    odaSatir.clear();
+    list.replaceChildren(mk('li', 'oda-bos', 'No rooms right now. Make one, then tell your friends to tap “Play with friends”.'));
+    return;
+  }
+  const bos = list.querySelector('.oda-bos'); if (bos) bos.remove();
+  const kalanlar = new Set();
+  for (const r of oda.liste) {
+    kalanlar.add(r.id);
+    let s = odaSatir.get(r.id);
+    if (!s) {
+      s = { li: mk('li', 'oda-row'), b: mk('b'), small: mk('small'), btn: mk('button', 'btn mini'), rz: null, r };
+      s.btn.type = 'button';
+      s.btn.addEventListener('click', () => odayaGir(s.r.id, false));
+      const bilgi = mk('span'); bilgi.append(s.b, s.small);
+      s.rz = rozet(r.kurucu, r.renk);
+      s.li.append(s.rz, bilgi, s.btn);
+      odaSatir.set(r.id, s);
+    }
+    s.r = r;
+    s.li.classList.toggle('oyunda', r.durum === 'oyunda');
+    s.b.textContent = `${r.kurucu}’s pond`;
+    const yeniRz = rozet(r.kurucu, r.renk);
+    if (yeniRz.textContent !== s.rz.textContent || yeniRz.style.cssText !== s.rz.style.cssText) { s.rz.replaceWith(yeniRz); s.rz = yeniRz; }
+    const dolu = r.n >= (r.en || 8);
+    s.btn.textContent = dolu ? 'Full' : 'Join';
+    s.btn.disabled = dolu;
+    s.btn.setAttribute('aria-label', dolu ? `${r.kurucu}’s pond is full` : `Join ${r.kurucu}’s pond`);
+    list.append(s.li);
+  }
+  for (const [id, s] of odaSatir) if (!kalanlar.has(id)) { s.li.remove(); odaSatir.delete(id); }
+  listeSaat();
+}
+function listeSaat() {
+  const gecen = performance.now() - oda.listeT;
+  for (const s of odaSatir.values()) {
+    const r = s.r, koi = `${r.n} koi`;
+    s.small.textContent = r.durum === 'oyunda' ? `${koi} · swimming, ${sureStr(r.kalan - gecen)} left` : `${koi} · waiting to start`;
+  }
+}
+setInterval(() => { if (!odaOv.hidden) listeSaat(); }, 1000);
+
+/* joining a room */
+async function odayaGir(id, kur) {
+  lobiKapat();
+  odaKapat();
+  oda.id = id; oda.kur = kur; oda.ben = 0; oda.durum = null; oda.kimler.clear(); oda.ayriliyor = false;
+  hepsiniGizle(); odaOv.hidden = false; document.body.classList.add('lb-acik');
+  odaDurum(kur ? 'Making your room…' : 'Joining…');
+  $('odaKur').disabled = true;
+  odaBaglan();
+}
+async function odaBaglan() {
+  const token = await anahtar();
+  const p = Hesap.profil;
+  let ws;
+  try { ws = new WebSocket(ODA_SUNUCU + '/oda/' + oda.id); } catch (e) { odaHata('ag'); return; }
+  oda.ws = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token, profil: p.id, ad: p.name, renk: p.color, kur: oda.kur, ekran: [Math.round(W), Math.round(H)] }));
+  ws.onmessage = e => {
+    if (e.data === 'pong' || oda.ws !== ws) return;
+    let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+    odaMesaj(m);
+  };
+  ws.onclose = e => {
+    if (oda.ws !== ws) return;
+    oda.ws = null; clearInterval(oda.ping);
+    if (oda.ayriliyor) return;
+    // A dropped connection in the middle of a round: try to get back in (the server keeps the koi for a while).
+    if (e.code < 4000 && oda.ben && oda.tekrar < 4) {
+      oda.tekrar++; oda.kur = false;
+      if (mode === 'oda') showToast('Connection lost · reconnecting…', true);
+      setTimeout(() => { if (!oda.ws && !oda.ayriliyor && oda.id) odaBaglan(); }, 800 * oda.tekrar);
+      return;
+    }
+    if (e.code < 4000) odaHata('ag');
+  };
+  clearInterval(oda.ping);
+  oda.ping = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch (e) {} }, 25000);
+}
+function odaKapat() {
+  clearInterval(oda.ping);
+  const ws = oda.ws; oda.ws = null;
+  if (ws) { try { ws.close(1000); } catch (e) {} }
+}
+function odaHata(neden) {
+  const metin = {
+    yok: 'That room has closed. Pick another one or make your own.',
+    dolu: 'That room is full (8 koi). Try another one.',
+    giris: 'Sign in again to play in rooms.',
+    baska: 'You opened this room somewhere else.',
+    ag: "Couldn't reach the room. Check the connection and try again."
+  }[neden] || "Couldn't join the room.";
+  oda.ayriliyor = true; odaKapat(); odaSayilanEkle();
+  odaModundanCik();
+  lobiAc(metin);
+}
+function odadanAyril() {
+  oda.ayriliyor = true;
+  odaKapat(); odaSayilanEkle();
+  odaModundanCik();
+  oda.id = null;
+  lobiAc();
+}
+function odaMesaj(m) {
+  switch (m.t) {
+    case 'hos': oda.ben = m.ben; oda.tekrar = 0; break;
+    case 'oda': odaBilgi(m); break;
+    case 'basla': odaOyunu(m); break;
+    case 'dog': dogdum(m); break;
+    case 'd': anlikAl(m); break;
+    case 'isir': isirildim(m); break;
+    case 'oldun': oldum(m); break;
+    case 'duz': if (P.alive) { P.x = m.x; P.y = m.y; } break;
+    case 'son': turBitti(m); break;
+    case 'hata': odaHata(m.neden); break;
+  }
+}
+function odaBilgi(m) {
+  oda.durum = m.durum; oda.kurucu = m.kurucu; oda.oyuncular = m.oyuncular || [];
+  for (const o of oda.oyuncular) oda.kimler.set(o.no, { ad: o.ad, renk: o.renk });
+  for (const e of oda.rakip.values()) { const k = oda.kimler.get(e.no); if (k) { e.ad = k.ad; e.renk = k.renk; e.sp = koiStil(k.renk); } }
+  const me = oda.kimler.get(oda.ben);
+  if (me) oda.stil = koiStil(me.renk);
+  oda.tabloKey = '';
+  // back after a dropped connection, and the round ended meanwhile
+  if (mode === 'oda' && m.durum !== 'oyunda') { odaSayilanEkle(); odaModundanCik(); }
+  if (mode !== 'oda' && sonOv.hidden && m.durum !== 'oyunda') bekleGoster();
+  else if (!bekleOv.hidden) bekleCiz();
+}
+
+/* waiting room */
+function bekleGoster() {
+  hepsiniGizle(); bekleOv.hidden = false; document.body.classList.add('lb-acik');
+  bekleCiz();
+}
+function bekleCiz() {
+  $('bekleAd').textContent = pondName(oda.kurucu);
+  const list = $('bekleList');
+  list.replaceChildren();
+  for (const o of oda.oyuncular) {
+    const li = mk('li', 'lb-row' + (o.no === oda.ben ? ' me' : ''));
+    li.style.gridTemplateColumns = '28px minmax(0,1fr) auto';
+    const rz = rozet(o.ad, o.renk); rz.style.width = rz.style.height = '28px'; rz.style.fontSize = '14px';
+    const tag = o.no === oda.kurucu ? mk('span', 'tag host', 'host') : o.no === oda.ben ? mk('span', 'tag', 'you') : mk('span');
+    li.append(rz, mk('span', 'ad', o.ad), tag);
+    list.append(li);
+  }
+  const host = oda.ben === oda.kurucu, n = oda.oyuncular.length;
+  $('baslaBtn').hidden = !host;
+  const not = $('bekleNot');
+  not.replaceChildren();
+  if (host) not.textContent = n > 1 ? `${n} koi are here. Start when everyone has joined.` : 'Tell your friends to open Fish and tap “Play with friends”.';
+  else { not.append(`Waiting for ${adi(oda.kurucu)} to start`); not.append(mk('span', 'wait-dots')); }
+  if (host) $('baslaBtn').focus({ preventScroll: true });
+}
+
+/* the round */
+function odaOyunu(m) {
+  ensureAudio();
+  oda.R = m.R || oda.R;
+  oda.bitisT = performance.now() + (m.kalan || 0);
+  if (mode === 'oda') return;
+  mode = 'oda';
+  fish = []; oda.npc.clear(); oda.rakip.clear();
+  ripples.length = 0; bubbles.length = 0; labels.length = 0;
+  oda.tally = {}; oda.sayilan = {}; oda.yedigi = 0; oda.koi = 0; oda.enBuyuk = 10; oda.tabloKey = '';
+  P.alive = false; P.speed = 0;
+  hepsiniGizle();
+  document.body.classList.add('odada');
+  hud.hidden = false; odaPanel.hidden = false; toast.hidden = true; olumOv.hidden = true;
+  haritaBoyut();
+  lockOn();
+  hesapNotu(`Odada: ${pondName(oda.kurucu)}`);
+}
+function odaModundanCik() {
+  if (mode !== 'oda') return;
+  mode = 'attract';
+  document.body.classList.remove('odada');
+  hud.hidden = true; odaPanel.hidden = true; olumOv.hidden = true; toast.hidden = true;
+  fish = []; oda.npc.clear(); oda.rakip.clear();
+  P.l = P.lShow = 10; P.alive = true; P.invuln = 0; P.grace = 0; P.lives = 3; P.gulp = 0;
+  initSpine(P, P.l); cam.scale = targetScale(10);
+  for (let i = 0; i < 9; i++) spawnGroup(true, false);
+  for (const k in keys) keys[k] = false;
+  lockOff();
+}
+function dogdum(m) {
+  if (mode !== 'oda') odaOyunu({ R: m.R, kalan: oda.bitisT - performance.now() });
+  oda.hayat = m.h; oda.R = m.R || oda.R;
+  Object.assign(P, { x: m.x, y: m.y, angle: m.a, speed: 0, l: m.l, lShow: m.l, lives: m.can, alive: true, invuln: 0, grace: 3, gulp: 0 });
+  if (!P.marks) P.marks = koiMarks();
+  initSpine(P, P.l);
+  P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length;
+  cam.x = P.x; cam.y = P.y; cam.scale = targetScale(P.l);
+  olumOv.hidden = true;
+  renderLives(); shownLen = ''; chainKey = ''; updateHud();
+}
+function hedefle(e, x, y, a, v, now) { e.sx = x; e.sy = y; e.sa = a; e.sv = v; e.st = now; }
+function rakipYap(no, r) {
+  const k = oda.kimler.get(no) || { ad: 'Koi', renk: KOI.patch };
+  const e = { no, ad: k.ad, renk: k.renk, sp: koiStil(k.renk), x: r[1], y: r[2], angle: r[3], speed: r[5], l: r[4], lShow: r[4],
+    phase: Math.random() * TAU, spine: null, marks: koiMarks(), g: null, canli: false, durum: 0, gulp: 0 };
+  initSpine(e, e.l);
+  return e;
+}
+function anlikAl(m) {
+  if (mode !== 'oda') return;
+  const now = performance.now();
+  oda.R = m.R;
+  oda.bitisT = now + m.k * 1000;
+  const goren = new Set();
+  for (const r of m.p) {
+    const no = r[0];
+    if (no === oda.ben) { benimBoyum(r[4]); continue; }
+    goren.add(no);
+    let e = oda.rakip.get(no);
+    if (!e) { e = rakipYap(no, r); oda.rakip.set(no, e); }
+    const canli = r[6] > 0;
+    if (canli && !e.canli) { // (back) in the pond: start where the server says
+      e.x = r[1]; e.y = r[2]; e.angle = r[3]; e.l = e.lShow = r[4]; initSpine(e, e.l);
+    }
+    e.canli = canli; e.durum = r[6]; e.l = r[4];
+    hedefle(e, r[1], r[2], r[3], r[5], now);
+  }
+  for (const no of [...oda.rakip.keys()]) if (!goren.has(no)) oda.rakip.delete(no);
+  const yeni = new Map();
+  for (const r of m.f) {
+    let e = oda.npc.get(r[0]);
+    if (!e) { e = makeFish(SPECIES[r[6]] || SPECIES[0], r[4], r[1], r[2], r[3]); e.speed = r[5]; }
+    hedefle(e, r[1], r[2], r[3], r[5], now);
+    e.mode = r[7] ? 'chase' : 'wander';
+    yeni.set(r[0], e);
+  }
+  oda.npc = yeni;
+  fish = [...yeni.values()];
+  for (const ev of m.e) olay(ev);
+  if (m.m) { oda.yedigi = m.m[1]; oda.koi = m.m[2]; oda.enBuyuk = m.m[3]; }
+}
+function benimBoyum(l) {
+  if (!P.alive || !(l > 0)) return;
+  P.l = l;
+  const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
+  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); }
+}
+function dalga(x, y, l, n) {
+  ripples.push({ x, y, r: l * .2, max: l * 1.1, life: 1 });
+  for (let i = 0; i < (n || 5); i++) bubbles.push({ x: x + rand(-1, 1) * l * .2, y: y + rand(-1, 1) * l * .2, vx: rand(-1, 1) * l * .4, vy: rand(-1, 1) * l * .4, r: rand(1.5, 3.5), life: rand(.5, .9) });
+}
+function olay(ev) {
+  const tip = ev[0];
+  if (tip === 'y') { // a koi ate a wild fish: [y, koi, fish id, species, x, y, length]
+    const [, no, , tur, x, y, l] = ev, sp = SPECIES[tur] || SPECIES[0];
+    dalga(x, y, l);
+    if (no === oda.ben) {
+      labels.push({ x, y, text: '+ ' + (sp.short || sp.name), life: 1 });
+      sfxGulp(l / P.l); P.gulp = 1;
+      oda.tally[sp.name] = (oda.tally[sp.name] || 0) + 1;
+      if (performance.now() - oda.notT > 4000) { oda.notT = performance.now(); hesapNotu(`Odada · ${fmtLenStr(P.l)} · ${oda.yedigi + 1} balık`); }
+    } else { const e = oda.rakip.get(no); if (e) e.gulp = 1; }
+  } else if (tip === 'k') { // a koi ate a koi: [k, eater, eaten, x, y, length]
+    const [, no, av, x, y, l] = ev;
+    dalga(x, y, l, 9);
+    if (no === oda.ben) {
+      labels.push({ x, y, text: '+ ' + adi(av), life: 1.2 });
+      sfxGulp(.7); P.gulp = 1;
+      showToast(`You ate ${adi(av)}!`);
+    } else if (av !== oda.ben) {
+      const e = oda.rakip.get(no); if (e) e.gulp = 1;
+      showToast(`${adi(no)} ate ${adi(av)}`);
+    }
+  } else if (tip === 'i') { // a wild fish bit a koi
+    if (ev[1] !== oda.ben) ripples.push({ x: ev[2], y: ev[3], r: ev[4] * .2, max: ev[4] * 1.4, life: 1 });
+  } else if (tip === 'o') { // a wild fish ate a koi; it broke up into little fish
+    if (ev[1] !== oda.ben) dalga(ev[4], ev[5], ev[6], 9);
+  }
+}
+function isirildim(m) {
+  P.x += m.dx; P.y += m.dy;
+  P.lives = m.can; renderLives();
+  P.invuln = 2.2; flash = 1;
+  ripples.push({ x: P.x, y: P.y, r: P.lShow * .2, max: P.lShow * 1.4, life: 1 });
+  sfxBite();
+  const sp = SPECIES[m.tur] || SPECIES[0];
+  showToast(`A ${sp.name} bit you · ${m.can} ${m.can === 1 ? 'life' : 'lives'} left`, true);
+}
+function oldum(m) {
+  if (!P.alive) return;
+  const at = P.spine[3];
+  dalga(at.x, at.y, P.lShow, 9);
+  P.alive = false; P.speed = 0; flash = 1;
+  for (const k in keys) keys[k] = false;
+  sfxOver();
+  const baslik = $('olumBaslik'), sp = m.tur >= 0 ? SPECIES[m.tur] : null;
+  baslik.replaceChildren(m.ad ? 'Eaten by ' : 'Caught by a ', mk('em', null, m.ad || (sp ? sp.name : 'bigger fish')));
+  oda.olumT = m.sure || 3;
+  $('olumSayac').textContent = `You were ${fmtLenStr(m.l)}. Back in ${Math.ceil(oda.olumT)}…`;
+  oda.olumL = m.l;
+  olumOv.hidden = false; toast.hidden = true;
+  hesapNotu(`Odada · ${fmtLenStr(m.l)} iken yenildi`);
+}
+
+/* every frame in a room */
+function odaGuncelle(dt) {
+  const now = performance.now(), k = 1 - Math.exp(-dt * 8);
+  // Others move on from their last reported spot (dead reckoning) and ease toward it.
+  const yurut = (e, l) => {
+    const yas = (now - e.st) / 1000, ileri = Math.min(yas, .25), v = yas < .25 ? e.sv : 0;
+    const tx = e.sx + Math.cos(e.sa) * e.sv * ileri, ty = e.sy + Math.sin(e.sa) * e.sv * ileri;
+    e.x += Math.cos(e.sa) * v * dt; e.y += Math.sin(e.sa) * v * dt;
+    const dx = tx - e.x, dy = ty - e.y;
+    if (dx * dx + dy * dy > l * l * 9) { e.x = tx; e.y = ty; e.angle = e.sa; initSpine(e, l); }
+    else { e.x += dx * k; e.y += dy * k; }
+    e.angle += wrapA(e.sa - e.angle) * k;
+    e.speed = e.sv;
+    e.phase += dt * (3 + e.sv / l * 4.2);
+    updateSpine(e, l);
+  };
+  for (const e of fish) yurut(e, e.l);
+  for (const e of oda.rakip.values()) {
+    if (!e.canli) continue;
+    e.lShow += (e.l - e.lShow) * Math.min(1, dt * 4);
+    e.gulp = Math.max(0, e.gulp - dt * 3);
+    yurut(e, e.lShow);
+  }
+  // Tell the server where my koi is, 15 times a second.
+  const ws = oda.ws;
+  if (P.alive && ws && ws.readyState === 1 && now - oda.gonderT > 66 && ws.bufferedAmount < 4096) {
+    oda.gonderT = now;
+    ws.send(JSON.stringify({ t: 'k', x: r1(P.x), y: r1(P.y), a: r2(P.angle), v: r1(P.speed), h: oda.hayat }));
+  }
+  if (!P.alive && oda.olumT > 0) {
+    oda.olumT -= dt;
+    $('olumSayac').textContent = `You were ${fmtLenStr(oda.olumL || 10)}. Back in ${Math.max(1, Math.ceil(oda.olumT))}…`;
+  }
+  if (now - oda.tabloT > 250) { oda.tabloT = now; tabloCiz(); }
+  if (now - oda.haritaT > 100) { oda.haritaT = now; haritaCiz(); }
+}
+function tabloCiz() {
+  const kalan = oda.bitisT - performance.now(), sure = $('opSure');
+  sure.textContent = sureStr(kalan); sure.classList.toggle('az', kalan < 30000);
+  const me = oda.kimler.get(oda.ben) || { ad: Hesap.profil.name, renk: Hesap.profil.color };
+  const rows = [{ no: oda.ben, ad: me.ad, renk: me.renk, l: P.alive ? P.l : 0, me: true }];
+  for (const e of oda.rakip.values()) rows.push({ no: e.no, ad: e.ad, renk: e.renk, l: e.canli ? e.l : 0 });
+  rows.sort((a, b) => b.l - a.l);
+  const mi = rows.findIndex(r => r.me);
+  const show = rows.slice(0, 5).map((r, i) => [r, i]);
+  if (mi >= 5) show.push([rows[mi], mi]);
+  const key = show.map(([r, i]) => `${i}:${r.no}:${r.l ? fmtLenStr(r.l) : '-'}:${r.ad}`).join('|');
+  if (key === oda.tabloKey) return;
+  oda.tabloKey = key;
+  $('opList').replaceChildren(...show.map(([r, i]) => {
+    const li = mk('li', 'op-row' + (r.me ? ' me' : '') + (r.l ? '' : ' olu'));
+    const dot = mk('i'); if (/^#[0-9a-f]{6}$/i.test(r.renk || '')) dot.style.setProperty('--rc', r.renk);
+    li.append(mk('span', 'n', String(i + 1)), dot, mk('span', 'ad', r.me ? 'You' : r.ad), mk('span', 'v', r.l ? fmtLenStr(r.l) : '…'));
+    return li;
+  }));
+}
+const haritaCv = $('opHarita'), haritaCtx = haritaCv.getContext('2d');
+let haritaS = 0;
+function haritaBoyut() {
+  const s = Math.round(haritaCv.clientWidth || 140), d = Math.min(window.devicePixelRatio || 1, 2);
+  if (s === haritaS) return;
+  haritaS = s; haritaCv.width = s * d; haritaCv.height = s * d;
+  haritaCtx.setTransform(d, 0, 0, d, 0, 0);
+}
+function haritaCiz() {
+  if (!haritaS) haritaBoyut();
+  const S = haritaS, x = haritaCtx, R = oda.R, pad = 5, k = (S - 2 * pad) / (2 * R);
+  const px = v => pad + (v + R) * k;
+  x.clearRect(0, 0, S, S);
+  x.fillStyle = 'rgba(24,89,92,.9)';
+  x.beginPath(); if (x.roundRect) x.roundRect(pad, pad, S - 2 * pad, S - 2 * pad, 6); else x.rect(pad, pad, S - 2 * pad, S - 2 * pad); x.fill();
+  // what my screen shows
+  const sc = cam.scale, vw = W / sc * k, vh = H / sc * k;
+  x.strokeStyle = 'rgba(238,243,234,.35)'; x.lineWidth = 1;
+  x.strokeRect(px(cam.x) - vw / 2, px(cam.y) - vh / 2, vw, vh);
+  for (const e of oda.rakip.values()) {
+    if (!e.canli) continue;
+    x.fillStyle = /^#[0-9a-f]{6}$/i.test(e.renk || '') ? e.renk : '#f27a32';
+    x.beginPath(); x.arc(px(e.x), px(e.y), clamp(2.5 + e.lShow * k * .5, 3, 7), 0, TAU); x.fill();
+  }
+  if (P.alive) {
+    x.fillStyle = oda.stil.patch; x.strokeStyle = '#fff'; x.lineWidth = 2;
+    x.beginPath(); x.arc(px(P.x), px(P.y), clamp(3 + P.lShow * k * .5, 4, 8), 0, TAU); x.fill(); x.stroke();
+  }
+}
+function drawBank() {
+  const sc = cam.scale, R = oda.R, x0 = (-R - cam.x) * sc + W / 2, y0 = (-R - cam.y) * sc + H / 2, s = 2 * R * sc;
+  if (x0 < -2 && y0 < -2 && x0 + s > W + 2 && y0 + s > H + 2) return; // all water on screen
+  const rad = Math.min(R * .06 * sc, s / 2);
+  const shape = () => { if (ctx.roundRect) ctx.roundRect(x0, y0, s, s, rad); else ctx.rect(x0, y0, s, s); };
+  ctx.save();
+  ctx.beginPath(); ctx.rect(-4, -4, W + 8, H + 8); shape();
+  ctx.fillStyle = '#2b4a2d'; ctx.fill('evenodd');
+  ctx.beginPath(); shape();
+  ctx.lineWidth = Math.max(3, 16 * sc); ctx.strokeStyle = 'rgba(190,176,122,.6)'; ctx.stroke();
+  ctx.lineWidth = Math.max(1.5, 4 * sc); ctx.strokeStyle = 'rgba(225,246,236,.4)'; ctx.stroke();
+  ctx.restore();
+}
+function drawNames() {
+  const sc = cam.scale;
+  ctx.font = '800 13px Figtree, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  for (const e of oda.rakip.values()) {
+    if (!e.canli || !e.g) continue;
+    const g = e.g, x = g.x[2], y = Math.min(g.y[0], g.y[4], g.y[9]) - 16;
+    if (x < -60 || x > W + 60 || y < -20 || y > H + 20) continue;
+    ctx.globalAlpha = e.durum === 2 ? .6 : 1;
+    const w = ctx.measureText(e.ad).width;
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,28,30,.8)'; ctx.strokeText(e.ad, x + 7, y);
+    ctx.fillStyle = '#eef3ea'; ctx.fillText(e.ad, x + 7, y);
+    ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(e.renk || '') ? e.renk : '#f27a32';
+    ctx.beginPath(); ctx.arc(x - w / 2 - 2, y, 4.5, 0, TAU); ctx.fill();
+    ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+function odaSayilanEkle() {
+  const yeni = {};
+  for (const k in oda.tally) { const d = oda.tally[k] - (oda.sayilan[k] || 0); if (d > 0) yeni[k] = d; }
+  if (Object.keys(yeni).length) toplamaEkle(yeni);
+  oda.sayilan = Object.assign({}, oda.tally);
+  renderStartBest();
+}
+
+/* results */
+function turBitti(m) {
+  const sonuc = m.sonuc || [];
+  odaSayilanEkle();
+  odaModundanCik();
+  const benim = sonuc.find(s => s.no === oda.ben), sira = sonuc.indexOf(benim) + 1;
+  if (benim && window.Hesap) {
+    Hesap.skor(benim.enBuyuk, { mod: 'oda', sira, oyuncu: sonuc.length, eaten: benim.yedigi, koi: benim.koi, tally: benim.tally }, 'fish-oda').catch(() => {});
+    hesapNotu(`Oda turu: ${sira}. oldu · en büyük ${fmtLenStr(benim.enBuyuk)} · ${benim.yedigi} balık`);
+  }
+  const pod = $('podyum');
+  pod.replaceChildren(...sonuc.slice(0, 3).map((s, i) => {
+    const li = mk('li', 'p' + (i + 1));
+    li.append(rozet(s.ad, s.renk), mk('span', 'ad', s.no === oda.ben ? 'You' : s.ad), mk('span', 'v', fmtLenStr(s.enBuyuk)), mk('span', 'blok', String(i + 1)));
+    li.setAttribute('aria-label', `${i + 1}. ${s.ad}, ${fmtLenStr(s.enBuyuk)}`);
+    return li;
+  }));
+  const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+  $('sonSira').textContent = !benim ? '' : sonuc.length === 1 ? `You grew to ${fmtLenStr(benim.enBuyuk)}.` : sira === 1 ? 'You were the biggest koi!' : `You came ${ord(sira)} of ${sonuc.length}.`;
+  $('sonList').replaceChildren(...sonuc.map((s, i) => {
+    const li = mk('li', 'lb-row' + (s.no === oda.ben ? ' me' : '') + (i === 0 ? ' first' : ''));
+    const rz = rozet(s.ad, s.renk); rz.style.width = rz.style.height = '28px'; rz.style.fontSize = '14px';
+    const ad = mk('span', 'ad', s.ad);
+    ad.append(mk('span', 'sub', `${s.yedigi} fish${s.koi ? ` · ${s.koi} koi` : ''}`));
+    li.append(mk('span', 'n', String(i + 1)), rz, ad, mk('span', 'v', fmtLenStr(s.enBuyuk)));
+    return li;
+  }));
+  const odul = [];
+  const enCok = sonuc.slice().sort((a, b) => b.yedigi - a.yedigi)[0];
+  if (enCok && enCok.yedigi > 0 && sonuc.length > 1) odul.push(`Most fish eaten: ${enCok.ad} (${enCok.yedigi})`);
+  const avci = sonuc.slice().sort((a, b) => b.koi - a.koi)[0];
+  if (avci && avci.koi > 0) odul.push(`Most koi caught: ${avci.ad} (${avci.koi})`);
+  $('sonOdul').textContent = odul.join(' · ');
+  hepsiniGizle(); sonOv.hidden = false; document.body.classList.add('lb-acik');
+  sfxLevel();
+  $('odayaDon').focus({ preventScroll: true });
+}
+
+if (odaAcik()) {
+  $('odaBtn').hidden = false;
+  $('odaBtn').addEventListener('click', () => { ensureAudio(); lobiAc(); });
+  $('odaGeri').addEventListener('click', () => { lobiKapat(); hepsiniGizle(); startOv.hidden = false; $('startBtn').focus({ preventScroll: true }); });
+  $('odaKur').addEventListener('click', () => odayaGir(yeniId(), true));
+  $('baslaBtn').addEventListener('click', () => { ensureAudio(); if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'basla' })); });
+  $('ayrilBtn').addEventListener('click', odadanAyril);
+  $('sonAyril').addEventListener('click', odadanAyril);
+  $('odayaDon').addEventListener('click', () => { if (oda.ws) bekleGoster(); else lobiAc(); });
+  $('cikBtn').addEventListener('click', () => {
+    const now = performance.now();
+    if (now - oda.cikT < 2600) { odadanAyril(); return; }
+    oda.cikT = now; showToast('Tap again to leave the pond');
+  });
+  let ekranT = 0;
+  addEventListener('resize', () => {
+    clearTimeout(ekranT);
+    ekranT = setTimeout(() => {
+      haritaBoyut();
+      if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'ekran', e: [Math.round(W), Math.round(H)] }));
+    }, 300);
+  });
+  addEventListener('pagehide', () => { if (oda.ws) odaSayilanEkle(); });
+}
+
 $('startBtn').addEventListener('click', () => startGame(true));
 $('againBtn').addEventListener('click', () => startGame(false));
 $('resumeBtn').addEventListener('click', resume);
@@ -816,10 +1499,15 @@ function spawnTick(dt) {
 let last = performance.now();
 function update(dt) {
   time += dt;
-  if (mode === 'play') steerPlayer(dt); else if (mode === 'attract') autopilot(dt);
-  if (mode !== 'over') {
+  const inPond = mode === 'oda' && P.alive;
+  if (mode === 'play' || inPond) steerPlayer(dt); else if (mode === 'attract') autopilot(dt);
+  if (mode !== 'over' && (mode !== 'oda' || inPond)) {
     P.lShow += (P.l - P.lShow) * Math.min(1, dt * 4);
     P.x += Math.cos(P.angle) * P.speed * dt; P.y += Math.sin(P.angle) * P.speed * dt;
+    if (inPond) { // the shared pond has banks
+      const s = oda.R - P.lShow * .3;
+      P.x = clamp(P.x, -s, s); P.y = clamp(P.y, -s, s);
+    }
     P.phase += dt * (3 + P.speed / P.lShow * 4.2);
     updateSpine(P, P.lShow);
     P.invuln = Math.max(0, P.invuln - dt); P.grace = Math.max(0, P.grace - dt); P.gulp = Math.max(0, P.gulp - dt * 3);
@@ -834,9 +1522,12 @@ function update(dt) {
   cOff[0] -= sdx * .55 - 9 * dt * drift; cOff[1] -= sdy * .55 - 5 * dt * drift;
   cOff[2] -= sdx * .45 + 7 * dt * drift; cOff[3] -= sdy * .45 - 8 * dt * drift;
 
-  updateFish(dt);
-  if (mode === 'play') collide();
-  spawnTick(dt);
+  if (mode === 'oda') odaGuncelle(dt);
+  else {
+    updateFish(dt);
+    if (mode === 'play') collide();
+    spawnTick(dt);
+  }
 
   for (let i = ripples.length - 1; i >= 0; i--) { const r = ripples[i]; r.r += (r.max - r.r) * Math.min(1, dt * 3); r.life -= dt * 1.4; if (r.life <= 0) ripples.splice(i, 1); }
   for (let i = bubbles.length - 1; i >= 0; i--) { const b = bubbles[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0) bubbles.splice(i, 1); }
@@ -850,7 +1541,7 @@ function update(dt) {
   }
   flash = Math.max(0, flash - dt * 2);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) toast.hidden = true; }
-  if (mode === 'play') updateHud();
+  if (mode === 'play' || inPond) updateHud();
 }
 
 /* ---------- drawing ---------- */
@@ -1048,15 +1739,16 @@ function forEachPad(cb) {
     }
   }
 }
+function karada(x, y, r) { return mode === 'oda' && (Math.abs(x) > oda.R - r || Math.abs(y) > oda.R - r); }
 function padShadow(x, y, r) {
-  const sc = cam.scale, sr = r * sc; if (sr < 1.5) return;
+  const sc = cam.scale, sr = r * sc; if (sr < 1.5 || karada(x, y, r)) return;
   const sx = (x - cam.x) * sc + W / 2 + sr * .2 + 7, sy = (y - cam.y) * sc + H / 2 + sr * .3 + 10;
   if (sx < -sr || sx > W + sr || sy < -sr || sy > H + sr) return;
   ctx.beginPath(); ctx.arc(sx, sy, sr, 0, TAU); ctx.fill();
 }
 function padTop(x, y, r, rot, flower, pink) {
   const sc = cam.scale, sx = (x - cam.x) * sc + W / 2, sy = (y - cam.y) * sc + H / 2, sr = r * sc;
-  if (sr < 1.5 || sx < -sr - 4 || sx > W + sr + 4 || sy < -sr - 4 || sy > H + sr + 4) return;
+  if (sr < 1.5 || sx < -sr - 4 || sx > W + sr + 4 || sy < -sr - 4 || sy > H + sr + 4 || karada(x, y, r)) return;
   let a = 1;
   if (P.alive && mode !== 'over') { const m = P.spine[4]; a = clamp((Math.hypot(m.x - x, m.y - y) - r * .5) / (r * .7 + P.lShow * .5), .32, 1); }
   ctx.globalAlpha = a * .97;
@@ -1119,16 +1811,25 @@ function render() {
   for (const s of specks) { ctx.globalAlpha = s.a; ctx.fillRect((s.x - cam.x) * sc + W / 2, (s.y - cam.y) * sc + H / 2, s.s, s.s); }
   ctx.globalAlpha = 1;
   ctx.fillStyle = 'rgba(2,20,22,.24)'; forEachPad(padShadow);
+  const inRoom = mode === 'oda';
+  if (inRoom) drawBank();
 
-  const list = [];
+  const list = [], meSt = inRoom ? oda.stil : KOI, hunted = (mode === 'play' || inRoom) && P.alive;
   for (const f of fish) { if (f.dead) continue; if (onScreen(geo(f, f.sp, f.l, 0))) list.push(f); }
-  if (P.alive && mode !== 'over') { geo(P, KOI, P.lShow, P.gulp); list.push(P); }
-  list.sort((a, b) => a.l - b.l);
+  if (inRoom) for (const e of oda.rakip.values()) { if (e.canli && onScreen(geo(e, e.sp, e.lShow, e.gulp))) list.push(e); }
+  if (P.alive && mode !== 'over') { geo(P, meSt, P.lShow, P.gulp); list.push(P); }
+  list.sort((a, b) => (a.lShow || a.l) - (b.lShow || b.l));
   ctx.fillStyle = 'rgba(2,20,22,.3)';
-  for (const f of list) drawShadow(f, f === P ? KOI : f.sp);
+  for (const f of list) drawShadow(f, f === P ? meSt : f.sp);
+  const blink = ((time * 14) | 0) % 2 === 0;
   for (const f of list) {
-    if (f === P) { if (P.invuln > 0 && ((time * 14) | 0) % 2 === 0) continue; drawFish(P, KOI, false); }
-    else drawFish(f, f.sp, mode === 'play' && f.l > P.l * 1.1);
+    if (f === P) { if ((P.invuln > 0 || (inRoom && P.grace > 0)) && blink) continue; drawFish(P, meSt, false); }
+    else if (f.no) { // another player's koi
+      ctx.globalAlpha = f.durum === 2 ? .55 : 1;
+      drawFish(f, f.sp, hunted && f.l > P.l * 1.1);
+      ctx.globalAlpha = 1;
+    }
+    else drawFish(f, f.sp, hunted && f.l > P.l * 1.1);
   }
 
   ctx.lineWidth = 1.5;
@@ -1143,6 +1844,7 @@ function render() {
   }
 
   forEachPad(padTop);
+  if (inRoom) drawNames();
 
   ctx.font = '700 13px Figtree, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.lineWidth = 3; ctx.lineJoin = 'round';
@@ -1155,7 +1857,7 @@ function render() {
   ctx.globalAlpha = 1;
 
   ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
-  if (mode === 'play') drawArrows();
+  if (mode === 'play' || (inRoom && P.alive)) drawArrows();
   if (flash > 0) { ctx.fillStyle = `rgba(255,104,84,${(flash * .22).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
 }
 

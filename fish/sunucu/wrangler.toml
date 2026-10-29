@@ -1,0 +1,29 @@
+# Fish rooms: the multiplayer server for /fish/ (Cloudflare Workers + Durable Objects).
+# Deployed by Cloudflare Workers Builds from this folder (root directory: fish/sunucu).
+name = "fish-odalar"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# One Lobi object holds the room list; every room is its own Oda object.
+[[durable_objects.bindings]]
+name = "LOBI"
+class_name = "Lobi"
+
+[[durable_objects.bindings]]
+name = "ODA"
+class_name = "Oda"
+
+# The free plan needs SQLite-backed Durable Objects.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Lobi", "Oda"]
+
+[vars]
+# The same Supabase project as the site (hesap/hesap.js). The publishable key is public by design.
+SUPABASE_URL = "https://cuihsjlhhbmwnzhldqvp.supabase.co"
+SUPABASE_KEY = "sb_publishable_vm_w7wu4c5SrNsQXe0CHGA_t2B3YR_i"
+# Optional: comma-separated list of page origins allowed to connect (empty = any; a sign-in is still required).
+IZINLI = ""
+
+[observability]
+enabled = true

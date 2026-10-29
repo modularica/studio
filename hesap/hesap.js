@@ -18,6 +18,7 @@
  *   Hesap.yukle()          Bu oyunun kaydı (yoksa null)
  *   Hesap.kaydet(veri)     Bu oyunun kaydını yazar (JSON). Sık çağırma: seviye sonu, ders sonu gibi anlarda.
  *   Hesap.not('12. dalga') Oynama kaydına kısa bir ilerleme notu (takip sayfasında görünür)
+ *   Hesap.anahtar()        Oturumun erişim anahtarı (başka bir sunucuya kim olduğunu göstermek için)
  */
 (function () {
   'use strict';
@@ -411,6 +412,14 @@
       }).then(function (r) {
         if (r.error) throw r.error;
         return r.data || [];
+      });
+    },
+
+    // The signed-in player's current access token (refreshed when needed), e.g. for the Fish room server.
+    anahtar: function () {
+      return istemci.auth.getSession().then(function (r) {
+        var s = r && r.data ? r.data.session : null;
+        return s ? s.access_token : null;
       });
     },
 

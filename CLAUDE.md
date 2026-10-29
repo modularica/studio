@@ -14,7 +14,8 @@ hesap/         ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 
 giris/         giriş ve "Kim oynuyor?" (oyuncu seçme, ekleme, düzenleme, şifre değiştirme)
 takip/         "Kim ne oynuyor?": son 7 günün oynama kayıtları
 vercel.json    Vercel ayarı (adresler / ile biter: /fish/)
-fish/          Fish: koi oyunu. Multiplayer planı fish/PLAN.md
+fish/          Fish: koi oyunu (tek kişilik + arkadaşlarla odalar). Plan fish/PLAN.md
+fish/sunucu/   Fish oda sunucusu (Cloudflare Worker, Durable Objects)
 yelken/        Rüzgâr Kaptanı: adım adım yelken okulu
 songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
 sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
@@ -28,6 +29,7 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 - Repo Vercel'e bağlı. `main` dalına gönderilen her değişiklik yayına çıkar.
 - Başka bir dala gönderilen değişiklik Vercel'de ayrı bir önizleme adresi alır. Yeni sürümü önce oradan test et.
 - Şimdilik derleme adımı yok: dosyalar olduğu gibi yayınlanır.
+- Fish oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a yayınlar. Sitenin geri kalanı bundan etkilenmez.
 
 ## Yeni oyun eklemek
 
@@ -61,6 +63,7 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
   - `Hesap.not('12. dalga')` takip sayfasında görünen kısa ilerleme notu.
   - `Hesap.skor(deger, ayrinti)` biten bir turun skorunu `scores` tablosuna yazar (her tur bir satır, sonradan değişmez).
   - `Hesap.siralama({ hafta: true, limit: 100 })` oyuncu başına en iyi skor, büyükten küçüğe (`leaderboard` fonksiyonu). `hafta: true` bu haftanın pazartesisinden beri, yoksa tüm zamanlar. Satırlar: `profile_id, name, color, best, rounds, best_at`.
+  - `Hesap.anahtar()` oturumun erişim anahtarı. Başka bir sunucuya (Fish oda sunucusu) kim olduğunu göstermek için; o sunucu anahtarı Supabase'e sorarak doğrular.
 - Kayıt eşitleme (`data-kayit`): oyunlar ilerlemeyi her zamanki gibi localStorage'a yazar; `hesap.js` bu anahtarları oyuncunun hesabındaki `saves` satırına (`data.keys`) taşır. Oyun açılırken karar verir, karar verene kadar sayfa gizli kalır:
   - Hesapta kayıt yok, cihazdaki kayıt bu oyuncunun ya da hesaplardan önceki eski kayıt → hesaba yüklenir (eski ilerleme ilk girişte aktarılır).
   - Cihazdaki kayıt başka bir oyuncunun → bu oyuncu sıfırdan başlar.
@@ -69,6 +72,7 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
   - Aynı oyunda hem `data-kayit` hem `Hesap.kaydet` kullanma: ikisi aynı satıra yazar.
 - Oyun oyun ne kaydediliyor:
   - Fish: `fish.best` (en iyi boy), `fish.toplam` (şimdiye kadar yenen balıklar, tür tür). Not: boy, yenen balık, yakalayan tür. Leaderboard: her tur bitince boy (cm) `scores`'a yazılır; oyun sonunda bu haftanın ilk 5'i ve oyuncunun yeri, başlangıç ekranındaki Leaderboard düğmesinde bu hafta / tüm zamanlar ilk 10.
+    Odalar ("Play with friends"): tur sonunda en büyük boy `scores`'a oyun `fish-oda` olarak yazılır (tek kişilik tabloya karışmaz). Odada yenen balıklar `fish.toplam`'a eklenir. Not: oda, boy, kaçıncı olduğu.
   - Rüzgâr Kaptanı: biten dersler, son ders, parkur rekoru, yeke/dümen dolabı tercihi. Not: açık ders ve kaç ders bittiği, parkur süresi.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.

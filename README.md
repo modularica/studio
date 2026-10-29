@@ -4,7 +4,7 @@ Uzay's page: the games Uzay and his dad make together.
 
 | Path | Game |
 |---|---|
-| `/fish/` | Fish: a top-down koi pond game. Multiplayer plan in `fish/PLAN.md` |
+| `/fish/` | Fish: a top-down koi pond game, alone or with friends in rooms (server in `fish/sunucu`) |
 | `/yelken/` | Rüzgâr Kaptanı: a step-by-step sailing school |
 | `/songbox/` | SONGbox: put characters on stage and build a song |
 | `/sur-muhafizi/` | Sur Muhafızı: a 20-wave tower defense |
