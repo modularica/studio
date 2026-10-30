@@ -30,5 +30,5 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 
 - Sunucu otoriterdir. İstemci yeme ya da ölme kararı vermez.
 - Çocuklar da oynayacak: serbest sohbet yok, isimler hesaplardan gelir, kan ve şiddet yok.
-- Önce mobil: dokunmatikte koi parmağa doğru yüzer. Klavyede ok tuşları ve WASD de çalışır.
+- Önce mobil: dokunmatikte sol alttaki joystick ile (Minecraft gibi) ya da ekranda sürükleyerek yüzülür; joystick sadece dokunmatik ekranda ve oyun sırasında görünür. Klavyede ok tuşları ve WASD de çalışır.
 - Oyunun arayüzü İngilizce.

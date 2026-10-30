@@ -143,7 +143,34 @@ body{
 .lede{margin:0;font-size:17px;line-height:1.45;max-width:31ch;text-wrap:balance;text-shadow:0 1px 3px rgba(3,20,22,.6)}
 .how{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .how span{font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink-dim)}
-@media (pointer:coarse){.how .kbd{display:none}}
+.how .tch{display:none}
+@media (pointer:coarse){.how .kbd,.how .ptr{display:none}.how .tch{display:inline}}
+
+/* Virtual joystick (touch screens): bottom-left, above the food chain */
+.joy{
+  position:fixed;z-index:6;left:max(6px,env(safe-area-inset-left,0px));
+  bottom:calc(env(safe-area-inset-bottom,0px) + 90px);
+  width:176px;height:176px;display:grid;place-items:center;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+.joy-base{
+  position:relative;width:124px;height:124px;border-radius:50%;
+  background:radial-gradient(circle,rgba(7,33,36,.16) 0 36%,rgba(7,33,36,.46) 37% 100%);
+  border:2px solid var(--glass-line);opacity:.62;transition:opacity .15s ease;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.joy-base svg{position:absolute;inset:0;width:100%;height:100%;fill:var(--ink);opacity:.55}
+.joy.on .joy-base{opacity:.95}
+.joy-knob{
+  position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#ffb27d,var(--koi) 58%,var(--koi-deep));
+  box-shadow:0 4px 10px rgba(3,20,22,.45),inset 0 -3px 0 rgba(0,0,0,.14);
+}
+@media (max-height:520px){
+  .joy{width:140px;height:140px;bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}
+  .joy-base{width:100px;height:100px}
+  .joy-knob{width:46px;height:46px;margin:-23px 0 0 -23px}
+}
 .btn{
   font:800 17px/1 var(--font-ui);letter-spacing:.01em;
   background:var(--koi);color:var(--koi-ink);border:0;border-radius:999px;
@@ -289,6 +316,13 @@ body:not(.odada) #cikBtn{display:none}
   <p class="stat" id="olumSayac"></p>
 </div>
 
+<div class="joy" id="joy" aria-hidden="true" hidden>
+  <div class="joy-base">
+    <svg viewBox="0 0 124 124"><path d="M62 9l7 9H55zM62 115l7-9H55zM9 62l9-7v14zM115 62l-9-7v14z"/></svg>
+    <span class="joy-knob" id="joyKnob"></span>
+  </div>
+</div>
+
 <div class="chain" aria-hidden="true">
   <div class="chain-inner">
     <div class="marker" id="marker"><span>you</span></div>
@@ -301,7 +335,7 @@ body:not(.odada) #cikBtn{display:none}
   <div class="panel">
     <h1 class="title" aria-label="Fish"><span>F</span><span>i</span><span>s</span><span>h</span></h1>
     <p class="lede">You are a 10&nbsp;cm koi in a crowded pond. Eat fish smaller than you, keep away from bigger ones, and see how big you can grow.</p>
-    <div class="how"><span>Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
+    <div class="how"><span class="tch">Swim with the joystick, bottom left</span><span class="tch">Or drag anywhere</span><span class="ptr">Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
     <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
     <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
@@ -603,7 +637,47 @@ addEventListener('keydown', e => {
   if ((e.code === 'Escape' || e.code === 'KeyP') && (mode === 'play' || mode === 'paused')) { mode === 'play' ? pause() : resume(); e.preventDefault(); }
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; joyBirak(); });
+
+/* virtual joystick (touch screens): the thumb's offset from the centre steers, like a game pad */
+const joyEl = $('joy'), joyBase = joyEl.querySelector('.joy-base'), joyKnob = $('joyKnob');
+const joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0, R: 50 };
+let joyTouch = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+function joyAyarla(x, y) {
+  let dx = x - joy.cx, dy = y - joy.cy;
+  const d = Math.hypot(dx, dy);
+  if (d > joy.R) { dx = dx / d * joy.R; dy = dy / d * joy.R; }
+  joy.dx = dx; joy.dy = dy;
+  joyKnob.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
+}
+function joyBirak() {
+  joy.active = false; joy.id = null; joy.dx = joy.dy = 0;
+  joyKnob.style.transform = ''; joyEl.classList.remove('on');
+}
+joyEl.addEventListener('pointerdown', e => {
+  if (joy.active) return;
+  e.preventDefault();
+  ensureAudio();
+  const r = joyBase.getBoundingClientRect();
+  joy.cx = r.left + r.width / 2; joy.cy = r.top + r.height / 2; joy.R = r.width / 2 - 8;
+  joy.active = true; joy.id = e.pointerId;
+  joyEl.classList.add('on');
+  joyAyarla(e.clientX, e.clientY);
+  try { joyEl.setPointerCapture(e.pointerId); } catch (_) {}
+});
+joyEl.addEventListener('pointermove', e => { if (joy.active && e.pointerId === joy.id) joyAyarla(e.clientX, e.clientY); });
+joyEl.addEventListener('pointerup', e => { if (e.pointerId === joy.id) joyBirak(); });
+joyEl.addEventListener('pointercancel', e => { if (e.pointerId === joy.id) joyBirak(); });
+joyEl.addEventListener('contextmenu', e => e.preventDefault());
+// a touch on a laptop with a touch screen brings the joystick out too
+addEventListener('pointerdown', e => { if (e.pointerType === 'touch') joyTouch = true; }, true);
+let joyGorunur = false;
+function joyGuncelle() {
+  const goster = joyTouch && (mode === 'play' || (mode === 'oda' && P.alive));
+  if (goster === joyGorunur) return;
+  joyGorunur = goster; joyEl.hidden = !goster;
+  if (!goster) joyBirak();
+}
 
 /* ---------- sound ---------- */
 let AC = null, master = null;
@@ -1418,6 +1492,10 @@ function steerPlayer(dt) {
   let mag = 0, ang = P.angle;
   const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
   if (kx || ky) { ang = Math.atan2(ky, kx); mag = 1; }
+  else if (joy.active) {
+    const m = Math.hypot(joy.dx, joy.dy) / joy.R;
+    if (m > .12) { ang = Math.atan2(joy.dy, joy.dx); mag = clamp((m - .12) / .88, 0, 1); }
+  }
   else if (ptr.active) {
     const sx = (P.x - cam.x) * cam.scale + W / 2, sy = (P.y - cam.y) * cam.scale + H / 2;
     const dx = ptr.x - sx, dy = ptr.y - sy, d = Math.hypot(dx, dy);
@@ -1868,6 +1946,7 @@ function frame(now) {
   let dt = (now - last) / 1000; last = now;
   if (!(dt > 0)) dt = 0; if (dt > .05) dt = .05;
   if (mode !== 'paused') update(dt);
+  joyGuncelle();
   render();
   requestAnimationFrame(frame);
 }
