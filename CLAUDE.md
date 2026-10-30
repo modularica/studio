@@ -14,7 +14,7 @@ Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Baba
 index.html         uzigames.com stüdyo sayfası (herkese açık, hesap yok)
 robots.txt         /lab/ ve /hesap/ arama motorlarına kapalı
 vercel.json        Vercel ayarı (adresler / ile biter) + eski adreslerden /lab/'a yönlendirmeler
-.vercelignore      fish/ (sunucu), supabase/ ve .md dosyaları siteye çıkmaz
+.vercelignore      kökteki fish/ (sunucu), supabase/ ve .md dosyaları siteye çıkmaz (kalıplar / ile başlar, yoksa lab/fish de gider)
 hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya)
 lab/index.html     Lab ana sayfası (Uzay'ın sayfası); oyunları lab/oyunlar.json'dan okur
 lab/oyunlar.json   oyun listesi: slug, ad, açıklama, not, listed
