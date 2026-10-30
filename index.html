@@ -3,95 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Uzay'ın Oyunları</title>
-<meta name="robots" content="noindex">
-<meta name="description" content="Uzay'ın babasıyla birlikte yaptığı oyunlar. Tıkla, oyna, iyi eğlenceler!">
+<title>Uzi Games</title>
+<meta name="description" content="Uzay ve babasının birlikte oyun yaptığı küçük bir stüdyo. İlk oyunlarımız çok yakında burada.">
+<link rel="canonical" href="https://uzigames.com/">
+<meta name="theme-color" content="#fbf6ec">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Uzay'ın Oyunları">
-<meta property="og:description" content="Uzay'ın babasıyla birlikte yaptığı oyunlar. Tıkla, oyna, iyi eğlenceler!">
-<meta property="og:image" content="fish/cover.png">
-<meta name="twitter:card" content="summary_large_image">
+<meta property="og:url" content="https://uzigames.com/">
+<meta property="og:title" content="Uzi Games">
+<meta property="og:description" content="Uzay ve babasının birlikte oyun yaptığı küçük bir stüdyo. İlk oyunlarımız çok yakında burada.">
+<meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
-<link rel="stylesheet" href="/defter.css">
-<script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@500;600;700&display=swap">
 <style>
-/* Layout: games are photos taped onto the notebook page, one column on phones, two on wider screens */
-.player{
-  display:inline-flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:999px;
-  background:var(--card);border:1px solid var(--card-line);box-shadow:0 2px 6px -2px var(--shadow);
-  color:var(--text);text-decoration:none;font:700 16px/1 var(--font-body);
+/* Layout: one centered column on squared notebook paper — a badge, the bobbing wordmark, a short hello in Turkish and English; a quiet footer with the Lab link */
+:root{
+  --paper:#fbf6ec;
+  --grid:rgba(35,67,196,.07);
+  --ink:#1d2433;
+  --ink-dim:#5b6374;
+  --koi:#f27a32;
+  --koi-deep:#b4501a;
+  --blue:#2343c4;
+  --line:rgba(29,36,51,.14);
+  --font-display:"Bagel Fat One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+  --font-ui:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
 }
-.player small{font:600 13px/1 var(--font-body);color:var(--ink);text-decoration:underline;text-underline-offset:3px}
-.shelf{list-style:none;margin:48px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:40px 32px}
-.card{
-  position:relative;background:var(--card);border:1px solid var(--card-line);border-radius:4px;
-  padding:12px 12px 18px;box-shadow:0 10px 24px -12px var(--shadow),0 2px 4px var(--shadow);
-  transform:rotate(var(--tilt,0deg));transition:transform .25s ease,box-shadow .25s ease;min-width:0;
+@media (prefers-color-scheme:dark){
+  :root{--paper:#14181f;--grid:rgba(138,160,255,.07);--ink:#eef0f4;--ink-dim:#a3abbb;--line:rgba(238,240,244,.16);color-scheme:dark}
 }
-.card::before{
-  content:"";position:absolute;top:-12px;left:50%;width:96px;height:26px;margin-left:-48px;
-  background:var(--tape);transform:rotate(calc(var(--tilt,0deg) * -2.4));border-radius:2px;
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;min-height:100%;display:flex;flex-direction:column;
+  background-color:var(--paper);color:var(--ink);font-family:var(--font-ui);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
 }
-.card:hover,.card:focus-within{transform:rotate(0deg) translateY(-3px);box-shadow:0 18px 32px -14px var(--shadow),0 2px 4px var(--shadow)}
-.cover{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover;border-radius:2px;background:var(--grid)}
-.card h2{margin:14px 4px 0;font-size:28px;line-height:1.1}
-.card p{margin:6px 4px 0;color:var(--muted);font-size:15.5px;line-height:1.5}
-.card .note{margin-top:10px;font:600 12px/1.3 var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.play{
-  display:inline-flex;align-items:center;gap:8px;margin:16px 4px 0;padding:11px 18px;border-radius:999px;
-  background:var(--ink);color:var(--paper);font:700 16px/1 var(--font-body);text-decoration:none;
+main{
+  flex:1;width:100%;max-width:640px;margin:0 auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:calc(env(safe-area-inset-top,0px) + 48px) 0 40px;
 }
-.play::after{content:"→";font-weight:700}
-.card a.stretch::before{content:"";position:absolute;inset:0}
-.bottom{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:48px}
-.bottom .foot{margin:0}
+.rozet{
+  margin:0 0 22px;padding:7px 14px;border-radius:999px;border:1.5px solid var(--line);
+  font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);
+}
+.logo{
+  margin:0;font-family:var(--font-display);font-weight:400;line-height:.86;
+  font-size:clamp(76px,24vw,168px);letter-spacing:-.01em;
+  display:flex;flex-direction:column;align-items:center;
+}
+.logo .s{display:flex}
+.logo .s:first-child{color:var(--koi);text-shadow:0 6px 0 var(--koi-deep)}
+.logo .s:last-child{font-size:.62em;color:var(--blue);margin-top:.12em}
+@media (prefers-color-scheme:dark){.logo .s:last-child{color:#8aa0ff}}
+.logo i{font-style:normal;display:inline-block;animation:bob 2.8s ease-in-out infinite}
+.logo i:nth-child(2){animation-delay:-.7s}
+.logo i:nth-child(3){animation-delay:-1.4s}
+.logo i:nth-child(4){animation-delay:-2.1s}
+.logo i:nth-child(5){animation-delay:-.35s}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
+.merhaba{margin:34px 0 0;max-width:30ch;font-size:clamp(18px,4.6vw,21px);line-height:1.5;font-weight:600;text-wrap:balance}
+.en{margin:12px 0 0;max-width:36ch;font-size:15px;line-height:1.5;color:var(--ink-dim);text-wrap:balance}
+footer{
+  width:100%;max-width:640px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:16px 0 calc(env(safe-area-inset-bottom,0px) + 20px);border-top:1.5px solid var(--line);
+  font-size:14px;color:var(--ink-dim);
+}
+footer a{color:var(--ink);font-weight:700;text-decoration:none;padding:8px 2px}
+footer a:hover{text-decoration:underline;text-underline-offset:3px}
+footer a:focus-visible{outline:2px solid var(--koi);outline-offset:3px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.logo i{animation:none}}
 </style>
 </head>
 <body>
-<main class="page">
-  <div class="topbar">
-    <p class="mark">Uzay'ın sayfası</p>
-    <a class="player" id="player" href="/giris/?geri=/&amp;degistir=1" hidden></a>
-  </div>
-  <h1>Babamla birlikte yaptığımız <span class="u">oyunlar</span></h1>
-  <p class="lede">Merhaba, ben Uzay! Bu oyunları babamla birlikte yaptık. Tıkla, oyna, iyi eğlenceler!</p>
-
-  <ul class="shelf" id="shelf"></ul>
-
-  <div class="bottom">
-    <p class="foot">Yeni oyunlar yolda.</p>
-    <a class="link" href="/takip/">Kim ne oynuyor? →</a>
-  </div>
+<main>
+  <p class="rozet">Yakında · <span lang="en">Coming soon</span></p>
+  <h1 class="logo" aria-label="Uzi Games">
+    <span class="s" aria-hidden="true"><i>u</i><i>z</i><i>i</i></span>
+    <span class="s" aria-hidden="true"><i>g</i><i>a</i><i>m</i><i>e</i><i>s</i></span>
+  </h1>
+  <p class="merhaba">Merhaba, ben Uzay! Babamla birlikte oyunlar yapıyoruz. İlk oyunlarımız çok yakında burada.</p>
+  <p class="en" lang="en">Hi, I’m Uzay! My dad and I make games together. Our first games are coming soon.</p>
 </main>
-
-<script>
-(() => {
-  const H = window.Hesap;
-  if (!H) return;
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const tilts = ['-1.2deg', '0.9deg', '-0.6deg', '1.3deg'];
-
-  H.hazir.then(({ profil }) => {
-    const chip = document.getElementById('player');
-    chip.replaceChildren(H.rozet(profil), document.createTextNode(profil.name), Object.assign(document.createElement('small'), { textContent: 'Değiştir' }));
-    chip.setAttribute('aria-label', `Oynayan: ${profil.name}. Oyuncuyu değiştir`);
-    chip.hidden = false;
-  });
-
-  H.oyunlar().then(games => {
-    document.getElementById('shelf').innerHTML = games.filter(g => g.listed !== false).map((g, i) => `
-      <li class="card" style="--tilt:${tilts[i % tilts.length]}">
-        <img class="cover" src="${esc(g.slug)}/cover.png" alt="${esc(g.title)} oyunundan bir görüntü" width="1200" height="630" loading="${i < 2 ? 'eager' : 'lazy'}">
-        <h2>${esc(g.title)}</h2>
-        <p>${esc(g.desc)}</p>
-        ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
-        <a class="play stretch" href="${esc(g.slug)}/">Oyna</a>
-      </li>`).join('');
-  });
-})();
-</script>
+<footer>
+  <span>© 2026 Uzi Games</span>
+  <a href="/lab/">Lab</a>
+</footer>
 </body>
 </html>

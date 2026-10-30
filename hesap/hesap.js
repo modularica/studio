@@ -30,7 +30,7 @@
   // <username>@KULLANICI_ALANI behind the scenes. No mail is ever sent there ("Confirm email" is off).
   // Never change this: existing accounts would stop matching their usernames.
   var KULLANICI_ALANI = 'oyuncu.bringthepoint.com';
-  var GIRIS = '/giris/';
+  var GIRIS = '/lab/giris/';
   var NABIZ = 20000;              // oynama süresi bu aralıkla yazılır
   var YENI_OTURUM = 10 * 60000;   // bu kadar arka planda kalınca yeni oynama kaydı açılır
 
@@ -430,7 +430,7 @@
 
     oyunlar: function () {
       if (!oyunListesi) {
-        oyunListesi = fetch('/oyunlar.json', { cache: 'no-cache' })
+        oyunListesi = fetch('/lab/oyunlar.json', { cache: 'no-cache' })
           .then(function (r) { return r.ok ? r.json() : []; })
           .catch(function () { return []; });
       }

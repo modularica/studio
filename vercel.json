@@ -1,3 +1,14 @@
 {
-  "trailingSlash": true
+  "trailingSlash": true,
+  "redirects": [
+    { "source": "/giris/:path*", "destination": "/lab/giris/:path*", "permanent": false },
+    { "source": "/takip/:path*", "destination": "/lab/takip/:path*", "permanent": false },
+    { "source": "/fish/:path*", "destination": "/lab/fish/:path*", "permanent": false },
+    { "source": "/yelken/:path*", "destination": "/lab/yelken/:path*", "permanent": false },
+    { "source": "/songbox/:path*", "destination": "/lab/songbox/:path*", "permanent": false },
+    { "source": "/sur-muhafizi/:path*", "destination": "/lab/sur-muhafizi/:path*", "permanent": false },
+    { "source": "/sekme/:path*", "destination": "/lab/sekme/:path*", "permanent": false },
+    { "source": "/kar-savasi/:path*", "destination": "/lab/kar-savasi/:path*", "permanent": false },
+    { "source": "/oyunlar.json", "destination": "/lab/oyunlar.json", "permanent": false }
+  ]
 }

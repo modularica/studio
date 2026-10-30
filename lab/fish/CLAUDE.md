@@ -6,7 +6,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 
 - `index.html`: Oyunun tamamı (tek kişilik ve odalar). Bağımlılıksız, tek dosya.
 - `cover.png`: Paylaşım önizlemesi ve ana sayfa kartı (1200×630).
-- `sunucu/`: Oda sunucusu (Cloudflare Worker + Durable Objects). Ayrıntı `sunucu/README.md`.
+- Oda sunucusu repo kökünde `fish/sunucu/` (Cloudflare Worker + Durable Objects; Cloudflare oradan kurduğu için yeri değişmiyor). Ayrıntı `fish/sunucu/README.md`.
 - Leaderboard: tek kişilik tur bitince boy `Hesap.skor` ile kaydedilir; sıralama `Hesap.siralama` ile okunur (ayrıntı kök `CLAUDE.md`'de). Hesap yoksa (oyun tek başına açılırsa) leaderboard ve odalar gizlenir.
 
 ## Tek kişilik sürümün yapısı
@@ -24,7 +24,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Sunucu adresi `ODA_SUNUCU` sabitinde. Boşsa "Play with friends" görünmez. Deneme için `localStorage.setItem('fish.sunucu', 'ws://127.0.0.1:8787')`.
 - Giriş için `Hesap.anahtar()` (Supabase erişim anahtarı) ve `Hesap.profil.id` gönderilir.
 - Tur sonu skoru `Hesap.skor(enBuyuk, {mod:'oda', ...}, 'fish-oda')`. Odada yenen balıklar `fish.toplam` sayacına da eklenir. `fish.best` sadece tek kişilik içindir.
-- Kurallar (`SPECIES` sırası ve boyları, büyüme, 0.9 / 1.1 eşikleri, hız 3.6 boy/sn, kamera formülü) `sunucu/src/kurallar.js` ile aynı kalmalı. Birini değiştirirsen ötekini de değiştir.
+- Kurallar (`SPECIES` sırası ve boyları, büyüme, 0.9 / 1.1 eşikleri, hız 3.6 boy/sn, kamera formülü) `fish/sunucu/src/kurallar.js` ile aynı kalmalı. Birini değiştirirsen ötekini de değiştir.
 
 ## Kurallar
 

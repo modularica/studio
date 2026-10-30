@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
-<link rel="stylesheet" href="/defter.css">
+<link rel="stylesheet" href="/lab/defter.css">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js" data-kapi="yok"></script>
 <style>
@@ -40,7 +40,7 @@
 </head>
 <body>
 <main class="page">
-  <div class="topbar"><a class="mark" href="/">Uzay'ın sayfası</a></div>
+  <div class="topbar"><a class="mark" href="/lab/">Uzay'ın sayfası</a></div>
 
   <p class="foot" id="yukleniyor">Yükleniyor…</p>
 
@@ -123,7 +123,7 @@
 
     <nav class="alt" aria-label="Hesap">
       <button class="link" type="button" id="duzenleBtn">Oyuncuları düzenle</button>
-      <a class="link" href="/takip/">Kim ne oynuyor?</a>
+      <a class="link" href="/lab/takip/">Kim ne oynuyor?</a>
       <button class="link" type="button" id="sifreBtn">Şifremi değiştir</button>
       <button class="link" type="button" id="cikisBtn">Çıkış yap</button>
     </nav>
@@ -141,7 +141,7 @@
 
   const params = new URLSearchParams(location.search);
   const q = params.get('geri');
-  const geri = q && q.startsWith('/') && !q.startsWith('//') && !q.startsWith('/giris') ? q : '/';
+  const geri = q && q.startsWith('/') && !q.startsWith('//') && !q.startsWith('/lab/giris') && !q.startsWith('/giris') ? q : '/lab/';
   const degistir = params.has('degistir');
 
   let kullanici = null, oyuncular = [], duzenle = false, duzenlenen = null, secilenRenk = RENKLER[0];

@@ -1,4 +1,4 @@
-// Game rules for the room server. They mirror the single-player game in fish/index.html:
+// Game rules for the room server. They mirror the single-player game in lab/fish/index.html:
 // keep TURLER in the same order and with the same sizes as SPECIES there (the client draws
 // NPCs by their index in this list).
 

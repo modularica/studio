@@ -2,7 +2,7 @@
 
 ## Şu an
 
-- **Tek kişilik:** `fish/index.html`, `/fish/` adresinde. Sonsuz gölet, 3 can, leaderboard (`scores`, oyun `fish`).
+- **Tek kişilik:** `lab/fish/index.html`, `/lab/fish/` adresinde. Sonsuz gölet, 3 can, leaderboard (`scores`, oyun `fish`).
 - **Odalar (arkadaşlarla):** Başlangıç ekranında "Play with friends".
   - Odalar bir listede görünür, kod yok. Biri oda kurar, arkadaşları listeden katılır, kurucu "Start the round" der.
   - Tur 5 dakika sürer, odaya en çok 8 koi girer. Tur sürerken de katılınabilir.
@@ -21,7 +21,7 @@
 - Yemeye, ısırmaya, ölmeye, büyümeye ve yabani balıklara yalnızca sunucu karar verir.
 - Yabani balıklar her koi'nin ekranının hemen dışında, o koi'nin boyuna göre doğar (tek kişilik gibi). Hiçbir koi'nin yakınında olmayan balık silinir.
 - Sunucu saniyede 10 kez, her koiye yalnızca kendi çevresindeki balıkları gönderir. Sayfa diğerlerini son bilinen hız ve yönle ileri tahmin edip yumuşatarak çizer.
-- Kurallar `fish/sunucu/src/kurallar.js` içinde, `fish/index.html` ile aynı. Türlerin sırası iki yerde aynı kalmalı.
+- Kurallar `fish/sunucu/src/kurallar.js` içinde, `lab/fish/index.html` ile aynı. Türlerin sırası iki yerde aynı kalmalı.
 
 ## Sonra yapılabilecekler
 

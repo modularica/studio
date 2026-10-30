@@ -1,6 +1,6 @@
 # fish-odalar
 
-The room server for Fish (`/fish/` → "Play with friends"). A Cloudflare Worker with two kinds of Durable Objects:
+The room server for Fish (`/lab/fish/` → "Play with friends"). The game page itself is in `lab/fish/`. A Cloudflare Worker with two kinds of Durable Objects:
 
 - `Lobi` (one object): the room list. Pages on the Rooms screen keep a websocket open and get the list pushed whenever a room changes.
 - `Oda` (one object per room): the waiting room, a shared pond for a five-minute round, and the results. It runs the pond at 20 steps a second and sends each koi a snapshot 10 times a second.
@@ -27,7 +27,7 @@ Cloudflare Workers Builds deploys this folder on every push to `main` (root dire
 | `src/index.js` | Routes: `/lobi`, `/oda/<8 letters>` |
 | `src/lobi.js` | The room list |
 | `src/oda.js` | One room: connections, the round, wild fish, eating and biting, snapshots |
-| `src/kurallar.js` | Game rules shared with `fish/index.html` (species sizes, growth, speeds) |
+| `src/kurallar.js` | Game rules shared with `lab/fish/index.html` (species sizes, growth, speeds) |
 | `src/dogrula.js` | Checks the Supabase token and the player |
 
 ## Messages
