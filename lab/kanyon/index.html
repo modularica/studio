@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#24110c">
+<title>Kanyon</title>
+<meta name="description" content="Jetinle kanyondaki nehrin üstünden uç. Sarı bidonlardan yakıt al, gemileri ve helikopterleri vur, her bölgenin sonundaki köprüyü yık.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Kanyon">
+<meta property="og:description" content="Jetinle kanyondaki nehrin üstünden uç. Sarı bidonlardan yakıt al, gemileri ve helikopterleri vur, her bölgenin sonundaki köprüyü yık.">
+<meta property="og:image" content="https://uzigames.com/lab/kanyon/cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noindex">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-oyun="kanyon" data-kayit="kanyon.hi"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#24110c;overflow:hidden;overscroll-behavior:none;
+    font-family:Rubik,system-ui,-apple-system,sans-serif;}
+  body{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 90% at 50% 30%,#3a1a10,#1a0b07);}
+  #wrap{position:relative;overflow:hidden;box-shadow:0 0 80px rgba(0,0,0,.55);touch-action:none;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+  canvas{display:block;touch-action:none;}
+  .ib{position:absolute;top:10px;width:38px;height:38px;border-radius:11px;border:none;padding:0;
+    background:rgba(28,12,8,.5);color:#fff6e6;display:grid;place-items:center;cursor:pointer;}
+  .ib svg{width:18px;height:18px;fill:currentColor}
+  #pauseBtn{right:10px} #muteBtn{right:54px}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;text-align:center;padding:28px 22px;box-sizing:border-box;color:#fff6e6;
+    background:radial-gradient(120% 85% at 50% 42%,rgba(40,16,10,.35),rgba(22,8,5,.9));}
+  .hidden{display:none!important}
+  .logo{font-family:Bungee,Rubik,sans-serif;font-size:58px;letter-spacing:2px;line-height:1;color:#fff6e6;
+    text-shadow:0 4px 0 #e2483d,0 9px 0 rgba(0,0,0,.35);}
+  .logo.sm{font-size:36px}
+  .tag{font-weight:800;font-size:15px;color:#f5c531;letter-spacing:.2px;margin-top:-2px}
+  .how{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;
+    font-size:14px;line-height:1.35;max-width:300px;color:rgba(255,246,230,.9);font-weight:500}
+  .how li{background:rgba(255,246,230,.08);border-radius:12px;padding:9px 13px}
+  .how b{color:#fff;font-weight:800}
+  .play{margin-top:8px;font-family:Bungee,Rubik,sans-serif;font-size:22px;letter-spacing:1px;color:#2a120c;
+    background:#f5c531;border:none;border-radius:14px;padding:14px 42px;box-shadow:0 5px 0 #b97f15;cursor:pointer;}
+  .play:active{transform:translateY(3px);box-shadow:0 2px 0 #b97f15}
+  .play.alt{margin-top:0;font-size:15px;padding:10px 26px;color:#fff6e6;background:transparent;
+    border:2px solid rgba(255,246,230,.45);box-shadow:none}
+  .play.alt:active{transform:none;background:rgba(255,246,230,.1)}
+  .best{font-size:13px;color:rgba(255,246,230,.7);font-weight:700}
+  .final{font-family:Bungee,Rubik,sans-serif;font-size:46px;color:#f5c531;line-height:1}
+  .sub{font-size:15px;font-weight:700;color:rgba(255,246,230,.85)}
+  .newbest{font-weight:800;color:#2a120c;background:#7ed36f;border-radius:999px;padding:5px 14px;font-size:13px}
+  @media (pointer:coarse){.kb-only{display:none!important}}
+  @media (pointer:fine){.touch-only{display:none!important}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <button class="ib hidden" id="muteBtn" aria-label="Ses"></button>
+  <button class="ib hidden" id="pauseBtn" aria-label="Duraklat">
+    <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+  </button>
+
+  <div class="overlay" id="title">
+    <div class="logo">KANYON</div>
+    <div class="tag">Yakıt bitmeden köprüyü vur!</div>
+    <ul class="how">
+      <li class="touch-only"><b>Sürükle:</b> sağa-sola yön, yukarı-aşağı hız</li>
+      <li class="touch-only"><b>ATEŞ</b> düğmesine diğer elinle bas</li>
+      <li class="kb-only"><b>← →</b> yön · <b>↑ ↓</b> hız · <b>Boşluk</b> ateş</li>
+      <li>Sarı bidonların <b>üstünden geç</b>, yakıt al. Vurursan yanar!</li>
+      <li>Her bölgenin sonundaki <b>köprüyü vur</b>, orası kayıt noktan olur</li>
+    </ul>
+    <button class="play" id="startBtn">BAŞLA</button>
+    <div class="best">En iyi: <span id="bestTitle">0</span></div>
+  </div>
+
+  <div class="overlay hidden" id="pause">
+    <div class="logo sm">MOLA</div>
+    <button class="play" id="resumeBtn">DEVAM</button>
+    <button class="play alt" type="button" data-nasildi="mola">Nasıldı?</button>
+  </div>
+
+  <div class="overlay hidden" id="over">
+    <div class="logo sm">OYUN BİTTİ</div>
+    <div class="final" id="finalScore">0</div>
+    <div class="sub" id="finalSub"></div>
+    <div class="newbest hidden" id="newBest">Yeni rekor!</div>
+    <button class="play" id="againBtn">TEKRAR</button>
+    <button class="play alt" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- constants ----------
+const LW = 360, KP = 160, KPS = 16, SECT = KP * KPS, BRIDGE_HW = 54, PLAYER_OFF = 150;
+const SPD_MIN = 75, SPD_BASE = 150, SPD_MAX = 275, LAT_TOUCH = 380, LAT_KEY = 230;
+const FUEL_RATE = 3.3, REFUEL_RATE = 38, BULLET_V = 540, FIRE_CD = 0.17, MAX_BULLETS = 3;
+const SPEC = {
+  fuel: { w: 22, h: 34, pts: 80 },
+  ship: { w: 40, h: 14, pts: 30 },
+  heli: { w: 30, h: 22, pts: 60 },
+  jet:  { w: 36, h: 26, pts: 100 },
+};
+const HIT_PTS = [[0, 14], [-14, -5], [14, -5], [-6, -13], [6, -13], [0, 0]];
+const C = {
+  land: '#c4693f', strata: 'rgba(120,48,22,.22)', sand: '#e9c48b',
+  water: '#2a9d9a', deep: '#21868a', foam: 'rgba(255,255,255,.3)', ripple: 'rgba(225,255,250,.22)',
+  rock: '#8d5a43', rockHi: '#a8735b', rockSh: 'rgba(60,20,10,.28)',
+  shrub: '#768f3e', shrubDk: '#5a7030',
+  road: '#3d3532', roadEdge: '#574c47', roadLine: '#f2c94c', deck: '#6b5040', rail: '#3b2b22',
+  plane: '#fff6e6', planeDk: '#eadcc3', stripe: '#e2483d', canopy: '#2f6f8f',
+  ship: '#26324d', shipDeck: '#3a4a6e', cabin: '#f29e38',
+  heli: '#5b3a74', heliDk: '#3f2752', glass: '#a9e3f0',
+  jet: '#4a4f58', jetDk: '#30343a',
+  fuel: '#f5c531', fuelDk: '#c48a19', bullet: '#fff1a8', cream: '#fff6e6',
+};
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const fmt = n => n.toLocaleString('tr-TR');
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hash(a, b) {
+  let h = Math.imul(a | 0, 0x27d4eb2d) ^ Math.imul((b | 0) + 0x165667b1, 0x9e3779b1) ^ seed;
+  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (e) { /* ignore */ } }
+function hesapSkor(v, ayrinti) {
+  try { if (window.Hesap && Hesap.skor) Promise.resolve(Hesap.skor(v, ayrinti)).catch(() => {}); } catch (e) { /* ignore */ }
+}
+
+// ---------- canvas ----------
+const canvas = $('c'), ctx = canvas.getContext('2d'), wrap = $('wrap');
+let LH = 680, scale = 1, dpr = 1;
+function resize() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  LH = Math.round(clamp(vh / vw * LW, 560, 800));
+  scale = Math.min(vw / LW, vh / LH);
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const cw = Math.floor(LW * scale), ch = Math.floor(LH * scale);
+  canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+  wrap.style.width = cw + 'px'; wrap.style.height = ch + 'px';
+  canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+}
+window.addEventListener('resize', resize);
+resize();
+function ell(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+// ---------- audio ----------
+const Sfx = {
+  ac: null, master: null, nb: null, eng: null, engG: null, engF: null,
+  muted: store.get('kanyon.mute', '0') === '1',
+  init() {
+    try {
+      if (!this.ac) {
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+        const ac = this.ac = new AC();
+        this.master = ac.createGain(); this.master.gain.value = this.muted ? 0 : 0.55; this.master.connect(ac.destination);
+        const len = Math.floor(ac.sampleRate * 1.2), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        this.nb = buf;
+        this.eng = ac.createOscillator(); this.eng.type = 'sawtooth'; this.eng.frequency.value = 55;
+        this.engF = ac.createBiquadFilter(); this.engF.type = 'lowpass'; this.engF.frequency.value = 380;
+        this.engG = ac.createGain(); this.engG.gain.value = 0;
+        this.eng.connect(this.engF); this.engF.connect(this.engG); this.engG.connect(this.master); this.eng.start();
+      }
+      if (this.ac.state === 'suspended') this.ac.resume();
+    } catch (e) { this.ac = null; }
+  },
+  tone(f0, f1, dur, type, vol, delay) {
+    if (!this.ac) return;
+    try {
+      const ac = this.ac, t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f0, t);
+      if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) {}
+  },
+  noise(dur, vol, f0, f1) {
+    if (!this.ac) return;
+    try {
+      const ac = this.ac, t = ac.currentTime, src = ac.createBufferSource(), flt = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = this.nb; flt.type = 'lowpass';
+      flt.frequency.setValueAtTime(f0, t); flt.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(flt); flt.connect(g); g.connect(this.master); src.start(t); src.stop(t + dur + 0.03);
+    } catch (e) {}
+  },
+  shoot() { this.tone(1500, 420, 0.09, 'square', 0.045); },
+  hit() { this.noise(0.4, 0.45, 2400, 120); this.tone(220, 50, 0.3, 'triangle', 0.18); },
+  big() { this.noise(1.2, 0.7, 1600, 60); this.tone(130, 28, 1.0, 'sine', 0.45); },
+  refuel(f) { this.tone(320 + f * 6, null, 0.06, 'triangle', 0.08); },
+  low() { this.tone(980, null, 0.1, 'square', 0.05); this.tone(740, null, 0.1, 'square', 0.05, 0.12); },
+  life() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, null, 0.12, 'square', 0.06, i * 0.09)); },
+  engine(sp) {
+    if (!this.ac) return;
+    try {
+      const t = this.ac.currentTime;
+      this.eng.frequency.setTargetAtTime(40 + sp * 0.24, t, 0.08);
+      this.engF.frequency.setTargetAtTime(250 + sp * 1.6, t, 0.1);
+      this.engG.gain.setTargetAtTime(sp > 0 ? 0.045 : 0, t, 0.06);
+    } catch (e) {}
+  },
+  setMuted(m) {
+    this.muted = m; store.set('kanyon.mute', m ? '1' : '0');
+    if (this.master) this.master.gain.value = m ? 0 : 0.55;
+  },
+};
+
+// ---------- world generation ----------
+let seed = (Math.random() * 0xffffffff) >>> 0;
+const NARROW = { cx: LW / 2, hw: BRIDGE_HW, ih: 0 };
+const kpsCache = new Map(), content = new Map(), destroyed = new Set();
+
+function genKps(s) {
+  const rnd = mulberry32((seed ^ Math.imul(s + 1, 0x9E3779B1)) >>> 0);
+  const diff = Math.min(s, 12), kps = [];
+  let prev = NARROW;
+  for (let k = 0; k < KPS; k++) {
+    if (k <= 1 || k === KPS - 1) { kps.push(NARROW); prev = NARROW; continue; }
+    const minHW = Math.max(58, 92 - diff * 3), maxHW = 156;
+    const hw = minHW + rnd() * (maxHW - minHW);
+    let ih = 0;
+    if (hw > 115 && rnd() < Math.min(0.5, 0.18 + diff * 0.04)) ih = 18 + rnd() * Math.max(0, hw - 56 - 18);
+    const maxOff = LW / 2 - 20 - hw;
+    let cx = LW / 2 + (rnd() * 2 - 1) * maxOff;
+    cx = clamp(cx, prev.cx - 70, prev.cx + 70);
+    cx = clamp(cx, 20 + hw, LW - 20 - hw);
+    const kp = { cx, hw, ih };
+    kps.push(kp); prev = kp;
+  }
+  return kps;
+}
+function getKps(s) {
+  let k = kpsCache.get(s);
+  if (!k) { k = genKps(s); kpsCache.set(s, k); }
+  return k;
+}
+function kpAt(i) {
+  if (i < 0) return NARROW;
+  const s = Math.floor(i / KPS);
+  return getKps(s)[i - s * KPS];
+}
+const RV = { l: 0, r: 0, il: 0, ir: 0, island: false };
+function riverAt(y) {
+  const f = y / KP, i = Math.floor(f), t = f - i;
+  const a = kpAt(i), b = kpAt(i + 1), u = t * t * (3 - 2 * t);
+  const cx = a.cx + (b.cx - a.cx) * u, hw = a.hw + (b.hw - a.hw) * u, ih = a.ih + (b.ih - a.ih) * u;
+  RV.l = cx - hw; RV.r = cx + hw; RV.il = cx - ih; RV.ir = cx + ih; RV.island = ih > 3;
+  return RV;
+}
+function inWater(x, y) {
+  const r = riverAt(y);
+  if (x < r.l || x > r.r) return false;
+  if (r.island && x > r.il && x < r.ir) return false;
+  return true;
+}
+
+function genContent(s) {
+  const rnd = mulberry32((seed ^ Math.imul(s + 7, 0x85EBCA77)) >>> 0);
+  const drnd = mulberry32((seed ^ Math.imul(s + 13, 0xC2B2AE3D)) >>> 0);
+  const base = s * SECT, diff = Math.min(s, 12), objs = [], decos = [];
+
+  for (let i = 0; i < 70; i++) {
+    const y = base + drnd() * SECT, r = riverAt(y), side = drnd(), k = drnd(), size = 3.5 + drnd() * 4.5;
+    let x;
+    if (r.island && side < 0.15) {
+      if (r.ir - r.il < 34) continue;
+      x = r.il + 14 + drnd() * (r.ir - r.il - 28);
+      decos.push({ t: 'shrub', x, y, r: size }); continue;
+    }
+    if (side < 0.57) { const max = r.l - 16; if (max < 12) continue; x = 6 + drnd() * (max - 6); }
+    else { const min = r.r + 16; if (min > LW - 12) continue; x = min + drnd() * (LW - 6 - min); }
+    decos.push({ t: k < 0.45 ? 'rock' : 'shrub', x, y, r: size });
+  }
+
+  const spMin = Math.max(72, 150 - diff * 7), spMax = spMin + 80;
+  const moveP = Math.min(0.85, 0.25 + diff * 0.07);
+  let y = base + (s === 0 ? 520 : 380), since = 0;
+  while (y < base + SECT - 260) {
+    const r = riverAt(y);
+    const chans = r.island ? [[r.l, r.il], [r.ir, r.r]] : [[r.l, r.r]];
+    const ch = chans[(rnd() * chans.length) | 0];
+    let type;
+    if (since >= 5 || rnd() < Math.max(0.16, 0.3 - diff * 0.012)) type = 'fuel';
+    else {
+      const q = rnd();
+      type = (s >= 1 && q < Math.min(0.24, 0.06 + diff * 0.025)) ? 'jet' : q < 0.62 ? 'ship' : 'heli';
+    }
+    const sp = SPEC[type];
+    if (type === 'jet') {
+      const dir = rnd() < 0.5 ? 1 : -1;
+      objs.push({ type, x: dir > 0 ? -40 : LW + 40, y, w: sp.w, h: sp.h, dir,
+        speed: 150 + diff * 12 + rnd() * 40, moving: false, alive: true, t: rnd() * 10 });
+      since++;
+    } else {
+      const lo = ch[0] + sp.w / 2 + 6, hi = ch[1] - sp.w / 2 - 6;
+      if (hi > lo) {
+        objs.push({ type, x: lo + rnd() * (hi - lo), y, w: sp.w, h: sp.h, dir: rnd() < 0.5 ? 1 : -1,
+          speed: type === 'heli' ? 70 + rnd() * 40 + diff * 4 : 40 + rnd() * 30 + diff * 3,
+          moving: false, willMove: type !== 'fuel' && rnd() < moveP, trigger: 140 + rnd() * 320,
+          alive: true, t: rnd() * 10 });
+        if (type === 'fuel') since = 0; else since++;
+      }
+    }
+    y += spMin + rnd() * (spMax - spMin);
+  }
+  return { objs, decos };
+}
+function viewSections() {
+  return [Math.floor((camY - 80) / SECT), Math.floor((camY + LH + 80) / SECT)];
+}
+function ensureContent() {
+  const [s0, s1] = viewSections();
+  for (let s = Math.max(0, s0); s <= s1; s++) if (!content.has(s)) content.set(s, genContent(s));
+  for (const k of content.keys()) if (k < s0 - 1) content.delete(k);
+  for (const k of kpsCache.keys()) if (k < s0 - 2) kpsCache.delete(k);
+}
+function liveObjs() {
+  const out = [], [s0, s1] = viewSections();
+  for (let s = s0; s <= s1; s++) {
+    const c = content.get(s);
+    if (c) for (const o of c.objs) if (o.alive) out.push(o);
+  }
+  return out;
+}
+
+// ---------- game state ----------
+let state = 'title', pausedFrom = 'play', camY = 0, T = 0, overAt = 0;
+const player = { x: LW / 2, y: 0, vx: 0, bank: 0, speed: SPD_BASE };
+let bullets = [], parts = [], flashes = [], popups = [];
+let score = 0, hi = parseInt(store.get('kanyon.hi', '0'), 10) || 0, lives = 3, fuel = 100;
+let checkpoint = 0, bridges = 0, nextLife = 10000;
+let fireCd = 0, lowTimer = 0, refuelTick = 0, refueling = false, shake = 0, dieTimer = 0;
+let banner = null, deathMsg = '';
+let touchUI = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+const sy = wy => LH - (wy - camY);
+
+function setState(s) {
+  state = s;
+  $('title').classList.toggle('hidden', s !== 'title');
+  $('pause').classList.toggle('hidden', s !== 'paused');
+  $('over').classList.toggle('hidden', s !== 'over');
+  const inGame = s === 'play' || s === 'ready' || s === 'dying';
+  $('pauseBtn').classList.toggle('hidden', !inGame);
+  $('muteBtn').classList.toggle('hidden', !inGame && s !== 'title');
+  if (s !== 'play') Sfx.engine(0);
+}
+
+function newGame() {
+  seed = (Math.random() * 0xffffffff) >>> 0;
+  kpsCache.clear(); content.clear(); destroyed.clear();
+  score = 0; lives = 3; bridges = 0; checkpoint = 0; nextLife = 10000;
+  parts = []; flashes = []; popups = []; pointers.clear();
+  placeAtCheckpoint();
+  banner = { text: 'KALKIŞ!', sub: '', life: 1.3 };
+  setState('play');
+  hesapNotu('yeni oyun');
+}
+function placeAtCheckpoint() {
+  for (const k of [...content.keys()]) if (k >= checkpoint) content.delete(k);
+  player.y = checkpoint * SECT + 60; camY = player.y - PLAYER_OFF;
+  player.x = LW / 2; player.vx = 0; player.bank = 0; player.speed = SPD_BASE;
+  fuel = 100; bullets = []; fireCd = 0; lowTimer = 0; refueling = false;
+}
+function beginPlay() {
+  if (state !== 'ready') return;
+  for (const p of pointers.values()) { p.x0 = p.x; p.y0 = p.y; p.px0 = player.x; }
+  setState('play');
+}
+function die(msg) {
+  if (state !== 'play') return;
+  deathMsg = msg; dieTimer = 1.8; bullets = [];
+  boom(player.x, player.y, C.plane, 30, true); shake = 14;
+  Sfx.big(); buzz(220);
+  setState('dying');
+}
+function afterDeath() {
+  lives--;
+  if (lives <= 0) { gameOver(); return; }
+  placeAtCheckpoint();
+  setState('ready');
+}
+function gameOver() {
+  const nb = score > hi;
+  if (nb) { hi = score; store.set('kanyon.hi', String(hi)); }
+  $('finalScore').textContent = fmt(score);
+  $('finalSub').textContent = `${bridges} köprü · En iyi ${fmt(hi)}`;
+  $('newBest').classList.toggle('hidden', !nb);
+  $('bestTitle').textContent = fmt(hi);
+  pointers.clear(); overAt = T;
+  setState('over');
+  hesapNotu(`oyun sonu · ${bridges} köprü · ${fmt(score)} puan`);
+  if (score > 0) hesapSkor(score, { kopru: bridges });
+}
+function setPause(on) {
+  if (on && (state === 'play' || state === 'ready' || state === 'dying')) { pausedFrom = state; pointers.clear(); setState('paused'); }
+  else if (!on && state === 'paused') { pointers.clear(); setState(pausedFrom === 'play' ? 'ready' : pausedFrom); }
+}
+function addScore(n, x, y) {
+  score += n;
+  popups.push({ x, s: sy(y), text: '+' + n, life: 0.9 });
+  if (score >= nextLife) {
+    nextLife += 10000;
+    if (lives < 6) { lives++; banner = { text: '+1 UÇAK', sub: '', life: 1.4 }; Sfx.life(); }
+  }
+}
+function boom(x, y, col, n, big) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, v = 40 + Math.random() * (big ? 220 : 150), life = 0.5 + Math.random() * 0.6;
+    parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life,
+      c: i % 3 === 0 ? col : i % 3 === 1 ? '#ffb347' : '#3b2620', s: 2 + Math.random() * (big ? 5 : 4) });
+  }
+  flashes.push({ x, y, life: 0.35, r: big ? 42 : 24 });
+}
+function kill(o, byPlayer) {
+  o.alive = false;
+  const col = o.type === 'fuel' ? C.fuel : o.type === 'ship' ? C.cabin : o.type === 'heli' ? C.heli : C.jet;
+  boom(o.x, o.y, col, 16, false); Sfx.hit();
+  if (byPlayer) addScore(SPEC[o.type].pts, o.x, o.y);
+}
+function destroyBridge(bi) {
+  destroyed.add(bi); checkpoint = bi; bridges++;
+  const by = bi * SECT, r = riverAt(by), l = r.l, rr_ = r.r;
+  for (let x = l; x <= rr_; x += 12) boom(x, by, C.deck, 6, false);
+  shake = 12; Sfx.big(); buzz(60);
+  addScore(500, (l + rr_) / 2, by);
+  banner = { text: 'KÖPRÜ ' + bi, sub: 'kayıt noktası', life: 1.6 };
+  hesapNotu(`${bi}. köprü · ${fmt(score)} puan`);
+}
+
+// ---------- input ----------
+const pointers = new Map();
+const keys = { left: false, right: false, up: false, down: false, fire: false };
+const KM = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up',
+  ArrowDown: 'down', KeyS: 'down', Space: 'fire', KeyJ: 'fire' };
+function fireBtn() { return { x: LW - 54, y: LH - 96, r: 36 }; }
+function toL(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * LW, y: (e.clientY - r.top) / r.height * LH };
+}
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (e.pointerType === 'touch' || e.pointerType === 'pen') touchUI = true;
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  Sfx.init();
+  const p = toL(e), fb = fireBtn();
+  const isFire = touchUI && e.pointerType !== 'mouse' && Math.hypot(p.x - fb.x, p.y - fb.y) < fb.r + 16;
+  pointers.set(e.pointerId, { role: isFire ? 'fire' : 'steer', mouse: e.pointerType === 'mouse',
+    x0: p.x, y0: p.y, x: p.x, y: p.y, px0: player.x });
+  if (state === 'ready') beginPlay();
+}, { passive: false });
+canvas.addEventListener('pointermove', e => {
+  const q = pointers.get(e.pointerId); if (!q) return;
+  const p = toL(e); q.x = p.x; q.y = p.y;
+  if (state === 'ready' && Math.hypot(q.x - q.x0, q.y - q.y0) > 8) beginPlay();
+});
+const pUp = e => pointers.delete(e.pointerId);
+canvas.addEventListener('pointerup', pUp);
+canvas.addEventListener('pointercancel', pUp);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('keydown', e => {
+  const tg = e.target;
+  if (tg && tg.closest && tg.closest('input,textarea,select,button,[contenteditable]') && !tg.closest('#wrap')) return;
+  const k = KM[e.code];
+  if (k) { keys[k] = true; e.preventDefault(); }
+  if (state === 'title' && (e.code === 'Enter' || e.code === 'Space')) { Sfx.init(); newGame(); return; }
+  if (state === 'over' && (e.code === 'Enter' || e.code === 'Space') && T - overAt > 0.8) { Sfx.init(); newGame(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { setPause(state !== 'paused'); return; }
+  if (e.code === 'KeyM') { toggleMute(); return; }
+  if (state === 'ready' && (k || e.code === 'Enter')) { Sfx.init(); beginPlay(); }
+});
+window.addEventListener('keyup', e => { const k = KM[e.code]; if (k) keys[k] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; pointers.clear(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) setPause(true); });
+
+const ICON_ON = '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+const ICON_OFF = '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+function toggleMute() { Sfx.setMuted(!Sfx.muted); $('muteBtn').innerHTML = Sfx.muted ? ICON_OFF : ICON_ON; }
+$('muteBtn').innerHTML = Sfx.muted ? ICON_OFF : ICON_ON;
+$('muteBtn').addEventListener('click', () => { Sfx.init(); toggleMute(); });
+$('pauseBtn').addEventListener('click', () => setPause(true));
+$('resumeBtn').addEventListener('click', () => { Sfx.init(); setPause(false); });
+$('startBtn').addEventListener('click', () => { if (state !== 'title') return; Sfx.init(); newGame(); });
+$('againBtn').addEventListener('click', () => { if (state !== 'over') return; Sfx.init(); newGame(); });
+$('bestTitle').textContent = fmt(hi);
+
+// ---------- update ----------
+function stepFx(dt) {
+  const f = Math.pow(0.08, dt);
+  for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= f; p.vy *= f; p.life -= dt; }
+  parts = parts.filter(p => p.life > 0);
+  for (const fl of flashes) fl.life -= dt;
+  flashes = flashes.filter(fl => fl.life > 0);
+  for (const p of popups) { p.life -= dt; p.s -= 40 * dt; }
+  popups = popups.filter(p => p.life > 0);
+  if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
+  shake = Math.max(0, shake - dt * 28);
+}
+function stepObjects(dt) {
+  for (const o of liveObjs()) {
+    o.t += dt;
+    if (o.type === 'fuel') continue;
+    if (o.type === 'jet') {
+      if (!o.moving && state === 'play' && sy(o.y) > -10) o.moving = true;
+      if (o.moving) { o.x += o.dir * o.speed * dt; if (o.x < -70 || o.x > LW + 70) o.alive = false; }
+      continue;
+    }
+    if (!o.moving && o.willMove && state === 'play' && o.y - player.y < o.trigger) o.moving = true;
+    if (o.moving) {
+      const nx = o.x + o.dir * o.speed * dt, r = riverAt(o.y), L = nx - o.w / 2, R = nx + o.w / 2;
+      let ok = L > r.l + 2 && R < r.r - 2;
+      if (ok && r.island) ok = R < r.il - 2 || L > r.ir + 2;
+      if (ok) o.x = nx; else o.dir = -o.dir;
+    }
+  }
+}
+function update(dt) {
+  T += dt;
+  if (state === 'paused') return;
+  if (state === 'title') camY += 45 * dt;
+  ensureContent();
+  stepFx(dt);
+  if (state === 'title') { stepObjects(dt); return; }
+  if (state === 'over') return;
+  if (state === 'dying') { dieTimer -= dt; stepObjects(dt); if (dieTimer <= 0) afterDeath(); return; }
+  if (state === 'ready') return;
+
+  // --- play ---
+  let steer = null, firing = keys.fire;
+  for (const p of pointers.values()) {
+    if (p.role === 'fire') firing = true;
+    else { steer = p; if (p.mouse) firing = true; }
+  }
+  let tSpeed = SPD_BASE;
+  if (steer) {
+    const tx = clamp(steer.px0 + (steer.x - steer.x0) * 1.25, 10, LW - 10);
+    const mx = LAT_TOUCH * dt, d = clamp(tx - player.x, -mx, mx);
+    player.x += d; player.vx = dt > 0 ? d / dt : 0;
+    const dy = steer.y0 - steer.y;
+    if (dy > 10) tSpeed = SPD_BASE + Math.min(1, (dy - 10) / 70) * (SPD_MAX - SPD_BASE);
+    else if (dy < -10) tSpeed = SPD_BASE - Math.min(1, (-dy - 10) / 70) * (SPD_BASE - SPD_MIN);
+  } else {
+    const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    player.vx = kx * LAT_KEY; player.x = clamp(player.x + player.vx * dt, 10, LW - 10);
+    if (keys.up && !keys.down) tSpeed = SPD_MAX; else if (keys.down && !keys.up) tSpeed = SPD_MIN;
+  }
+  player.speed += (tSpeed - player.speed) * Math.min(1, dt * 3.5);
+  player.bank += (clamp(player.vx / 280, -1, 1) - player.bank) * Math.min(1, dt * 12);
+  camY += player.speed * dt; player.y = camY + PLAYER_OFF;
+  Sfx.engine(player.speed);
+
+  fuel -= FUEL_RATE * dt;
+  if (fuel < 25) { lowTimer -= dt; if (lowTimer <= 0) { Sfx.low(); lowTimer = 0.6; } }
+  if (fuel <= 0) { fuel = 0; die('YAKIT BİTTİ'); return; }
+
+  fireCd -= dt;
+  if (firing && fireCd <= 0 && bullets.length < MAX_BULLETS) {
+    bullets.push({ x: player.x, y: player.y + 16, py: player.y + 16 });
+    fireCd = FIRE_CD; Sfx.shoot();
+  }
+
+  stepObjects(dt);
+  const objs = liveObjs();
+
+  for (const b of bullets) {
+    b.py = b.y; b.y += (player.speed + BULLET_V) * dt;
+    for (const o of objs) {
+      if (!o.alive) continue;
+      if (Math.abs(o.x - b.x) < o.w / 2 + 2 && o.y + o.h / 2 + 4 >= b.py && o.y - o.h / 2 - 4 <= b.y) {
+        kill(o, true); b.dead = true; break;
+      }
+    }
+    if (!b.dead) {
+      const bi = Math.round(b.y / SECT);
+      if (bi >= 1 && !destroyed.has(bi)) {
+        const by = bi * SECT;
+        if (by + 11 >= b.py && by - 11 <= b.y) {
+          const r = riverAt(by);
+          if (b.x > r.l - 8 && b.x < r.r + 8) { destroyBridge(bi); b.dead = true; }
+        }
+      }
+    }
+    if (b.y > camY + LH + 30) b.dead = true;
+  }
+  bullets = bullets.filter(b => !b.dead);
+
+  let refuel = false;
+  for (const o of objs) {
+    if (!o.alive) continue;
+    if (Math.abs(o.x - player.x) < o.w / 2 + 11 && Math.abs(o.y - player.y) < o.h / 2 + 12) {
+      if (o.type === 'fuel') refuel = true;
+      else { kill(o, false); die('ÇARPIŞTIN'); return; }
+    }
+  }
+  refueling = refuel && fuel < 100;
+  if (refueling) {
+    fuel = Math.min(100, fuel + REFUEL_RATE * dt);
+    refuelTick -= dt; if (refuelTick <= 0) { Sfx.refuel(fuel); refuelTick = 0.09; }
+  }
+  for (const [dx, dy] of HIT_PTS) {
+    if (!inWater(player.x + dx, player.y + dy)) { die('KIYIYA ÇARPTIN'); return; }
+  }
+  const bi = Math.round(player.y / SECT);
+  if (bi >= 1 && !destroyed.has(bi)) {
+    const by = bi * SECT;
+    if (player.y + 15 > by - 10 && player.y - 15 < by + 10) { die('KÖPRÜYE ÇARPTIN'); return; }
+  }
+}
+
+// ---------- render ----------
+const NMAX = 160;
+const SY = new Float32Array(NMAX), RL = new Float32Array(NMAX), RR = new Float32Array(NMAX),
+  IL = new Float32Array(NMAX), IR = new Float32Array(NMAX), CX = new Float32Array(NMAX);
+let eL = 0, eR = 0;
+function riverPoly(n, off, color) {
+  ctx.fillStyle = color; ctx.beginPath();
+  for (let k = 0; k < n; k++) {
+    let x = RL[k] - off; if (off < 0) x = Math.min(x, CX[k]);
+    if (k) ctx.lineTo(x, SY[k]); else ctx.moveTo(x, SY[k]);
+  }
+  for (let k = n - 1; k >= 0; k--) {
+    let x = RR[k] + off; if (off < 0) x = Math.max(x, CX[k]);
+    ctx.lineTo(x, SY[k]);
+  }
+  ctx.closePath(); ctx.fill();
+}
+function islEdge(k, off) {
+  const c = CX[k]; let il = IL[k], ir = IR[k];
+  if (isNaN(il)) { il = ir = c; }
+  const w = ir - il;
+  if (off < 0) { const e = Math.min(-off, w); eL = il - e; eR = ir + e; }
+  else { eL = il + off; eR = ir - off; if (eL > eR) eL = eR = c; }
+}
+function islandPoly(a, b, off, color) {
+  ctx.fillStyle = color; ctx.beginPath();
+  for (let k = a; k <= b; k++) { islEdge(k, off); if (k === a) ctx.moveTo(eL, SY[k]); else ctx.lineTo(eL, SY[k]); }
+  for (let k = b; k >= a; k--) { islEdge(k, off); ctx.lineTo(eR, SY[k]); }
+  ctx.closePath(); ctx.fill();
+}
+function drawTerrain() {
+  ctx.fillStyle = C.land; ctx.fillRect(-30, -30, LW + 60, LH + 60);
+  ctx.strokeStyle = C.strata; ctx.lineWidth = 2.5; ctx.beginPath();
+  const sg = 38;
+  for (let i = Math.floor((camY - 30) / sg); i * sg < camY + LH + 40; i++) {
+    const s = sy(i * sg), ph = hash(i, 3) * 6.283, amp = 3 + hash(i, 5) * 5;
+    for (let x = -20; x <= LW + 20; x += 20) {
+      const yy = s + Math.sin(x * 0.022 + ph) * amp;
+      if (x === -20) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+    }
+  }
+  ctx.stroke();
+
+  const step = 8, i0 = Math.floor((camY - 30) / step), i1 = Math.ceil((camY + LH + 30) / step);
+  const n = Math.min(NMAX, i1 - i0 + 1);
+  for (let k = 0; k < n; k++) {
+    const y = (i0 + k) * step, r = riverAt(y);
+    SY[k] = sy(y); RL[k] = r.l; RR[k] = r.r; CX[k] = (r.l + r.r) / 2;
+    if (r.island) { IL[k] = r.il; IR[k] = r.ir; } else { IL[k] = NaN; IR[k] = NaN; }
+  }
+  riverPoly(n, 7, C.sand);
+  riverPoly(n, 0, C.water);
+  riverPoly(n, -18, C.deep);
+
+  let k = 0;
+  while (k < n) {
+    if (isNaN(IL[k])) { k++; continue; }
+    const a = k; while (k < n && !isNaN(IL[k])) k++;
+    const b = k - 1, a0 = Math.max(0, a - 1), b0 = Math.min(n - 1, b + 1);
+    islandPoly(a0, b0, -12, C.water);
+    islandPoly(a0, b0, 0, C.sand);
+    islandPoly(a0, b0, 6, C.land);
+  }
+
+  ctx.strokeStyle = C.foam; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let j = 0; j < n; j++) { const x = RL[j] + 1.5; if (j) ctx.lineTo(x, SY[j]); else ctx.moveTo(x, SY[j]); }
+  for (let j = 0; j < n; j++) { const x = RR[j] - 1.5; if (j) ctx.lineTo(x, SY[j]); else ctx.moveTo(x, SY[j]); }
+  ctx.stroke();
+
+  ctx.strokeStyle = C.ripple; ctx.lineWidth = 1.4; ctx.beginPath();
+  const rg = 28;
+  for (let i = Math.floor((camY - 30) / rg); i * rg < camY + LH + 10; i++) {
+    for (let j = 0; j < 3; j++) {
+      const wy = i * rg + hash(i, j + 3) * rg, x = 10 + hash(i, j) * (LW - 20), len = 5 + hash(i, j + 7) * 9;
+      if (!inWater(x - len, wy) || !inWater(x + len, wy)) continue;
+      const s = sy(wy), w = Math.sin(T * 1.6 + i * 1.3 + j) * 2.5;
+      ctx.moveTo(x - len / 2 + w, s); ctx.lineTo(x + len / 2 + w, s);
+    }
+  }
+  ctx.stroke();
+}
+function drawDecos() {
+  const [s0, s1] = viewSections();
+  for (let sc = s0; sc <= s1; sc++) {
+    const c = content.get(sc); if (!c) continue;
+    for (const d of c.decos) {
+      const s = sy(d.y); if (s < -20 || s > LH + 20) continue;
+      if (d.t === 'rock') {
+        ctx.fillStyle = C.rockSh; ell(d.x + 2.5, s + 2.5, d.r, d.r * 0.72);
+        ctx.fillStyle = C.rock; ell(d.x, s, d.r, d.r * 0.72);
+        ctx.fillStyle = C.rockHi; ell(d.x - d.r * 0.3, s - d.r * 0.25, d.r * 0.45, d.r * 0.3);
+      } else {
+        ctx.fillStyle = C.rockSh; ell(d.x + 2, s + 3, d.r * 1.3, d.r);
+        ctx.fillStyle = C.shrubDk; ell(d.x - d.r * 0.5, s + d.r * 0.2, d.r * 0.8, d.r * 0.8);
+        ell(d.x + d.r * 0.55, s + d.r * 0.3, d.r * 0.75, d.r * 0.75);
+        ctx.fillStyle = C.shrub; ell(d.x, s - d.r * 0.2, d.r * 0.85, d.r * 0.85);
+      }
+    }
+  }
+}
+function stub(x, s, dir) {
+  ctx.beginPath(); ctx.moveTo(x, s - 11); ctx.lineTo(x + dir * 14, s - 11); ctx.lineTo(x + dir * 8, s - 4);
+  ctx.lineTo(x + dir * 16, s + 2); ctx.lineTo(x + dir * 7, s + 11); ctx.lineTo(x, s + 11); ctx.closePath(); ctx.fill();
+}
+function drawBridge(bi) {
+  const by = bi * SECT, s = sy(by), r = riverAt(by), l = r.l, rgt = r.r, dead = destroyed.has(bi);
+  ctx.fillStyle = C.road;
+  ctx.fillRect(-30, s - 9, l - 4 + 30, 18); ctx.fillRect(rgt + 4, s - 9, LW + 30 - rgt - 4, 18);
+  ctx.fillStyle = C.roadEdge;
+  ctx.fillRect(-30, s - 9, l - 4 + 30, 2); ctx.fillRect(rgt + 4, s - 9, LW + 30 - rgt - 4, 2);
+  ctx.fillStyle = C.roadLine;
+  for (let x = -6; x < l - 14; x += 18) ctx.fillRect(x, s - 1, 9, 2);
+  for (let x = rgt + 12; x < LW + 10; x += 18) ctx.fillRect(x, s - 1, 9, 2);
+  if (!dead) {
+    const x0 = l - 8, w = rgt - l + 16;
+    ctx.fillStyle = 'rgba(8,40,40,.35)'; ctx.fillRect(l, s + 10, rgt - l, 8);
+    ctx.fillStyle = C.deck; ctx.fillRect(x0, s - 11, w, 22);
+    ctx.fillStyle = 'rgba(0,0,0,.16)'; for (let x = x0 + 5; x < x0 + w - 2; x += 7) ctx.fillRect(x, s - 8, 1.5, 16);
+    ctx.fillStyle = C.rail; ctx.fillRect(x0, s - 11, w, 3); ctx.fillRect(x0, s + 8, w, 3);
+    ctx.fillStyle = C.roadLine; for (let x = x0 + 6; x < x0 + w - 8; x += 18) ctx.fillRect(x, s - 1, 9, 2);
+  } else {
+    ctx.fillStyle = C.deck; stub(l - 8, s, 1); stub(rgt + 8, s, -1);
+    ctx.fillStyle = 'rgba(40,25,18,.7)';
+    for (let i = 0; i < 6; i++) {
+      const x = l + 14 + hash(bi, i) * (rgt - l - 28), yy = s + (hash(bi, i + 9) - 0.5) * 16;
+      ctx.fillRect(x - 3, yy - 2, 6 + hash(bi, i + 20) * 6, 4);
+    }
+  }
+}
+function planeParts(sh) {
+  ctx.fillStyle = sh || C.planeDk;
+  ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(17, 5); ctx.lineTo(17, 9); ctx.lineTo(0, 6);
+  ctx.lineTo(-17, 9); ctx.lineTo(-17, 5); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(0, 9); ctx.lineTo(8, 14); ctx.lineTo(8, 17); ctx.lineTo(0, 15);
+  ctx.lineTo(-8, 17); ctx.lineTo(-8, 14); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = sh || C.plane; ell(0, 0, 4.6, 16.5);
+  if (!sh) {
+    ctx.fillStyle = C.stripe; ctx.fillRect(-17, 5, 4, 4); ctx.fillRect(13, 5, 4, 4); ctx.fillRect(-1.2, 6, 2.4, 9);
+    ctx.fillStyle = C.canopy; ell(0, -6, 2.6, 5);
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; ell(-0.8, -7.5, 0.9, 2);
+  }
+}
+function drawPlane() {
+  if (state === 'ready' && Math.floor(T * 4) % 2 === 0) return;
+  const s = sy(player.y), b = player.bank;
+  ctx.save(); ctx.translate(player.x + 10, s + 14); ctx.scale(1 - Math.abs(b) * 0.25, 0.92);
+  planeParts('rgba(40,12,6,.28)'); ctx.restore();
+  ctx.save(); ctx.translate(player.x, s);
+  ctx.fillStyle = 'rgba(255,170,60,.85)'; ell(0, 19 + Math.random() * 1.5, 2.2, 2.5 + player.speed / 80);
+  ctx.scale(1 - Math.abs(b) * 0.22, 1); ctx.rotate(b * 0.08);
+  planeParts(); ctx.restore();
+}
+function drawFuel(o, s) {
+  ctx.save(); ctx.translate(o.x, s);
+  ctx.fillStyle = 'rgba(8,40,40,.3)'; rr(-8, -13, 22, 34, 4); ctx.fill();
+  ctx.fillStyle = C.fuelDk; ctx.fillRect(-4, -20, 8, 4);
+  ctx.fillStyle = refueling && Math.abs(o.y - player.y) < 40 && Math.floor(T * 12) % 2 ? '#fff0a0' : C.fuel;
+  rr(-11, -17, 22, 34, 4); ctx.fill();
+  ctx.fillStyle = C.fuelDk; ctx.fillRect(-11, -12, 22, 3); ctx.fillRect(-11, 9, 22, 3);
+  ctx.fillStyle = C.cream; ctx.beginPath(); ctx.moveTo(0, -7);
+  ctx.bezierCurveTo(5, -1, 5, 5, 0, 5); ctx.bezierCurveTo(-5, 5, -5, -1, 0, -7); ctx.fill();
+  ctx.restore();
+}
+function drawShip(o, s) {
+  ctx.save(); ctx.translate(o.x, s);
+  if (o.moving) {
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.beginPath();
+    const bx = -o.dir * 19;
+    ctx.moveTo(bx, -5); ctx.lineTo(bx - o.dir * 14, -9); ctx.moveTo(bx, 5); ctx.lineTo(bx - o.dir * 14, 9); ctx.stroke();
+  }
+  ctx.scale(o.dir, 1);
+  ctx.fillStyle = C.ship; ctx.beginPath(); ctx.moveTo(20, 0); ctx.quadraticCurveTo(15, -7, 5, -7);
+  ctx.lineTo(-19, -6); ctx.lineTo(-19, 6); ctx.lineTo(5, 7); ctx.quadraticCurveTo(15, 7, 20, 0); ctx.fill();
+  ctx.fillStyle = C.shipDeck; ctx.fillRect(-16, -3.5, 22, 7);
+  ctx.fillStyle = C.cabin; ctx.fillRect(-12, -4.5, 10, 9);
+  ctx.fillStyle = '#1b2236'; ctx.fillRect(-4, -3, 2, 6);
+  ctx.fillStyle = C.cream; ell(10, 0, 2, 2);
+  ctx.restore();
+}
+function drawHeli(o, s) {
+  ctx.fillStyle = 'rgba(40,12,6,.22)'; ell(o.x + 9, s + 13, 11, 6);
+  ctx.save(); ctx.translate(o.x, s); ctx.scale(o.dir, 1);
+  ctx.fillStyle = C.heliDk; ctx.fillRect(-17, -1.5, 14, 3); ctx.fillRect(-19, -5, 3, 10);
+  ctx.fillStyle = C.heli; ell(2, 0, 9.5, 7);
+  ctx.fillStyle = C.glass; ell(7, 0, 4, 4.6);
+  ctx.restore();
+  ctx.save(); ctx.translate(o.x + o.dir, s);
+  ctx.fillStyle = 'rgba(255,255,255,.08)'; ell(0, 0, 15, 15);
+  ctx.rotate(o.t * 22); ctx.strokeStyle = 'rgba(20,15,20,.75)'; ctx.lineWidth = 2.2; ctx.beginPath();
+  ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke();
+  ctx.restore();
+}
+function jetShape(sh) {
+  ctx.fillStyle = sh || C.jetDk;
+  ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(-6, -13); ctx.lineTo(-11, -13); ctx.lineTo(-5, 0);
+  ctx.lineTo(-11, 13); ctx.lineTo(-6, 13); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-17, -6); ctx.lineTo(-19, -6); ctx.lineTo(-16, 0);
+  ctx.lineTo(-19, 6); ctx.lineTo(-17, 6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = sh || C.jet; ell(0, 0, 17, 3.6);
+  if (!sh) { ctx.fillStyle = '#9fd3e6'; ell(8, 0, 4, 2); ctx.fillStyle = C.stripe; ell(15.5, 0, 1.6, 1.6); }
+}
+function drawJet(o, s) {
+  ctx.save(); ctx.translate(o.x + 10, s + 14); ctx.scale(o.dir, 1); jetShape('rgba(40,12,6,.22)'); ctx.restore();
+  ctx.save(); ctx.translate(o.x, s); ctx.scale(o.dir, 1); jetShape(); ctx.restore();
+}
+function drawObjs(pass) {
+  for (const o of liveObjs()) {
+    const s = sy(o.y); if (s < -40 || s > LH + 40) continue;
+    if (pass === 0) { if (o.type === 'fuel') drawFuel(o, s); else if (o.type === 'ship') drawShip(o, s); }
+    else if (pass === 1) { if (o.type === 'heli') drawHeli(o, s); }
+    else if (o.type === 'jet') drawJet(o, s);
+  }
+}
+function drawFx() {
+  ctx.fillStyle = C.bullet;
+  for (const b of bullets) {
+    const s = sy(b.y);
+    ctx.fillStyle = 'rgba(255,214,120,.35)'; ctx.fillRect(b.x - 3, s - 6, 6, 10);
+    ctx.fillStyle = C.bullet; ctx.fillRect(b.x - 1.5, s - 8, 3, 11);
+  }
+  for (const f of flashes) {
+    const a = f.life / 0.35;
+    ctx.globalAlpha = a * 0.8; ctx.fillStyle = '#ffd27a'; ell(f.x, sy(f.y), f.r * (1.2 - a * 0.6), f.r * (1.2 - a * 0.6));
+  }
+  for (const p of parts) {
+    ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.c;
+    ctx.fillRect(p.x - p.s / 2, sy(p.y) - p.s / 2, p.s, p.s);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '800 14px Rubik, system-ui, sans-serif';
+  for (const p of popups) {
+    ctx.globalAlpha = clamp(p.life / 0.5, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillText(p.text, p.x + 1, p.s + 1.5);
+    ctx.fillStyle = C.cream; ctx.fillText(p.text, p.x, p.s);
+  }
+  ctx.globalAlpha = 1;
+}
+function bigText(text, sub, y) {
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let size = 32;
+  ctx.font = `400 ${size}px Bungee, Rubik, sans-serif`;
+  while (ctx.measureText(text).width > LW - 40 && size > 14) { size -= 2; ctx.font = `400 ${size}px Bungee, Rubik, sans-serif`; }
+  ctx.fillStyle = 'rgba(0,0,0,.42)'; ctx.fillText(text, LW / 2 + 2, y + 3);
+  ctx.fillStyle = C.cream; ctx.fillText(text, LW / 2, y);
+  if (sub) {
+    ctx.font = '700 14px Rubik, system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillText(sub, LW / 2 + 1, y + 31);
+    ctx.fillStyle = 'rgba(255,246,230,.92)'; ctx.fillText(sub, LW / 2, y + 30);
+  }
+  ctx.restore();
+}
+function miniPlane(x, y) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(0.55, 0.55); planeParts(); ctx.restore();
+}
+function drawHUD() {
+  ctx.save();
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  ctx.font = '800 26px Rubik, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillText(fmt(score), 14, 13);
+  ctx.fillStyle = C.cream; ctx.fillText(fmt(score), 13, 11);
+  ctx.font = '700 11px Rubik, system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,246,230,.78)';
+  ctx.fillText('EN İYİ  ' + fmt(Math.max(hi, score)), 14, 42);
+
+  const by = LH - 40;
+  ctx.fillStyle = 'rgba(28,12,8,.66)'; ctx.fillRect(0, by, LW, 40);
+  const shown = Math.min(lives, 5);
+  for (let i = 0; i < shown; i++) miniPlane(20 + i * 21, by + 20);
+
+  const fw = 120, fx = (LW - fw) / 2 + 6, fy = by + 14, fh = 12;
+  const low = fuel < 25, blink = low && Math.floor(T * 4) % 2 === 0;
+  ctx.fillStyle = low ? '#ef5a4a' : C.fuel; ctx.beginPath(); ctx.moveTo(fx - 14, fy - 1);
+  ctx.bezierCurveTo(fx - 9, fy + 5, fx - 9, fy + 12, fx - 14, fy + 12);
+  ctx.bezierCurveTo(fx - 19, fy + 12, fx - 19, fy + 5, fx - 14, fy - 1); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; rr(fx, fy, fw, fh, 6); ctx.fill();
+  const fc = fuel > 50 ? '#7ed36f' : fuel > 25 ? C.fuel : '#ef5a4a';
+  if (!blink) { ctx.fillStyle = fc; rr(fx, fy, Math.max(fh, fw * fuel / 100), fh, 6); ctx.fill(); }
+  ctx.fillStyle = 'rgba(28,12,8,.5)'; for (let q = 1; q < 4; q++) ctx.fillRect(fx + fw * q / 4 - 0.5, fy + 2, 1, fh - 4);
+  if (low && blink) {
+    ctx.font = '800 11px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd6cf';
+    ctx.fillText('YAKIT AZ!', fx + fw / 2, fy);
+  }
+
+  ctx.textAlign = 'right'; ctx.font = '800 13px Rubik, system-ui, sans-serif'; ctx.fillStyle = C.cream;
+  ctx.fillText('KÖPRÜ ' + bridges, LW - 12, by + 13);
+
+  if (touchUI && state !== 'over') {
+    const fb = fireBtn();
+    let pressed = false; for (const p of pointers.values()) if (p.role === 'fire') pressed = true;
+    ctx.beginPath(); ctx.arc(fb.x, fb.y, fb.r, 0, Math.PI * 2);
+    ctx.fillStyle = pressed ? 'rgba(226,72,61,.6)' : 'rgba(226,72,61,.3)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,246,230,.55)'; ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '400 13px Bungee, Rubik, sans-serif';
+    ctx.fillStyle = C.cream; ctx.fillText('ATEŞ', fb.x, fb.y + 1);
+  }
+
+  if (state === 'dying') bigText(deathMsg, '', LH * 0.42);
+  else if (state === 'ready') bigText('HAZIR', touchUI ? 'Dokun ve uç' : 'Bir tuşa bas', LH * 0.42);
+  else if (banner) bigText(banner.text, banner.sub, LH * 0.3);
+  ctx.restore();
+}
+function render() {
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() * 2 - 1) * shake * 0.6, (Math.random() * 2 - 1) * shake * 0.6);
+  drawTerrain();
+  drawDecos();
+  for (let bi = Math.max(1, Math.ceil((camY - 30) / SECT)); bi * SECT < camY + LH + 30; bi++) drawBridge(bi);
+  drawObjs(0);
+  drawObjs(1);
+  if (state === 'play' || state === 'ready' || state === 'paused') drawPlane();
+  drawObjs(2);
+  drawFx();
+  ctx.restore();
+  if (state === 'play' || state === 'ready' || state === 'dying' || state === 'paused') drawHUD();
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+setState('title');
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>

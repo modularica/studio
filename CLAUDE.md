@@ -28,6 +28,7 @@ lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
 lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya, tek kişilik)
+lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık
 fish/sunucu/       Fish oda sunucusu (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
 supabase/          veritabanı migration'ları
 ```
@@ -96,6 +97,7 @@ Yeni oyunlar önce Lab'a girer.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.
   - Kar Savaşı: `karSavasi.best` (en iyi puan). Not: yeni oyun, dalga ve puan, oyun sonu.
+  - Kanyon: `kanyon.hi` (en iyi puan; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
   - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
 - Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 
