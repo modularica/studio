@@ -11,6 +11,8 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 
 ## Tek kişilik sürümün yapısı
 
+- Büyük balık daha yavaş: bütün hızlar (oyuncu, kaçan, kovalayan, gezinen) boy/saniye × `hizCarpani(boy)` = (boy/10)^-0.3. 10 cm'de 1, 30 cm'de 0.72, 1 m'de 0.5, 3 m'de 0.36. Avcının kovalama hızı yine oyuncunun en yüksek hızının %86'sını geçmez, yani kaçmak her zaman mümkün.
+
 - Her balık 10 noktalı bir "omurga" zinciridir (follow-the-leader). Kafa hareket eder, diğer noktalar sabit aralıkla izler; bükülme açısı sınırlıdır. Kuyruk dalgalanması sadece çizimde eklenir.
 - Çarpışma, omurganın 1., 3. ve 5. noktalarındaki dairelerle yapılır. Yeme kontrolü oyuncunun ağız dairesine göre yapılır.
 - Kamera ölçeği `targetScale(L)` ile belirlenir. Balıklar ekran kenarının hemen dışında doğar ve görüş alanının epey dışına çıkınca silinir.
@@ -24,7 +26,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Sunucu adresi `ODA_SUNUCU` sabitinde. Boşsa "Play with friends" görünmez. Deneme için `localStorage.setItem('fish.sunucu', 'ws://127.0.0.1:8787')`.
 - Giriş için `Hesap.anahtar()` (Supabase erişim anahtarı) ve `Hesap.profil.id` gönderilir.
 - Tur sonu skoru `Hesap.skor(enBuyuk, {mod:'oda', ...}, 'fish-oda')`. Odada yenen balıklar `fish.toplam` sayacına da eklenir. `fish.best` sadece tek kişilik içindir.
-- Kurallar (`SPECIES` sırası ve boyları, büyüme, 0.9 / 1.1 eşikleri, hız 3.6 boy/sn, kamera formülü) `fish/sunucu/src/kurallar.js` ile aynı kalmalı. Birini değiştirirsen ötekini de değiştir.
+- Kurallar (`SPECIES` sırası ve boyları, büyüme, 0.9 / 1.1 eşikleri, hız 3.6 boy/sn × `hizCarpani`, kamera formülü) `fish/sunucu/src/kurallar.js` ile aynı kalmalı. Birini değiştirirsen ötekini de değiştir.
 
 ## Kurallar
 

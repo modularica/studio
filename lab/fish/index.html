@@ -451,6 +451,9 @@ const SPECIES = [
 ];
 const KOI = { name: 'koi', body: '#f6f1e7', back: '#f6f1e7', fin: 'rgba(250,242,232,.7)', patch: '#ee602c', w: .125, prof: 'std', pat: 'koi', tail: 'fork', pelvic: true };
 
+// Bigger fish are slower for their size: speeds are body lengths per second times this.
+// 10 cm → 1, 30 cm → 0.72, 1 m → 0.5, 3 m → 0.36 (same as hizCarpani in fish/sunucu/src/kurallar.js).
+function hizCarpani(l) { return clamp(Math.pow(l / 10, -0.3), 0.25, 1.5); }
 function speciesFor(l) { for (const s of SPECIES) if (l < s.max) return s; return SPECIES[SPECIES.length - 1]; }
 function fmtLen(l) { return l < 100 ? { n: l.toFixed(1), u: 'cm' } : { n: (l / 100).toFixed(2), u: 'm' }; }
 function fmtLenStr(l) { const f = fmtLen(l); return f.n + ' ' + f.u; }
@@ -568,7 +571,7 @@ function makeMarks(sp) {
   return m;
 }
 function makeFish(sp, l, x, y, a) {
-  const f = { sp, l, x, y, angle: a, speed: l * rand(.7, 1.1), cruise: l * rand(.7, 1.15), phase: Math.random() * TAU,
+  const f = { sp, l, x, y, angle: a, speed: l * rand(.7, 1.1) * hizCarpani(l), cruise: l * rand(.7, 1.15) * hizCarpani(l), phase: Math.random() * TAU,
     spine: null, wander: a, wanderT: rand(1, 3), mode: 'wander', chaseT: 0, cool: rand(0, 2), hungry: Math.random() < .65,
     juke: 0, jukeT: 0, dead: false, marks: makeMarks(sp), g: null };
   initSpine(f, l);
@@ -1502,14 +1505,14 @@ function steerPlayer(dt) {
     if (d > 4) { ang = Math.atan2(dy, dx); mag = clamp(d / (minDim * .2), 0, 1); }
   }
   if (mag > 0) { turnToward(P, ang, 7.5 * dt); mag *= .55 + .45 * Math.cos(wrapA(ang - P.angle)); }
-  const ts = Math.max(0, mag) * 3.6 * P.lShow;
+  const ts = Math.max(0, mag) * 3.6 * P.lShow * hizCarpani(P.lShow);
   P.speed += (ts - P.speed) * (1 - Math.exp(-dt * (ts > P.speed ? 4.5 : 1.4)));
 }
 function autopilot(dt) {
   P.autoT -= dt;
   if (P.autoT <= 0) { P.autoA = P.angle + rand(-1.4, 1.4); P.autoT = rand(1.5, 3.5); }
   turnToward(P, P.autoA, 1.5 * dt);
-  P.speed += (P.lShow * 1.3 - P.speed) * Math.min(1, dt);
+  P.speed += (P.lShow * 1.3 * hizCarpani(P.lShow) - P.speed) * Math.min(1, dt);
 }
 function updateFish(dt) {
   const live = mode === 'play' && P.alive;
@@ -1522,11 +1525,11 @@ function updateFish(dt) {
     f.cool -= dt;
     if (fleeOn && rel < .9 && dp < P.lShow * 2.4 + f.l * 2) {
       f.jukeT -= dt; if (f.jukeT <= 0) { f.juke = rand(-.75, .75); f.jukeT = rand(.3, .8); }
-      ta = Math.atan2(-dyp, -dxp) + f.juke; ts = f.l * 3.1; turn = tr * 1.3; f.mode = 'flee';
+      ta = Math.atan2(-dyp, -dxp) + f.juke; ts = f.l * 3.1 * hizCarpani(f.l); turn = tr * 1.3; f.mode = 'flee';
     } else if (live && rel > 1.1 && f.hungry && f.cool <= 0 && P.invuln <= 0 && P.grace <= 0 && dp < f.l * 2.2 + P.lShow * 3) {
       const lead = Math.min(.5, dp / (f.l * 4));
       ta = Math.atan2(dyp + Math.sin(P.angle) * P.speed * lead, dxp + Math.cos(P.angle) * P.speed * lead);
-      ts = Math.min(f.l * 2.6, 3.6 * P.lShow * .86); f.mode = 'chase';
+      ts = Math.min(f.l * 2.6 * hizCarpani(f.l), 3.6 * P.lShow * hizCarpani(P.lShow) * .86); f.mode = 'chase';
       f.chaseT += dt; if (f.chaseT > 3.8) { f.cool = rand(3.5, 6); f.chaseT = 0; }
     } else {
       f.wanderT -= dt; if (f.wanderT <= 0) { f.wander = f.angle + rand(-1.1, 1.1); f.wanderT = rand(1.5, 4); }

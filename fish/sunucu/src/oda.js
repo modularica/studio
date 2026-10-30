@@ -336,7 +336,7 @@ export class Oda extends DurableObject {
     let x = +m.x, y = +m.y;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     const simdi = Date.now(), dt = clamp((simdi - o.rt) / 1000, .02, 1);
-    const enFazla = K.HIZ * o.l * 1.5 * dt + o.l * .6;
+    const enFazla = K.HIZ * o.l * K.hizCarpani(o.l) * 1.5 * dt + o.l * .6;
     const dx = x - o.x, dy = y - o.y, d = Math.hypot(dx, dy);
     let duz = false;
     if (d > enFazla) { x = o.x + dx / d * enFazla; y = o.y + dy / d * enFazla; duz = d - enFazla > o.l * .5; }
@@ -348,7 +348,7 @@ export class Oda extends DurableObject {
     }
     o.x = x; o.y = y; o.rt = simdi;
     o.angle = wrapA(+m.a || 0);
-    o.v = clamp(+m.v || 0, 0, K.HIZ * o.l * 1.3);
+    o.v = clamp(+m.v || 0, 0, K.HIZ * o.l * K.hizCarpani(o.l) * 1.3);
     if (duz) gonder(o.ws, { t: 'duz', x: r1(x), y: r1(y) });
   }
 
@@ -387,7 +387,7 @@ export class Oda extends DurableObject {
   /* ---------- wild fish ---------- */
   npcYap(l, x, y, a) {
     const f = {
-      id: this.npcNo++, tur: K.turIcin(l), l, x, y, angle: a, speed: l * rand(.7, 1.1), cruise: l * rand(.7, 1.15),
+      id: this.npcNo++, tur: K.turIcin(l), l, x, y, angle: a, speed: l * rand(.7, 1.1) * K.hizCarpani(l), cruise: l * rand(.7, 1.15) * K.hizCarpani(l),
       wander: a, wanderT: rand(1, 3), chaseT: 0, cool: rand(0, 2), hungry: Math.random() < .65,
       juke: 0, jukeT: 0, dead: false, hedef: 0, ox: x, oy: y, spine: null
     };
@@ -456,11 +456,11 @@ export class Oda extends DurableObject {
       if (kac) {
         f.jukeT -= dt;
         if (f.jukeT <= 0) { f.juke = rand(-.75, .75); f.jukeT = rand(.3, .8); }
-        ta = Math.atan2(f.y - kac.ey, f.x - kac.ex) + f.juke; ts = f.l * 3.1; turn = tr * 1.3;
+        ta = Math.atan2(f.y - kac.ey, f.x - kac.ex) + f.juke; ts = f.l * 3.1 * K.hizCarpani(f.l); turn = tr * 1.3;
       } else if (av) {
         const dx = av.ex - f.x, dy = av.ey - f.y, lead = Math.min(.5, ad / (f.l * 4));
         ta = Math.atan2(dy + Math.sin(av.angle) * av.v * lead, dx + Math.cos(av.angle) * av.v * lead);
-        ts = Math.min(f.l * 2.6, K.HIZ * av.l * .86); f.hedef = av.no;
+        ts = Math.min(f.l * 2.6 * K.hizCarpani(f.l), K.HIZ * av.l * K.hizCarpani(av.l) * .86); f.hedef = av.no;
         f.chaseT += dt;
         if (f.chaseT > 3.8) { f.cool = rand(3.5, 6); f.chaseT = 0; }
       } else {
@@ -593,7 +593,7 @@ export class Oda extends DurableObject {
       const n = o.l > 40 ? 8 : 6;
       for (let i = 0; i < n && this.npc.length < EN_COK_NPC; i++) {
         const f = this.npcYap(Math.max(3, o.l * rand(.28, .4)), m.x + rand(-1, 1) * o.l * .4, m.y + rand(-1, 1) * o.l * .4, rand(-Math.PI, Math.PI));
-        f.hungry = false; f.speed = f.l * 2;
+        f.hungry = false; f.speed = f.l * 2 * K.hizCarpani(f.l);
       }
     }
     gonder(o.ws, { t: 'oldun', tur, ad: kimden.ad || null, l: r2(o.l), sure: K.DOGMA_BEKLE });

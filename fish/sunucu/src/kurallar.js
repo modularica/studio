@@ -17,13 +17,17 @@ export const YE = 0.9;        // you can eat a fish shorter than 0.9 × your len
 export const TEHLIKE = 1.1;   // a fish longer than 1.1 × your length can bite you
 export const BASLANGIC = 10;  // every koi starts at 10 cm
 export const CAN = 3;         // bites from wild fish before you are eaten
-export const HIZ = 3.6;       // top speed: 3.6 body lengths per second (steerPlayer in index.html)
+export const HIZ = 3.6;       // top speed: 3.6 body lengths per second at 10 cm (steerPlayer in index.html)
 
 export const TUR_SURESI = 5 * 60 * 1000; // a round lasts five minutes
 export const EN_COK = 8;                 // koi per room
 export const DOGMA_BEKLE = 3;            // seconds before an eaten koi comes back
 export const KORUMA = 3;                 // seconds a new koi can't be eaten
 export const GERI_DONUS = 30 * 1000;     // a koi that lost its connection keeps its place this long
+
+// Bigger fish are slower for their size: every speed in body lengths per second is multiplied by this.
+// 10 cm → 1, 30 cm → 0.72, 1 m → 0.5, 3 m → 0.36 (same as hizCarpani in lab/fish/index.html).
+export function hizCarpani(l) { return Math.min(1.5, Math.max(0.25, Math.pow(l / 10, -0.3))); }
 
 export function buyu(L, l) { return Math.cbrt(L * L * L + 1.3 * l * l * l); }
 
