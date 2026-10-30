@@ -29,7 +29,8 @@ lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya, tek kişilik)
 lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık
-fish/sunucu/       Fish oda sunucusu (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
+lab/tank/          Tank Arenası: 2–8 tank, her isabet bir puan; botlarla ya da arkadaşlarla odalarda. Kurallar lab/tank/oyun.js (sunucu da kullanır)
+fish/sunucu/       Fish ve Tank Arenası oda sunucusu (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
 supabase/          veritabanı migration'ları
 ```
 
@@ -42,7 +43,8 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 - Şimdilik derleme adımı yok: dosyalar olduğu gibi yayınlanır.
 - Alan adı `uzigames.com` Vercel'e bağlı.
 - Eski adresler (`/fish/`, `/giris/`, `/takip/`, …) `vercel.json` ile `/lab/...`'a yönlenir; paylaşılmış eski linkler çalışmaya devam eder. Lab'a yeni oyun eklerken oraya da bir satır ekle.
-- Fish oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a (`wss://fish-odalar.umutguncan.workers.dev`) yayınlar. Root directory ayarı bu klasörü gösterir; klasörü taşırsan Cloudflare'de de değiştir.
+- Oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a (`wss://fish-odalar.umutguncan.workers.dev`) yayınlar. Root directory ayarı bu klasörü gösterir; klasörü taşırsan Cloudflare'de de değiştir. Fish odaları `/lobi` ve `/oda/<id>`, Tank Arenası odaları `/tank/lobi` ve `/tank/oda/<id>` adreslerindedir.
+- Tank sunucusu oyunun kurallarını `lab/tank/oyun.js`'ten alır (`fish/sunucu/src/tank-oda.js` onu içe aktarır). Bu dosyayı taşıma ya da adını değiştirme; değiştirince sunucu da yeniden yayınlanır. Harita ya da kurallar sayfa ile sunucu arasında uyuşmayacak şekilde değişirse `oyun.js`'teki `SURUM`'u bir artır.
 
 ## Yeni oyun eklemek
 
@@ -98,6 +100,7 @@ Yeni oyunlar önce Lab'a girer.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.
   - Kar Savaşı: `karSavasi.best` (en iyi puan). Not: yeni oyun, dalga ve puan, oyun sonu.
   - Kanyon: `kanyon.hi` (en iyi puan; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
+  - Tank Arenası: `tank.rekor` (botlarla bir turdaki en çok isabet; bot sayısı/zorluk `tank.ayar` ve ses `tank.ses` cihazda kalır). Not: botlarla başlama, tur sonu (isabet ve sıra), oda turu. Botlarla biten her tur `scores`'a oyun `tank` olarak, oda turları `tank-oda` olarak yazılır (ayrıntı: bot sayısı, zorluk, sıra, kaç kez boyandığı).
   - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
 - Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 
