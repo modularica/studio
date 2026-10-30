@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="/lab/defter.css">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js"></script>
+<script src="/hesap/nasildi.js"></script>
 <style>
 /* Layout: games are photos taped onto the notebook page, one column on phones, two on wider screens */
 .player{
@@ -40,12 +41,31 @@
 .card h2{margin:14px 4px 0;font-size:28px;line-height:1.1}
 .card p{margin:6px 4px 0;color:var(--muted);font-size:15.5px;line-height:1.5}
 .card .note{margin-top:10px;font:600 12px/1.3 var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.alt{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 4px 0}
 .play{
-  display:inline-flex;align-items:center;gap:8px;margin:16px 4px 0;padding:11px 18px;border-radius:999px;
+  display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;
   background:var(--ink);color:var(--paper);font:700 16px/1 var(--font-body);text-decoration:none;
 }
 .play::after{content:"→";font-weight:700}
 .card a.stretch::before{content:"";position:absolute;inset:0}
+.nasil{
+  position:relative;z-index:1;display:inline-flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:999px;
+  border:1.5px solid var(--card-line);background:var(--card);color:var(--text);font:700 15px/1 var(--font-body);cursor:pointer;
+}
+.nasil svg{width:30px;height:30px;flex:none}
+.nasil:hover svg{transform:rotate(-8deg)}
+.soru{
+  position:relative;margin:36px 0 0;max-width:520px;padding:18px 18px 16px;background:#fff4b8;color:#1d2433;
+  border-radius:3px;box-shadow:0 10px 22px -12px var(--shadow),0 2px 4px var(--shadow);transform:rotate(-.6deg);
+}
+.soru::before{content:"";position:absolute;top:-11px;left:28px;width:84px;height:24px;background:var(--tape);transform:rotate(-4deg);border-radius:2px}
+.soru p{margin:0 36px 12px 0;font:700 21px/1.3 var(--font-hand)}
+.soru .yuzler{display:flex;flex-wrap:wrap;gap:6px}
+.soru .yuzler button{display:grid;justify-items:center;gap:4px;min-width:68px;padding:6px 4px;border:0;border-radius:12px;background:transparent;color:#1d2433;font:700 13px/1.1 var(--font-body);cursor:pointer}
+.soru .yuzler button:hover{background:rgba(29,36,51,.07)}
+.soru .yuzler svg{width:44px;height:44px}
+.soru .kapat{position:absolute;top:6px;right:6px;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#1d2433;font:400 24px/1 system-ui;cursor:pointer}
+.yeni-sayi{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:6px;border-radius:999px;background:var(--margin);color:#fff;font:800 12px/1 var(--font-body)}
 .bottom{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:48px}
 .bottom .foot{margin:0}
 </style>
@@ -59,11 +79,20 @@
   <h1>Babamla birlikte yaptığımız <span class="u">oyunlar</span></h1>
   <p class="lede">Merhaba, ben Uzay! Bu oyunları babamla birlikte yaptık. Tıkla, oyna, iyi eğlenceler!</p>
 
+  <section class="soru" id="soru" hidden aria-label="Kısa bir soru">
+    <button class="kapat" id="soruKapat" type="button" aria-label="Şimdi değil">×</button>
+    <p id="soruMetin"></p>
+    <div class="yuzler" id="soruYuzler"></div>
+  </section>
+
   <ul class="shelf" id="shelf"></ul>
 
   <div class="bottom">
     <p class="foot">Yeni oyunlar yolda.</p>
-    <a class="link" href="/lab/takip/">Kim ne oynuyor? →</a>
+    <span>
+      <a class="link" id="yorumLink" href="/lab/yorumlar/" hidden>Yorumlar</a>
+      <a class="link" href="/lab/takip/">Kim ne oynuyor? →</a>
+    </span>
   </div>
 </main>
 
@@ -81,15 +110,85 @@
     chip.hidden = false;
   });
 
+  const N = window.Nasildi;
+  const sonPuan = {};          // game -> this player's latest face
+  let adlar = {};
+  const BALON = '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M10 14h44a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H30l-12 10v-10h-8a6 6 0 0 1-6-6V20a6 6 0 0 1 6-6z" fill="#fff4b8" stroke="#1d2433" stroke-width="3" stroke-linejoin="round"/><circle cx="21" cy="31" r="3.2" fill="#1d2433"/><circle cx="32" cy="31" r="3.2" fill="#1d2433"/><circle cx="43" cy="31" r="3.2" fill="#1d2433"/></svg>';
+  const yuzSvg = slug => (N && sonPuan[slug]) ? N.yuz(sonPuan[slug], 30) : BALON;
+  function sor(slug, yer, puan) {
+    return H.nasildi({ oyun: slug, yer, puan }).then(r => {
+      if (r && r.puan) { sonPuan[slug] = r.puan; yuzleriYenile(); }
+      return r;
+    });
+  }
+  function yuzleriYenile() {
+    document.querySelectorAll('.nasil[data-oyun]').forEach(b => {
+      b.querySelector('.ikon').innerHTML = yuzSvg(b.dataset.oyun);
+    });
+  }
+
   H.oyunlar().then(games => {
+    adlar = Object.fromEntries(games.map(g => [g.slug, g.title]));
     document.getElementById('shelf').innerHTML = games.filter(g => g.listed !== false).map((g, i) => `
       <li class="card" style="--tilt:${tilts[i % tilts.length]}">
         <img class="cover" src="${esc(g.slug)}/cover.png" alt="${esc(g.title)} oyunundan bir görüntü" width="1200" height="630" loading="${i < 2 ? 'eager' : 'lazy'}">
         <h2>${esc(g.title)}</h2>
         <p>${esc(g.desc)}</p>
         ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
-        <a class="play stretch" href="${esc(g.slug)}/">Oyna</a>
+        <div class="alt">
+          <a class="play stretch" href="${esc(g.slug)}/">Oyna</a>
+          <button class="nasil" type="button" data-oyun="${esc(g.slug)}" aria-label="${esc(g.title)} nasıldı?"><span class="ikon" aria-hidden="true">${yuzSvg(g.slug)}</span>Nasıldı?</button>
+        </div>
       </li>`).join('');
+    document.querySelectorAll('.nasil[data-oyun]').forEach(b => b.addEventListener('click', () => sor(b.dataset.oyun, 'lab-kart')));
+    return H.hazir.then(({ profil }) => soruHazirla(profil, games));
+  });
+
+  // Back from a game you played for a while and haven't rated since? Ask once, on a sticky note.
+  async function soruHazirla(profil, games) {
+    if (!N || !profil) return;
+    const since = new Date(Date.now() - 3 * 3600000).toISOString();
+    const [oynama, benim] = await Promise.all([
+      H.istemci.from('plays').select('id,game,started_at,seconds,last_seen').eq('profile_id', profil.id)
+        .gte('last_seen', since).order('last_seen', { ascending: false }).limit(20),
+      H.yorumlarim().catch(() => [])
+    ]);
+    for (const c of benim) if (!sonPuan[c.game]) sonPuan[c.game] = c.rating;
+    yuzleriYenile();
+    const listede = new Set(games.filter(g => g.listed !== false).map(g => g.slug));
+    const gec = id => { try { return localStorage.getItem('nasildi.gec.' + id); } catch (e) { return null; } };
+    const p = (oynama.data || []).find(p => p.seconds >= 60 && listede.has(p.game) && !gec(p.id) &&
+      !benim.some(c => c.game === p.game && c.created_at >= p.started_at));
+    if (!p) return;
+    const kart = document.getElementById('soru');
+    const metin = document.getElementById('soruMetin');
+    metin.replaceChildren('Az önce ', Object.assign(document.createElement('b'), { textContent: adlar[p.game] || p.game }), ' oynadın. Nasıldı?');
+    const yuzler = document.getElementById('soruYuzler');
+    yuzler.replaceChildren(...N.PUANLAR.map(x => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = N.yuz(x.puan, 44);
+      b.append(x.ad);
+      b.addEventListener('click', () => {
+        sor(p.game, 'lab-soru', x.puan).then(r => { if (r && r.gonderildi) kapat(); });
+      });
+      return b;
+    }));
+    const kapat = () => { kart.hidden = true; try { localStorage.setItem('nasildi.gec.' + p.id, '1'); } catch (e) {} };
+    document.getElementById('soruKapat').onclick = kapat;
+    kart.hidden = false;
+  }
+
+  // Admins get a link to everyone's answers, with a count of the new ones.
+  H.yoneticiMi().then(async evet => {
+    if (!evet) return;
+    const link = document.getElementById('yorumLink');
+    link.hidden = false;
+    let son = 0;
+    try { son = +localStorage.getItem('nasildi.okundu') || 0; } catch (e) {}
+    const r = await H.istemci.from('feedback').select('id').gte('created_at', new Date(son).toISOString()).limit(100);
+    const n = (r.data || []).length;
+    if (n) link.append(Object.assign(document.createElement('span'), { className: 'yeni-sayi', textContent: n > 99 ? '99+' : String(n) }));
   });
 })();
 </script>

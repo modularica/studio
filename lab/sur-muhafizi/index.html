@@ -131,6 +131,7 @@ button:active:not(:disabled){transform:translateY(1px)}
         <div class="ov-btns">
           <button class="go" id="ovA" type="button">Yeniden başla</button>
           <button class="plain" id="ovB" type="button" hidden>Yeniden başla</button>
+          <button class="plain" id="ovC" type="button" data-nasildi="oyun-sonu" hidden>Nasıldı?</button>
         </div>
       </div>
     </div>
@@ -963,7 +964,7 @@ const tray = $('tray'), inspect = $('inspect'), hint = $('hint'), insIco = $('in
 const sLives = $('sLives'), sGold = $('sGold'), sWave = $('sWave');
 const bUp = $('bUp'), bUpV = $('bUpV'), bFix = $('bFix'), bFixV = $('bFixV'), bSell = $('bSell'), bSellV = $('bSellV');
 const goBtn = $('go'), spdBtn = $('spd'), pzBtn = $('pz');
-const ov = $('ov'), ovT = $('ovT'), ovP = $('ovP'), ovA = $('ovA'), ovB = $('ovB');
+const ov = $('ov'), ovT = $('ovT'), ovP = $('ovP'), ovA = $('ovA'), ovB = $('ovB'), ovC = $('ovC');
 const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2.5" width="3.6" height="11" rx="1"/><rect x="9.4" y="2.5" width="3.6" height="11" rx="1"/></svg>';
 const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>';
 
@@ -1072,6 +1073,7 @@ function gameOver(kind) {
     ovP.textContent = `${MAX_WAVE} dalganın hepsini püskürttün, ${S.lives} canın kaldı. İstersen giderek zorlaşan dalgalarla devam et.`;
     ovA.textContent = 'Sonsuz modda devam et'; ovB.textContent = 'Yeniden başla'; ovB.hidden = false;
   }
+  ovC.hidden = !window.Hesap;
   ov.hidden = false; ovA.focus();
 }
 function restart() {
@@ -1098,7 +1100,7 @@ function devamTeklifEt() {
   const yapi = k.towers.length;
   ovT.textContent = 'Kaldığın yerden devam?';
   ovP.textContent = `${k.wave ? `${k.endless ? 'Sonsuz mod, ' : ''}${k.wave}. dalga bitti` : 'İlk dalga başlamadan'} · ${k.lives} can · ${k.gold} altın · ${yapi} yapı.`;
-  ovA.textContent = 'Devam et'; ovB.textContent = 'Yeni oyun'; ovB.hidden = false;
+  ovA.textContent = 'Devam et'; ovB.textContent = 'Yeni oyun'; ovB.hidden = false; ovC.hidden = true;
   ov.hidden = false; ovA.focus();
 }
 

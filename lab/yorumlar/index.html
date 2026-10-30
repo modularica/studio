@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Yorumlar</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/lab/defter.css">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-kapi="oturum"></script>
+<script src="/hesap/nasildi.js"></script>
+<style>
+/* Layout: game filter chips, one summary card per game (faces, tags, play numbers), then the answers as a notebook log, newest first */
+.suzgec{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+.suzgec button{border:1.5px solid var(--card-line);background:var(--card);color:var(--text);border-radius:999px;padding:8px 14px;font:700 14px/1 var(--font-body);cursor:pointer}
+.suzgec button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.ozetler{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+.oz{padding:16px 16px 14px;background:var(--card);border:1px solid var(--card-line);border-radius:6px;box-shadow:0 8px 18px -12px var(--shadow);display:grid;gap:12px;min-width:0}
+.oz h2{font-size:24px}
+.oz .sayi{margin:-6px 0 0;color:var(--muted);font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.dagilim{display:grid;gap:6px}
+.dagilim .s{display:grid;grid-template-columns:30px minmax(0,1fr) 2.2em;align-items:center;gap:10px}
+.dagilim svg{width:30px;height:30px}
+.dagilim .bar{height:12px;border-radius:999px;background:var(--grid);overflow:hidden}
+.dagilim .bar i{display:block;height:100%;border-radius:999px;background:var(--ink)}
+.dagilim b{font-variant-numeric:tabular-nums;text-align:right}
+.etiketler{display:flex;flex-wrap:wrap;gap:6px}
+.etiket{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--card-line);font-size:13.5px;font-weight:600;background:var(--paper)}
+.etiket b{font-variant-numeric:tabular-nums}
+.akis{list-style:none;margin:16px 0 0;padding:0;display:grid}
+.cevap{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px 14px;padding:16px 4px;border-bottom:1px dashed var(--field-line)}
+.cevap > svg{width:44px;height:44px;grid-row:1 / span 4;grid-column:1}
+.cevap > :not(svg){grid-column:2;min-width:0}
+.cevap .ust{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-weight:700}
+.cevap .ust .oyun{color:var(--muted);font-weight:600}
+.cevap .ust time{margin-left:auto;color:var(--muted);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.cevap blockquote{margin:2px 0 0;font:600 18px/1.4 var(--font-hand);color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
+.cevap .baglam{color:var(--muted);font-size:14px}
+.yeni-etiket{font:800 10.5px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase;background:var(--margin);color:#fff;padding:4px 6px;border-radius:4px}
+.gun{margin-top:36px}
+.gun h2{font-size:24px;padding-bottom:6px;border-bottom:2px solid var(--margin);display:inline-block}
+.bos{margin-top:36px;max-width:42ch}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar">
+    <a class="mark" href="/lab/">Uzay'ın sayfası</a>
+    <a class="link" href="/lab/">← Oyunlar</a>
+  </div>
+  <h1>Yorum<span class="u">lar</span></h1>
+  <p class="lede" id="lede">Lab'da oynayanların “Nasıldı?” cevapları.</p>
+
+  <div class="suzgec" id="suzgec" role="group" aria-label="Oyun seç"></div>
+  <ul class="ozetler" id="ozetler"></ul>
+  <div id="akis"></div>
+  <p class="foot bos" id="bos" hidden>Henüz cevap yok. Oyunların bitiş ekranındaki “Nasıldı?” düğmesinden gelecekler.</p>
+  <p class="hata" id="hata" role="alert"></p>
+</main>
+
+<script>
+(() => {
+  const H = window.Hesap, N = window.Nasildi;
+  if (!H || !N) return;
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const OKUNDU = 'nasildi.okundu';
+  const etiketAdi = Object.fromEntries(N.ETIKETLER.map(e => [e.k, e.ad]));
+  const puanAdi = Object.fromEntries(N.PUANLAR.map(p => [p.puan, p.ad]));
+  let adlar = {}, cevaplar = [], kisiler = {}, oyunlar = [], oynama = [], secili = null, sonOkuma = 0;
+
+  const sure = s => {
+    const m = Math.round(s / 60);
+    if (m < 60) return `${m} dk`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h} sa ${r} dk` : `${h} sa`;
+  };
+  const gunAdi = d => {
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    const g = new Date(d); g.setHours(0, 0, 0, 0);
+    const fark = Math.round((bugun - g) / 86400000);
+    if (fark === 0) return 'Bugün';
+    if (fark === 1) return 'Dün';
+    return g.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+  };
+  const saat = d => new Date(d).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const yuzEl = (p, px) => { const s = el('span'); s.innerHTML = N.yuz(p, px); return s.firstChild; };
+
+  function suzgecCiz() {
+    const var_ = [...new Set(cevaplar.map(c => c.game))];
+    const sira = oyunlar.map(o => o.slug).filter(s => var_.includes(s)).concat(var_.filter(s => !adlar[s]));
+    const kutu = $('suzgec');
+    kutu.hidden = sira.length < 2;
+    kutu.replaceChildren(...[null, ...sira].map(s => {
+      const b = el('button', null, s ? (adlar[s] || s) : 'Hepsi');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(secili === s));
+      b.addEventListener('click', () => { secili = s; ciz(); });
+      return b;
+    }));
+  }
+
+  function ozetCiz(liste) {
+    const gruplar = new Map();
+    for (const c of liste) {
+      if (!gruplar.has(c.game)) gruplar.set(c.game, []);
+      gruplar.get(c.game).push(c);
+    }
+    const sira = [...gruplar.keys()].sort((a, b) => gruplar.get(b).length - gruplar.get(a).length);
+    $('ozetler').replaceChildren(...sira.map(oyun => {
+      const cs = gruplar.get(oyun);
+      // each player's latest face counts once
+      const son = new Map();
+      for (const c of cs) if (!son.has(c.profile_id)) son.set(c.profile_id, c);
+      const yuzler = [...son.values()];
+      const li = el('li', 'oz');
+      li.append(el('h2', null, adlar[oyun] || oyun));
+      const oy = oynama.filter(p => p.game === oyun);
+      const oyuncu = new Set(oy.map(p => p.profile_id)).size, toplam = oy.reduce((t, p) => t + (p.seconds || 0), 0);
+      li.append(el('p', 'sayi', `${yuzler.length} kişi puan verdi · ${cs.length} cevap` + (oyuncu ? ` · son 30 günde ${oyuncu} kişi, ${sure(toplam)} oynadı` : '')));
+      const dag = el('div', 'dagilim');
+      for (const p of N.PUANLAR) {
+        const n = yuzler.filter(c => c.rating === p.puan).length;
+        const s = el('div', 's');
+        s.title = `${p.ad}: ${n}`;
+        const bar = el('span', 'bar'), i = el('i');
+        i.style.width = (yuzler.length ? Math.round(n / yuzler.length * 100) : 0) + '%';
+        bar.append(i);
+        s.append(yuzEl(p.puan, 30), bar, el('b', null, String(n)));
+        dag.append(s);
+      }
+      li.append(dag);
+      const sayac = {};
+      for (const c of cs) for (const t of c.tags || []) sayac[t] = (sayac[t] || 0) + 1;
+      const et = Object.entries(sayac).sort((a, b) => b[1] - a[1]);
+      if (et.length) {
+        const kutu = el('div', 'etiketler');
+        for (const [k, n] of et) { const e = el('span', 'etiket', etiketAdi[k] || k); e.append(el('b', null, String(n))); kutu.append(e); }
+        li.append(kutu);
+      }
+      return li;
+    }));
+  }
+
+  function akisCiz(liste) {
+    const gunler = new Map();
+    for (const c of liste) {
+      const g = gunAdi(c.created_at);
+      if (!gunler.has(g)) gunler.set(g, []);
+      gunler.get(g).push(c);
+    }
+    $('akis').replaceChildren(...[...gunler].map(([g, cs]) => {
+      const s = el('section', 'gun');
+      s.append(el('h2', null, g));
+      const ul = el('ul', 'akis');
+      ul.append(...cs.map(c => {
+        const k = kisiler[c.profile_id] || { name: '?', color: null };
+        const li = el('li', 'cevap');
+        const yeni = sonOkuma && new Date(c.created_at).getTime() > sonOkuma;
+        const yz = yuzEl(c.rating, 44); yz.setAttribute('role', 'img'); yz.setAttribute('aria-label', puanAdi[c.rating]);
+        const ust = el('div', 'ust');
+        if (yeni) ust.append(el('span', 'yeni-etiket', 'yeni'));
+        ust.append(H.rozet(k, 'small'), el('span', null, k.name), el('span', 'oyun', `${adlar[c.game] || c.game} · ${puanAdi[c.rating] || ''}`));
+        const t = el('time', null, saat(c.created_at)); t.dateTime = c.created_at;
+        ust.append(t);
+        li.append(yz, ust);
+        if (c.tags && c.tags.length) {
+          const et = el('div', 'etiketler');
+          for (const x of c.tags) et.append(el('span', 'etiket', etiketAdi[x] || x));
+          li.append(et);
+        }
+        if (c.comment) li.append(el('blockquote', null, c.comment));
+        const b = c.context || {}, parca = [];
+        if (b.not) parca.push(b.not);
+        if (b.sure) parca.push(`${sure(b.sure)} oynamıştı`);
+        if (b.dokunmatik != null) parca.push(b.dokunmatik ? 'telefon/tablet' : 'bilgisayar');
+        if (parca.length) li.append(el('span', 'baglam', parca.join(' · ')));
+        return li;
+      }));
+      s.append(ul);
+      return s;
+    }));
+  }
+
+  function ciz() {
+    suzgecCiz();
+    const liste = secili ? cevaplar.filter(c => c.game === secili) : cevaplar;
+    ozetCiz(liste);
+    akisCiz(liste);
+    $('bos').hidden = cevaplar.length > 0;
+  }
+
+  H.hazir.then(async () => {
+    try { sonOkuma = +localStorage.getItem(OKUNDU) || 0; } catch (e) {}
+    const since = new Date(Date.now() - 30 * 86400000).toISOString();
+    const [yonetici, liste, fb, pr, pl] = await Promise.all([
+      H.yoneticiMi(),
+      H.oyunlar(),
+      H.istemci.from('feedback').select('id,profile_id,game,rating,tags,comment,context,created_at').order('created_at', { ascending: false }).limit(1000),
+      H.istemci.from('profiles').select('id,name,color'),
+      H.istemci.from('plays').select('profile_id,game,seconds,started_at').gte('started_at', since).limit(5000)
+    ]);
+    if (fb.error) { $('hata').textContent = 'Yorumlar yüklenemedi. Sayfayı yenile.'; return; }
+    oyunlar = liste; adlar = Object.fromEntries(liste.map(o => [o.slug, o.title]));
+    cevaplar = fb.data || [];
+    kisiler = Object.fromEntries((pr.data || []).map(p => [p.id, p]));
+    oynama = pl.data || [];
+    $('lede').textContent = yonetici
+      ? 'Lab’da oynayanların “Nasıldı?” cevapları. Bunları sadece sen görüyorsun.'
+      : 'Senin ve aynı hesaptaki oyuncuların “Nasıldı?” cevapları.';
+    ciz();
+    try { localStorage.setItem(OKUNDU, String(Date.now())); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

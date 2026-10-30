@@ -1310,7 +1310,8 @@ function showDone() {
     `<div class="kicker">Öğrendiklerin</div><ul class="recap">${L.recap.map(r => `<li>${r}</li>`).join('')}</ul>` +
     `<div class="btn-row">` +
     (next ? `<button class="btn" id="mNext" type="button">Sonraki: ${next.title}</button>` : `<button class="btn" id="mFree" type="button">Serbest seyre çık</button>`) +
-    `<button class="btn secondary" id="mAgain" type="button">Tekrar dene</button><button class="btn secondary" id="mMenu" type="button">Dersler</button></div>`
+    `<button class="btn secondary" id="mAgain" type="button">Tekrar dene</button><button class="btn secondary" id="mMenu" type="button">Dersler</button>` +
+    (window.Hesap ? `<button class="btn secondary" type="button" data-nasildi="ders-sonu">Nasıldı?</button>` : '') + `</div>`
   );
   on('mNext', () => openLesson(G.idx + 1)); on('mFree', openFree); on('mAgain', restartLesson); on('mMenu', showMenu);
 }
@@ -1344,7 +1345,7 @@ function showMenu() {
     `<div class="kicker">Rüzgâr Kaptanı · Yelken okulu</div><h2>Dersler</h2>` +
     `<p>Dersler sırayla ilerler; her biri bir öncekinin üstüne kurulur. İstediğin derse atlayabilirsin.</p>` +
     `<ol class="lesson-list">${items}<li><button type="button" data-free="1" class="${G.mode === 'free' ? 'current' : ''}"><span class="li-num">∞</span><span class="li-body"><span class="li-title">Serbest seyir</span><span class="li-sub">Rüzgârın yönünü ve gücünü sen ayarla</span></span></button></li></ol>` +
-    `<div class="btn-row"><button class="btn secondary" id="mClose" type="button">Kapat</button></div>`
+    `<div class="btn-row">` + (window.Hesap ? `<button class="btn secondary" type="button" data-nasildi="dersler">Nasıldı?</button>` : '') + `<button class="btn secondary" id="mClose" type="button">Kapat</button></div>`
   );
   modalCard.querySelectorAll('[data-i]').forEach(btn => btn.addEventListener('click', () => openLesson(+btn.dataset.i)));
   modalCard.querySelector('[data-free]').addEventListener('click', openFree);

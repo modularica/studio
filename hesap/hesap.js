@@ -19,6 +19,8 @@
  *   Hesap.kaydet(veri)     Bu oyunun kaydını yazar (JSON). Sık çağırma: seviye sonu, ders sonu gibi anlarda.
  *   Hesap.not('12. dalga') Oynama kaydına kısa bir ilerleme notu (takip sayfasında görünür)
  *   Hesap.anahtar()        Oturumun erişim anahtarı (başka bir sunucuya kim olduğunu göstermek için)
+ *   Hesap.nasildi()        "Nasıldı?" geri bildirim penceresini açar (hesap/nasildi.js). Oyunlarda bir düğmeye
+ *                          data-nasildi="oyun-sonu" yazmak yeter; tıklanınca bu oyun için açılır.
  */
 (function () {
   'use strict';
@@ -344,6 +346,29 @@
     return e.slice(-(KULLANICI_ALANI.length + 1)) === '@' + KULLANICI_ALANI ? e.slice(0, e.indexOf('@')) : e;
   }
 
+  /* ---------- "Nasıldı?" (geri bildirim) ---------- */
+  var nasildiSozu = null;
+  function nasildiYukle() {
+    if (window.Nasildi) return Promise.resolve(window.Nasildi);
+    if (!nasildiSozu) {
+      nasildiSozu = new Promise(function (coz, red) {
+        var s = document.createElement('script');
+        s.src = '/hesap/nasildi.js';
+        s.onload = function () { coz(window.Nasildi); };
+        s.onerror = function () { nasildiSozu = null; red(new Error('nasildi.js yüklenemedi')); };
+        document.head.appendChild(s);
+      });
+    }
+    return nasildiSozu;
+  }
+  // Any button with data-nasildi="<where>" opens the sheet (data-nasildi-oyun="<slug>" outside a game page).
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('[data-nasildi]') : null;
+    if (!b || !window.Hesap) return;
+    e.preventDefault();
+    window.Hesap.nasildi({ oyun: b.getAttribute('data-nasildi-oyun') || OYUN, yer: b.getAttribute('data-nasildi') || 'oyun' });
+  });
+
   /* ---------- dışarıya açılanlar ---------- */
   var oyunListesi = null;
   window.Hesap = {
@@ -421,6 +446,57 @@
         var s = r && r.data ? r.data.session : null;
         return s ? s.access_token : null;
       });
+    },
+
+    // Opens the "Nasıldı?" sheet. secenek: { oyun (default: this page's game), yer, puan (preselected face) }
+    nasildi: function (secenek) {
+      secenek = secenek || {};
+      var oyunAdi = secenek.oyun || OYUN;
+      if (!oyunAdi) return Promise.resolve(null);
+      return Promise.all([nasildiYukle(), window.Hesap.oyunlar()]).then(function (r) {
+        var g = (r[1] || []).filter(function (x) { return x.slug === oyunAdi; })[0];
+        return r[0].ac({ oyun: oyunAdi, ad: g ? g.title : oyunAdi, yer: secenek.yer || 'oyun', puan: secenek.puan || 0 });
+      });
+    },
+
+    // Saves one answer. v: { oyun, puan (1-4), etiketler, not, yer }
+    yorum: function (v) {
+      v = v || {};
+      var oyunAdi = v.oyun || OYUN;
+      var baglam = { yer: v.yer || null, ekran: Math.round(window.innerWidth) + 'x' + Math.round(window.innerHeight) };
+      try { baglam.dokunmatik = window.matchMedia('(pointer: coarse)').matches; } catch (e) {}
+      if (OYUN && oyunAdi === OYUN) {
+        say();
+        if (oyun.not) baglam.not = oyun.not;
+        baglam.sure = Math.floor(oyun.ms / 1000);
+      }
+      return hazir.then(function () {
+        if (!durum.profil) throw new Error('Oyuncu seçilmedi');
+        return istemci.from('feedback').insert({
+          profile_id: durum.profil.id, game: oyunAdi, rating: v.puan,
+          tags: v.etiketler || [], comment: v.not || null, context: baglam
+        });
+      }).then(function (r) {
+        if (r.error) throw r.error;
+        return true;
+      });
+    },
+
+    // This player's own answers, newest first.
+    yorumlarim: function () {
+      return hazir.then(function () {
+        if (!durum.profil) return { data: [] };
+        return istemci.from('feedback').select('game,rating,tags,created_at')
+          .eq('profile_id', durum.profil.id).order('created_at', { ascending: false }).limit(300);
+      }).then(function (r) {
+        if (r.error) throw r.error;
+        return r.data || [];
+      });
+    },
+
+    yoneticiMi: function () {
+      return hazir.then(function () { return istemci.rpc('yonetici_mi'); })
+        .then(function (r) { return !r.error && r.data === true; }, function () { return false; });
     },
 
     cikis: function () {

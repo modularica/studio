@@ -15,12 +15,13 @@ index.html         uzigames.com stüdyo sayfası (herkese açık, hesap yok)
 robots.txt         /lab/ ve /hesap/ arama motorlarına kapalı
 vercel.json        Vercel ayarı (adresler / ile biter) + eski adreslerden /lab/'a yönlendirmeler
 .vercelignore      kökteki fish/ (sunucu), supabase/ ve .md dosyaları siteye çıkmaz (kalıplar / ile başlar, yoksa lab/fish de gider)
-hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya)
+hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya) + nasildi.js ("Nasıldı?" geri bildirim penceresi)
 lab/index.html     Lab ana sayfası (Uzay'ın sayfası); oyunları lab/oyunlar.json'dan okur
 lab/oyunlar.json   oyun listesi: slug, ad, açıklama, not, listed
 lab/defter.css     Lab ana sayfası, giriş ve takip sayfalarının ortak görünümü (kareli defter)
 lab/giris/         giriş ve "Kim oynuyor?" (oyuncu seçme, ekleme, düzenleme, şifre değiştirme)
 lab/takip/         "Kim ne oynuyor?": son 7 günün oynama kayıtları
+lab/yorumlar/      "Nasıldı?" cevapları: yönetici herkesinkini, diğerleri kendi hesabınınkini görür
 lab/fish/          Fish: koi oyunu (tek kişilik + arkadaşlarla odalar). Plan lab/fish/PLAN.md
 lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu
 lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
@@ -56,7 +57,8 @@ Yeni oyunlar önce Lab'a girer.
    <script src="/hesap/supabase.js"></script>
    <script src="/hesap/hesap.js" data-oyun="<slug>" data-kayit="<oyunun localStorage anahtarları>"></script>
    ```
-   `data-kayit`: oyunun ilerlemesini tuttuğu localStorage anahtarları, boşlukla ayrılmış. Ses, sahne gibi cihaz tercihlerini koyma. İstersen oyunun önemli anlarında `Hesap.not('...')` ile takip sayfasına kısa bir ilerleme notu yaz (`window.Hesap` yoksa çağırma).
+   `data-kayit`: oyunun ilerlemesini tuttuğu localStorage anahtarları, boşlukla ayrılmış. Ses, sahne gibi cihaz tercihlerini koyma. İstersen oyunun önemli anlarında `Hesap.not('...')` ile takip sayfasına kısa bir ilerleme notu yaz (`window.Hesap` yoksa çağırma). Not, "Nasıldı?" cevabına da eklenir; "çok zordu" diyenin nerede olduğunu gösterir.
+   Oyunun mola ve bitiş ekranlarına (oyun sırasında değil) bir "Nasıldı?" düğmesi koy: oyunun kendi düğme sınıfıyla `<button type="button" data-nasildi="oyun-sonu">Nasıldı?</button>`. `data-nasildi` değeri nerede sorulduğunu yazar (`oyun-sonu`, `mola`, `seviye-sonu`…). Tıklamayı `hesap.js` yakalar.
 6. `lab/oyunlar.json` listesine bir satır ekle. Sadece linkle paylaşılacak, Lab ana sayfasında görünmeyecek oyunlar için `"listed": false` yaz.
 7. `vercel.json` yönlendirmelerine `/<slug>/:path*` → `/lab/<slug>/:path*` satırını ekle (biri eski usul kısa adresi yazarsa diye).
 
@@ -69,14 +71,16 @@ Yeni oyunlar önce Lab'a girer.
 - Bir hesabın altında birden fazla oyuncu (`profiles`: ad, renk) olabilir. Hesap açılınca ilk oyuncu kullanıcı adıyla kendiliğinden oluşur. Tek oyunculu hesaplar oyuncu seçmeden doğrudan oyuna döner; "Değiştir" bağlantısı (`?degistir=1`) her zaman "Kim oynuyor?" ekranını açar.
 - Şifre unutulursa e-postayla sıfırlanamaz. SQL ile sıfırlanır:
   `update auth.users set encrypted_password = extensions.crypt('yeni-sifre', extensions.gen_salt('bf')) where email = '<ad>@oyuncu.bringthepoint.com';`
-- Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `scores` (biten turların skorları; herkes okur, herkes sadece kendi oyuncusu için yazar), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `admins` (herkesin oynama kaydını görebilen e-postalar; şu an umutguncan@gmail.com).
-- Kurallar: giriş yapan herkes bütün oyuncuların adını/rengini ve oynama kayıtlarını görür ("Kim ne oynuyor?" herkese açık). Oyun kayıtları (`saves`) sadece sahibine açık. Herkes sadece kendi oyuncularını, kayıtlarını ve oynama kayıtlarını yazar. `admins` tablosu şu an bir şey açmıyor, ileride yönetici özellikleri için duruyor. Kural yardımcıları `private` şemasında.
+- Tablolar: `profiles` (oyuncular), `saves` (oyuncu + oyun başına tek JSON kayıt), `scores` (biten turların skorları; herkes okur, herkes sadece kendi oyuncusu için yazar), `plays` (oynama oturumları: başlangıç, süre, son görülme, kısa not), `feedback` ("Nasıldı?" cevapları: surat 1–4, hazır etiketler, isteğe bağlı not, cevabın verildiği an), `admins` (yönetici e-postaları; şu an umutguncan@gmail.com).
+- Kurallar: giriş yapan herkes bütün oyuncuların adını/rengini ve oynama kayıtlarını görür ("Kim ne oynuyor?" herkese açık). Oyun kayıtları (`saves`) sadece sahibine açık. Herkes sadece kendi oyuncularını, kayıtlarını ve oynama kayıtlarını yazar. `feedback` cevaplarını herkes yazar ama sadece kendi hesabınınkileri okur; yöneticiler hepsini okur (`lab/yorumlar/`). Kural yardımcıları `private` şemasında; `public.yonetici_mi()` sayfaların "yönetici miyim?" diye sorması için.
+- Yönetici olmak: Lab'da "Hesap aç"ta kullanıcı adı yerine `admins` tablosundaki e-postayı (umutguncan@gmail.com) yaz. Başka birini yönetici yapmak için e-postasını (kullanıcı adı hesaplarında `<ad>@oyuncu.bringthepoint.com`) `admins` tablosuna ekle.
 - Oyunlardan kullanım (`hesap/hesap.js` başındaki açıklamaya bak):
   - `Hesap.hazir` giriş kapısı geçilince çözülür, `Hesap.profil` seçili oyuncu.
   - `Hesap.yukle()` / `Hesap.kaydet(veri)` bu oyunun kaydı. Kaydı seviye ya da ders sonu gibi anlarda yaz, her karede değil.
   - `Hesap.not('12. dalga')` takip sayfasında görünen kısa ilerleme notu.
   - `Hesap.skor(deger, ayrinti)` biten bir turun skorunu `scores` tablosuna yazar (her tur bir satır, sonradan değişmez).
   - `Hesap.siralama({ hafta: true, limit: 100 })` oyuncu başına en iyi skor, büyükten küçüğe (`leaderboard` fonksiyonu). `hafta: true` bu haftanın pazartesisinden beri, yoksa tüm zamanlar. Satırlar: `profile_id, name, color, best, rounds, best_at`.
+  - `Hesap.nasildi({ oyun, yer, puan })` "Nasıldı?" penceresini açar (`hesap/nasildi.js`'i ilk kullanımda yükler). `data-nasildi` düğmeleri bunu çağırır. `Hesap.yorum(...)` cevabı yazar, `Hesap.yorumlarim()` oyuncunun kendi cevapları, `Hesap.yoneticiMi()`.
   - `Hesap.anahtar()` oturumun erişim anahtarı. Başka bir sunucuya (Fish oda sunucusu) kim olduğunu göstermek için; o sunucu anahtarı Supabase'e sorarak doğrular.
 - Kayıt eşitleme (`data-kayit`): oyunlar ilerlemeyi her zamanki gibi localStorage'a yazar; `hesap.js` bu anahtarları oyuncunun hesabındaki `saves` satırına (`data.keys`) taşır. Oyun açılırken karar verir, karar verene kadar sayfa gizli kalır:
   - Hesapta kayıt yok, cihazdaki kayıt bu oyuncunun ya da hesaplardan önceki eski kayıt → hesaba yüklenir (eski ilerleme ilk girişte aktarılır).
@@ -102,5 +106,5 @@ Yeni oyunlar önce Lab'a girer.
 ## Çalışma şekli
 
 - Kullanıcıyla Türkçe konuş. Kod, değişken adları ve commit mesajları İngilizce olsun.
-- Oyunlar ebeveyn ve çocuğun birlikte oynaması için. Serbest sohbet, kan ya da şiddet yok.
+- Oyunlar ebeveyn ve çocuğun birlikte oynaması için. Serbest sohbet, kan ya da şiddet yok. ("Nasıldı?" notlarını sadece yöneticiler okur; oyuncular birbirine yazamaz.)
 - Önce mobil: her sayfa telefonda düzgün açılmalı.
