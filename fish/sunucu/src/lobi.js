@@ -68,7 +68,7 @@ export class Lobi extends DurableObject {
     const liste = Object.values(this.odalar)
       .filter(o => o.n > 0)
       .sort((a, b) => b.olusturma - a.olusturma)
-      .map(o => ({ id: o.id, kurucu: o.kurucu, renk: o.renk, n: o.n, en: o.en, durum: o.durum, kalan: o.bitis ? Math.max(0, o.bitis - Date.now()) : 0 }));
+      .map(o => ({ id: o.id, kurucu: o.kurucu, renk: o.renk, n: o.n, en: o.en, durum: o.durum, kalan: o.bitis ? Math.max(0, o.bitis - Date.now()) : 0, dalga: o.dalga || 0 }));
     return JSON.stringify({ t: 'liste', odalar: liste });
   }
 

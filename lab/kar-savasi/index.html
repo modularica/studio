@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Kar Savaşı</title>
-<meta name="description" content="Karlı ormanda mahallenin çocukları her yönden kartopuyla geliyor. Kar yığınlarından kartopu topla, dalgalar boyunca ayakta kal.">
+<meta name="description" content="Karlı ormanda mahallenin çocukları her yönden kartopuyla geliyor. Tek başına ya da arkadaşlarınla aynı ormanda, dalgalar boyunca ayakta kal.">
 <meta name="theme-color" content="#eef3f6">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Kar Savaşı">
-<meta property="og:description" content="Karlı ormanda mahallenin çocukları her yönden kartopuyla geliyor. Kar yığınlarından kartopu topla, dalgalar boyunca ayakta kal.">
+<meta property="og:description" content="Karlı ormanda mahallenin çocukları her yönden kartopuyla geliyor. Tek başına ya da arkadaşlarınla aynı ormanda, dalgalar boyunca ayakta kal.">
 <meta property="og:image" content="https://uzigames.com/lab/kar-savasi/cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -82,6 +82,12 @@ body {
 .ammo i.extra { box-shadow: inset -2px -2px 0 var(--mist), 0 0 0 2px var(--mustard); }
 .ammo i.empty { background: transparent; box-shadow: 0 0 0 1.5px rgba(28,42,57,.25); }
 .ammo i.next { background: conic-gradient(rgba(255,255,255,.95) calc(var(--p, 0) * 1turn), transparent 0); box-shadow: 0 0 0 1.5px rgba(28,42,57,.35); }
+.team { display: grid; gap: 4px; margin-top: 2px; }
+.team div { display: flex; align-items: center; gap: 6px; font: 600 13px/1.2 var(--font-body); color: var(--ink); text-shadow: 0 1px 0 #fff, 0 0 6px rgba(255,255,255,.9); max-width: 46vw; }
+.team span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.team i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--teal)); box-shadow: 0 0 0 1.5px #fff; }
+.team b { flex: none; font-weight: 700; color: var(--falu); font-variant-numeric: tabular-nums; }
+.team .down b { color: var(--ink); font-weight: 600; }
 .hud-r {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
@@ -99,7 +105,7 @@ body {
   box-shadow: 0 0 0 1.5px rgba(28,42,57,.16);
 }
 .btns button svg { width: 20px; height: 20px; }
-.btns button:focus-visible, .primary:focus-visible, .secondary:focus-visible { outline: 3px solid var(--mustard); outline-offset: 3px; }
+.btns button:focus-visible, .primary:focus-visible, .secondary:focus-visible, .mini:focus-visible { outline: 3px solid var(--mustard); outline-offset: 3px; }
 .combo {
   position: absolute; left: 50%; transform: translateX(-50%);
   top: calc(env(safe-area-inset-top, 0px) + 14px);
@@ -107,6 +113,23 @@ body {
   font: 400 18px/1 var(--font-display); letter-spacing: .02em;
   padding: 7px 14px 6px; border-radius: 999px;
   box-shadow: 0 3px 0 rgba(28,42,57,.2);
+}
+.toast {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + 56px);
+  background: rgba(28,42,57,.8); color: var(--snow);
+  font: 600 14px/1.3 var(--font-body); padding: 8px 14px; border-radius: 12px;
+  white-space: nowrap; max-width: 80vw; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity .4s;
+}
+.toast.bad { background: rgba(180,65,58,.9); }
+.down-note {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  width: max-content; max-width: min(86vw, 360px);
+  background: rgba(28,42,57,.8); color: var(--snow);
+  font: 600 15px/1.35 var(--font-body); text-align: center; text-wrap: balance;
+  padding: 11px 16px; border-radius: 14px;
 }
 .banner {
   position: absolute; left: 16px; right: 16px; top: 26%;
@@ -158,7 +181,7 @@ body {
 }
 .knit.ink { background-color: var(--ink); }
 .panel-body { padding: 22px 22px 24px; display: grid; gap: 16px; }
-.eyebrow { margin: 0; font: 600 12px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--falu); }
+.eyebrow { margin: 0; font: 600 12px/1.3 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--falu); }
 .panel h1, .panel h2 { margin: 0; font-family: var(--font-display); font-weight: 400; color: var(--ink); text-wrap: balance; letter-spacing: .01em; }
 .panel h1 { font-size: clamp(46px, 14vw, 66px); line-height: .92; }
 .panel h2 { font-size: clamp(32px, 9vw, 42px); line-height: 1; }
@@ -173,6 +196,7 @@ body {
 }
 .primary { background: var(--ink); color: var(--snow); border: 0; box-shadow: 0 4px 0 #0c1520; }
 .primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #0c1520; }
+.primary:disabled { opacity: .45; cursor: default; transform: none; }
 .secondary { background: transparent; color: var(--ink); border: 2px solid rgba(28,42,57,.22); font-size: 18px; padding: 13px 18px 12px; }
 .best { margin: 0; text-align: center; font: 600 13px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: rgba(28,42,57,.55); }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -181,6 +205,27 @@ body {
 .stat b { font: 400 28px/1 var(--font-display); font-weight: 400; font-variant-numeric: tabular-nums; }
 .record { margin: 0; text-align: center; font: 400 20px/1 var(--font-display); color: var(--falu); }
 .row { display: grid; gap: 10px; }
+
+/* Rooms */
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.list li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 10px 9px 12px; background: #fff; border-radius: 12px; }
+.list li.me { box-shadow: inset 0 0 0 2px var(--mustard); }
+.list .name { font-weight: 600; font-size: 16px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.list .name small { display: block; font-weight: 500; font-size: 13px; color: rgba(28,42,57,.6); overflow: hidden; text-overflow: ellipsis; }
+.list li.playing .name small { color: var(--falu); }
+.list .num { font: 400 22px/1 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; }
+.list .num small { display: block; margin-top: 3px; font: 600 11px/1.1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: rgba(28,42,57,.55); }
+.list .empty { display: block; text-align: center; color: rgba(28,42,57,.68); font-size: 14px; line-height: 1.45; padding: 14px 10px; background: transparent; box-shadow: inset 0 0 0 1.5px var(--mist); }
+.badge { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 400 17px/1 var(--font-display); background: var(--c, var(--teal)); box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); }
+.tag { font: 600 11px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 8px; background: var(--drift); color: rgba(28,42,57,.72); }
+.tag.host { background: var(--falu); color: #fff; }
+.mini { font: 400 17px/1 var(--font-display); letter-spacing: .02em; padding: 10px 14px 9px; border-radius: 10px; border: 0; background: var(--ink); color: var(--snow); cursor: pointer; box-shadow: 0 3px 0 #0c1520; }
+.mini:disabled { opacity: .4; cursor: default; }
+.status { margin: 0; min-height: 1.4em; font-size: 14px; line-height: 1.45; color: rgba(28,42,57,.68); }
+.status.bad { color: var(--falu); font-weight: 600; }
+.link { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; word-break: break-all; -webkit-user-select: all; user-select: all; background: #fff; border-radius: 8px; padding: 8px 10px; }
+.dots::after { content: ''; animation: dots 1.4s steps(4) infinite; }
+@keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
 @media (prefers-reduced-motion: reduce) {
   .banner.show { animation-name: bannerFade; }
   @keyframes bannerFade { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -194,6 +239,7 @@ body {
   <div class="hud-l">
     <div class="hearts" id="hearts" aria-label="Can"></div>
     <div class="ammo" id="ammo" aria-label="Kartopu"></div>
+    <div class="team" id="team" aria-label="Takım" hidden></div>
   </div>
   <div class="hud-r">
     <div class="score" id="score">0</div>
@@ -209,7 +255,9 @@ body {
     </div>
   </div>
   <div class="combo" id="combo" hidden></div>
+  <div class="toast" id="toast" hidden></div>
   <div class="banner" id="banner"></div>
+  <div class="down-note" id="downNote" hidden></div>
   <div class="hint hint-l" id="hintL" hidden>Sürükle<br>yürü</div>
   <div class="hint hint-r" id="hintR" hidden>Geri çek, bırak<br>dokun: hızlı atış</div>
 </div>
@@ -218,9 +266,9 @@ body {
   <div class="panel">
     <div class="knit"></div>
     <div class="panel-body">
-      <p class="eyebrow">Açık dünya · tek kişilik</p>
+      <p class="eyebrow">Tek başına ya da arkadaşlarla</p>
       <h1>Kar Savaşı</h1>
-      <p class="lead">Karlı ormanda yalnızsın. Mahallenin çocukları her yönden kartopuyla geliyor. Hepsini devir, dalgalar boyunca ayakta kal.</p>
+      <p class="lead">Karlı ormanda mahallenin çocukları her yönden kartopuyla geliyor. Hepsini devir, dalgalar boyunca ayakta kal. İstersen arkadaşlarınla aynı ormanda, sırt sırta.</p>
       <ul class="how">
         <li><b>Yürü</b><span>Sol başparmakla sürükle · WASD</span></li>
         <li><b>At</b><span>Sağda geri çek ve bırak, sapan gibi · fareyle tıkla</span></li>
@@ -228,8 +276,12 @@ body {
         <li><b>Kar yığını</b><span>Üstünden geç, cebin kartopuyla dolsun</span></li>
         <li><b>Kakao</b><span>Bir can verir</span></li>
         <li><b>Gölet</b><span>Buzun üstünde kayarsın</span></li>
+        <li><b>Düşen arkadaş</b><span>Yanına git, bir an dur: kalkar</span></li>
       </ul>
-      <button id="btnStart" class="primary" type="button">Başla</button>
+      <div class="row">
+        <button id="btnStart" class="primary" type="button">Tek başına oyna</button>
+        <button id="btnRooms" class="secondary" type="button" hidden>Arkadaşlarla oyna</button>
+      </div>
       <p class="best" id="bestStart" hidden></p>
     </div>
     <div class="knit ink"></div>
@@ -246,6 +298,7 @@ body {
         <button id="btnResume" class="primary" type="button">Devam et</button>
         <button id="btnRestart" class="secondary" type="button">Baştan başla</button>
         <button class="secondary" type="button" data-nasildi="mola">Nasıldı?</button>
+        <button id="btnPauseMenu" class="secondary" type="button">Menüye dön</button>
       </div>
     </div>
     <div class="knit ink"></div>
@@ -265,19 +318,100 @@ body {
         <div class="stat"><span>En iyi</span><b id="stBest">0</b></div>
       </div>
       <p class="record" id="stRecord" hidden>Yeni rekor!</p>
-      <button id="btnAgain" class="primary" type="button">Tekrar oyna</button>
-      <button class="secondary" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
+      <div class="row">
+        <button id="btnAgain" class="primary" type="button">Tekrar oyna</button>
+        <button class="secondary" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
+        <button id="btnOverMenu" class="secondary" type="button">Menüye dön</button>
+      </div>
     </div>
     <div class="knit ink"></div>
   </div>
 </div>
 
-<script>
-(() => {
-'use strict';
+<!-- rooms: the list -->
+<div class="overlay" id="roomsScreen" hidden>
+  <div class="panel">
+    <div class="knit"></div>
+    <div class="panel-body">
+      <p class="eyebrow">Arkadaşlarla oyna</p>
+      <h2>Odalar</h2>
+      <p class="lead">Bir oda kur ya da arkadaşının odasına katıl. Aynı ormanda birlikte dalgalara karşı durursunuz. Bir odada en çok 8 kişi olur.</p>
+      <ol class="list" id="roomList"></ol>
+      <p class="status" id="roomStatus" role="status"></p>
+      <div class="row">
+        <button id="btnCreate" class="primary" type="button">Oda kur</button>
+        <button id="btnRoomsBack" class="secondary" type="button">Geri</button>
+      </div>
+    </div>
+    <div class="knit ink"></div>
+  </div>
+</div>
+
+<!-- rooms: waiting for the host -->
+<div class="overlay" id="waitScreen" hidden>
+  <div class="panel">
+    <div class="knit"></div>
+    <div class="panel-body">
+      <p class="eyebrow">Bekleme odası</p>
+      <h2 id="waitTitle">Oda</h2>
+      <ol class="list" id="waitList"></ol>
+      <p class="status" id="waitNote" role="status"></p>
+      <div class="row">
+        <button id="btnGo" class="primary" type="button" hidden>Oyunu başlat</button>
+        <button id="btnInvite" class="secondary" type="button">Arkadaşını çağır</button>
+        <p class="status" id="inviteNote" hidden></p>
+        <button id="btnWaitLeave" class="secondary" type="button">Odadan çık</button>
+      </div>
+    </div>
+    <div class="knit ink"></div>
+  </div>
+</div>
+
+<!-- rooms: menu during a game (the game goes on) -->
+<div class="overlay" id="roomMenu" hidden>
+  <div class="panel">
+    <div class="knit"></div>
+    <div class="panel-body">
+      <p class="eyebrow">Odadasın</p>
+      <h2>Oyun sürüyor</h2>
+      <p class="lead">Takımın savaşmaya devam ediyor. Çıkarsan bir dakika içinde dönersen yerin seni bekler.</p>
+      <div class="row">
+        <button id="btnRoomBack" class="primary" type="button">Oyuna dön</button>
+        <button id="btnRoomQuit" class="secondary" type="button">Odadan çık</button>
+      </div>
+    </div>
+    <div class="knit ink"></div>
+  </div>
+</div>
+
+<!-- rooms: the results -->
+<div class="overlay" id="resultScreen" hidden>
+  <div class="panel">
+    <div class="knit"></div>
+    <div class="panel-body">
+      <p class="eyebrow">Oyun bitti</p>
+      <h2>Takım karlara gömüldü!</h2>
+      <div class="stats">
+        <div class="stat"><span>Takım puanı</span><b id="rsScore">0</b></div>
+        <div class="stat"><span>Dalga</span><b id="rsWave">1</b></div>
+      </div>
+      <ol class="list" id="rsList"></ol>
+      <div class="row">
+        <button id="btnBackToRoom" class="primary" type="button">Odaya dön</button>
+        <button class="secondary" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
+        <button id="btnResultLeave" class="secondary" type="button">Odadan çık</button>
+      </div>
+    </div>
+    <div class="knit ink"></div>
+  </div>
+</div>
+
+<script type="module">
+import { VERSION, K, KINDS, KIND_LIST, CELL, POND_CELL, World, Battle, walk, ballStart, moveBall, ballTouchesKid, ballTouchesPlayer, hash3, clamp } from './oyun.js';
 
 /* ---------- Setup ---------- */
 const $ = (id) => document.getElementById(id);
+const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const cv = $('game');
 const ctx = cv.getContext('2d');
 const radar = $('radar');
@@ -295,21 +429,54 @@ const SKINS = ['#f3cfb1', '#e7b48f', '#c98d66', '#9a6544', '#f7dcc6'];
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const TAU = Math.PI * 2;
-const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
-
-const KINDS = {
-  player:  { r: 13, k: 1,    coat: COL.ink,   hat: COL.mustard, cuff: '#b9832a', pom: COL.white, scarf: COL.falu,    mitt: COL.falu },
-  runner:  { r: 12, k: 0.95, hp: 1, spd: 76, score: 10, coat: COL.teal,  hat: COL.falu,  cuff: '#8c322c', pom: COL.white,   scarf: COL.mustard, mitt: COL.mustard },
-  thrower: { r: 12, k: 0.95, hp: 1, spd: 72, score: 20, coat: COL.plum,  hat: COL.white, cuff: COL.mist,  pom: COL.falu,    scarf: COL.teal,    mitt: COL.teal },
-  big:     { r: 18, k: 1.4,  hp: 3, spd: 50, score: 40, coat: COL.slate, hat: COL.cocoa, cuff: '#5b3c27', pom: COL.mustard, scarf: COL.falu,    mitt: COL.cocoa, flaps: true }
+const r1 = (v) => Math.round(v * 10) / 10;
+const r2 = (v) => Math.round(v * 100) / 100;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
 };
-const BS = 560;          // player snowball speed
-const MAX_AMMO = 6;
-const STOCK_CAP = 9;
+// Short progress line for the "who's playing" page (only with the account script).
+function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (e) { /* ignore */ } }
+function skorYaz(v, detail, game) { try { if (window.Hesap && Hesap.skor) Promise.resolve(Hesap.skor(v, detail, game)).catch(() => {}); } catch (e) { /* ignore */ } }
+
+/* Turkish name endings */
+const VOWELS = 'aeıioöuü';
+function lastVowel(s) { const k = s.toLocaleLowerCase('tr'); for (let i = k.length - 1; i >= 0; i--) if (VOWELS.includes(k[i])) return k[i]; return 'e'; }
+function endsInVowel(s) { return VOWELS.includes(s.toLocaleLowerCase('tr').slice(-1)); }
+function ninki(name) { // Uzay'ın, Ali'nin, Umut'un
+  const s = String(name || '').trim() || 'Biri', v = lastVowel(s);
+  return `${s}'${endsInVowel(s) ? 'n' : ''}${{ a: 'ın', ı: 'ın', e: 'in', i: 'in', o: 'un', u: 'un', ö: 'ün', ü: 'ün' }[v]}`;
+}
+
+/* The looks of the kids (sizes come from KINDS in oyun.js) */
+const LOOK = {
+  player:  { k: 1,    coat: COL.ink,   hat: COL.mustard, cuff: '#b9832a', pom: COL.white, scarf: COL.falu,    mitt: COL.falu },
+  runner:  { k: 0.95, coat: COL.teal,  hat: COL.falu,  cuff: '#8c322c', pom: COL.white,   scarf: COL.mustard, mitt: COL.mustard },
+  thrower: { k: 0.95, coat: COL.plum,  hat: COL.white, cuff: COL.mist,  pom: COL.falu,    scarf: COL.teal,    mitt: COL.teal },
+  big:     { k: 1.4,  coat: COL.slate, hat: COL.cocoa, cuff: '#5b3c27', pom: COL.mustard, scarf: COL.falu,    mitt: COL.cocoa, flaps: true }
+};
+const okColor = (c) => /^#[0-9a-f]{6}$/i.test(c || '');
+function isLight(c) {
+  if (!okColor(c)) return false;
+  const n = parseInt(c.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62;
+}
+const looks = new Map();
+function lookFor(p) {
+  if (mode !== 'room' || !okColor(p.color)) return LOOK.player;
+  let L = looks.get(p.color);
+  if (!L) { L = Object.assign({}, LOOK.player, { coat: p.color }); looks.set(p.color, L); }
+  return L;
+}
+function profile() {
+  const p = window.Hesap && Hesap.profil;
+  return { id: p ? p.id : null, name: (p && p.name) || 'Sen', color: p && okColor(p.color) ? p.color : COL.teal };
+}
 
 let W = 0, H = 0, DPR = 1, ZOOM = 1, vignette = null;
 let flakes = [];
+const viewRadius = () => Math.hypot(W, H) / 2 / ZOOM;
 
 function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -321,6 +488,7 @@ function resize() {
   g.addColorStop(0, 'rgba(150,180,202,0)');
   g.addColorStop(1, 'rgba(150,180,202,0.38)');
   vignette = g;
+  if (me) me.view = viewRadius();
   initFlakes();
 }
 function initFlakes() {
@@ -329,170 +497,47 @@ function initFlakes() {
   for (let i = 0; i < n; i++) flakes.push({ x: rand(0, W), y: rand(0, H), r: rand(0.8, 2.6), s: rand(20, 48), ph: rand(0, TAU) });
 }
 
-/* ---------- Procedural world ---------- */
-let SEED = 1;
-const C = 110, PC = 640, KC = 900;
-let cellCache = new Map(), pondCache = new Map(), cabinCache = new Map(), taken = new Map();
-
-function hash3(x, y, s) {
-  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1442695041);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  h ^= h >>> 16;
-  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
-  h ^= h >>> 13;
-  return (h >>> 0) / 4294967296;
-}
-function vnoise(x, y, s) {
-  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-  const a = hash3(xi, yi, s), b = hash3(xi + 1, yi, s), c = hash3(xi, yi + 1, s), d = hash3(xi + 1, yi + 1, s);
-  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-}
-function near(fn, size, x, y, n = 1) {
-  const bx = Math.floor(x / size), by = Math.floor(y / size), out = [];
-  for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) { const o = fn(bx + i, by + j); if (o) out.push(o); }
-  return out;
-}
-function pondAt(bx, by) {
-  const key = bx + ',' + by;
-  if (pondCache.has(key)) return pondCache.get(key);
-  let p = null;
-  if (hash3(bx, by, SEED + 7) < 0.22) {
-    const rx = 110 + hash3(bx, by, SEED + 71) * 120, ry = 70 + hash3(bx, by, SEED + 72) * 70;
-    const x = bx * PC + rx + 20 + hash3(bx, by, SEED + 73) * (PC - 2 * rx - 40);
-    const y = by * PC + ry + 20 + hash3(bx, by, SEED + 74) * (PC - 2 * ry - 40);
-    if (Math.hypot(x, y) > rx + 260) p = { x, y, rx, ry, c1: hash3(bx, by, SEED + 75), c2: hash3(bx, by, SEED + 76), c3: hash3(bx, by, SEED + 77) };
-  }
-  pondCache.set(key, p);
-  return p;
-}
-const pondsNear = (x, y) => near(pondAt, PC, x, y, 1);
-function inPond(x, y, m = 1) {
-  for (const p of pondsNear(x, y)) {
-    const dx = (x - p.x) / p.rx, dy = (y - p.y) / p.ry;
-    if (dx * dx + dy * dy < m) return true;
-  }
-  return false;
-}
-function cabinAt(bx, by) {
-  const key = bx + ',' + by;
-  if (cabinCache.has(key)) return cabinCache.get(key);
-  let k = null;
-  if (hash3(bx, by, SEED + 9) < 0.2) {
-    const w = 150 + Math.round(hash3(bx, by, SEED + 91) * 50), h = 96 + Math.round(hash3(bx, by, SEED + 92) * 24);
-    const x = bx * KC + 80 + hash3(bx, by, SEED + 93) * (KC - 160 - w);
-    const y = by * KC + 80 + hash3(bx, by, SEED + 94) * (KC - 160 - h);
-    let clash = Math.hypot(x + w / 2, y + h / 2) < 380;
-    if (!clash) for (const p of pondsNear(x + w / 2, y + h / 2)) {
-      const nx = clamp(p.x, x - 40, x + w + 40), ny = clamp(p.y, y - 60, y + h + 40);
-      const dx = (nx - p.x) / p.rx, dy = (ny - p.y) / p.ry;
-      if (dx * dx + dy * dy < 1.2) { clash = true; break; }
-    }
-    if (!clash) k = { t: 'cabin', x, y, w, h, smoke: 0, door: hash3(bx, by, SEED + 95) };
-  }
-  cabinCache.set(key, k);
-  return k;
-}
-const cabinsNear = (x, y) => near(cabinAt, KC, x, y, 1);
-
-function blocked(x, y, m) {
-  if (x * x + y * y < 170 * 170) return true;
-  if (inPond(x, y, 1.3)) return true;
-  for (const k of cabinsNear(x, y)) if (x > k.x - m && x < k.x + k.w + m && y > k.y - m - 40 && y < k.y + k.h + m) return true;
-  return false;
-}
-function cellAt(cx, cy) {
-  const key = cx + ',' + cy;
-  let L = cellCache.get(key);
-  if (L) return L;
-  L = [];
-  const forest = vnoise(cx / 6.5, cy / 6.5, SEED + 3);
-  const p = 0.03 + 0.72 * Math.pow(forest, 2.3);
-  for (let i = 0; i < 3; i++) {
-    if (hash3(cx, cy, SEED + 11 + i * 7) < p * (i === 0 ? 1 : i === 1 ? 0.6 : 0.3)) {
-      const s = 0.78 + hash3(cx, cy, SEED + 12 + i * 7) * 0.55;
-      const x = cx * C + 16 + hash3(cx, cy, SEED + 13 + i * 7) * (C - 32);
-      const y = cy * C + 16 + hash3(cx, cy, SEED + 14 + i * 7) * (C - 32);
-      if (blocked(x, y, 36)) continue;
-      if (L.some((o) => Math.hypot(o.x - x, o.y - y) < 42 * s)) continue;
-      L.push({ t: 'tree', x, y, s, r: 10 * s, v: hash3(cx, cy, SEED + 15 + i * 7) });
-    }
-  }
-  if (hash3(cx, cy, SEED + 31) < 0.045) {
-    const s = 0.8 + hash3(cx, cy, SEED + 32) * 0.6;
-    const x = cx * C + 20 + hash3(cx, cy, SEED + 33) * (C - 40), y = cy * C + 20 + hash3(cx, cy, SEED + 34) * (C - 40);
-    if (!blocked(x, y, 30) && !L.some((o) => Math.hypot(o.x - x, o.y - y) < 44)) L.push({ t: 'rock', x, y, s, r: 13 * s });
-  }
-  if (hash3(cx, cy, SEED + 41) < 0.03) {
-    const x = cx * C + 22 + hash3(cx, cy, SEED + 42) * (C - 44), y = cy * C + 22 + hash3(cx, cy, SEED + 43) * (C - 44);
-    if (!blocked(x, y, 24) && !L.some((o) => Math.hypot(o.x - x, o.y - y) < 46)) L.push({ t: 'pile', x, y, key: key + 'p' });
-  }
-  if (cx === 1 && cy === 0) L.push({ t: 'pile', x: 150, y: 60, key: 'f1' });
-  if (cx === -2 && cy === -1) L.push({ t: 'pile', x: -150, y: -70, key: 'f2' });
-  if (cellCache.size > 9000) cellCache.clear();
-  cellCache.set(key, L);
-  return L;
-}
-function eachSolid(x, y, fn) {
-  const cx = Math.floor(x / C), cy = Math.floor(y / C);
-  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
-    const L = cellAt(cx + i, cy + j);
-    for (let n = 0; n < L.length; n++) if (L[n].t !== 'pile') fn(L[n]);
-  }
-}
-function pushOutRect(e, k) {
-  const nx = clamp(e.x, k.x, k.x + k.w), ny = clamp(e.y, k.y, k.y + k.h);
-  const dx = e.x - nx, dy = e.y - ny, d2 = dx * dx + dy * dy;
-  if (d2 >= e.r * e.r) return;
-  if (d2 > 1e-6) {
-    const d = Math.sqrt(d2), p = (e.r - d) / d;
-    e.x += dx * p; e.y += dy * p;
-  } else {
-    const l = e.x - k.x, r = k.x + k.w - e.x, t = e.y - k.y, b = k.y + k.h - e.y, m = Math.min(l, r, t, b);
-    if (m === l) e.x = k.x - e.r; else if (m === r) e.x = k.x + k.w + e.r; else if (m === t) e.y = k.y - e.r; else e.y = k.y + k.h + e.r;
-  }
-}
-function collide(e) {
-  eachSolid(e.x, e.y, (o) => {
-    const dx = e.x - o.x, dy = e.y - o.y, m = e.r + o.r, d2 = dx * dx + dy * dy;
-    if (d2 < m * m) { const d = Math.sqrt(d2) || 0.01, p = (m - d) / d; e.x += dx * p; e.y += dy * p; }
-  });
-  for (const k of cabinsNear(e.x, e.y)) pushOutRect(e, k);
-}
-function solidAt(x, y, r) {
-  let hit = false;
-  eachSolid(x, y, (o) => { if (!hit && Math.hypot(x - o.x, y - o.y) < r + o.r) hit = true; });
-  if (!hit) for (const k of cabinsNear(x, y)) if (x > k.x - r && x < k.x + k.w + r && y > k.y - r - 40 && y < k.y + k.h + r) hit = true;
-  return hit;
-}
-function ballBlocked(b) {
-  let hit = false;
-  eachSolid(b.x, b.y, (o) => {
-    if (hit) return;
-    if (o.t === 'rock' && b.z > 14) return;
-    if (Math.hypot(b.x - o.x, b.y - o.y) < o.r + 4) hit = true;
-  });
-  if (!hit) for (const k of cabinsNear(b.x, b.y)) if (b.x > k.x && b.x < k.x + k.w && b.y > k.y - 30 && b.y < k.y + k.h) hit = true;
-  return hit;
-}
-
 /* ---------- Game state ---------- */
+// mode: 'menu' (a menu or the room screens over a quiet forest), 'play' / 'pause' / 'over' (alone),
+// 'room' (a game with friends; the room object below holds everything that comes from the server).
 let mode = 'menu';
-let P, enemies, balls, parts, decals, pickups, cam, st;
-let camDX = 0, camDY = 0, hurtFlash = 0, gt = 0, noAmmoT = 0, radarT = 0, radarPiles = [];
+let battle = null;   // alone: the whole game runs here on the page (oyun.js)
+let world = null;    // the forest (alone: battle.world; in a room: built from the room's seed)
+let me = null;       // my player
+let parts = [], decals = [];
+let cam = { x: 0, y: 0, shake: 0 };
+let camDX = 0, camDY = 0, hurtFlash = 0, gt = 0, noAmmoT = 0, radarT = 0, radarPiles = [], overT = 0;
 const hintsUsed = { move: false, aim: false };
 
-function newGame() {
-  SEED = (Math.random() * 1e9) | 0;
-  cellCache = new Map(); pondCache = new Map(); cabinCache = new Map(); taken = new Map();
-  P = { t: 'player', x: 0, y: 0, vx: 0, vy: 0, kx: 0, ky: 0, r: 13, hp: 5, maxHp: 5, ammo: MAX_AMMO, regen: 0,
-        cool: 0, inv: 0, face: { x: 0, y: 1 }, walk: 0, moving: false, raise: 0, step: 0, foot: false, skin: SKINS[0] };
-  enemies = []; balls = []; parts = []; decals = []; pickups = [];
-  cam = { x: 0, y: 0, shake: 0 };
-  st = { t: 0, score: 0, wave: 0, toSpawn: 0, spawnT: 0, calm: 2.6, combo: 0, comboT: 0, over: false, overT: 0, kills: 0 };
-  hurtFlash = 0;
-  Object.keys(hud).forEach((k) => (hud[k] = -1));
+// Fields only the page needs on my player.
+function initMe(p, skin) {
+  Object.assign(p, { ammo: K.AMMO, regen: 0, throwCd: 0, raise: 0, walk: 0, moving: false, step: 0, foot: false,
+    face: { x: 0, y: 1 }, skin, downT: 0, fall: 1, view: viewRadius(), seq: p.seq || 0 });
+  if (p.kx == null) { p.kx = 0; p.ky = 0; }
 }
+function resetFx() { parts = []; decals = []; cam = { x: me ? me.x : 0, y: me ? me.y : 0, shake: 0 }; hurtFlash = 0; overT = 0; resetHud(); }
+
+// A quiet forest behind the menus.
+function menuForest() {
+  battle = new Battle((Math.random() * 1e9) | 0);
+  world = battle.world;
+  me = battle.addPlayer({ no: 1, x: 0, y: 0 });
+  initMe(me, SKINS[0]);
+  resetFx();
+}
+
+// What is on the field, alone or in a room.
+const inRoom = () => mode === 'room';
+function kids() { return inRoom() ? room.kids : battle ? battle.enemies : []; }
+function snowballs() { return inRoom() ? room.balls : battle ? battle.balls : []; }
+function cocoas() { return inRoom() ? room.cocoa : battle ? battle.cocoa : []; }
+function team() { return inRoom() ? room.team : me ? [me] : []; }
+function kidById(id) { if (inRoom()) return room.kidMap.get(id) || null; if (battle) for (const e of battle.enemies) if (e.id === id) return e; return null; }
+function playerByNo(no) { if (me && me.no === no) return me; return inRoom() ? room.others.get(no) || null : null; }
+function waveNow() { return inRoom() ? room.w[0] : battle ? battle.wave : 0; }
+function calmNow() { return inRoom() ? room.w[1] > 0 : battle ? battle.calm > 0 : false; }
+function scoreNow() { return inRoom() ? room.w[2] : battle ? battle.score : 0; }
+function gameOver() { return inRoom() ? room.over : !!(battle && battle.over); }
 
 /* ---------- Audio ---------- */
 let AC = null, NB = null, muted = false;
@@ -539,19 +584,26 @@ function sfx(kind) {
       case 'empty': tone(t, 0.06, 'square', 180, 160, 0.04); break;
       case 'wave': tone(t, 0.25, 'triangle', 523, 523, 0.1); tone(t + 0.14, 0.35, 'triangle', 784, 784, 0.1); break;
       case 'over': tone(t, 0.6, 'triangle', 392, 180, 0.12); break;
+      case 'up': tone(t, 0.12, 'triangle', 523, 784, 0.1); tone(t + 0.1, 0.2, 'triangle', 784, 1046, 0.1); break;
     }
   } catch (e) { /* ignore */ }
 }
+// Sounds from far away on the map stay quiet.
+function sfxAt(kind, x, y) { if (!me || Math.hypot(x - me.x, y - me.y) < viewRadius() * 1.1) sfx(kind); }
 
 /* ---------- Input ---------- */
 const keys = {};
 let joy = null, aim = null;
 const mouse = { x: 0, y: 0, active: false };
+const controlling = () => (mode === 'play' || mode === 'room') && me && me.state === 'alive' && !gameOver() && $('roomMenu').hidden;
 addEventListener('keydown', (e) => {
   keys[e.code] = true;
-  if (mode === 'play' && e.code === 'Space') { e.preventDefault(); ensureAudio(); autoThrow(); }
-  if (e.code === 'Escape' || e.code === 'KeyP') { if (mode === 'play') pause(); else if (mode === 'pause') resume(); }
-  if (e.code.startsWith('Arrow') && mode === 'play') e.preventDefault();
+  if (controlling() && e.code === 'Space') { e.preventDefault(); ensureAudio(); autoThrow(); }
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (mode === 'play') pause(); else if (mode === 'pause') resume();
+    else if (mode === 'room') { if ($('roomMenu').hidden) openRoomMenu(); else closeRoomMenu(); }
+  }
+  if (e.code.startsWith('Arrow') && (mode === 'play' || mode === 'room')) e.preventDefault();
 });
 addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -560,13 +612,13 @@ cv.addEventListener('contextmenu', (e) => e.preventDefault());
 const toWorld = (sx, sy) => ({ x: (sx - W / 2) / ZOOM + cam.x, y: (sy - H / 2) / ZOOM + cam.y });
 
 cv.addEventListener('pointerdown', (e) => {
-  if (mode !== 'play' || st.over) return;
+  if (!controlling()) return;
   e.preventDefault();
   ensureAudio();
   if (e.pointerType === 'mouse') {
     mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true;
     const w = toWorld(e.clientX, e.clientY);
-    const dx = w.x - P.x, dy = w.y - P.y;
+    const dx = w.x - me.x, dy = w.y - me.y;
     throwAt(dx, dy, Math.hypot(dx, dy) + 10);
     return;
   }
@@ -586,7 +638,7 @@ function endPointer(e, cancelled) {
   if (joy && e.pointerId === joy.id) joy = null;
   if (aim && e.pointerId === aim.id) {
     const px = aim.x - aim.ox, py = aim.y - aim.oy, len = Math.hypot(px, py);
-    if (!cancelled && mode === 'play' && !st.over) {
+    if (!cancelled && controlling()) {
       if (len < 18) autoThrow();
       else throwAt(-px, -py, slingDist(len));
       hintsUsed.aim = true;
@@ -601,30 +653,32 @@ const slingDist = (len) => 140 + clamp((len - 18) / 100, 0, 1) * 330;
 
 /* ---------- Throwing ---------- */
 function throwAt(dx, dy, dist) {
-  if (P.cool > 0) return false;
-  if (P.ammo < 1) {
-    if (noAmmoT <= 0) { floatText(P.x, P.y - 52, 'Kartopu yok!', COL.falu); sfx('empty'); noAmmoT = 0.8; }
+  if (!me || me.state !== 'alive' || me.throwCd > 0) return false;
+  if (me.ammo < 1) {
+    if (noAmmoT <= 0) { floatText(me.x, me.y - 52, 'Kartopu yok!', COL.falu); sfx('empty'); noAmmoT = 0.8; }
     return false;
   }
   const L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
-  dist = clamp(dist, 120, 470);
-  balls.push({ x: P.x + ux * 12, y: P.y + uy * 8, vx: ux * BS, vy: uy * BS, d: 0, max: dist, own: 'p', r: 6, h0: 18, z: 18 });
-  P.ammo--; P.cool = 0.16; P.raise = 0.22; P.face.x = ux; P.face.y = uy;
+  dist = clamp(dist, K.RANGE_MIN, K.RANGE_MAX);
+  me.ammo--; me.throwCd = K.COOLDOWN; me.raise = 0.22; me.face.x = ux; me.face.y = uy;
   sfx('throw');
+  if (inRoom()) room.throwBall(ux, uy, dist);
+  else battle.throwBall(me, me.x, me.y, ux, uy, dist, ++me.seq);
   return true;
 }
 function autoThrow() {
+  if (!me) return;
   let best = null, bd = 480;
-  for (const e of enemies) {
+  for (const e of kids()) {
     if (e.down) continue;
-    const d = Math.hypot(e.x - P.x, e.y - P.y);
+    const d = Math.hypot(e.x - me.x, e.y - me.y);
     if (d < bd) { bd = d; best = e; }
   }
   if (best) {
-    const t = bd / BS;
+    const t = bd / K.BALL_SPEED;
     const tx = best.x + best.vx * t * 0.85, ty = best.y + best.vy * t * 0.85;
-    throwAt(tx - P.x, ty - P.y, Math.hypot(tx - P.x, ty - P.y) + 30);
-  } else throwAt(P.face.x, P.face.y, 300);
+    throwAt(tx - me.x, ty - me.y, Math.hypot(tx - me.x, ty - me.y) + 30);
+  } else throwAt(me.face.x, me.face.y, 300);
 }
 
 /* ---------- Effects ---------- */
@@ -638,7 +692,7 @@ function burst(x, y, z, n, big) {
 function splat(x, y, z, ground) {
   if (ground) decals.push({ t: 'splat', x, y, r: rand(6, 9), a: rand(0, TAU), life: 9, max: 9 });
   burst(x, y, z, 6, false);
-  sfx('splat');
+  sfxAt('splat', x, y);
 }
 function floatText(x, y, text, color) {
   parts.push({ k: 'txt', x, y, z: 0, vx: 0, vy: -36, vz: 0, r: 0, text, color: color || COL.ink, life: 1, max: 1 });
@@ -648,200 +702,155 @@ function footprint(e, left, k) {
   decals.push({ t: 'foot', x: e.x - uy * off, y: e.y + ux * off, a: Math.atan2(uy, ux), k, life: 6, max: 6 });
   if (decals.length > 300) decals.splice(0, decals.length - 300);
 }
+let toastT = 0;
+function toast(text, bad) {
+  const el = $('toast');
+  el.textContent = text; el.classList.toggle('bad', !!bad); el.hidden = false; el.style.opacity = '1';
+  toastT = 2.4;
+}
 
-/* ---------- Waves & enemies ---------- */
-function pickType() {
-  const w = st.wave, r = Math.random();
-  const pBig = w >= 3 ? Math.min(0.22, 0.07 * (w - 2)) : 0;
-  const pThr = w >= 2 ? Math.min(0.34, 0.16 + 0.05 * (w - 2)) : 0;
-  if (r < pBig) return 'big';
-  if (r < pBig + pThr) return 'thrower';
-  return 'runner';
-}
-function spawnEnemy() {
-  const type = pickType(), K = KINDS[type];
-  const R = Math.hypot(W, H) / 2 / ZOOM + 50;
-  let x = 0, y = 0;
-  for (let i = 0; i < 14; i++) {
-    const a = rand(0, TAU);
-    x = P.x + Math.cos(a) * R; y = P.y + Math.sin(a) * R;
-    if (!solidAt(x, y, K.r + 4)) break;
-  }
-  const ramp = 1 + Math.min(0.6, (st.wave - 1) * 0.06);
-  enemies.push({
-    t: 'enemy', type, x, y, vx: 0, vy: 0, kx: 0, ky: 0, r: K.r, k: K.k, hp: K.hp, maxHp: K.hp,
-    spd: K.spd * ramp * rand(0.9, 1.1), skin: SKINS[(Math.random() * SKINS.length) | 0],
-    walk: rand(0, 6), moving: true, face: { x: 0, y: 1 }, side: Math.random() < 0.5 ? -1 : 1,
-    cd: rand(1.2, 2.4), wind: 0, raise: 0, flash: 0, stun: 0, step: 0, foot: false, down: false, downT: 0, fall: 1
-  });
-}
-function updateWaves(dt) {
-  if (st.over) return;
-  if (st.calm > 0) {
-    st.calm -= dt;
-    if (st.calm <= 0) {
-      st.wave++;
-      st.toSpawn = 4 + st.wave * 3;
-      st.spawnT = 0.2;
-      banner('Dalga ' + st.wave, st.wave === 1 ? 'Çocuklar geliyor!' : st.wave === 2 ? 'Mor montlular uzaktan atar' : st.wave === 3 ? 'Büyük çocuklar üç vuruşta devrilir' : '');
+/* ---------- What happens (events from oyun.js, alone or from the room server) ---------- */
+function waveHint(w) { return w === 1 ? 'Çocuklar geliyor!' : w === 2 ? 'Mor montlular uzaktan atar' : w === 3 ? 'Büyük çocuklar üç vuruşta devrilir' : ''; }
+function onEvent(e) {
+  const r = inRoom();
+  switch (e[0]) {
+    case 'w': {
+      banner('Dalga ' + e[1], waveHint(e[1]));
       sfx('wave');
-      hesapNotu('Dalga ' + st.wave + ' · ' + st.score.toLocaleString('tr-TR') + ' puan');
+      hesapNotu((r ? 'Odada · dalga ' : 'Dalga ') + e[1] + ' · ' + scoreNow().toLocaleString('tr-TR') + ' puan');
+      break;
     }
-    return;
-  }
-  if (st.toSpawn > 0) {
-    st.spawnT -= dt;
-    let alive = 0;
-    for (const e of enemies) if (!e.down) alive++;
-    const cap = Math.min(26, 3 + st.wave * 2);
-    if (st.spawnT <= 0 && alive < cap) {
-      spawnEnemy();
-      st.toSpawn--;
-      st.spawnT = Math.max(0.35, 1.5 - st.wave * 0.1) * rand(0.6, 1.4);
+    case 'c': {
+      const someoneDown = r && room.team.some((p) => p.state === 'down');
+      banner('Dalga ' + e[1] + ' bitti!', someoneDown ? 'Düşenler kalkıyor · kartopu yap' : 'Kartopu yap, sıradaki geliyor');
+      break;
     }
-  } else if (enemies.every((e) => e.down)) {
-    st.calm = 5;
-    banner('Dalga ' + st.wave + ' bitti!', 'Kartopu yap, sıradaki geliyor');
-  }
-}
-function enemyThrow(e, d) {
-  const sp = Math.min(330, 255 + st.wave * 7), t = d / sp;
-  const tx = P.x + P.vx * t * 0.55, ty = P.y + P.vy * t * 0.55;
-  const dx = tx - e.x, dy = ty - e.y, L = Math.hypot(dx, dy) || 1;
-  balls.push({ x: e.x + dx / L * 10, y: e.y + dy / L * 6, vx: dx / L * sp, vy: dy / L * sp, d: 0, max: Math.min(520, L + 70), own: 'e', r: 5.5, h0: 20, z: 20 });
-  e.cd = rand(2.1, 3.4); e.raise = 0.25;
-  sfx('throwE');
-}
-function hitEnemy(e, ux, uy) {
-  e.hp--; e.flash = 0.12;
-  e.kx += ux * 250; e.ky += uy * 250;
-  burst(e.x, e.y, 14 * e.k, 9, false);
-  sfx('hit');
-  if (e.hp <= 0) {
-    e.down = true; e.downT = 0; e.fall = ux >= 0 ? 1 : -1;
-    st.kills++; st.combo++; st.comboT = 2.6;
-    const mult = Math.min(5, st.combo), pts = KINDS[e.type].score * mult;
-    st.score += pts;
-    floatText(e.x, e.y - 46 * e.k, '+' + pts, mult > 1 ? COL.falu : COL.ink);
-    burst(e.x, e.y, 10, 16, true);
-    sfx('pop');
-    if (Math.random() < 0.08 + (P.hp <= 2 ? 0.07 : 0)) pickups.push({ t: 'cocoa', x: e.x, y: e.y, life: 14 });
-  }
-}
-function hurtPlayer(ux, uy) {
-  if (P.inv > 0 || st.over) return;
-  P.hp--; P.inv = 1.3;
-  P.kx += ux * 280; P.ky += uy * 280;
-  cam.shake = 11; hurtFlash = 0.4;
-  burst(P.x, P.y, 16, 10, false);
-  sfx('hurt');
-  try { if (navigator.vibrate) navigator.vibrate(60); } catch (e) { /* ignore */ }
-  if (P.hp <= 0) {
-    st.over = true; st.overT = 0;
-    P.down = true; P.downT = 0; P.fall = ux >= 0 ? 1 : -1;
-    joy = null; aim = null;
-    sfx('over');
-  }
-}
-function updateEnemies(dt) {
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const e = enemies[i];
-    if (e.down) {
-      e.downT += dt;
-      e.x += e.kx * dt; e.y += e.ky * dt;
-      const kd = Math.exp(-dt * 6); e.kx *= kd; e.ky *= kd;
-      if (e.downT > 1.15) enemies.splice(i, 1);
-      continue;
-    }
-    e.flash -= dt; e.stun -= dt; e.raise -= dt;
-    const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1;
-    let tx = dx / d, ty = dy / d, want = 1;
-    if (st.over) want = 0;
-    else if (e.type === 'thrower') {
-      if (d < 185) { tx = -tx; ty = -ty; }
-      else if (d < 290) { const sx = -ty * e.side, sy = tx * e.side; tx = sx; ty = sy; want = 0.6; }
-      e.cd -= dt;
-      if (e.wind > 0) { e.wind -= dt; want = 0; if (e.wind <= 0) enemyThrow(e, d); }
-      else if (e.cd <= 0 && d < 440) e.wind = 0.55;
-      if (Math.random() < dt * 0.25) e.side *= -1;
-    }
-    if (e.stun > 0) want = 0;
-
-    // steer around trees, rocks and cabins
-    let ax = 0, ay = 0;
-    const avoid = (ox, oy, or) => {
-      const odx = ox - e.x, ody = oy - e.y, od = Math.hypot(odx, ody), m = or + e.r + 26;
-      if (od > m || od < 0.01) return;
-      const ux = odx / od, uy = ody / od, proj = ux * tx + uy * ty;
-      if (proj <= 0.1) return;
-      let px = ux - proj * tx, py = uy - proj * ty;
-      const pl = Math.hypot(px, py);
-      if (pl < 0.15) { px = -ty * e.side; py = tx * e.side; } else { px = -px / pl; py = -py / pl; }
-      const w = (1 - od / m) * 2.2 * proj;
-      ax += px * w; ay += py * w;
-    };
-    eachSolid(e.x, e.y, (o) => avoid(o.x, o.y, o.r));
-    for (const k of cabinsNear(e.x, e.y)) avoid(clamp(e.x, k.x, k.x + k.w), clamp(e.y, k.y, k.y + k.h), 4);
-    tx += ax; ty += ay;
-    const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-
-    const acc = inPond(e.x, e.y) ? 1.4 : 7;
-    const sp = e.spd * want;
-    e.vx += (tx * sp - e.vx) * Math.min(1, dt * acc);
-    e.vy += (ty * sp - e.vy) * Math.min(1, dt * acc);
-    for (const o of enemies) {
-      if (o === e || o.down) continue;
-      const ox = e.x - o.x, oy = e.y - o.y, od = Math.hypot(ox, oy), m = e.r + o.r + 3;
-      if (od < m && od > 0.01) { const push = (m - od) / od * 0.5; e.x += ox * push; e.y += oy * push; }
-    }
-    e.x += (e.vx + e.kx) * dt; e.y += (e.vy + e.ky) * dt;
-    const kd = Math.exp(-dt * 6); e.kx *= kd; e.ky *= kd;
-    collide(e);
-
-    const spd = Math.hypot(e.vx, e.vy);
-    e.moving = spd > 14;
-    if (e.moving) {
-      e.walk += spd * dt * 0.085;
-      if (!inPond(e.x, e.y)) { e.step += spd * dt; if (e.step > 21 * e.k) { e.step = 0; e.foot = !e.foot; footprint(e, e.foot, e.k); } }
-    }
-    e.face.x = dx / d; e.face.y = dy / d;
-    if (st.over) { e.moving = true; e.walk += dt * 9; }
-
-    // contact with the player
-    const pd = Math.hypot(P.x - e.x, P.y - e.y), pm = e.r + P.r + 1;
-    if (!st.over && pd < pm) {
-      if (P.inv <= 0 && e.stun <= 0) {
-        hurtPlayer(dx / d, dy / d);
-        e.kx -= dx / d * 220; e.ky -= dy / d * 220; e.stun = 0.6; e.raise = 0.25;
+    case 't': {
+      const [, owner, , x, y, vx, vy, , , kid] = e;
+      if (owner === 0) {
+        const k = kidById(kid);
+        if (k) k.raise = 0.25;
+        sfxAt('throwE', x, y);
+      } else if (!me || owner !== me.no) {
+        const p = playerByNo(owner);
+        if (p) { p.raise = 0.22; const L = Math.hypot(vx, vy) || 1; p.face = { x: vx / L, y: vy / L }; }
+        sfxAt('throwE', x, y);
       }
-      const ov = (pm - pd) / (pd || 1);
-      e.x -= (P.x - e.x) * ov * 0.6; e.y -= (P.y - e.y) * ov * 0.6;
+      if (r && (!me || owner !== me.no)) room.addBall(e);
+      break;
     }
-    if (d > 1800) { enemies.splice(i, 1); if (!st.over) st.toSpawn++; }
+    case 's': { // alone only: the room server leaves stopping snowballs to the page
+      const [, , x, y, z, how] = e;
+      if (how === 2) burst(x, y, z, 8, false); else splat(x, y, z, how === 1);
+      break;
+    }
+    case 'v': {
+      const [, key, id, , , hp] = e;
+      if (r) room.dropBall(key);
+      const k = kidById(id);
+      if (k) { k.flash = 0.12; if (r) k.hp = hp; burst(k.x, k.y, 14 * k.k, 9, false); sfxAt('hit', k.x, k.y); }
+      break;
+    }
+    case 'd': {
+      const [, id, fall, pts, streak, owner, x, y, ux, uy] = e;
+      const k = kidById(id);
+      if (r && k) { Object.assign(k, { down: true, downT: 0, fall, x, y, kx: ux * 250, ky: uy * 250, wind: 0 }); }
+      const kk = k ? k.k : 1;
+      floatText(x, y - 46 * kk, '+' + pts, streak > 1 ? COL.falu : COL.ink);
+      burst(x, y, 10, 16, true);
+      sfxAt('pop', x, y);
+      if (r && me && owner === me.no) me.kills = (me.kills || 0) + 1;
+      break;
+    }
+    case 'h': {
+      const [, no, key, ux, uy, hp] = e;
+      if (r) room.dropBall(key);
+      const p = playerByNo(no);
+      if (!p) break;
+      if (r) { p.hp = hp; p.inv = K.SAFE; }
+      if (p === me) {
+        me.kx += ux * 280; me.ky += uy * 280;
+        cam.shake = 11; hurtFlash = 0.4;
+        burst(me.x, me.y, 16, 10, false);
+        sfx('hurt');
+        try { if (navigator.vibrate) navigator.vibrate(60); } catch (err) { /* ignore */ }
+      } else {
+        burst(p.x, p.y, 16, 8, false);
+        sfxAt('hit', p.x, p.y);
+      }
+      break;
+    }
+    case 'o': {
+      const [, no, fall] = e;
+      const p = playerByNo(no);
+      if (!p) break;
+      if (r) { p.state = 'down'; p.hp = 0; p.lift = 0; }
+      p.downT = 0; p.fall = fall;
+      if (p === me) {
+        joy = null; aim = null;
+        sfx(r ? 'hurt' : 'over');
+      } else toast(p.name + ' karlara gömüldü! Yanına git, kaldır.', true);
+      break;
+    }
+    case 'u': {
+      const [, no, , , hp] = e;
+      const p = playerByNo(no);
+      if (!p) break;
+      if (r) { p.state = 'alive'; p.hp = hp; p.inv = 1.5; p.lift = 0; }
+      burst(p.x, p.y, 10, 10, false);
+      if (p === me) { sfx('up'); floatText(me.x, me.y - 52, 'Kalktın!', COL.ink); }
+      break;
+    }
+    case 'y': {
+      const [, key, no, x, y] = e;
+      if (r) world.taken.set(key, room.clock + K.PILE_BACK);
+      burst(x, y, 6, 10, false);
+      if (me && no === me.no) {
+        me.ammo = K.PILE_AMMO; me.regen = 0;
+        floatText(x, y - 30, 'Kartopu dolu!', COL.ink);
+        sfx('pickup');
+      }
+      break;
+    }
+    case 'k': {
+      if (r) room.cocoa.push({ t: 'cocoa', id: e[1], x: e[2], y: e[3], life: K.COCOA_LIFE });
+      break;
+    }
+    case 'K': {
+      const [, id, no, heart, x, y] = e;
+      if (r) room.cocoa = room.cocoa.filter((c) => c.id !== id);
+      if (me && no === me.no) {
+        if (r && heart) me.hp = Math.min(K.HP, me.hp + 1);
+        floatText(x, y - 30, heart ? '+1 can' : '+25', heart ? COL.falu : COL.ink);
+        sfx('pickup');
+      }
+      break;
+    }
+    case 'n': {
+      if (r) { room.over = true; banner('Herkes karlara gömüldü!', ''); sfx('over'); joy = null; aim = null; }
+      break;
+    }
   }
 }
 
-/* ---------- Player ---------- */
-function updatePlayer(dt) {
-  const p = P;
-  if (p.down) { p.downT += dt; p.vx *= 0.9; p.vy *= 0.9; return; }
+/* ---------- My player ---------- */
+function controlMe(dt) {
+  const p = me;
+  p.throwCd -= dt; p.raise -= dt; noAmmoT -= dt;
+  if (p.state !== 'alive') { p.downT += dt; p.vx *= 0.9; p.vy *= 0.9; p.kx = 0; p.ky = 0; return; }
   let mx = 0, my = 0;
-  if (keys.KeyA || keys.ArrowLeft) mx -= 1;
-  if (keys.KeyD || keys.ArrowRight) mx += 1;
-  if (keys.KeyW || keys.ArrowUp) my -= 1;
-  if (keys.KeyS || keys.ArrowDown) my += 1;
-  const kl = Math.hypot(mx, my); if (kl > 0) { mx /= kl; my /= kl; }
-  if (joy) {
-    const jx = joy.x - joy.ox, jy = joy.y - joy.oy, jl = Math.hypot(jx, jy);
-    if (jl > 6) { const m = Math.min(1, jl / 52); mx = jx / jl * m; my = jy / jl * m; hintsUsed.move = true; }
+  if (!gameOver() && $('roomMenu').hidden) {
+    if (keys.KeyA || keys.ArrowLeft) mx -= 1;
+    if (keys.KeyD || keys.ArrowRight) mx += 1;
+    if (keys.KeyW || keys.ArrowUp) my -= 1;
+    if (keys.KeyS || keys.ArrowDown) my += 1;
+    const kl = Math.hypot(mx, my); if (kl > 0) { mx /= kl; my /= kl; }
+    if (joy) {
+      const jx = joy.x - joy.ox, jy = joy.y - joy.oy, jl = Math.hypot(jx, jy);
+      if (jl > 6) { const m = Math.min(1, jl / 52); mx = jx / jl * m; my = jy / jl * m; hintsUsed.move = true; }
+    }
   }
-  const ice = inPond(p.x, p.y);
-  const spd = 172, acc = ice ? 1.6 : 13;
-  p.vx += (mx * spd - p.vx) * Math.min(1, dt * acc);
-  p.vy += (my * spd - p.vy) * Math.min(1, dt * acc);
-  p.x += (p.vx + p.kx) * dt; p.y += (p.vy + p.ky) * dt;
-  const kd = Math.exp(-dt * 7); p.kx *= kd; p.ky *= kd;
-  collide(p);
+  const ice = walk(p, mx, my, dt, world);
   const sp = Math.hypot(p.vx, p.vy);
   p.moving = sp > 20;
   if (p.moving) {
@@ -849,66 +858,54 @@ function updatePlayer(dt) {
     if (p.raise <= 0) { p.face.x = p.vx / sp; p.face.y = p.vy / sp; }
     if (!ice) { p.step += sp * dt; if (p.step > 21) { p.step = 0; p.foot = !p.foot; footprint(p, p.foot, 1); } }
   }
-  if (p.ammo < MAX_AMMO) {
-    p.regen += dt * (st.calm > 0 ? 3 : 1);
-    if (p.regen >= 0.9) { p.regen = 0; p.ammo++; }
+  if (p.ammo < K.AMMO) {
+    p.regen += dt * (calmNow() ? 3 : 1);
+    if (p.regen >= K.MAKE) { p.regen = 0; p.ammo++; }
   } else p.regen = 0;
-  p.cool -= dt; p.inv -= dt; p.raise -= dt; noAmmoT -= dt;
+}
 
-  // snow piles refill the stockpile
-  const cx = Math.floor(p.x / C), cy = Math.floor(p.y / C);
-  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
-    for (const o of cellAt(cx + i, cy + j)) {
-      if (o.t !== 'pile' || taken.has(o.key)) continue;
-      if (Math.hypot(o.x - p.x, o.y - p.y) < 28) {
-        taken.set(o.key, st.t + 30);
-        p.ammo = STOCK_CAP; p.regen = 0;
-        floatText(o.x, o.y - 30, 'Kartopu dolu!', COL.ink);
-        burst(o.x, o.y, 6, 10, false);
-        sfx('pickup');
-      }
+/* The kids and my friends: walking, faces, footprints */
+function animateKids(dt) {
+  const r = inRoom(), over = gameOver();
+  for (const e of kids()) {
+    if (e.skin == null) Object.assign(e, { skin: SKINS[(Math.random() * SKINS.length) | 0], walk: rand(0, 6), flash: 0, raise: 0, step: 0, foot: false, face: { x: 0, y: 1 }, moving: true });
+    if (e.down) {
+      if (r) { e.downT += dt; e.x += e.kx * dt; e.y += e.ky * dt; const kd = Math.exp(-dt * 6); e.kx *= kd; e.ky *= kd; }
+      continue;
     }
-  }
-  for (let i = pickups.length - 1; i >= 0; i--) {
-    const c = pickups[i];
-    if (Math.hypot(c.x - p.x, c.y - p.y) < 26) {
-      if (p.hp < p.maxHp) { p.hp++; floatText(c.x, c.y - 30, '+1 can', COL.falu); }
-      else { st.score += 25; floatText(c.x, c.y - 30, '+25', COL.ink); }
-      sfx('pickup');
-      pickups.splice(i, 1);
+    e.flash -= dt; e.raise -= dt;
+    const spd = Math.hypot(e.vx, e.vy);
+    e.moving = spd > 14;
+    if (e.moving) {
+      e.walk += spd * dt * 0.085;
+      if (!world.inPond(e.x, e.y)) { e.step += spd * dt; if (e.step > 21 * e.k) { e.step = 0; e.foot = !e.foot; footprint(e, e.foot, e.k); } }
     }
+    if (r) {
+      // look at the nearest player who is up
+      let best = null, bd = Infinity;
+      for (const p of room.team) { if (p.state !== 'alive') continue; const d = Math.hypot(p.x - e.x, p.y - e.y); if (d < bd) { bd = d; best = p; } }
+      if (best) { const d = bd || 1; e.face.x = (best.x - e.x) / d; e.face.y = (best.y - e.y) / d; }
+    } else { e.face.x = e.fx; e.face.y = e.fy; }
+    if (over) { e.moving = true; e.walk += dt * 9; }
   }
 }
 
-/* ---------- Simulation ---------- */
-function updateBalls(dt) {
-  for (let i = balls.length - 1; i >= 0; i--) {
-    const b = balls[i];
-    let dead = false;
-    for (let s = 0; s < 2 && !dead; s++) {
-      const h = dt / 2;
-      b.x += b.vx * h; b.y += b.vy * h;
-      b.d += Math.hypot(b.vx, b.vy) * h;
-      const t = Math.min(1, b.d / b.max);
-      b.z = Math.sin(Math.PI * t) * b.max * 0.1 + b.h0 * (1 - t);
-      const sp = Math.hypot(b.vx, b.vy);
-      if (b.own === 'p') {
-        for (const e of enemies) {
-          if (e.down) continue;
-          const dx = e.x - b.x, dy = (e.y - 6 * e.k) - b.y, m = e.r + 7;
-          if (dx * dx + dy * dy < m * m) { hitEnemy(e, b.vx / sp, b.vy / sp); dead = true; break; }
-        }
-      } else if (!st.over) {
-        const dx = P.x - b.x, dy = (P.y - 6) - b.y, m = P.r + 6;
-        if (dx * dx + dy * dy < m * m) { hurtPlayer(b.vx / sp, b.vy / sp); burst(b.x, b.y, b.z, 8, false); dead = true; }
-      }
-      if (!dead && ballBlocked(b)) { splat(b.x, b.y, b.z, false); dead = true; }
-      if (!dead && b.d >= b.max) { splat(b.x, b.y, 0, true); dead = true; }
-    }
-    if (dead) balls.splice(i, 1);
+/* ---------- Alone ---------- */
+function soloFrame(dt) {
+  if (mode === 'pause') return;
+  controlMe(dt);
+  me.view = viewRadius();
+  battle.step(dt);
+  for (const e of battle.takeEvents()) onEvent(e);
+  animateKids(dt);
+  if (battle.over) {
+    overT += dt;
+    if (overT > 1.3 && mode === 'play') showOver();
   }
 }
-function updateParts(dt) {
+
+/* ---------- Every frame ---------- */
+function ambient(dt) {
   for (let i = parts.length - 1; i >= 0; i--) {
     const q = parts[i];
     q.life -= dt;
@@ -924,36 +921,31 @@ function updateParts(dt) {
     }
   }
   for (let i = decals.length - 1; i >= 0; i--) { decals[i].life -= dt; if (decals[i].life <= 0) decals.splice(i, 1); }
-  for (let i = pickups.length - 1; i >= 0; i--) { pickups[i].life -= dt; if (pickups[i].life <= 0) pickups.splice(i, 1); }
-}
-function update(dt) {
-  st.t += dt;
-  updatePlayer(dt);
-  updateWaves(dt);
-  updateEnemies(dt);
-  updateBalls(dt);
-  updateParts(dt);
-  if (st.comboT > 0) { st.comboT -= dt; if (st.comboT <= 0) st.combo = 0; }
-  for (const [k, t] of taken) if (st.t > t) taken.delete(k);
-  for (const k of cabinsNear(cam.x, cam.y)) {
-    k.smoke -= dt;
+  if (!world) return;
+  for (const k of world.cabinsNear(cam.x, cam.y)) {
+    k.smoke = (k.smoke || 0) - dt;
     if (k.smoke <= 0) {
       k.smoke = rand(0.25, 0.45);
       const ridge = k.y + (k.h - 40) * 0.45 - 12;
       parts.push({ k: 'smoke', x: k.x + k.w * 0.72 + 7, y: k.y + k.h, z: (k.y + k.h) - (ridge - 26), vx: rand(-4, 4), vy: 0, vz: rand(22, 34), r: rand(4, 6), ph: rand(0, TAU), life: 2.6, max: 2.6 });
     }
   }
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').hidden = true; else if (toastT < 0.4) $('toast').style.opacity = String(toastT / 0.4); }
+}
+function follow(dt) {
   const px = cam.x, py = cam.y;
-  const lx = P.vx * 0.22, ly = P.vy * 0.22;
-  cam.x += (P.x + lx - cam.x) * Math.min(1, dt * 5);
-  cam.y += (P.y + ly - cam.y) * Math.min(1, dt * 5);
+  if (mode === 'menu' || !me) {
+    cam.x = Math.sin(gt * 0.25) * 50; cam.y = Math.cos(gt * 0.18) * 30;
+    if (me) { me.face.x = 0; me.face.y = 1; }
+  } else {
+    const lx = me.vx * 0.22, ly = me.vy * 0.22;
+    cam.x += (me.x + lx - cam.x) * Math.min(1, dt * 5);
+    cam.y += (me.y + ly - cam.y) * Math.min(1, dt * 5);
+  }
   camDX = cam.x - px; camDY = cam.y - py;
+  if (mode === 'menu') { camDX = 0; camDY = 0; }
   cam.shake = Math.max(0, cam.shake - dt * 32);
   hurtFlash = Math.max(0, hurtFlash - dt);
-  if (st.over) {
-    st.overT += dt;
-    if (st.overT > 1.3 && mode === 'play') showOver();
-  }
 }
 
 /* ---------- Drawing helpers ---------- */
@@ -967,12 +959,12 @@ function rrect(x, y, w, h, r) {
 }
 function tri(ax, ay, bx, by, cx, cy) { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill(); }
 
-function drawKid(x, y, s, K) {
-  const k = s.k || K.k;
+function drawKid(x, y, s, L) {
+  const k = s.k || L.k;
   const white = s.flash > 0;
   const col = (c) => (white ? '#ffffff' : c);
   ctx.fillStyle = 'rgba(58,92,118,0.2)'; ell(x, y, 12 * k, 4.5 * k);
-  if (s === P && !P.down) {
+  if (s === me && me.state === 'alive') {
     ctx.strokeStyle = COL.mustard; ctx.lineWidth = 2; ctx.globalAlpha = 0.75;
     ctx.beginPath(); ctx.ellipse(x, y, 18, 7.5, 0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
   }
@@ -985,14 +977,14 @@ function drawKid(x, y, s, K) {
   ell(x + 4.2 * k, y - 2.5 * k - b2, 3.3 * k, 2.6 * k);
   const by = y - bob, fx = s.face.x, fy = s.face.y, back = fy < -0.35, side = fx >= 0 ? 1 : -1;
   // coat
-  ctx.fillStyle = col(K.coat); ell(x, by - 12 * k, 9.6 * k, 10.4 * k);
+  ctx.fillStyle = col(L.coat); ell(x, by - 12 * k, 9.6 * k, 10.4 * k);
   if (!white) {
     ctx.fillStyle = 'rgba(16,26,40,0.16)';
     ctx.beginPath(); ctx.ellipse(x, by - 12 * k, 9.6 * k, 10.4 * k, 0, 0.12 * Math.PI, 0.88 * Math.PI); ctx.fill();
     if (!back) { ctx.fillStyle = 'rgba(255,255,255,0.55)'; circ(x + fx * 2 * k, by - 13 * k, 1.1 * k); circ(x + fx * 2 * k, by - 8.5 * k, 1.1 * k); }
   }
   // mittens
-  ctx.fillStyle = col(K.mitt);
+  ctx.fillStyle = col(L.mitt);
   const raised = s.raise > 0 || s.wind > 0;
   if (raised) {
     circ(x - side * 9.8 * k, by - 10 * k, 3 * k);
@@ -1005,7 +997,7 @@ function drawKid(x, y, s, K) {
     }
   } else { circ(x - 9.8 * k, by - 10 * k, 3 * k); circ(x + 9.8 * k, by - 10 * k, 3 * k); }
   // scarf
-  ctx.fillStyle = col(K.scarf);
+  ctx.fillStyle = col(L.scarf);
   rrect(x - 7.6 * k, by - 21.8 * k, 15.2 * k, 4.4 * k, 2 * k);
   ctx.fillRect(x + (back ? -5.6 : 2.4) * k, by - 19 * k, 3.4 * k, 7.5 * k);
   // head
@@ -1016,19 +1008,19 @@ function drawKid(x, y, s, K) {
     ctx.fillStyle = 'rgba(226,110,104,0.45)'; circ(ex - 4.6 * k, ey + 2.6 * k, 1.7 * k); circ(ex + 4.6 * k, ey + 2.6 * k, 1.7 * k);
   }
   // knit hat
-  ctx.fillStyle = col(K.hat);
+  ctx.fillStyle = col(L.hat);
   ctx.beginPath();
   if (back) ctx.ellipse(x, by - 29 * k, 8.8 * k, 8.6 * k, 0, Math.PI * 0.92, Math.PI * 2.08);
   else ctx.arc(x, by - 29 * k, 8.7 * k, Math.PI, 0);
   ctx.closePath(); ctx.fill();
-  if (K.flaps) { ell(x - 7.6 * k, by - 24.5 * k, 2.6 * k, 4 * k); ell(x + 7.6 * k, by - 24.5 * k, 2.6 * k, 4 * k); }
+  if (L.flaps) { ell(x - 7.6 * k, by - 24.5 * k, 2.6 * k, 4 * k); ell(x + 7.6 * k, by - 24.5 * k, 2.6 * k, 4 * k); }
   if (!white) {
-    ctx.fillStyle = K.hat === COL.white ? 'rgba(180,65,58,0.55)' : 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = L.hat === COL.white ? 'rgba(180,65,58,0.55)' : 'rgba(255,255,255,0.4)';
     for (let i = -2; i <= 2; i++) circ(x + i * 3.1 * k, by - 33.4 * k, 0.9 * k);
   }
-  ctx.fillStyle = col(K.cuff); rrect(x - 9.2 * k, by - 30.6 * k, 18.4 * k, 4 * k, 2 * k);
-  ctx.fillStyle = col(K.pom); circ(x, by - 38.6 * k, 3.4 * k);
-  if (!white && K.pom === COL.white) { ctx.strokeStyle = 'rgba(28,42,57,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, by - 38.6 * k, 3.4 * k, 0, TAU); ctx.stroke(); }
+  ctx.fillStyle = col(L.cuff); rrect(x - 9.2 * k, by - 30.6 * k, 18.4 * k, 4 * k, 2 * k);
+  ctx.fillStyle = col(L.pom); circ(x, by - 38.6 * k, 3.4 * k);
+  if (!white && L.pom === COL.white) { ctx.strokeStyle = 'rgba(28,42,57,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, by - 38.6 * k, 3.4 * k, 0, TAU); ctx.stroke(); }
   // windup warning
   if (s.wind > 0) {
     ctx.fillStyle = COL.falu; ctx.font = `${Math.round(20 * k)}px 'Lilita One', sans-serif`; ctx.textAlign = 'center';
@@ -1042,22 +1034,49 @@ function drawKid(x, y, s, K) {
     }
   }
 }
-function drawKidMaybeDown(e, K) {
-  if (!e.down) { drawKid(e.x, e.y, e, K); return; }
-  const t = e.downT, k = e.k || K.k;
-  const fade = 1 - clamp((t - 0.6) / 0.55, 0, 1);
+// A kid (or a player) lying in the snow. Kids fade away; players stay until they get up.
+function drawFallen(e, L, stay) {
+  const t = e.downT, k = e.k || L.k;
+  const fade = stay ? 1 : 1 - clamp((t - 0.6) / 0.55, 0, 1);
   ctx.save();
   ctx.globalAlpha = fade;
   ctx.translate(e.x, e.y);
   ctx.rotate(e.fall * Math.min(1, t * 6) * 1.35);
   ctx.translate(-e.x, -e.y);
-  drawKid(e.x, e.y, Object.assign({}, e, { moving: false, raise: 0, wind: 0, flash: t < 0.08 ? 1 : 0, maxHp: 1 }), K);
+  drawKid(e.x, e.y, Object.assign({}, e, { moving: false, raise: 0, wind: 0, flash: t < 0.08 ? 1 : 0, maxHp: 1 }), L);
   ctx.restore();
   ctx.globalAlpha = fade;
   const g = Math.min(1, t * 3.5);
   ctx.fillStyle = COL.mist; ell(e.x + e.fall * 16 * k, e.y - 2 * k, 17 * k * g, 8 * k * g);
   ctx.fillStyle = COL.white; ell(e.x + e.fall * 15 * k, e.y - 5 * k, 15 * k * g, 8 * k * g);
   ctx.globalAlpha = 1;
+}
+function nameTag(x, y, text, color) {
+  ctx.font = "600 13px 'Jost', sans-serif"; ctx.textAlign = 'center';
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.lineJoin = 'round';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color || COL.ink; ctx.fillText(text, x, y);
+}
+function drawPlayer(p) {
+  if (p.state === 'gone') return;
+  const L = lookFor(p);
+  if (p.state === 'down') {
+    drawFallen(p, L, true);
+    if (inRoom()) {
+      const prog = clamp(p.lift / K.LIFT, 0, 1);
+      ctx.strokeStyle = 'rgba(28,42,57,0.18)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(p.x + p.fall * 8, p.y - 8, 26, 0, TAU); ctx.stroke();
+      if (prog > 0) {
+        ctx.strokeStyle = COL.mustard; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(p.x + p.fall * 8, p.y - 8, 26, -Math.PI / 2, -Math.PI / 2 + prog * TAU); ctx.stroke(); ctx.lineCap = 'butt';
+      }
+      if (p !== me) nameTag(p.x, p.y - 44 + Math.sin(gt * 4) * 2, prog > 0 ? 'Kalkıyor…' : p.name + ' · kaldır!', COL.falu);
+    }
+    return;
+  }
+  if (p.inv > 0 && Math.floor(p.inv * 12) % 2 === 0) { ctx.globalAlpha = 0.45; drawKid(p.x, p.y, p, L); ctx.globalAlpha = 1; }
+  else drawKid(p.x, p.y, p, L);
+  if (inRoom() && p !== me) nameTag(p.x, p.y - 50, p.name);
 }
 function drawTree(o) {
   const { x, y, s } = o;
@@ -1091,7 +1110,7 @@ function drawRock(o) {
 }
 function drawPile(o) {
   const { x, y } = o;
-  if (taken.has(o.key)) { ctx.fillStyle = COL.drift; ell(x, y - 1, 18, 6); return; }
+  if (world.taken.has(o.key)) { ctx.fillStyle = COL.drift; ell(x, y - 1, 18, 6); return; }
   const pulse = 0.45 + 0.3 * Math.sin(gt * 4 + x);
   ctx.strokeStyle = COL.mustard; ctx.lineWidth = 2; ctx.globalAlpha = pulse;
   ctx.beginPath(); ctx.ellipse(x, y, 29, 11, 0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
@@ -1173,17 +1192,18 @@ function drawPond(p) {
   ctx.stroke();
 }
 function drawGroundCell(cx, cy) {
-  const h1 = hash3(cx, cy, SEED + 51);
+  const S = world.seed;
+  const h1 = hash3(cx, cy, S + 51);
   if (h1 < 0.55) {
     ctx.fillStyle = COL.drift;
-    ell(cx * C + hash3(cx, cy, SEED + 52) * C, cy * C + hash3(cx, cy, SEED + 53) * C, 26 + h1 * 70, 9 + h1 * 20);
+    ell(cx * CELL + hash3(cx, cy, S + 52) * CELL, cy * CELL + hash3(cx, cy, S + 53) * CELL, 26 + h1 * 70, 9 + h1 * 20);
   }
   ctx.fillStyle = 'rgba(140,172,195,0.35)';
-  circ(cx * C + hash3(cx, cy, SEED + 54) * C, cy * C + hash3(cx, cy, SEED + 55) * C, 1.3);
-  circ(cx * C + hash3(cx, cy, SEED + 56) * C, cy * C + hash3(cx, cy, SEED + 58) * C, 1);
-  const tw = Math.sin(gt * 2.2 + hash3(cx, cy, SEED + 57) * 40);
+  circ(cx * CELL + hash3(cx, cy, S + 54) * CELL, cy * CELL + hash3(cx, cy, S + 55) * CELL, 1.3);
+  circ(cx * CELL + hash3(cx, cy, S + 56) * CELL, cy * CELL + hash3(cx, cy, S + 58) * CELL, 1);
+  const tw = Math.sin(gt * 2.2 + hash3(cx, cy, S + 57) * 40);
   if (tw > 0.8 && !REDUCED) {
-    const sx = cx * C + hash3(cx, cy, SEED + 59) * C, sy = cy * C + hash3(cx, cy, SEED + 60) * C, l = (tw - 0.8) * 18;
+    const sx = cx * CELL + hash3(cx, cy, S + 59) * CELL, sy = cy * CELL + hash3(cx, cy, S + 60) * CELL, l = (tw - 0.8) * 18;
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.moveTo(sx - l, sy); ctx.lineTo(sx + l, sy); ctx.moveTo(sx, sy - l); ctx.lineTo(sx, sy + l); ctx.stroke();
   }
@@ -1194,33 +1214,33 @@ function drawBallShadow(b) {
   ell(b.x, b.y, b.r * 1.1, b.r * 0.5);
 }
 function drawBall(b) {
-  const y = b.y - b.z;
+  const y = b.y - b.z, enemy = !b.owner;
   ctx.fillStyle = '#ffffff'; circ(b.x, y, b.r);
-  ctx.fillStyle = b.own === 'e' ? 'rgba(106,75,102,0.35)' : COL.drift;
+  ctx.fillStyle = enemy ? 'rgba(106,75,102,0.35)' : COL.drift;
   ctx.beginPath(); ctx.arc(b.x, y, b.r, 0.05 * Math.PI, 0.95 * Math.PI); ctx.fill();
-  ctx.strokeStyle = b.own === 'e' ? COL.plum : 'rgba(28,42,57,0.45)'; ctx.lineWidth = 1.2;
+  ctx.strokeStyle = enemy ? COL.plum : 'rgba(28,42,57,0.45)'; ctx.lineWidth = 1.2;
   ctx.beginPath(); ctx.arc(b.x, y, b.r, 0, TAU); ctx.stroke();
 }
 function drawAimPreview() {
-  if (st.over || mode !== 'play') return;
+  if (!controlling()) return;
   let ux, uy, dist;
   if (aim) {
     const px = aim.x - aim.ox, py = aim.y - aim.oy, len = Math.hypot(px, py);
     if (len < 18) return;
     ux = -px / len; uy = -py / len; dist = slingDist(len);
   } else if (mouse.active && !COARSE) {
-    const w = toWorld(mouse.x, mouse.y), dx = w.x - P.x, dy = w.y - P.y, l = Math.hypot(dx, dy) || 1;
-    ux = dx / l; uy = dy / l; dist = clamp(l + 10, 120, 470);
+    const w = toWorld(mouse.x, mouse.y), dx = w.x - me.x, dy = w.y - me.y, l = Math.hypot(dx, dy) || 1;
+    ux = dx / l; uy = dy / l; dist = clamp(l + 10, K.RANGE_MIN, K.RANGE_MAX);
   } else return;
-  const alpha = P.ammo > 0 ? 1 : 0.35;
+  const alpha = me.ammo > 0 ? 1 : 0.35;
   ctx.globalAlpha = alpha;
   ctx.fillStyle = 'rgba(28,42,57,0.45)';
   for (let i = 1; i < 14; i++) {
-    const t = i / 14, x = P.x + ux * dist * t, y = P.y + uy * dist * t;
+    const t = i / 14, x = me.x + ux * dist * t, y = me.y + uy * dist * t;
     const z = Math.sin(Math.PI * t) * dist * 0.1 + 18 * (1 - t);
     circ(x, y - z, 2.3);
   }
-  const lx = P.x + ux * dist, ly = P.y + uy * dist;
+  const lx = me.x + ux * dist, ly = me.y + uy * dist;
   ctx.strokeStyle = COL.falu; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
   ctx.beginPath(); ctx.ellipse(lx, ly, 14, 6, 0, 0, TAU); ctx.stroke();
   ctx.setLineDash([]); ctx.globalAlpha = 1;
@@ -1246,15 +1266,16 @@ const sortKey = (o) => (o.t === 'cabin' ? o.y + o.h : o.y);
 function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = COL.snow; ctx.fillRect(0, 0, W, H);
+  if (!world) return;
   let sx = 0, sy = 0;
   if (cam.shake > 0 && !REDUCED) { sx = (Math.random() - 0.5) * cam.shake; sy = (Math.random() - 0.5) * cam.shake; }
   ctx.save();
   ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(ZOOM, ZOOM); ctx.translate(-cam.x, -cam.y);
   const hw = W / 2 / ZOOM, hh = H / 2 / ZOOM;
   const x0 = cam.x - hw - 70, x1 = cam.x + hw + 70, y0 = cam.y - hh - 70, y1 = cam.y + hh + 170;
-  const cx0 = Math.floor(x0 / C), cx1 = Math.floor(x1 / C), cy0 = Math.floor(y0 / C), cy1 = Math.floor(y1 / C);
+  const cx0 = Math.floor(x0 / CELL), cx1 = Math.floor(x1 / CELL), cy0 = Math.floor(y0 / CELL), cy1 = Math.floor(y1 / CELL);
   for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) drawGroundCell(cx, cy);
-  for (const p of near(pondAt, PC, cam.x, cam.y, 2)) {
+  for (const p of world.pondsNear(cam.x, cam.y, 2)) {
     if (p.x + p.rx < x0 || p.x - p.rx > x1 || p.y + p.ry < y0 || p.y - p.ry > y1) continue;
     drawPond(p);
   }
@@ -1270,13 +1291,14 @@ function render() {
       ctx.globalAlpha = 1;
     }
   }
+  const balls = snowballs();
   for (const b of balls) drawBallShadow(b);
   const list = [];
-  for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) { const L = cellAt(cx, cy); for (let n = 0; n < L.length; n++) list.push(L[n]); }
-  for (const k of cabinsNear(cam.x, cam.y)) if (k.x + k.w > x0 && k.x < x1 && k.y + k.h > y0 && k.y - 40 < y1) list.push(k);
-  for (const c of pickups) list.push(c);
-  for (const e of enemies) list.push(e);
-  list.push(P);
+  for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) { const L = world.cellAt(cx, cy); for (let n = 0; n < L.length; n++) list.push(L[n]); }
+  for (const k of world.cabinsNear(cam.x, cam.y)) if (k.x + k.w > x0 && k.x < x1 && k.y + k.h > y0 && k.y - 40 < y1) list.push(k);
+  for (const c of cocoas()) list.push(c);
+  for (const e of kids()) if (e.skin != null) list.push(e);
+  for (const p of team()) list.push(p);
   list.sort((a, b) => sortKey(a) - sortKey(b));
   for (const o of list) {
     switch (o.t) {
@@ -1285,11 +1307,8 @@ function render() {
       case 'pile': drawPile(o); break;
       case 'cabin': drawCabin(o); break;
       case 'cocoa': drawCocoa(o); break;
-      case 'enemy': drawKidMaybeDown(o, KINDS[o.type]); break;
-      case 'player':
-        if (P.inv > 0 && !P.down && Math.floor(P.inv * 12) % 2 === 0) { ctx.globalAlpha = 0.45; drawKid(P.x, P.y, P, KINDS.player); ctx.globalAlpha = 1; }
-        else drawKidMaybeDown(P, KINDS.player);
-        break;
+      case 'enemy': if (o.down) drawFallen(o, LOOK[o.kind], false); else drawKid(o.x, o.y, o, LOOK[o.kind]); break;
+      case 'player': drawPlayer(o); break;
     }
   }
   for (const b of balls) drawBall(b);
@@ -1322,6 +1341,7 @@ function render() {
     ctx.fillStyle = 'rgba(28,42,57,0.25)'; circ(aim.ox - 14, aim.oy, 4); circ(aim.ox + 14, aim.oy, 4);
     ctx.strokeStyle = COL.falu; ctx.lineWidth = 3; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(aim.ox - 14, aim.oy); ctx.lineTo(bx, by); ctx.lineTo(aim.ox + 14, aim.oy); ctx.stroke();
+    ctx.lineCap = 'butt';
     ctx.fillStyle = '#ffffff'; circ(bx, by, 10);
     ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(bx, by, 10, 0, TAU); ctx.stroke();
   }
@@ -1333,8 +1353,8 @@ function drawRadar(dt) {
   const R = 42, range = 900, sc = (R - 6) / range;
   if (radarT <= 0) {
     radarT = 0.4; radarPiles = [];
-    const cx = Math.floor(P.x / C), cy = Math.floor(P.y / C), n = 8;
-    for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) for (const o of cellAt(cx + i, cy + j)) if (o.t === 'pile' && !taken.has(o.key)) radarPiles.push(o);
+    const cx = Math.floor(me.x / CELL), cy = Math.floor(me.y / CELL), n = 8;
+    for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) for (const o of world.cellAt(cx + i, cy + j)) if (o.t === 'pile' && !world.taken.has(o.key)) radarPiles.push(o);
   }
   rctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   rctx.clearRect(0, 0, 84, 84);
@@ -1342,26 +1362,37 @@ function drawRadar(dt) {
   rctx.beginPath(); rctx.arc(R, R, R - 1, 0, TAU); rctx.fillStyle = 'rgba(255,255,255,0.82)'; rctx.fill();
   rctx.clip();
   rctx.fillStyle = COL.ice;
-  for (const p of pondsNear(P.x, P.y)) { rctx.beginPath(); rctx.ellipse(R + (p.x - P.x) * sc, R + (p.y - P.y) * sc, p.rx * sc, p.ry * sc, 0, 0, TAU); rctx.fill(); }
+  for (const p of world.pondsNear(me.x, me.y)) { rctx.beginPath(); rctx.ellipse(R + (p.x - me.x) * sc, R + (p.y - me.y) * sc, p.rx * sc, p.ry * sc, 0, 0, TAU); rctx.fill(); }
   rctx.fillStyle = COL.falu;
-  for (const k of cabinsNear(P.x, P.y)) rctx.fillRect(R + (k.x - P.x) * sc, R + (k.y - P.y) * sc, Math.max(3, k.w * sc), Math.max(3, k.h * sc));
+  for (const k of world.cabinsNear(me.x, me.y)) rctx.fillRect(R + (k.x - me.x) * sc, R + (k.y - me.y) * sc, Math.max(3, k.w * sc), Math.max(3, k.h * sc));
   rctx.strokeStyle = 'rgba(28,42,57,0.12)'; rctx.lineWidth = 1;
   rctx.beginPath(); rctx.arc(R, R, R * 0.5, 0, TAU); rctx.stroke();
   for (const o of radarPiles) {
-    const x = R + (o.x - P.x) * sc, y = R + (o.y - P.y) * sc;
+    const x = R + (o.x - me.x) * sc, y = R + (o.y - me.y) * sc;
     rctx.fillStyle = '#ffffff'; rctx.beginPath(); rctx.arc(x, y, 2.6, 0, TAU); rctx.fill();
     rctx.strokeStyle = COL.mustard; rctx.lineWidth = 1.4; rctx.stroke();
   }
-  for (const e of enemies) {
+  for (const e of kids()) {
     if (e.down) continue;
-    let dx = (e.x - P.x) * sc, dy = (e.y - P.y) * sc; const d = Math.hypot(dx, dy);
-    let r = e.type === 'big' ? 3.4 : 2.6;
+    let dx = (e.x - me.x) * sc, dy = (e.y - me.y) * sc; const d = Math.hypot(dx, dy);
+    let r = e.kind === 'big' ? 3.4 : 2.6;
     if (d > R - 5) { dx = dx / d * (R - 5); dy = dy / d * (R - 5); r = 2; }
-    rctx.fillStyle = e.type === 'thrower' ? COL.plum : e.type === 'big' ? COL.cocoa : COL.falu;
+    rctx.fillStyle = e.kind === 'thrower' ? COL.plum : e.kind === 'big' ? COL.cocoa : COL.falu;
     rctx.beginPath(); rctx.arc(R + dx, R + dy, r, 0, TAU); rctx.fill();
   }
+  // friends: big dots in their colour (a white ring when they need lifting)
+  for (const p of team()) {
+    if (p === me || p.state === 'gone') continue;
+    let dx = (p.x - me.x) * sc, dy = (p.y - me.y) * sc; const d = Math.hypot(dx, dy);
+    if (d > R - 6) { dx = dx / d * (R - 6); dy = dy / d * (R - 6); }
+    rctx.fillStyle = okColor(p.color) ? p.color : COL.teal;
+    rctx.beginPath(); rctx.arc(R + dx, R + dy, 3.6, 0, TAU); rctx.fill();
+    rctx.lineWidth = p.state === 'down' ? 2.2 : 1.2;
+    rctx.strokeStyle = p.state === 'down' ? (Math.floor(gt * 4) % 2 ? COL.falu : '#ffffff') : '#ffffff';
+    rctx.stroke();
+  }
   rctx.restore();
-  rctx.save(); rctx.translate(R, R); rctx.rotate(Math.atan2(P.face.y, P.face.x));
+  rctx.save(); rctx.translate(R, R); rctx.rotate(Math.atan2(me.face.y, me.face.x));
   rctx.fillStyle = COL.ink; rctx.beginPath(); rctx.moveTo(6, 0); rctx.lineTo(-4, -4); rctx.lineTo(-2, 0); rctx.lineTo(-4, 4); rctx.closePath(); rctx.fill();
   rctx.restore();
   rctx.strokeStyle = 'rgba(28,42,57,0.25)'; rctx.lineWidth = 1.5;
@@ -1369,35 +1400,57 @@ function drawRadar(dt) {
 }
 
 /* ---------- HUD ---------- */
-const hud = { hp: -1, max: -1, ammo: -1, score: -1, wave: -1, combo: -1 };
+const hud = { hp: -1, ammo: -1, score: -1, wave: -1, combo: -1, team: '', down: '' };
+function resetHud() { for (const k in hud) hud[k] = typeof hud[k] === 'string' ? '' : -1; }
 const HEART = '<svg viewBox="0 0 24 22" class="%c"><path d="M12 20.5C5 15.5 2 12 2 8a5 5 0 0 1 10-2a5 5 0 0 1 10 2c0 4-3 7.5-10 12.5z"/></svg>';
-const elHearts = $('hearts'), elAmmo = $('ammo'), elScore = $('score'), elWave = $('wave'), elCombo = $('combo');
+const elHearts = $('hearts'), elAmmo = $('ammo'), elScore = $('score'), elWave = $('wave'), elCombo = $('combo'), elTeam = $('team'), elDown = $('downNote');
 function updateHUD() {
-  if (hud.hp !== P.hp || hud.max !== P.maxHp) {
-    hud.hp = P.hp; hud.max = P.maxHp;
+  const hp = Math.max(0, me.hp);
+  if (hud.hp !== hp) {
+    hud.hp = hp;
     let s = '';
-    for (let i = 0; i < P.maxHp; i++) s += HEART.replace('%c', i < P.hp ? '' : 'empty');
+    for (let i = 0; i < K.HP; i++) s += HEART.replace('%c', i < hp ? '' : 'empty');
     elHearts.innerHTML = s;
   }
-  if (hud.ammo !== P.ammo) {
-    hud.ammo = P.ammo;
+  if (hud.ammo !== me.ammo) {
+    hud.ammo = me.ammo;
     let s = '';
-    const n = Math.max(MAX_AMMO, P.ammo);
-    for (let i = 0; i < n; i++) s += `<i class="${i < P.ammo ? (i >= MAX_AMMO ? 'extra' : '') : i === P.ammo ? 'next' : 'empty'}"></i>`;
+    const n = Math.max(K.AMMO, me.ammo);
+    for (let i = 0; i < n; i++) s += `<i class="${i < me.ammo ? (i >= K.AMMO ? 'extra' : '') : i === me.ammo ? 'next' : 'empty'}"></i>`;
     elAmmo.innerHTML = s;
   }
   const next = elAmmo.querySelector('.next');
-  if (next) next.style.setProperty('--p', (P.regen / 0.9).toFixed(3));
-  if (hud.score !== st.score) { hud.score = st.score; elScore.textContent = st.score.toLocaleString('tr-TR'); }
-  const waveKey = st.calm > 0 ? -st.wave - 1 : st.wave;
-  if (hud.wave !== waveKey) { hud.wave = waveKey; elWave.textContent = st.wave === 0 ? 'Hazırlan' : st.calm > 0 ? 'Mola' : 'Dalga ' + st.wave; }
-  const combo = st.combo >= 2 ? Math.min(5, st.combo) : 0;
+  if (next) next.style.setProperty('--p', (me.regen / K.MAKE).toFixed(3));
+  const score = scoreNow();
+  if (hud.score !== score) { hud.score = score; elScore.textContent = score.toLocaleString('tr-TR'); }
+  const wave = waveNow(), calm = calmNow();
+  const waveKey = calm ? -wave - 1 : wave;
+  if (hud.wave !== waveKey) { hud.wave = waveKey; elWave.textContent = wave === 0 ? 'Hazırlan' : calm ? 'Mola' : 'Dalga ' + wave; }
+  const combo = me.combo >= 2 ? Math.min(5, me.combo) : 0;
   if (hud.combo !== combo) { hud.combo = combo; elCombo.hidden = !combo; if (combo) elCombo.textContent = 'Seri ×' + combo; }
-  $('hintL').hidden = !(COARSE && !hintsUsed.move);
-  $('hintR').hidden = !(COARSE && !hintsUsed.aim);
+  // my friends in a room
+  let tkey = '';
+  const mates = inRoom() ? room.team.filter((p) => p !== me && p.state !== 'gone') : [];
+  for (const p of mates) tkey += p.no + p.name + p.color + p.state + p.hp + '|';
+  if (hud.team !== tkey) {
+    hud.team = tkey;
+    elTeam.hidden = !mates.length;
+    elTeam.replaceChildren(...mates.map((p) => {
+      const row = mk('div', p.state === 'down' ? 'down' : '');
+      const dot = mk('i'); dot.style.setProperty('--c', okColor(p.color) ? p.color : COL.teal);
+      row.append(dot, mk('span', null, p.name), mk('b', null, p.state === 'down' ? 'düştü' : '♥' + p.hp));
+      return row;
+    }));
+  }
+  let dkey = '';
+  if (inRoom() && me.state === 'down' && !room.over) {
+    const anyUp = room.team.some((p) => p !== me && p.state === 'alive');
+    dkey = anyUp ? 'Karlara gömüldün! Bir arkadaşın yanına gelip durunca kalkarsın. Dalga bitince de kalkarsın.' : 'Karlara gömüldün!';
+  }
+  if (hud.down !== dkey) { hud.down = dkey; elDown.hidden = !dkey; elDown.textContent = dkey; }
+  $('hintL').hidden = !(COARSE && !hintsUsed.move && me.state === 'alive');
+  $('hintR').hidden = !(COARSE && !hintsUsed.aim && me.state === 'alive');
 }
-// Short progress line for the "who's playing" page (only with the account script).
-function hesapNotu(t) { try { if (window.Hesap) Hesap.not(t); } catch (e) { /* ignore */ } }
 function banner(text, sub) {
   const b = $('banner');
   b.textContent = text;
@@ -1405,43 +1458,486 @@ function banner(text, sub) {
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
 }
 
-/* ---------- Flow ---------- */
+/* ---------- Screens ---------- */
+const SCREENS = ['startScreen', 'pauseScreen', 'overScreen', 'roomsScreen', 'waitScreen', 'roomMenu', 'resultScreen'];
+function screen(id) { for (const s of SCREENS) $(s).hidden = s !== id; }
+function toMenu() {
+  mode = 'menu';
+  menuForest();
+  $('hud').hidden = true;
+  screen('startScreen');
+  showBestOnStart();
+}
+
+/* ---------- Alone: flow ---------- */
 const BEST_KEY = 'karSavasi.best';
-function getBest() { try { return parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch (e) { return 0; } }
-function setBest(v) { try { localStorage.setItem(BEST_KEY, String(v)); } catch (e) { /* ignore */ } }
+function getBest() { return parseInt(store.get(BEST_KEY, '0'), 10) || 0; }
+function setBest(v) { store.set(BEST_KEY, String(v)); }
 function showBestOnStart() {
   const b = getBest(), el = $('bestStart');
   el.hidden = !b; if (b) el.textContent = 'En iyi puanın: ' + b.toLocaleString('tr-TR');
 }
 function start() {
   ensureAudio();
-  newGame();
+  battle = new Battle((Math.random() * 1e9) | 0);
+  world = battle.world;
+  me = battle.addPlayer({ no: 1, x: 0, y: 0 });
+  initMe(me, SKINS[0]);
+  resetFx();
   mode = 'play';
-  $('startScreen').hidden = true; $('overScreen').hidden = true; $('pauseScreen').hidden = true;
+  screen(null);
   $('hud').hidden = false;
   banner('Hazırlan!', 'Kar yığınlarından kartopu topla');
   hesapNotu('Yeni oyun');
 }
-function pause() { if (mode !== 'play' || st.over) return; mode = 'pause'; joy = null; aim = null; $('pauseScreen').hidden = false; $('btnResume').focus(); }
-function resume() { if (mode !== 'pause') return; mode = 'play'; $('pauseScreen').hidden = true; last = performance.now(); }
+function pause() { if (mode !== 'play' || battle.over) return; mode = 'pause'; joy = null; aim = null; screen('pauseScreen'); $('btnResume').focus(); }
+function resume() { if (mode !== 'pause') return; mode = 'play'; screen(null); last = performance.now(); }
 function showOver() {
   mode = 'over';
-  const best = getBest(), rec = st.score > best;
-  if (rec) setBest(st.score);
-  $('stScore').textContent = st.score.toLocaleString('tr-TR');
-  $('stWave').textContent = String(Math.max(1, st.wave));
-  $('stKills').textContent = String(st.kills);
-  $('stBest').textContent = Math.max(best, st.score).toLocaleString('tr-TR');
-  $('stRecord').hidden = !(rec && st.score > 0);
-  hesapNotu('Oyun bitti · dalga ' + Math.max(1, st.wave) + ' · ' + st.score.toLocaleString('tr-TR') + ' puan · en iyi ' + Math.max(best, st.score).toLocaleString('tr-TR'));
-  $('overScreen').hidden = false;
+  const best = getBest(), score = battle.score, rec = score > best;
+  if (rec) setBest(score);
+  $('stScore').textContent = score.toLocaleString('tr-TR');
+  $('stWave').textContent = String(Math.max(1, battle.wave));
+  $('stKills').textContent = String(battle.kills);
+  $('stBest').textContent = Math.max(best, score).toLocaleString('tr-TR');
+  $('stRecord').hidden = !(rec && score > 0);
+  hesapNotu('Oyun bitti · dalga ' + Math.max(1, battle.wave) + ' · ' + score.toLocaleString('tr-TR') + ' puan · en iyi ' + Math.max(best, score).toLocaleString('tr-TR'));
+  screen('overScreen');
   $('btnAgain').focus();
 }
+
+/* ---------- Rooms (server: fish/sunucu, /kar/...) ---------- */
+// The room server's address. A different one can be tried with localStorage 'karSavasi.sunucu'.
+const SERVER = store.get('karSavasi.sunucu', '') || 'wss://fish-odalar.umutguncan.workers.dev';
+function token() {
+  try { return window.Hesap && Hesap.anahtar ? Hesap.anahtar().catch(() => null) : Promise.resolve(null); }
+  catch (e) { return Promise.resolve(null); }
+}
+function newRoomId() {
+  const abc = 'abcdefghijkmnpqrstuvwxyz23456789', b = new Uint8Array(8);
+  try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 8; i++) b[i] = Math.random() * 256; }
+  return Array.from(b, (x) => abc[x % abc.length]).join('');
+}
+function badge(name, color) {
+  const b = mk('span', 'badge', (String(name || '?').trim()[0] || '?').toLocaleUpperCase('tr'));
+  b.style.setProperty('--c', okColor(color) ? color : COL.teal);
+  b.style.color = isLight(color) ? COL.ink : '#fff';
+  return b;
+}
+
+const room = {
+  lobby: null, lobbyPing: 0, list: [], rows: new Map(),
+  ws: null, ping: 0, id: null, create: false, myNo: 0, host: 0, status: null, people: [], names: new Map(),
+  leaving: false, retry: 0, round: 0, seq: 0, sendT: 0, clock: 0,
+  kids: [], kidMap: new Map(), balls: [], cocoa: [], team: [], others: new Map(), w: [0, 0, 0, 0],
+  over: false, result: null, counted: true,
+
+  available() { return !!(window.Hesap && Hesap.profil && SERVER && 'WebSocket' in window); },
+
+  /* the room list */
+  openList(message) {
+    screen('roomsScreen');
+    this.say(message || 'Odalara bakılıyor…', !!message);
+    $('btnCreate').disabled = false;
+    if (!message) { $('roomList').replaceChildren(); this.rows.clear(); }
+    this.connectLobby();
+  },
+  say(t, bad) { const e = $('roomStatus'); e.textContent = t || ''; e.classList.toggle('bad', !!bad); },
+  async connectLobby() {
+    this.closeLobby();
+    const tk = await token();
+    if ($('roomsScreen').hidden) return;
+    let ws;
+    try { ws = new WebSocket(SERVER + '/kar/lobi'); } catch (e) { this.say('Odalara ulaşılamadı.', true); return; }
+    this.lobby = ws;
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token: tk }));
+    ws.onmessage = (e) => {
+      if (e.data === 'pong' || this.lobby !== ws) return;
+      let msg; try { msg = JSON.parse(e.data); } catch (_) { return; }
+      if (msg.t === 'liste') { this.list = msg.odalar || []; this.drawList(); }
+      else if (msg.t === 'hata') this.say(msg.neden === 'giris' ? 'Odaları görmek için yeniden giriş yap.' : 'Odalar yüklenemedi.', true);
+    };
+    ws.onclose = () => {
+      if (this.lobby !== ws) return;
+      this.lobby = null;
+      if (!$('roomsScreen').hidden) {
+        this.say('Oda listesi koptu, yeniden deneniyor…', true);
+        setTimeout(() => { if (!$('roomsScreen').hidden && !this.lobby && !this.ws) this.connectLobby(); }, 3000);
+      }
+    };
+    clearInterval(this.lobbyPing);
+    this.lobbyPing = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch (e) { /* ignore */ } }, 25000);
+  },
+  closeLobby() { clearInterval(this.lobbyPing); const ws = this.lobby; this.lobby = null; if (ws) { try { ws.close(1000); } catch (e) { /* ignore */ } } },
+  drawList() {
+    const list = $('roomList');
+    this.say('');
+    if (!this.list.length) {
+      this.rows.clear();
+      list.replaceChildren(mk('li', 'empty', 'Şu an açık oda yok. Bir oda kur, sonra “Arkadaşını çağır” ile linki gönder.'));
+      return;
+    }
+    const empty = list.querySelector('.empty'); if (empty) empty.remove();
+    const keep = new Set();
+    for (const r of this.list) {
+      keep.add(r.id);
+      let s = this.rows.get(r.id);
+      if (!s) {
+        s = { li: mk('li'), name: mk('span', 'name'), small: mk('small'), btn: mk('button', 'mini'), bd: null, r };
+        s.btn.type = 'button';
+        s.btn.addEventListener('click', () => this.join(s.r.id, false));
+        s.bd = badge(r.kurucu, r.renk);
+        s.li.append(s.bd, s.name, s.btn);
+        this.rows.set(r.id, s);
+      }
+      s.r = r;
+      s.li.classList.toggle('playing', r.durum === 'oyunda');
+      s.name.replaceChildren(`${ninki(r.kurucu)} odası`, s.small);
+      s.small.textContent = r.durum === 'oyunda'
+        ? `${r.n} kişi · ${r.dalga ? r.dalga + '. dalgada' : 'oyun başladı'}`
+        : `${r.n} kişi · başlamayı bekliyor`;
+      const nb = badge(r.kurucu, r.renk);
+      if (nb.textContent !== s.bd.textContent || nb.style.cssText !== s.bd.style.cssText) { s.bd.replaceWith(nb); s.bd = nb; }
+      const full = r.n >= (r.en || K.MAX_PLAYERS);
+      s.btn.textContent = full ? 'Dolu' : 'Katıl'; s.btn.disabled = full;
+      list.append(s.li);
+    }
+    for (const [id, s] of this.rows) if (!keep.has(id)) { s.li.remove(); this.rows.delete(id); }
+  },
+
+  /* joining */
+  join(id, create) {
+    this.closeLobby(); this.close();
+    this.id = id; this.create = create; this.myNo = 0; this.status = null; this.names.clear(); this.leaving = false; this.retry = 0;
+    screen('roomsScreen');
+    this.say(create ? 'Odan kuruluyor…' : 'Katılınıyor…');
+    $('btnCreate').disabled = true;
+    this.connect();
+  },
+  async connect() {
+    const tk = await token();
+    const p = profile();
+    let ws;
+    try { ws = new WebSocket(SERVER + '/kar/oda/' + this.id); } catch (e) { this.fail('ag'); return; }
+    this.ws = ws;
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token: tk, profil: p.id, ad: p.name, renk: p.color, kur: this.create, surum: VERSION }));
+    ws.onmessage = (e) => {
+      if (e.data === 'pong' || this.ws !== ws) return;
+      let msg; try { msg = JSON.parse(e.data); } catch (_) { return; }
+      this.onMessage(msg);
+    };
+    ws.onclose = (e) => {
+      if (this.ws !== ws) return;
+      this.ws = null; clearInterval(this.ping);
+      if (this.leaving) return;
+      // dropped in the middle: try to get back in (the server keeps our place for a while)
+      if (e.code < 4000 && this.myNo && this.retry < 5) {
+        this.retry++; this.create = false;
+        if (mode === 'room') toast('Bağlantı koptu · yeniden bağlanılıyor…', true);
+        setTimeout(() => { if (!this.ws && !this.leaving && this.id) this.connect(); }, 800 * this.retry);
+        return;
+      }
+      if (e.code < 4000) this.fail('ag');
+    };
+    clearInterval(this.ping);
+    this.ping = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch (e) { /* ignore */ } }, 25000);
+  },
+  send(msg) { const ws = this.ws; if (ws && ws.readyState === 1) { try { ws.send(JSON.stringify(msg)); } catch (e) { /* ignore */ } } },
+  close() { clearInterval(this.ping); const ws = this.ws; this.ws = null; if (ws) { try { ws.close(1000); } catch (e) { /* ignore */ } } },
+  fail(reason) {
+    const text = {
+      yok: 'O oda kapanmış. Başka bir odaya katıl ya da kendi odanı kur.',
+      dolu: 'O oda dolu (8 kişi). Başka bir odaya bak.',
+      giris: 'Odalarda oynamak için yeniden giriş yap.',
+      baska: 'Bu odayı başka bir yerde açtın.',
+      surum: 'Oyunun yeni sürümü çıktı. Sayfayı yenile.',
+      ag: 'Odaya ulaşılamadı. Bağlantını kontrol edip yeniden dene.'
+    }[reason] || 'Odaya katılınamadı.';
+    this.leaving = true; this.close(); this.count();
+    this.exitGame();
+    this.id = null;
+    this.openList(text);
+  },
+  leave(toList) {
+    this.leaving = true; this.close(); this.count();
+    this.exitGame();
+    this.id = null;
+    if (toList) this.openList(); else { this.closeLobby(); toMenu(); }
+  },
+  onMessage(msg) {
+    switch (msg.t) {
+      case 'hos': if (msg.surum !== VERSION) { this.fail('surum'); return; } this.myNo = msg.ben; this.retry = 0; break;
+      case 'oda': this.info(msg); break;
+      case 'basla': this.start(msg); break;
+      case 's': this.snapshot(msg); break;
+      case 'duz': if (me && me.state === 'alive' && mode === 'room') { me.x = msg.x; me.y = msg.y; } break;
+      case 'son': this.end(msg); break;
+      case 'hata': this.fail(msg.neden); break;
+    }
+  },
+  info(msg) {
+    const before = new Set(this.people.map((o) => o.no));
+    this.status = msg.durum; this.host = msg.kurucu; this.people = msg.oyuncular || [];
+    for (const o of this.people) this.names.set(o.no, { ad: o.ad, renk: o.renk });
+    if (msg.kadro) this.roster(msg.kadro);
+    if (mode === 'room') for (const o of this.people) if (!before.has(o.no) && o.no !== this.myNo) toast(o.ad + ' geldi');
+    // came back after a dropped connection and the game has ended meanwhile
+    if (mode === 'room' && msg.durum !== 'oyunda') { this.count(); this.exitGame(); }
+    if (mode !== 'room' && $('resultScreen').hidden && msg.durum !== 'oyunda') this.showWait();
+    else if (!$('waitScreen').hidden) this.drawWait();
+  },
+  showWait() { screen('waitScreen'); $('inviteNote').hidden = true; this.drawWait(); },
+  drawWait() {
+    const hostName = (this.names.get(this.host) || {}).ad || 'Oda';
+    $('waitTitle').textContent = `${ninki(hostName)} odası`;
+    const list = $('waitList'); list.replaceChildren();
+    for (const o of this.people) {
+      const li = mk('li', o.no === this.myNo ? 'me' : '');
+      const tag = o.no === this.host ? mk('span', 'tag host', 'kurucu') : o.no === this.myNo ? mk('span', 'tag', 'sen') : mk('span');
+      li.append(badge(o.ad, o.renk), mk('span', 'name', o.ad), tag);
+      list.append(li);
+    }
+    const host = this.myNo === this.host, n = this.people.length;
+    $('btnGo').hidden = !host;
+    $('btnGo').disabled = n < 1;
+    const note = $('waitNote'); note.replaceChildren();
+    if (host) note.textContent = n < 2 ? 'Arkadaşlarına “Arkadaşını çağır” ile link gönder ya da Kar Savaşı’nda “Arkadaşlarla oyna”ya bassınlar. Gelenler oyun başlasa da katılabilir.' : `${n} kişi hazır. Herkes gelince oyunu başlat.`;
+    else { note.append(`${hostName} oyunu başlatacak`); note.append(mk('span', 'dots')); }
+  },
+  roster(list) {
+    for (const o of list) this.names.set(o.no, { ad: o.ad, renk: o.renk });
+    for (const p of this.others.values()) { const n = this.names.get(p.no); if (n) { p.name = n.ad; p.color = n.renk; } }
+  },
+  async invite() {
+    if (!this.id) return;
+    const url = location.origin + location.pathname + '?oda=' + this.id;
+    const hostName = (this.names.get(this.host) || {}).ad || 'Biri';
+    const text = `${ninki(hostName)} Kar Savaşı odasına gel, birlikte oynayalım!`;
+    const note = $('inviteNote');
+    try {
+      if (navigator.share && COARSE) { await navigator.share({ title: 'Kar Savaşı', text, url }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    try {
+      await navigator.clipboard.writeText(url);
+      note.textContent = 'Link kopyalandı. Arkadaşına gönder, açınca bu odaya gelir.';
+      note.classList.remove('link');
+    } catch (e) {
+      note.textContent = url;
+      note.classList.add('link');
+    }
+    note.hidden = false;
+  },
+
+  /* the game */
+  start(msg) {
+    if (msg.kadro) this.roster(msg.kadro);
+    if (mode === 'room' && this.round === msg.tur) {
+      // back after a dropped connection, same game: keep walking from where we are
+      if (msg.ben) me.life = msg.ben.h;
+      return;
+    }
+    ensureAudio();
+    this.round = msg.tur;
+    mode = 'room'; battle = null;
+    world = new World(msg.tohum);
+    this.clock = 0; this.kids = []; this.kidMap.clear(); this.balls = []; this.others.clear();
+    this.cocoa = (msg.kakao || []).map(([id, x, y, life]) => ({ t: 'cocoa', id, x, y, life }));
+    for (const [k, t] of msg.alinan || []) world.taken.set(k, t);
+    this.w = [msg.dalga || 0, 0, msg.puan || 0, 0];
+    this.over = false; this.counted = false; this.result = null; this.seq = 0; this.sendT = 0;
+    const p = profile(), n = this.names.get(this.myNo) || {}, b = msg.ben || { x: 0, y: 0, h: 1, can: K.HP, durum: 1 };
+    me = { t: 'player', no: this.myNo, name: n.ad || p.name, color: n.renk || p.color, x: b.x, y: b.y, vx: 0, vy: 0, kx: 0, ky: 0, r: K.R,
+      hp: b.can, state: b.durum === 2 ? 'down' : 'alive', inv: 0, lift: 0, life: b.h, kills: b.devirdi || 0, combo: 0 };
+    initMe(me, SKINS[this.myNo % SKINS.length]);
+    this.team = [me];
+    resetFx();
+    joy = null; aim = null;
+    screen(null);
+    $('hud').hidden = false;
+    banner(msg.dalga ? 'Oyuna katıldın!' : 'Hazırlan!', msg.dalga ? 'Takımın ' + msg.dalga + '. dalgada' : 'Kar yığınlarından kartopu topla');
+    hesapNotu(`Odada: ${ninki((this.names.get(this.host) || {}).ad || '?')} odası`);
+  },
+  exitGame() {
+    if (mode !== 'room') return;
+    joy = null; aim = null;
+    this.kids = []; this.kidMap.clear(); this.balls = []; this.cocoa = []; this.others.clear(); this.team = [];
+    toMenuForest();
+  },
+  other(no) {
+    let o = this.others.get(no);
+    if (!o) {
+      const n = this.names.get(no) || { ad: 'Arkadaş', renk: COL.teal };
+      o = { t: 'player', no, name: n.ad, color: n.renk, x: 0, y: 0, hx: 0, hy: 0, vx: 0, vy: 0, r: K.R, hp: K.HP, state: 'alive', inv: 0, lift: 0,
+        kills: 0, combo: 0, fresh: true, sT: 0, skin: SKINS[no % SKINS.length], walk: 0, moving: false, raise: 0, step: 0, foot: false,
+        face: { x: 0, y: 1 }, downT: 0, fall: 1 };
+      this.others.set(no, o);
+    }
+    return o;
+  },
+  // w: [wave, break left, score, kids left]  p: [no, x, y, vx, vy, hp, state, knocked over, getting up, streak, safe]
+  // d: [id, kind, x, y, vx, vy, hp, flags]
+  snapshot(msg) {
+    if (mode !== 'room') return;
+    const now = performance.now();
+    this.w = msg.w || this.w;
+    const seen = new Set();
+    for (const a of msg.p || []) {
+      const [no, x, y, vx, vy, hp, st, kills, lift, combo] = a;
+      const state = st === 1 ? 'alive' : st === 2 ? 'down' : 'gone';
+      if (no === this.myNo) {
+        me.hp = hp; me.kills = kills; me.lift = (lift / 100) * K.LIFT; me.combo = combo;
+        if (state === 'down' && me.state === 'alive') { me.state = 'down'; me.downT = 0; joy = null; aim = null; }
+        else if (state === 'alive' && me.state === 'down') me.state = 'alive';
+        continue;
+      }
+      if (state === 'gone') continue;
+      seen.add(no);
+      const o = this.other(no);
+      o.hp = hp; o.kills = kills; o.lift = (lift / 100) * K.LIFT; o.combo = combo;
+      if (state === 'down' && o.state !== 'down') { o.downT = 0; o.x = x; o.y = y; }
+      o.state = state;
+      if (o.fresh || Math.hypot(x - o.x, y - o.y) > 200) { o.x = x; o.y = y; }
+      o.fresh = false; o.hx = x; o.hy = y; o.vx = vx; o.vy = vy; o.sT = now;
+    }
+    for (const no of [...this.others.keys()]) if (!seen.has(no)) this.others.delete(no);
+    this.team = [me, ...this.others.values()];
+    const seenK = new Set();
+    for (const a of msg.d || []) {
+      const [id, kindNo, x, y, vx, vy, hp, flags] = a;
+      seenK.add(id);
+      let k = this.kidMap.get(id);
+      if (!k) {
+        const kind = KIND_LIST[kindNo] || 'runner', D = KINDS[kind];
+        k = { t: 'enemy', id, kind, x, y, hx: x, hy: y, vx, vy, kx: 0, ky: 0, r: D.r, k: D.k, hp, maxHp: D.hp, wind: 0, down: false, downT: 0, fall: 1, sT: now };
+        this.kidMap.set(id, k); this.kids.push(k);
+      }
+      if (k.down) continue;
+      k.hp = hp; k.wind = flags & 1 ? 1 : 0;
+      k.hx = x; k.hy = y; k.vx = vx; k.vy = vy; k.sT = now;
+    }
+    for (const e of msg.e || []) onEvent(e);
+    // kids that left the field (and aren't falling over) go away
+    for (const k of this.kids) if (!k.down && !seenK.has(k.id)) { k.gone = true; this.kidMap.delete(k.id); }
+    this.kids = this.kids.filter((k) => !k.gone);
+  },
+  addBall(e) {
+    const [, owner, seq, x, y, vx, vy, max, age] = e;
+    const key = owner + ':' + seq;
+    if (this.balls.some((b) => b.key === key)) return;
+    const h0 = owner ? 18 : 20;
+    const b = { key, owner, x, y, vx, vy, d: 0, max, h0, z: h0, r: owner ? 6 : 5.5, dead: false };
+    this.balls.push(b);
+    // catch up with where the snowball is on the server by now
+    let t = clamp(((age || 0) + 40) / 1000, 0, 0.3);
+    while (t > 0 && !b.dead) { const h = Math.min(t, 1 / 60); this.stepBall(b, h); t -= h; }
+  },
+  dropBall(key) { if (!key) return; for (const b of this.balls) if (b.key === key) b.dead = true; },
+  // A snowball on the page. Trees and the snow show their splash here; a ball that reaches a kid
+  // or a player only disappears: the hit comes when the server says so.
+  stepBall(b, dt) {
+    for (let s = 0; s < 2 && !b.dead; s++) {
+      moveBall(b, dt / 2);
+      if (b.owner) {
+        for (const k of this.kids) if (!k.down && ballTouchesKid(b, k.x, k.y, k.r, k.k)) { b.dead = true; break; }
+      } else if (!this.over) {
+        for (const p of this.team) if (p.state === 'alive' && ballTouchesPlayer(b, p.x, p.y)) { b.dead = true; burst(b.x, b.y, b.z, 5, false); break; }
+      }
+      if (b.dead) break;
+      if (world.ballBlocked(b)) { b.dead = true; splat(b.x, b.y, b.z, false); }
+      else if (b.d >= b.max) { b.dead = true; splat(b.x, b.y, 0, true); }
+    }
+  },
+  throwBall(ux, uy, dist) {
+    const s = ++this.seq, st = ballStart(me.x, me.y, ux, uy);
+    this.balls.push({ key: me.no + ':' + s, owner: me.no, x: st.x, y: st.y, vx: ux * K.BALL_SPEED, vy: uy * K.BALL_SPEED, d: 0, max: dist, h0: 18, z: 18, r: 6, dead: false });
+    this.send({ t: 'a', x: r1(me.x), y: r1(me.y), ux: r2(ux), uy: r2(uy), m: Math.round(dist), s });
+  },
+  frame(dt) {
+    this.clock += dt;
+    for (const [k, t] of world.taken) if (this.clock >= t) world.taken.delete(k);
+    controlMe(dt);
+    me.inv -= dt;
+    this.sendT -= dt;
+    if (this.sendT <= 0) {
+      this.sendT = 1 / 15;
+      this.send({ t: 'k', x: r1(me.x), y: r1(me.y), vx: Math.round(me.vx), vy: Math.round(me.vy), g: Math.round(viewRadius()), h: me.life });
+    }
+    // the others: guess ahead from the last snapshot and glide there
+    const now = performance.now(), g = 1 - Math.exp(-dt * 14);
+    for (const o of this.others.values()) {
+      o.inv -= dt; o.raise -= dt;
+      if (o.state === 'down') { o.downT += dt; continue; }
+      const ahead = Math.min(0.15, (now - o.sT) / 1000);
+      o.x += (o.hx + o.vx * ahead - o.x) * g;
+      o.y += (o.hy + o.vy * ahead - o.y) * g;
+      const sp = Math.hypot(o.vx, o.vy);
+      o.moving = sp > 20;
+      if (o.moving) {
+        o.walk += sp * dt * 0.085;
+        if (o.raise <= 0) o.face = { x: o.vx / sp, y: o.vy / sp };
+        if (!world.inPond(o.x, o.y)) { o.step += sp * dt; if (o.step > 21) { o.step = 0; o.foot = !o.foot; footprint(o, o.foot, 1); } }
+      }
+    }
+    for (const k of this.kids) {
+      if (k.down) continue;
+      const ahead = Math.min(0.15, (now - k.sT) / 1000);
+      k.x += (k.hx + k.vx * ahead - k.x) * g;
+      k.y += (k.hy + k.vy * ahead - k.y) * g;
+    }
+    animateKids(dt);
+    this.kids = this.kids.filter((k) => { if (k.down && k.downT > 1.15) { this.kidMap.delete(k.id); return false; } return true; });
+    for (const b of this.balls) if (!b.dead) this.stepBall(b, dt);
+    this.balls = this.balls.filter((b) => !b.dead);
+    for (const c of this.cocoa) c.life -= dt;
+    this.cocoa = this.cocoa.filter((c) => c.life > 0);
+  },
+  end(msg) {
+    this.result = msg.sonuc || null;
+    this.count();
+    this.exitGame();
+    this.showResult();
+  },
+  showResult() {
+    const r = this.result || { score: this.w[2], wave: Math.max(1, this.w[0]), players: [] };
+    $('rsScore').textContent = (r.score || 0).toLocaleString('tr-TR');
+    $('rsWave').textContent = String(r.wave || 1);
+    const list = $('rsList'); list.replaceChildren();
+    for (const p of r.players || []) {
+      const li = mk('li', p.no === this.myNo ? 'me' : '');
+      const name = mk('span', 'name', p.name + (p.no === this.myNo ? ' (sen)' : ''));
+      name.append(mk('small', null, p.falls ? `${p.falls} kez düştü` : 'hiç düşmedi'));
+      const num = mk('span', 'num', String(p.kills)); num.append(mk('small', null, 'devirdi'));
+      li.append(badge(p.name, p.color), name, num);
+      list.append(li);
+    }
+    screen('resultScreen');
+    $('btnBackToRoom').focus();
+  },
+  // Writes my game to the scores once (the game ended, or I left in the middle).
+  count() {
+    if (this.counted || !me || mode !== 'room') return;
+    this.counted = true;
+    const r = this.result;
+    const score = r ? r.score : this.w[2], wave = r ? r.wave : Math.max(1, this.w[0]);
+    const mine = r ? (r.players || []).find((p) => p.no === this.myNo) : null;
+    const kills = mine ? mine.kills : me.kills || 0;
+    skorYaz(score, { mod: 'oda', dalga: wave, devirdi: kills, oyuncu: r ? (r.players || []).length : this.team.length, bitti: !!r }, 'kar-savasi-oda');
+    hesapNotu(`Oda oyunu: ${wave}. dalga, takım ${score.toLocaleString('tr-TR')} puan, ${kills} devirdi`);
+  }
+};
+// The quiet forest behind the room screens (keeps the room connection).
+function toMenuForest() { mode = 'menu'; menuForest(); $('hud').hidden = true; }
+function openRoomMenu() { if (mode !== 'room') return; joy = null; aim = null; screen('roomMenu'); $('btnRoomBack').focus(); }
+function closeRoomMenu() { if (mode !== 'room') return; screen(null); }
+
+/* ---------- Buttons ---------- */
 $('btnStart').addEventListener('click', start);
 $('btnAgain').addEventListener('click', start);
 $('btnResume').addEventListener('click', resume);
 $('btnRestart').addEventListener('click', start);
-$('btnPause').addEventListener('click', () => { if (mode === 'play') pause(); });
+$('btnPauseMenu').addEventListener('click', toMenu);
+$('btnOverMenu').addEventListener('click', toMenu);
+$('btnPause').addEventListener('click', () => { if (mode === 'play') pause(); else if (mode === 'room') openRoomMenu(); });
 $('btnSound').addEventListener('click', () => {
   muted = !muted;
   $('btnSound').setAttribute('aria-label', muted ? 'Sesi aç' : 'Sesi kapat');
@@ -1450,7 +1946,17 @@ $('btnSound').addEventListener('click', () => {
     : '<path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/>';
   if (!muted) ensureAudio();
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+$('btnRooms').addEventListener('click', () => { ensureAudio(); room.openList(); });
+$('btnRoomsBack').addEventListener('click', () => { room.closeLobby(); screen('startScreen'); });
+$('btnCreate').addEventListener('click', () => room.join(newRoomId(), true));
+$('btnWaitLeave').addEventListener('click', () => room.leave(true));
+$('btnGo').addEventListener('click', () => { ensureAudio(); room.send({ t: 'basla' }); $('btnGo').disabled = true; });
+$('btnInvite').addEventListener('click', () => room.invite());
+$('btnRoomBack').addEventListener('click', closeRoomMenu);
+$('btnRoomQuit').addEventListener('click', () => room.leave(true));
+$('btnBackToRoom').addEventListener('click', () => { if (room.ws) room.showWait(); else room.openList('Oda bağlantısı kapandı.'); });
+$('btnResultLeave').addEventListener('click', () => room.leave(true));
+document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pause(); });
 
 /* ---------- Loop ---------- */
 let last = performance.now();
@@ -1464,25 +1970,40 @@ function updateFlakes(dt) {
   }
 }
 function frame(now) {
+  requestAnimationFrame(frame);
   const dt = Math.min(0.034, Math.max(0, (now - last) / 1000));
   last = now;
   gt += dt;
-  camDX = 0; camDY = 0;
-  if (mode === 'play' || mode === 'over') update(dt);
-  else if (mode === 'menu') { cam.x = Math.sin(gt * 0.25) * 50; cam.y = Math.cos(gt * 0.18) * 30; P.face.x = 0; P.face.y = 1; }
+  if (mode === 'play' || mode === 'over' || mode === 'pause') soloFrame(dt);
+  else if (mode === 'room') room.frame(dt);
+  if (mode !== 'pause') ambient(dt);
+  follow(dt);
   updateFlakes(dt);
   render();
-  if (mode !== 'menu') { drawRadar(dt); updateHUD(); }
-  requestAnimationFrame(frame);
+  if (mode !== 'menu' && me) { drawRadar(dt); updateHUD(); }
 }
+
+// for testing on a computer: localStorage.setItem('karSavasi.debug', '1')
+if (store.get('karSavasi.debug', '')) window.__kar = { room, K, get me() { return me; }, get battle() { return battle; }, get mode() { return mode; }, get world() { return world; } };
 
 addEventListener('resize', resize);
 resize();
-newGame();
+menuForest();
 showBestOnStart();
+if (!window.Hesap) document.querySelectorAll('[data-nasildi]').forEach((b) => { b.hidden = true; });
 if (document.fonts && document.fonts.load) document.fonts.load("20px 'Lilita One'").catch(() => {});
+const ready = window.Hesap && Hesap.hazir ? Hesap.hazir : Promise.resolve(null);
+ready.then(() => {
+  $('btnRooms').hidden = !room.available();
+  showBestOnStart();
+  // an invite link: /lab/kar-savasi/?oda=<id>
+  const id = new URLSearchParams(location.search).get('oda');
+  if (id && /^[a-z0-9]{8}$/.test(id) && room.available()) {
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+    room.join(id, false);
+  }
+});
 requestAnimationFrame(frame);
-})();
 </script>
 </body>
 </html>

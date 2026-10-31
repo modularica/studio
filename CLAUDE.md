@@ -27,11 +27,11 @@ lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu
 lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
 lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
-lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya, tek kişilik)
+lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya; tek başına ya da arkadaşlarla odalarda). Kurallar lab/kar-savasi/oyun.js (sunucu da kullanır)
 lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık
 lab/tank/          Tank Arenası: 2–8 tank, her isabet bir puan; botlarla ya da arkadaşlarla odalarda. Kurallar lab/tank/oyun.js (sunucu da kullanır)
 lab/balon-yarisi/  Balon Yarışı: botla matematik yarışı; 4 işlem, her işlemin kendi 8 seviyesi, zorlanılan sorular sonraki yarışlarda tekrar gelir
-fish/sunucu/       Fish ve Tank Arenası oda sunucusu (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
+fish/sunucu/       Fish, Tank Arenası ve Kar Savaşı oda sunucusu (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
 supabase/          veritabanı migration'ları
 ```
 
@@ -44,8 +44,9 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 - Şimdilik derleme adımı yok: dosyalar olduğu gibi yayınlanır.
 - Alan adı `uzigames.com` Vercel'e bağlı.
 - Eski adresler (`/fish/`, `/giris/`, `/takip/`, …) `vercel.json` ile `/lab/...`'a yönlenir; paylaşılmış eski linkler çalışmaya devam eder. Lab'a yeni oyun eklerken oraya da bir satır ekle.
-- Oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a (`wss://fish-odalar.umutguncan.workers.dev`) yayınlar. Root directory ayarı bu klasörü gösterir; klasörü taşırsan Cloudflare'de de değiştir. Fish odaları `/lobi` ve `/oda/<id>`, Tank Arenası odaları `/tank/lobi` ve `/tank/oda/<id>` adreslerindedir.
+- Oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a (`wss://fish-odalar.umutguncan.workers.dev`) yayınlar. Root directory ayarı bu klasörü gösterir; klasörü taşırsan Cloudflare'de de değiştir. Fish odaları `/lobi` ve `/oda/<id>`, Tank Arenası odaları `/tank/lobi` ve `/tank/oda/<id>`, Kar Savaşı odaları `/kar/lobi` ve `/kar/oda/<id>` adreslerindedir.
 - Tank sunucusu oyunun kurallarını `lab/tank/oyun.js`'ten alır (`fish/sunucu/src/tank-oda.js` onu içe aktarır). Bu dosyayı taşıma ya da adını değiştirme; değiştirince sunucu da yeniden yayınlanır. Harita ya da kurallar sayfa ile sunucu arasında uyuşmayacak şekilde değişirse `oyun.js`'teki `SURUM`'u bir artır.
+- Kar Savaşı da aynı düzende: kurallar `lab/kar-savasi/oyun.js` (`fish/sunucu/src/kar-oda.js` içe aktarır). Orman üreticisi ya da kurallar sayfa ile sunucu arasında uyuşmayacak şekilde değişirse oradaki `VERSION`'ı bir artır.
 
 ## Yeni oyun eklemek
 
@@ -99,7 +100,8 @@ Yeni oyunlar önce Lab'a girer.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.
-  - Kar Savaşı: `karSavasi.best` (en iyi puan). Not: yeni oyun, dalga ve puan, oyun sonu.
+  - Kar Savaşı: `karSavasi.best` (tek başına en iyi puan). Not: yeni oyun, dalga ve puan, oyun sonu.
+    Odalar ("Arkadaşlarla oyna"): biten (ya da yarıda bırakılan) oyunun takım puanı `scores`'a oyun `kar-savasi-oda` olarak yazılır (ayrıntı: dalga, oyuncunun devirdiği çocuk sayısı, oyuncu sayısı). Not: oda, dalga ve takım puanı.
   - Kanyon: `kanyon.hi` (en iyi puan), `kanyon.uzak` (şimdiye kadar yıkılan en uzak köprü; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
     Nehir ve üstündeki her şey her oyunda aynı (`RIVER_SEED`); oyuncular ezberleyip ilerliyor. Tohumu değiştirirsen herkesin öğrendiği harita ve `kanyon.uzak` anlamını yitirir.
   - Tank Arenası: `tank.rekor` (botlarla bir turdaki en çok isabet; bot sayısı/zorluk `tank.ayar` ve ses `tank.ses` cihazda kalır). Not: botlarla başlama, tur sonu (isabet ve sıra), oda turu. Botlarla biten her tur `scores`'a oyun `tank` olarak, oda turları `tank-oda` olarak yazılır (ayrıntı: bot sayısı, zorluk, sıra, kaç kez boyandığı).
