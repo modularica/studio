@@ -15,6 +15,7 @@ Uzi Games (uzigames.com): the games Uzay and his dad make together.
 | `/lab/kar-savasi/` | Kar Savaşı: an open-world snowball fight against waves of kids |
 | `/lab/kanyon/` | Kanyon: fly a jet over a canyon river, refuel, blow up the bridges |
 | `/lab/tank/` | Tank Arenası: 2–8 tanks, every hit is a point; against bots or with friends in rooms (server in `fish/sunucu`) |
+| `/lab/balon-yarisi/` | Balon Yarışı: a math race against a bot; four operations, each with its own 8 levels |
 
 ## Run locally
 
