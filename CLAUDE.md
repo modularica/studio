@@ -94,7 +94,7 @@ Yeni oyunlar önce Lab'a girer.
   - Aynı oyunda hem `data-kayit` hem `Hesap.kaydet` kullanma: ikisi aynı satıra yazar.
 - Oyun oyun ne kaydediliyor:
   - Fish: `fish.best` (en iyi boy), `fish.toplam` (şimdiye kadar yenen balıklar, tür tür). Not: boy, yenen balık, yakalayan tür. Leaderboard: her tur bitince boy (cm) `scores`'a yazılır; oyun sonunda bu haftanın ilk 5'i ve oyuncunun yeri, başlangıç ekranındaki Leaderboard düğmesinde bu hafta / tüm zamanlar ilk 10.
-    Odalar ("Play with friends"): tur sonunda en büyük boy `scores`'a oyun `fish-oda` olarak yazılır (tek kişilik tabloya karışmaz). Odada yenen balıklar `fish.toplam`'a eklenir. Not: oda, boy, kaçıncı olduğu.
+    Odalar ("Play with friends"): tur sonunda en büyük boy `scores`'a oyun `fish-oda` olarak yazılır (tek kişilik tabloya karışmaz). Leaderboard'da "Solo" / "Rooms" diye iki tablo var; Rooms tablosu oda listesinden ve tur sonu ekranından da açılır. Odada yenen balıklar `fish.toplam`'a eklenir. Not: oda, boy, kaçıncı olduğu.
   - Rüzgâr Kaptanı: biten dersler, son ders, parkur rekoru, yeke/dümen dolabı tercihi. Not: açık ders ve kaç ders bittiği, parkur süresi.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.

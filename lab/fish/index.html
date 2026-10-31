@@ -207,6 +207,7 @@ body{
 #lbList{max-height:min(56vh,560px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
 #lbOv{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}
 body.lb-acik .chain{display:none}
+.lb-not{margin:-6px 0 0;font-size:14px;font-weight:600;color:var(--ink-dim);text-wrap:balance}
 .lb-empty{color:var(--ink-dim);font-size:14px;padding:8px 0}
 .lb-rank{margin:8px 0 0;font-size:14px;font-weight:700;color:var(--koi);min-height:1.3em}
 .period{display:inline-flex;gap:4px;padding:3px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line)}
@@ -371,6 +372,11 @@ body:not(.odada) #cikBtn{display:none}
 <section class="overlay" id="lbOv" hidden>
   <div class="panel">
     <h2 class="over-title">Leaderboard</h2>
+    <div class="period" role="group" aria-label="Which game">
+      <button type="button" id="lbSolo" aria-pressed="true">Solo</button>
+      <button type="button" id="lbOda" aria-pressed="false">Rooms</button>
+    </div>
+    <p class="lb-not" id="lbNot"></p>
     <div class="period" role="group" aria-label="Period">
       <button type="button" id="lbWeek" aria-pressed="true">This week</button>
       <button type="button" id="lbAll" aria-pressed="false">All time</button>
@@ -388,6 +394,7 @@ body:not(.odada) #cikBtn{display:none}
     <ul class="oda-list" id="odaList" aria-live="polite"></ul>
     <p class="oda-durum" id="odaDurum" role="status"></p>
     <button class="btn" id="odaKur" type="button">Make a room</button>
+    <button class="btn ghost" id="odaLbBtn" type="button">Room leaderboard</button>
     <button class="btn ghost" id="odaGeri" type="button">Back</button>
   </div>
 </section>
@@ -412,6 +419,7 @@ body:not(.odada) #cikBtn{display:none}
     <ol class="lb-list" id="sonList"></ol>
     <p class="best" id="sonOdul"></p>
     <button class="btn" id="odayaDon" type="button">Back to the room</button>
+    <button class="btn ghost" id="sonLbBtn" type="button">Room leaderboard</button>
     <button class="btn ghost" type="button" data-nasildi="oda-sonu">Nasıldı?</button>
     <button class="btn ghost" id="sonAyril" type="button">Leave the room</button>
   </div>
@@ -852,6 +860,13 @@ function showOver(isBest) {
   $('againBtn').focus({ preventScroll: true });
 }
 /* ---------- leaderboard (only with player accounts) ---------- */
+// Opens the leaderboard on one table; Back returns to the screen it was opened from.
+function lbAc(oyun, geri) {
+  lbOyun = oyun; lbDon = geri || startOv;
+  for (const o of document.querySelectorAll('.overlay')) o.hidden = true;
+  $('lbOv').hidden = false; document.body.classList.add('lb-acik');
+  lbYukle(); $('lbClose').focus({ preventScroll: true });
+}
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 function lbSatir(row, rank, me) {
   const li = mk('li', 'lb-row' + (me ? ' me' : '') + (rank === 1 ? ' first' : ''));
@@ -861,11 +876,11 @@ function lbSatir(row, rank, me) {
   li.setAttribute('aria-label', `${rank}. ${row.name}, ${fmtLenStr(+row.best)}${me ? ' (you)' : ''}`);
   return li;
 }
-function lbCiz(list, rankEl, rows, limit, week) {
+function lbCiz(list, rankEl, rows, limit, week, bos) {
   const me = window.Hesap && Hesap.profil ? Hesap.profil.id : null;
   list.replaceChildren();
   rankEl.textContent = '';
-  if (!rows.length) { list.append(mk('li', 'lb-empty', week ? 'No rounds yet this week. Be the first!' : 'No rounds yet.')); return; }
+  if (!rows.length) { list.append(mk('li', 'lb-empty', bos || (week ? 'No rounds yet this week. Be the first!' : 'No rounds yet.'))); return; }
   const idx = rows.findIndex(r => r.profile_id === me);
   rows.slice(0, limit).forEach((r, i) => list.append(lbSatir(r, i + 1, r.profile_id === me)));
   if (idx >= limit) { list.append(mk('li', 'lb-gap', '⋯')); list.append(lbSatir(rows[idx], idx + 1, true)); }
@@ -881,23 +896,38 @@ function lbGoster(promise) {
     lbCiz(list, rankEl, rows, 5, true);
   });
 }
-let lbHafta = true, lbIstek = 0;
+// Two tables: solo rounds (game 'fish') and room rounds (game 'fish-oda', the biggest a koi got in a round).
+let lbHafta = true, lbIstek = 0, lbOyun = 'fish', lbDon = null;
 function lbYukle() {
+  const oda = lbOyun === 'fish-oda';
+  $('lbSolo').setAttribute('aria-pressed', String(!oda));
+  $('lbOda').setAttribute('aria-pressed', String(oda));
+  $('lbNot').textContent = oda ? 'The biggest each koi grew in a room round with friends.' : 'The biggest each koi grew on its own before being eaten.';
   $('lbWeek').setAttribute('aria-pressed', String(lbHafta));
   $('lbAll').setAttribute('aria-pressed', String(!lbHafta));
   $('lbList').replaceChildren(mk('li', 'lb-empty', 'Loading…')); $('lbRank').textContent = '';
   const no = ++lbIstek, hafta = lbHafta;
-  Hesap.siralama({ hafta, limit: 100 }).then(
-    rows => { if (no === lbIstek) lbCiz($('lbList'), $('lbRank'), rows, 10, hafta); },
+  const bos = oda ? (hafta ? 'No room rounds yet this week. Make a room and play with friends!' : 'No room rounds yet.') : null;
+  Hesap.siralama({ hafta, limit: 100, oyun: lbOyun }).then(
+    rows => { if (no === lbIstek) lbCiz($('lbList'), $('lbRank'), rows, 10, hafta, bos); },
     () => { if (no === lbIstek) $('lbList').replaceChildren(mk('li', 'lb-empty', "Couldn't load the leaderboard.")); }
   );
 }
 if (window.Hesap) {
   $('lbBtn').hidden = false;
-  $('lbBtn').addEventListener('click', () => { startOv.hidden = true; $('lbOv').hidden = false; document.body.classList.add('lb-acik'); lbYukle(); $('lbClose').focus({ preventScroll: true }); });
+  $('lbBtn').addEventListener('click', () => lbAc('fish', startOv));
+  $('lbSolo').addEventListener('click', () => { lbOyun = 'fish'; lbYukle(); });
+  $('lbOda').addEventListener('click', () => { lbOyun = 'fish-oda'; lbYukle(); });
   $('lbWeek').addEventListener('click', () => { lbHafta = true; lbYukle(); });
   $('lbAll').addEventListener('click', () => { lbHafta = false; lbYukle(); });
-  $('lbClose').addEventListener('click', () => { $('lbOv').hidden = true; document.body.classList.remove('lb-acik'); startOv.hidden = false; $('startBtn').focus({ preventScroll: true }); });
+  $('lbClose').addEventListener('click', () => {
+    $('lbOv').hidden = true;
+    const geri = lbDon || startOv;
+    lbDon = null;
+    geri.hidden = false;
+    if (geri === startOv) { document.body.classList.remove('lb-acik'); $('startBtn').focus({ preventScroll: true }); }
+    else if (geri === odaOv && !oda.lobi && !oda.ws) lobiBaglan(); // the room list may have dropped meanwhile
+  });
 }
 
 /* ---------- rooms: play in one pond with friends (server: fish/sunucu) ---------- */
@@ -1452,6 +1482,8 @@ if (odaAcik()) {
   $('odaBtn').addEventListener('click', () => { ensureAudio(); lobiAc(); });
   $('odaGeri').addEventListener('click', () => { lobiKapat(); hepsiniGizle(); startOv.hidden = false; $('startBtn').focus({ preventScroll: true }); });
   $('odaKur').addEventListener('click', () => odayaGir(yeniId(), true));
+  $('odaLbBtn').addEventListener('click', () => lbAc('fish-oda', odaOv));
+  $('sonLbBtn').addEventListener('click', () => lbAc('fish-oda', sonOv));
   $('baslaBtn').addEventListener('click', () => { ensureAudio(); if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'basla' })); });
   $('ayrilBtn').addEventListener('click', odadanAyril);
   $('sonAyril').addEventListener('click', odadanAyril);

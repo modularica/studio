@@ -7,7 +7,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - `index.html`: Oyunun tamamı (tek kişilik ve odalar). Bağımlılıksız, tek dosya.
 - `cover.png`: Paylaşım önizlemesi ve ana sayfa kartı (1200×630).
 - Oda sunucusu repo kökünde `fish/sunucu/` (Cloudflare Worker + Durable Objects; Cloudflare oradan kurduğu için yeri değişmiyor). Ayrıntı `fish/sunucu/README.md`.
-- Leaderboard: tek kişilik tur bitince boy `Hesap.skor` ile kaydedilir; sıralama `Hesap.siralama` ile okunur (ayrıntı kök `CLAUDE.md`'de). Hesap yoksa (oyun tek başına açılırsa) leaderboard ve odalar gizlenir.
+- Leaderboard: tek kişilik tur bitince boy `Hesap.skor` ile kaydedilir; sıralama `Hesap.siralama` ile okunur (ayrıntı kök `CLAUDE.md`'de). İki tablo: Solo (oyun `fish`) ve Rooms (oyun `fish-oda`, odada bir turda ulaşılan en büyük boy). `lbAc(oyun, geriEkran)` tabloyu açar; Back açıldığı ekrana döner. Hesap yoksa (oyun tek başına açılırsa) leaderboard ve odalar gizlenir.
 
 ## Tek kişilik sürümün yapısı
 
