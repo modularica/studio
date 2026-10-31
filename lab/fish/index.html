@@ -146,15 +146,13 @@ body{
 .how .tch{display:none}
 @media (pointer:coarse){.how .kbd,.how .ptr{display:none}.how .tch{display:inline}}
 
-/* Virtual joystick (touch screens): bottom-left, above the food chain */
+/* Touch joystick: it appears wherever the thumb lands and steers from there */
 .joy{
-  position:fixed;z-index:6;left:max(6px,env(safe-area-inset-left,0px));
-  bottom:calc(env(safe-area-inset-bottom,0px) + 90px);
-  width:176px;height:176px;display:grid;place-items:center;
-  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  position:fixed;z-index:6;left:0;top:0;width:124px;height:124px;margin:-62px 0 0 -62px;
+  pointer-events:none;-webkit-user-select:none;user-select:none;
 }
 .joy-base{
-  position:relative;width:124px;height:124px;border-radius:50%;
+  position:relative;width:100%;height:100%;border-radius:50%;
   background:radial-gradient(circle,rgba(7,33,36,.16) 0 36%,rgba(7,33,36,.46) 37% 100%);
   border:2px solid var(--glass-line);opacity:.62;transition:opacity .15s ease;
   -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
@@ -167,8 +165,7 @@ body{
   box-shadow:0 4px 10px rgba(3,20,22,.45),inset 0 -3px 0 rgba(0,0,0,.14);
 }
 @media (max-height:520px){
-  .joy{width:140px;height:140px;bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}
-  .joy-base{width:100px;height:100px}
+  .joy{width:104px;height:104px;margin:-52px 0 0 -52px}
   .joy-knob{width:46px;height:46px;margin:-23px 0 0 -23px}
 }
 .btn{
@@ -335,7 +332,7 @@ body:not(.odada) #cikBtn{display:none}
   <div class="panel">
     <h1 class="title" aria-label="Fish"><span>F</span><span>i</span><span>s</span><span>h</span></h1>
     <p class="lede">You are a 10&nbsp;cm koi in a crowded pond. Eat fish smaller than you, keep away from bigger ones, and see how big you can grow.</p>
-    <div class="how"><span class="tch">Swim with the joystick, bottom left</span><span class="tch">Or drag anywhere</span><span class="ptr">Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
+    <div class="how"><span class="tch">Put your thumb anywhere and drag to swim</span><span class="ptr">Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
     <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
     <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
@@ -621,14 +618,19 @@ function spawnGroup(inView, edibleOnly) {
 const ptr = { active: false, x: 0, y: 0, id: null };
 const keys = { up: false, down: false, left: false, right: false };
 cv.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse') {
+    // a finger: the joystick appears right under it
+    if (!joy.active && oynaniyor()) { joyBasla(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
+    return;
+  }
   ptr.active = true; ptr.id = e.pointerId; ptr.x = e.clientX; ptr.y = e.clientY;
   try { cv.setPointerCapture(e.pointerId); } catch (_) {}
 });
 cv.addEventListener('pointermove', e => {
-  if (e.pointerType === 'mouse') ptr.active = true;
-  if (ptr.active && (e.pointerType === 'mouse' || e.pointerId === ptr.id)) { ptr.x = e.clientX; ptr.y = e.clientY; }
+  if (joy.active && e.pointerId === joy.id) { joyAyarla(e.clientX, e.clientY); return; }
+  if (e.pointerType === 'mouse') { ptr.active = true; ptr.x = e.clientX; ptr.y = e.clientY; }
 });
-const release = e => { if (e.pointerType !== 'mouse' && e.pointerId === ptr.id) ptr.active = false; };
+const release = e => { if (e.pointerId === joy.id) joyBirak(); };
 cv.addEventListener('pointerup', release);
 cv.addEventListener('pointercancel', release);
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') ptr.active = false; });
@@ -642,45 +644,36 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; joyBirak(); });
 
-/* virtual joystick (touch screens): the thumb's offset from the centre steers, like a game pad */
-const joyEl = $('joy'), joyBase = joyEl.querySelector('.joy-base'), joyKnob = $('joyKnob');
+/* touch joystick: it appears wherever the thumb lands, and the thumb's offset from that spot steers */
+const joyEl = $('joy'), joyKnob = $('joyKnob');
 const joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0, R: 50 };
-let joyTouch = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+const oynaniyor = () => mode === 'play' || (mode === 'oda' && P.alive);
+function joyKonum() { joyEl.style.transform = `translate(${joy.cx.toFixed(1)}px,${joy.cy.toFixed(1)}px)`; }
+function joyBasla(e) {
+  ensureAudio();
+  joy.active = true; joy.id = e.pointerId; joy.cx = e.clientX; joy.cy = e.clientY; joy.dx = joy.dy = 0;
+  joyEl.hidden = false;
+  joy.R = joyEl.offsetWidth / 2 - 10;
+  joyKnob.style.transform = '';
+  joyKonum(); joyEl.classList.add('on');
+}
 function joyAyarla(x, y) {
-  let dx = x - joy.cx, dy = y - joy.cy;
-  const d = Math.hypot(dx, dy);
+  let dx = x - joy.cx, dy = y - joy.cy, d = Math.hypot(dx, dy);
+  const takip = joy.R * 1.35;
+  if (d > takip) { // dragged well past the ring: the stick follows the thumb
+    const k = (d - takip) / d;
+    joy.cx += dx * k; joy.cy += dy * k; dx -= dx * k; dy -= dy * k; d = takip;
+    joyKonum();
+  }
   if (d > joy.R) { dx = dx / d * joy.R; dy = dy / d * joy.R; }
   joy.dx = dx; joy.dy = dy;
   joyKnob.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
 }
 function joyBirak() {
   joy.active = false; joy.id = null; joy.dx = joy.dy = 0;
-  joyKnob.style.transform = ''; joyEl.classList.remove('on');
+  joyKnob.style.transform = ''; joyEl.classList.remove('on'); joyEl.hidden = true;
 }
-joyEl.addEventListener('pointerdown', e => {
-  if (joy.active) return;
-  e.preventDefault();
-  ensureAudio();
-  const r = joyBase.getBoundingClientRect();
-  joy.cx = r.left + r.width / 2; joy.cy = r.top + r.height / 2; joy.R = r.width / 2 - 8;
-  joy.active = true; joy.id = e.pointerId;
-  joyEl.classList.add('on');
-  joyAyarla(e.clientX, e.clientY);
-  try { joyEl.setPointerCapture(e.pointerId); } catch (_) {}
-});
-joyEl.addEventListener('pointermove', e => { if (joy.active && e.pointerId === joy.id) joyAyarla(e.clientX, e.clientY); });
-joyEl.addEventListener('pointerup', e => { if (e.pointerId === joy.id) joyBirak(); });
-joyEl.addEventListener('pointercancel', e => { if (e.pointerId === joy.id) joyBirak(); });
-joyEl.addEventListener('contextmenu', e => e.preventDefault());
-// a touch on a laptop with a touch screen brings the joystick out too
-addEventListener('pointerdown', e => { if (e.pointerType === 'touch') joyTouch = true; }, true);
-let joyGorunur = false;
-function joyGuncelle() {
-  const goster = joyTouch && (mode === 'play' || (mode === 'oda' && P.alive));
-  if (goster === joyGorunur) return;
-  joyGorunur = goster; joyEl.hidden = !goster;
-  if (!goster) joyBirak();
-}
+function joyGuncelle() { if (joy.active && !oynaniyor()) joyBirak(); }
 
 /* ---------- sound ---------- */
 let AC = null, master = null;
