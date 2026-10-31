@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="kanyon" data-kayit="kanyon.hi"></script>
+<script src="/hesap/hesap.js" data-oyun="kanyon" data-kayit="kanyon.hi kanyon.uzak"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
@@ -69,14 +69,14 @@
     <div class="logo">KANYON</div>
     <div class="tag">Yakıt bitmeden köprüyü vur!</div>
     <ul class="how">
-      <li class="touch-only"><b>Sürükle:</b> sağa-sola yön, yukarı-aşağı hız</li>
-      <li class="touch-only"><b>ATEŞ</b> düğmesine diğer elinle bas</li>
+      <li class="touch-only"><b>Sol başparmak joystick:</b> sağa-sola yön, yukarı hızlan, aşağı yavaşla</li>
+      <li class="touch-only"><b>Sağ başparmak:</b> ATEŞ</li>
       <li class="kb-only"><b>← →</b> yön · <b>↑ ↓</b> hız · <b>Boşluk</b> ateş</li>
       <li>Sarı bidonların <b>üstünden geç</b>, yakıt al. Vurursan yanar!</li>
-      <li>Her bölgenin sonundaki <b>köprüyü vur</b>, orası kayıt noktan olur</li>
+      <li>Her bölgenin sonundaki <b>köprüyü vur</b>. Nehir her oyunda aynı: ezberle, her seferinde daha uzağa git</li>
     </ul>
     <button class="play" id="startBtn">BAŞLA</button>
-    <div class="best">En iyi: <span id="bestTitle">0</span></div>
+    <div class="best">En iyi: <span id="bestTitle">0</span><span id="farTitle"></span></div>
   </div>
 
   <div class="overlay hidden" id="pause">
@@ -100,8 +100,10 @@
 'use strict';
 
 // ---------- constants ----------
-const LW = 360, KP = 160, KPS = 16, SECT = KP * KPS, BRIDGE_HW = 54, PLAYER_OFF = 150;
-const SPD_MIN = 75, SPD_BASE = 150, SPD_MAX = 275, LAT_TOUCH = 380, LAT_KEY = 230;
+const LW = 360, KP = 160, KPS = 16, SECT = KP * KPS, BRIDGE_HW = 68, PLAYER_OFF = 190;
+const SPD_MIN = 75, SPD_BASE = 150, SPD_MAX = 275, LAT_JOY = 220, LAT_KEY = 230, JOY_R = 44;
+// The river and everything on it is the same in every game, so players can learn it.
+const RIVER_SEED = 0x2A6C1F3B;
 const FUEL_RATE = 3.3, REFUEL_RATE = 38, BULLET_V = 540, FIRE_CD = 0.17, MAX_BULLETS = 3;
 const SPEC = {
   fuel: { w: 22, h: 34, pts: 80 },
@@ -126,6 +128,7 @@ const C = {
 // ---------- helpers ----------
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const dead = (v, z) => Math.abs(v) <= z ? 0 : Math.sign(v) * Math.min(1, (Math.abs(v) - z) / (1 - z));
 const fmt = n => n.toLocaleString('tr-TR');
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
@@ -237,7 +240,7 @@ const Sfx = {
 };
 
 // ---------- world generation ----------
-let seed = (Math.random() * 0xffffffff) >>> 0;
+let seed = RIVER_SEED;
 const NARROW = { cx: LW / 2, hw: BRIDGE_HW, ih: 0 };
 const kpsCache = new Map(), content = new Map(), destroyed = new Set();
 
@@ -359,6 +362,7 @@ let state = 'title', pausedFrom = 'play', camY = 0, T = 0, overAt = 0;
 const player = { x: LW / 2, y: 0, vx: 0, bank: 0, speed: SPD_BASE };
 let bullets = [], parts = [], flashes = [], popups = [];
 let score = 0, hi = parseInt(store.get('kanyon.hi', '0'), 10) || 0, lives = 3, fuel = 100;
+let far = parseInt(store.get('kanyon.uzak', '0'), 10) || 0;
 let checkpoint = 0, bridges = 0, nextLife = 10000;
 let fireCd = 0, lowTimer = 0, refuelTick = 0, refueling = false, shake = 0, dieTimer = 0;
 let banner = null, deathMsg = '';
@@ -377,10 +381,10 @@ function setState(s) {
 }
 
 function newGame() {
-  seed = (Math.random() * 0xffffffff) >>> 0;
+  seed = RIVER_SEED;
   kpsCache.clear(); content.clear(); destroyed.clear();
   score = 0; lives = 3; bridges = 0; checkpoint = 0; nextLife = 10000;
-  parts = []; flashes = []; popups = []; pointers.clear();
+  parts = []; flashes = []; popups = []; pointers.clear(); joyRelease();
   placeAtCheckpoint();
   banner = { text: 'KALKIŞ!', sub: '', life: 1.3 };
   setState('play');
@@ -394,7 +398,7 @@ function placeAtCheckpoint() {
 }
 function beginPlay() {
   if (state !== 'ready') return;
-  for (const p of pointers.values()) { p.x0 = p.x; p.y0 = p.y; p.px0 = player.x; }
+  if (joy.id !== null) { joy.cx = joy.px; joy.cy = joy.py; joy.dx = joy.dy = 0; }
   setState('play');
 }
 function die(msg) {
@@ -414,17 +418,18 @@ function gameOver() {
   const nb = score > hi;
   if (nb) { hi = score; store.set('kanyon.hi', String(hi)); }
   $('finalScore').textContent = fmt(score);
-  $('finalSub').textContent = `${bridges} köprü · En iyi ${fmt(hi)}`;
+  $('finalSub').innerHTML = (bridges ? `${bridges}. köprüye kadar geldin` : 'İlk köprüye varamadın') +
+    `<br>En uzak: ${far ? far + '. köprü' : '—'} · En iyi: ${fmt(hi)}`;
   $('newBest').classList.toggle('hidden', !nb);
-  $('bestTitle').textContent = fmt(hi);
-  pointers.clear(); overAt = T;
+  showBest();
+  pointers.clear(); joyRelease(); overAt = T;
   setState('over');
   hesapNotu(`oyun sonu · ${bridges} köprü · ${fmt(score)} puan`);
   if (score > 0) hesapSkor(score, { kopru: bridges });
 }
 function setPause(on) {
-  if (on && (state === 'play' || state === 'ready' || state === 'dying')) { pausedFrom = state; pointers.clear(); setState('paused'); }
-  else if (!on && state === 'paused') { pointers.clear(); setState(pausedFrom === 'play' ? 'ready' : pausedFrom); }
+  if (on && (state === 'play' || state === 'ready' || state === 'dying')) { pausedFrom = state; pointers.clear(); joyRelease(); setState('paused'); }
+  else if (!on && state === 'paused') { pointers.clear(); joyRelease(); setState(pausedFrom === 'play' ? 'ready' : pausedFrom); }
 }
 function addScore(n, x, y) {
   score += n;
@@ -450,6 +455,7 @@ function kill(o, byPlayer) {
 }
 function destroyBridge(bi) {
   destroyed.add(bi); checkpoint = bi; bridges++;
+  if (bi > far) { far = bi; store.set('kanyon.uzak', String(far)); }
   const by = bi * SECT, r = riverAt(by), l = r.l, rr_ = r.r;
   for (let x = l; x <= rr_; x += 12) boom(x, by, C.deck, 6, false);
   shake = 12; Sfx.big(); buzz(60);
@@ -463,28 +469,45 @@ const pointers = new Map();
 const keys = { left: false, right: false, up: false, down: false, fire: false };
 const KM = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up',
   ArrowDown: 'down', KeyS: 'down', Space: 'fire', KeyJ: 'fire' };
-function fireBtn() { return { x: LW - 54, y: LH - 96, r: 36 }; }
+function fireBtn() { return { x: LW - 64, y: LH - 104, r: 40 }; }
+function joyHome() { return { x: 80, y: LH - 104 }; }
+// Touch joystick: it appears wherever the left thumb lands; the thumb's offset from that spot steers.
+const joy = { id: null, cx: 0, cy: 0, dx: 0, dy: 0, px: 0, py: 0 };
 function toL(e) {
   const r = canvas.getBoundingClientRect();
   return { x: (e.clientX - r.left) / r.width * LW, y: (e.clientY - r.top) / r.height * LH };
 }
+function joyMove(x, y) {
+  joy.px = x; joy.py = y;
+  let dx = x - joy.cx, dy = y - joy.cy, d = Math.hypot(dx, dy);
+  const follow = JOY_R * 1.35;
+  if (d > follow) { // dragged well past the ring: the stick follows the thumb
+    const k = (d - follow) / d;
+    joy.cx += dx * k; joy.cy += dy * k; dx -= dx * k; dy -= dy * k; d = follow;
+  }
+  if (d > JOY_R) { dx = dx / d * JOY_R; dy = dy / d * JOY_R; }
+  joy.dx = dx; joy.dy = dy;
+}
+function joyRelease() { joy.id = null; joy.dx = joy.dy = 0; }
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
   if (e.pointerType === 'touch' || e.pointerType === 'pen') touchUI = true;
   try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
   Sfx.init();
   const p = toL(e), fb = fireBtn();
-  const isFire = touchUI && e.pointerType !== 'mouse' && Math.hypot(p.x - fb.x, p.y - fb.y) < fb.r + 16;
-  pointers.set(e.pointerId, { role: isFire ? 'fire' : 'steer', mouse: e.pointerType === 'mouse',
-    x0: p.x, y0: p.y, x: p.x, y: p.y, px0: player.x });
+  const isFire = p.x > LW * 0.58 || Math.hypot(p.x - fb.x, p.y - fb.y) < fb.r + 18;
+  if (isFire) pointers.set(e.pointerId, 'fire');
+  else if (joy.id === null) {
+    pointers.set(e.pointerId, 'joy');
+    joy.id = e.pointerId; joy.cx = joy.px = p.x; joy.cy = joy.py = p.y; joy.dx = joy.dy = 0;
+  }
   if (state === 'ready') beginPlay();
 }, { passive: false });
 canvas.addEventListener('pointermove', e => {
-  const q = pointers.get(e.pointerId); if (!q) return;
-  const p = toL(e); q.x = p.x; q.y = p.y;
-  if (state === 'ready' && Math.hypot(q.x - q.x0, q.y - q.y0) > 8) beginPlay();
+  if (e.pointerId !== joy.id) return;
+  const p = toL(e); joyMove(p.x, p.y);
 });
-const pUp = e => pointers.delete(e.pointerId);
+const pUp = e => { pointers.delete(e.pointerId); if (e.pointerId === joy.id) joyRelease(); };
 canvas.addEventListener('pointerup', pUp);
 canvas.addEventListener('pointercancel', pUp);
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -501,7 +524,7 @@ window.addEventListener('keydown', e => {
   if (state === 'ready' && (k || e.code === 'Enter')) { Sfx.init(); beginPlay(); }
 });
 window.addEventListener('keyup', e => { const k = KM[e.code]; if (k) keys[k] = false; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; pointers.clear(); });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; pointers.clear(); joyRelease(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPause(true); });
 
 const ICON_ON = '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
@@ -513,7 +536,11 @@ $('pauseBtn').addEventListener('click', () => setPause(true));
 $('resumeBtn').addEventListener('click', () => { Sfx.init(); setPause(false); });
 $('startBtn').addEventListener('click', () => { if (state !== 'title') return; Sfx.init(); newGame(); });
 $('againBtn').addEventListener('click', () => { if (state !== 'over') return; Sfx.init(); newGame(); });
-$('bestTitle').textContent = fmt(hi);
+function showBest() {
+  $('bestTitle').textContent = fmt(hi);
+  $('farTitle').textContent = far ? ` · En uzak: ${far}. köprü` : '';
+}
+showBest();
 
 // ---------- update ----------
 function stepFx(dt) {
@@ -557,24 +584,18 @@ function update(dt) {
   if (state === 'ready') return;
 
   // --- play ---
-  let steer = null, firing = keys.fire;
-  for (const p of pointers.values()) {
-    if (p.role === 'fire') firing = true;
-    else { steer = p; if (p.mouse) firing = true; }
-  }
-  let tSpeed = SPD_BASE;
-  if (steer) {
-    const tx = clamp(steer.px0 + (steer.x - steer.x0) * 1.25, 10, LW - 10);
-    const mx = LAT_TOUCH * dt, d = clamp(tx - player.x, -mx, mx);
-    player.x += d; player.vx = dt > 0 ? d / dt : 0;
-    const dy = steer.y0 - steer.y;
-    if (dy > 10) tSpeed = SPD_BASE + Math.min(1, (dy - 10) / 70) * (SPD_MAX - SPD_BASE);
-    else if (dy < -10) tSpeed = SPD_BASE - Math.min(1, (-dy - 10) / 70) * (SPD_BASE - SPD_MIN);
+  let firing = keys.fire;
+  for (const r of pointers.values()) if (r === 'fire') firing = true;
+  let ax, ay, lat;
+  if (joy.id !== null) {
+    ax = dead(joy.dx / JOY_R, 0.12); ay = dead(-joy.dy / JOY_R, 0.3); lat = LAT_JOY;
+    ax = Math.sign(ax) * Math.pow(Math.abs(ax), 1.5); // gentle near the centre for fine corrections
   } else {
-    const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    player.vx = kx * LAT_KEY; player.x = clamp(player.x + player.vx * dt, 10, LW - 10);
-    if (keys.up && !keys.down) tSpeed = SPD_MAX; else if (keys.down && !keys.up) tSpeed = SPD_MIN;
+    ax = (keys.right ? 1 : 0) - (keys.left ? 1 : 0); ay = (keys.up ? 1 : 0) - (keys.down ? 1 : 0); lat = LAT_KEY;
   }
+  player.vx += (ax * lat - player.vx) * Math.min(1, dt * 14);
+  player.x = clamp(player.x + player.vx * dt, 10, LW - 10);
+  const tSpeed = ay >= 0 ? SPD_BASE + ay * (SPD_MAX - SPD_BASE) : SPD_BASE + ay * (SPD_BASE - SPD_MIN);
   player.speed += (tSpeed - player.speed) * Math.min(1, dt * 3.5);
   player.bank += (clamp(player.vx / 280, -1, 1) - player.bank) * Math.min(1, dt * 12);
   camY += player.speed * dt; player.y = camY + PLAYER_OFF;
@@ -892,6 +913,26 @@ function bigText(text, sub, y) {
 function miniPlane(x, y) {
   ctx.save(); ctx.translate(x, y); ctx.scale(0.55, 0.55); planeParts(); ctx.restore();
 }
+function drawJoy() {
+  const on = joy.id !== null, h = joyHome();
+  const cx = on ? joy.cx : h.x, cy = on ? joy.cy : h.y;
+  ctx.save();
+  ctx.globalAlpha = on ? 1 : 0.55;
+  ctx.beginPath(); ctx.arc(cx, cy, JOY_R + 10, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(28,12,8,.32)'; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,246,230,.5)'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,246,230,.6)';
+  for (let i = 0; i < 4; i++) { // small arrows: left, right, up, down
+    const a = i * Math.PI / 2, r = JOY_R - 2;
+    ctx.save(); ctx.translate(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.rotate(a);
+    ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -5); ctx.lineTo(-3, 5); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  const kx = cx + (on ? joy.dx : 0), ky = cy + (on ? joy.dy : 0);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ell(kx + 1, ky + 3, 22, 22);
+  ctx.fillStyle = C.cream; ell(kx, ky, 22, 22);
+  ctx.fillStyle = C.stripe; ell(kx, ky, 9, 9);
+  ctx.restore();
+}
 function drawHUD() {
   ctx.save();
   ctx.textBaseline = 'top'; ctx.textAlign = 'left';
@@ -924,8 +965,9 @@ function drawHUD() {
   ctx.fillText('KÖPRÜ ' + bridges, LW - 12, by + 13);
 
   if (touchUI && state !== 'over') {
+    drawJoy();
     const fb = fireBtn();
-    let pressed = false; for (const p of pointers.values()) if (p.role === 'fire') pressed = true;
+    let pressed = false; for (const r of pointers.values()) if (r === 'fire') pressed = true;
     ctx.beginPath(); ctx.arc(fb.x, fb.y, fb.r, 0, Math.PI * 2);
     ctx.fillStyle = pressed ? 'rgba(226,72,61,.6)' : 'rgba(226,72,61,.3)'; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,246,230,.55)'; ctx.stroke();

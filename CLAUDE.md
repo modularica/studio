@@ -99,7 +99,8 @@ Yeni oyunlar önce Lab'a girer.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.
   - Kar Savaşı: `karSavasi.best` (en iyi puan). Not: yeni oyun, dalga ve puan, oyun sonu.
-  - Kanyon: `kanyon.hi` (en iyi puan; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
+  - Kanyon: `kanyon.hi` (en iyi puan), `kanyon.uzak` (şimdiye kadar yıkılan en uzak köprü; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
+    Nehir ve üstündeki her şey her oyunda aynı (`RIVER_SEED`); oyuncular ezberleyip ilerliyor. Tohumu değiştirirsen herkesin öğrendiği harita ve `kanyon.uzak` anlamını yitirir.
   - Tank Arenası: `tank.rekor` (botlarla bir turdaki en çok isabet; bot sayısı/zorluk `tank.ayar` ve ses `tank.ses` cihazda kalır). Not: botlarla başlama, tur sonu (isabet ve sıra), oda turu. Botlarla biten her tur `scores`'a oyun `tank` olarak, oda turları `tank-oda` olarak yazılır (ayrıntı: bot sayısı, zorluk, sıra, kaç kez boyandığı).
   - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
 - Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
