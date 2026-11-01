@@ -11,6 +11,7 @@
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js" data-oyun="sekme" data-kayit="sekme.v1"></script>
+<script src="/hesap/oda.js"></script>
 </head><body>
 <title>Sekme</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -113,6 +114,11 @@ canvas { display: block; cursor: crosshair; max-width: 100%; }
   color: var(--ink-soft); font-variant-numeric: tabular-nums; min-height: 1.4em;
 }
 .readout b { color: var(--ball); font-weight: 600; }
+.pas {
+  justify-self: start; margin-top: 4px; padding: 6px 12px; cursor: pointer; background: transparent;
+  border: 1.5px dashed var(--ink-soft); border-radius: 8px; color: var(--ink-soft);
+  font-family: var(--font-display); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+}
 
 /* Overlays */
 .overlay {
@@ -196,6 +202,9 @@ canvas { display: block; cursor: crosshair; max-width: 100%; }
     <button class="icon-btn" id="btnLevels" type="button" aria-label="Seviyeler" title="Seviyeler">
       <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.2"/></svg>
     </button>
+    <button class="icon-btn" id="btnOda" type="button" aria-label="Arkadaşlarla oyna" title="Arkadaşlarla oyna" hidden>
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.2a4.6 4.6 0 0 1 5.5 4.6"/></svg>
+    </button>
     <div class="lvl">
       <span class="lvl-no" id="lvlNo">01</span><span class="lvl-of" id="lvlOf">/50</span>
       <span class="lvl-name" id="lvlName">Isınma</span>
@@ -216,6 +225,7 @@ canvas { display: block; cursor: crosshair; max-width: 100%; }
   <footer class="foot">
     <p class="tip"><span class="chip" id="chip" hidden></span><span id="tip">Ortadaki duvar yolu kesiyor. Yan duvardan sektir.</span></p>
     <p class="readout" id="readout" aria-live="polite">Ekranda geri çek, bırak</p>
+    <button class="pas" id="btnPas" type="button" hidden>Bu seviyeyi geç</button>
   </footer>
 
   <div class="overlay" id="ovLevels" role="dialog" aria-modal="true" aria-labelledby="lvTitle" hidden>
@@ -1136,8 +1146,8 @@ const CHAPTERS = [
   }
 
   function updateHud() {
-    $('lvlNo').textContent = fmtNo(li + 1);
-    $('lvlOf').textContent = '/' + N;
+    $('lvlNo').textContent = fmtNo(odaTur ? li - odaTur.from + 1 : li + 1);
+    $('lvlOf').textContent = '/' + (odaTur ? odaTur.to - odaTur.from : N);
     $('lvlName').textContent = L.name;
     $('tries').textContent = tries;
     $('tip').textContent = L.tip;
@@ -1154,8 +1164,11 @@ const CHAPTERS = [
   function loadLevel(i) {
     li = Math.max(0, Math.min(N - 1, i)); L = LEVELS[li];
     clock = 0; tries = 0; marks = []; path = []; ghost = null; fx = []; flash = {};
-    prog.last = li; save();
-    hesapNotu(`${li + 1}. seviye: ${L.name} · toplam ${totalStars()}/${N * 3} yıldız`);
+    $('btnPas').hidden = true;
+    if (!odaTur) {
+      prog.last = li; save();
+      hesapNotu(`${li + 1}. seviye: ${L.name} · toplam ${totalStars()}/${N * 3} yıldız`);
+    }
     clearTimeout(winTimer);
     resetBall(); updateHud();
   }
@@ -1170,6 +1183,7 @@ const CHAPTERS = [
   function shoot(angle, power) {
     if (mode !== 'aim' && mode !== 'idle') return;
     tries++; $('tries').textContent = tries;
+    if (odaTur) { odaGonder(); if (tries >= 3) $('btnPas').hidden = false; }
     ball = SIM.launch(L, angle, power, clock);
     marks = []; trail = []; path = [[ball.x, ball.y]]; stepCount = 0; flash = {};
     mode = 'fly'; aim = null;
@@ -1247,6 +1261,7 @@ const CHAPTERS = [
 
   function win() {
     mode = 'won';
+    if (odaTur) { odaKazandi(); return; }
     const s = starsFor(tries), prev = prog.stars[li];
     prog.stars[li] = Math.max(prev, s); save();
     hesapNotu(`${li + 1}. seviye geçildi, ${s} yıldız · toplam ${totalStars()}/${N * 3} yıldız`);
@@ -1331,7 +1346,7 @@ const CHAPTERS = [
   }
   function showLevels() { tabSel = chapterOf(li); renderLevels(); openOverlay('ovLevels', $('btnPlay')); }
 
-  $('btnLevels').addEventListener('click', showLevels);
+  $('btnLevels').addEventListener('click', () => { if (odaTur) oda.menu(); else showLevels(); });
   $('btnPlay').addEventListener('click', () => { closeOverlay(); if (mode === 'won') nextUnplayed(); });
   $('btnReset').addEventListener('click', () => {
     if (mode === 'won') return;
@@ -1754,6 +1769,72 @@ const CHAPTERS = [
     drawFrame(dt);
     requestAnimationFrame(frame);
   }
+
+  // ---------- rooms: a star race (hesap/oda.js, server fish/sunucu/src/genel-oda.js) ----------
+  // Everyone plays the same chapter's levels in order against the clock. A hit gives stars as usual
+  // (fewer shots, more stars) and the next level comes on its own; a level can be passed after three
+  // shots. Most stars when the time is up (or when everyone has played the whole chapter) wins.
+  // Rooms don't change the solo progress (sekme.v1).
+  let odaTur = null; // { from, to, stars, passed }
+  function odaGonder() { oda.gonder(odaTur.stars, [li - odaTur.from, tries]); }
+  function odaKazandi() {
+    const s = starsFor(tries);
+    odaTur.stars += s;
+    setReadout('Vuruldu · <b>+' + s + ' yıldız</b> · toplam ' + odaTur.stars);
+    toast('★'.repeat(s) + '  +' + s);
+    odaGonder();
+    winTimer = setTimeout(odaSonraki, reduceMotion ? 500 : 1300);
+  }
+  function odaSonraki() {
+    if (!odaTur) return;
+    if (li + 1 < odaTur.to) { loadLevel(li + 1); odaGonder(); return; }
+    // the whole chapter is played: wait for the others
+    mode = 'won';
+    setReadout('Bölüm bitti · <b>' + odaTur.stars + ' yıldız</b>');
+    hesapNotu(`Oda: ${CHAPTERS[chapterOf(odaTur.from)].name} bitti · ${odaTur.stars} yıldız`);
+    oda.bitir(odaTur.stars, undefined, [odaTur.to - odaTur.from, 0]);
+  }
+  $('btnPas').addEventListener('click', () => {
+    if (!odaTur || mode === 'won' || mode === 'fly') return;
+    odaTur.passed++;
+    toast('Pas');
+    odaSonraki();
+  });
+  const oda = Oda.kur({
+    oyun: 'sekme', ad: 'Sekme', surum: 1, skor: 'sekme-oda', sira: 'puan', saat: true,
+    tema: { zemin: 'var(--sheet)', yazi: 'var(--ink)', ana: 'var(--ball)', anaYazi: '#fff', satir: 'var(--paper)', cizgi: 'var(--paper-2)', dugme: 'var(--sheet)',
+      baslik: 'var(--font-display)', govde: 'var(--font-body)', bildirimUst: '70px' },
+    aciklama: 'Yıldız yarışı: herkes aynı bölümün seviyelerini sırayla oynar. Hedefi vurunca yıldızlar gelir, sonraki seviye kendiliğinden açılır. Süre bitince en çok yıldızı olan kazanır.',
+    ayarlar: [
+      { k: 'bolum', ad: 'Bölüm', secenek: CHAPTERS.map((ch, i) => ({ d: i, ad: ch.name })), v: 0 },
+      { k: 'sure', ad: 'Süre', secenek: [{ d: 180, ad: '3 dakika' }, { d: 300, ad: '5 dakika' }, { d: 600, ad: '10 dakika' }], v: 300 }
+    ],
+    canli: { top: '64px', right: '16px' },
+    puanYazi: p => Math.round(p) + ' yıldız',
+    canliYazi: p => Math.round(p) + '★',
+    skorAyrinti: () => (odaTur ? { bolum: CHAPTERS[chapterOf(odaTur.from)].name, pas: odaTur.passed } : {}),
+    girdi() { closeOverlay(); },
+    basla(m) {
+      const c = Math.max(0, Math.min(CHAPTERS.length - 1, (m.ayar && m.ayar.bolum) | 0));
+      closeOverlay();
+      clearTimeout(winTimer);
+      odaTur = { from: CHAPTERS[c].from, to: chapterEnd(c), stars: 0, passed: 0 };
+      loadLevel(odaTur.from);
+      toast(m.gecen > 3000 ? 'Yarışa katıldın' : 'Başla!');
+    },
+    bitti() {
+      clearTimeout(winTimer);
+      if (odaTur) { mode = 'won'; aim = null; $('btnPas').hidden = true; } // time's up: no more shots
+    },
+    cikti() {
+      clearTimeout(winTimer);
+      odaTur = null;
+      loadLevel(typeof prog.last === 'number' && prog.last < N && unlocked(prog.last) ? prog.last : 0);
+    }
+  });
+  oda.dugme($('btnOda'));
+  // For testing: localStorage 'sekme.debug' = '1' opens the game up as window.__sekme.
+  try { if (localStorage.getItem('sekme.debug') === '1') window.__sekme = { shoot, get mode() { return mode; }, get li() { return li; }, get L() { return L; }, get oda() { return odaTur; } }; } catch (e) {}
 
   // ---------- boot ----------
   function start(data) {

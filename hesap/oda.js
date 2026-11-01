@@ -748,7 +748,8 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 
     function menu(kapaninca) {
       if (!o.id) return;
-      if (o.bittiBen && o.aktif) { izle(); return; }
+      if (!o.aktif) { if (o.son && o.ekran !== 'bekle') sonucGoster(); else bekle(); return; } // between rounds
+      if (o.bittiBen) { izle(); return; }
       sayfa('menu', (k) => {
         baslik(k, Y.odadasin, Y.suruyor, Y.menuLead);
         const sira = mk('div', 'sira');
@@ -782,7 +783,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       dugme(el) {
         if (!el) return;
         el.hidden = true;
-        el.addEventListener('click', () => api.ac());
+        el.addEventListener('click', () => { if (o.id) menu(); else api.ac(); }); // in a room: the room's own menu
         hazir.then(() => { el.hidden = !kullanilir(); });
       },
       ninki, sureYazi

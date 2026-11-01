@@ -26,7 +26,7 @@ lab/fish/          Fish: koi oyunu (tek kişilik + arkadaşlarla odalar). Plan l
 lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu; parkur yarışı arkadaşlarla odalarda da yapılır
 lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
 lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
-lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
+lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye; odalarda yıldız yarışı
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya; tek başına ya da arkadaşlarla odalarda). Kurallar lab/kar-savasi/oyun.js (sunucu da kullanır)
 lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık (tek başına ya da arkadaşlarla odalarda)
 lab/tank/          Tank Arenası: 2–8 tank, her isabet bir puan; botlarla ya da arkadaşlarla odalarda. Kurallar lab/tank/oyun.js (sunucu da kullanır)
@@ -110,6 +110,7 @@ Yeni oyunlar önce Lab'a girer.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.
+    Odalar (çubuktaki iki kişi simgesi): yıldız yarışı. Kurucu bölümü ve süreyi (3/5/10 dk) seçer; herkes o bölümün 10 seviyesini sırayla oynar, vurunca yıldızlar gelir ve sonraki seviye kendiliğinden açılır; üç atıştan sonra "Bu seviyeyi geç" çıkar. Süre bitince en çok yıldız kazanır. Odalar `sekme.v1`'i (tek kişilik ilerleme) değiştirmez; odada bütün bölümler açıktır. Skor `sekme-oda` (yıldız; ayrıntı: bölüm, geçilen seviye). Deneme: `sekme.debug` = `1` → `window.__sekme`.
   - Kar Savaşı: `karSavasi.best` (tek başına en iyi puan). Not: yeni oyun, dalga ve puan, oyun sonu.
     Odalar ("Arkadaşlarla oyna"): biten (ya da yarıda bırakılan) oyunun takım puanı `scores`'a oyun `kar-savasi-oda` olarak yazılır (ayrıntı: dalga, oyuncunun devirdiği çocuk sayısı, oyuncu sayısı). Not: oda, dalga ve takım puanı.
   - Kanyon: `kanyon.hi` (en iyi puan), `kanyon.uzak` (şimdiye kadar yıkılan en uzak köprü; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
