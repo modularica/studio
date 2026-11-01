@@ -25,7 +25,7 @@ lab/yorumlar/      "Nasıldı?" cevapları: yönetici herkesinkini, diğerleri k
 lab/fish/          Fish: koi oyunu (tek kişilik + arkadaşlarla odalar). Plan lab/fish/PLAN.md
 lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu; parkur yarışı arkadaşlarla odalarda da yapılır
 lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
-lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
+lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense; odalarda kim daha uzağa gider
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye; odalarda yıldız yarışı
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya; tek başına ya da arkadaşlarla odalarda). Kurallar lab/kar-savasi/oyun.js (sunucu da kullanır)
 lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık (tek başına ya da arkadaşlarla odalarda)
@@ -120,6 +120,7 @@ Yeni oyunlar önce Lab'a girer.
   - Balon Yarışı: `balon.ayar` (seçili işlemler, işlem başına seviye, rakip), `balon.zayif` (yanlış yapılan sorular; yarışlarda tekrar sorulur, doğru bilinince azalır). Ses tercihi `balon.ses` cihazda kalır. Not: yarış başı (işlem ve seviyeler, rakip), yarış sonu (kazandı/kaybetti, doğru sayısı, süre).
     Odalar ("Arkadaşlarla yarış"): herkes kendi işlem ve seviyelerinde soru çözer, 1000 metreye ilk çıkan kazanır; ilk bitirenden sonra diğerlerinin 45 saniyesi kalır. Skor `balon-yarisi-oda` (doğru sayısı; ayrıntı: sıra, süre, işlemler).
   - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
+    Odalar (üstteki "Arkadaşlarla"): herkes aynı haritada aynı dalgalara karşı kendi kalesini kendi hızında korur; kurucu süreyi seçer (10/15/25 dk). Süre bitince ya da bütün kaleler düşünce en uzağa giden kazanır (puan = dalga × 100 + can; düşen kalede o dalga sayılmaz). Oda savaşı tek kişilik kaydı (`sur-muhafizi-kayit`) değiştirmez; odadan çıkınca "Kaldığın yerden devam?" yine sorulur. Skor `sur-muhafizi-oda`.
 - Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 
 ## Paylaşım görselleri

@@ -11,6 +11,7 @@
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js" data-oyun="sur-muhafizi" data-kayit="sur-muhafizi-best sur-muhafizi-kayit"></script>
+<script src="/hesap/oda.js"></script>
 </head><body>
 <title>Sur Muhafızı</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -58,6 +59,8 @@ body{
 .stats{display:flex;gap:6px;flex-wrap:wrap}
 .stat{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px 0 8px;border-radius:999px;background:var(--plank);border:1px solid var(--plank-hi);font-size:16px;font-variant-numeric:tabular-nums}
 .stat b{font-weight:700}
+.oda-btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 9px;border-radius:999px;background:var(--plank);border:1px solid var(--gold-deep);color:var(--gold);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.oda-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .stat svg{width:16px;height:16px;flex:none}
 .i-heart{fill:var(--blood)}
 .i-coin{fill:var(--gold);stroke:var(--gold-deep);stroke-width:1.4}
@@ -119,6 +122,7 @@ button:active:not(:disabled){transform:translateY(1px)}
       <span class="stat" title="Kalenin canı"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="i-heart" d="M8 14 2.5 8.6C.8 6.9 1.6 3.6 4.4 3.3 5.9 3.1 7.2 4 8 5.2 8.8 4 10.1 3.1 11.6 3.3c2.8.3 3.6 3.6 1.9 5.3Z"/></svg><b id="sLives">20</b></span>
       <span class="stat" title="Altın"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="i-coin" cx="8" cy="8" r="6.3"/><circle class="i-coin-in" cx="8" cy="8" r="3.6"/></svg><b id="sGold">180</b></span>
       <span class="stat" title="Dalga"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="i-pole" d="M3.5 1.5v13"/><path class="i-pen" d="M4.5 2.5h9l-2.6 3 2.6 3h-9z"/></svg><b id="sWave">0/20</b></span>
+      <button class="oda-btn" id="odaBtn" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.2a4.6 4.6 0 0 1 5.5 4.6"/></svg><span id="odaBtnT">Arkadaşlarla</span></button>
     </div>
   </header>
 
@@ -170,8 +174,10 @@ const COLS = 16, ROWS = 10, MAX_WAVE = 20, BEST_KEY = 'sur-muhafizi-best', SAVE_
 
 /* ---------- saved battle (resume where you left off) ---------- */
 // Saved whenever the board is clear: when a wave is pushed back and when the next one starts.
-function savasiKaydet() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot())); } catch (_) {} }
-function kaydiSil() { try { localStorage.removeItem(SAVE_KEY); } catch (_) {} }
+// (a room battle never touches the saved solo battle)
+function savasiKaydet() { if (odaTur) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot())); } catch (_) {} }
+function kaydiSil() { if (odaTur) return; try { localStorage.removeItem(SAVE_KEY); } catch (_) {} }
+let odaTur = null; // the room round this battle is part of (null: playing alone)
 function kaydiOku() {
   try {
     const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -662,7 +668,8 @@ function startWave() {
   const counts = {}; list.forEach(([k]) => counts[k] = (counts[k] || 0) + 1);
   const summary = Object.keys(counts).map(k => `${counts[k]} ${FOES[k].word}`).join(' · ');
   announce(`Dalga ${w}`, INTRO[w] || summary);
-  hesapNotu(`${S.endless ? 'Sonsuz mod · ' : ''}${w}. dalga · ${S.lives} can`);
+  if (odaTur) odaGonder();
+  else hesapNotu(`${S.endless ? 'Sonsuz mod · ' : ''}${w}. dalga · ${S.lives} can`);
 }
 
 function spawn(type, w) {
@@ -692,6 +699,7 @@ function kill(e) {
 function leak(e) {
   e.dead = true; S.lives = Math.max(0, S.lives - e.lives); S.castleHit = .5;
   text(15.5, 4.1, `-${e.lives}`, '#ff8a75');
+  if (odaTur) odaGonder();
   doneOne(e.w);
   if (S.lives <= 0) gameOver('lose');
 }
@@ -707,7 +715,8 @@ function doneOne(w) {
   announce('Püskürtüldü!', `Dalga ${w} · +${bonus + inc} altın`);
   if (!S.queue.length && !Object.keys(S.alive).length) {
     savasiKaydet();
-    hesapNotu(`${S.endless ? 'Sonsuz mod · ' : ''}${w}. dalga bitti · ${S.lives} can`);
+    if (odaTur) odaGonder();
+    else hesapNotu(`${S.endless ? 'Sonsuz mod · ' : ''}${w}. dalga bitti · ${S.lives} can`);
   }
   if (!S.endless && S.wave >= MAX_WAVE && !S.queue.length && !Object.keys(S.alive).length) gameOver('win');
 }
@@ -998,6 +1007,7 @@ function infoText(t) {
 }
 function hintText() {
   if (S.flash && S.flash.t > 0) return [S.flash.msg, S.flash.warn];
+  if (S.over === 'oda') return ['Süre doldu.', false];
   if (S.over) return [S.over === 'win' ? 'Kale ayakta kaldı.' : 'Surlar yıkıldı.', false];
   if (S.sel) return [infoText(S.sel), false];
   if (S.build) {
@@ -1059,6 +1069,13 @@ function saveBest(n) {
 function gameOver(kind) {
   if (S.over) return;
   S.over = kind; S.build = null; S.sel = null; S.ghost = null;
+  if (odaTur) {
+    // the room ranks everyone; this battle waits for the others
+    saveBest(S.wave);
+    hesapNotu(`Oda: ${kind === 'win' ? `${MAX_WAVE} dalgayı kazandı` : `surlar ${S.wave}. dalgada yıkıldı`} · ${S.lives} can`);
+    oda.bitir(odaPuan(), undefined, [S.wave, S.lives], kind === 'win' ? 'Kale ayakta!' : 'Kale düştü');
+    return;
+  }
   kaydiSil();
   if (kind === 'lose') {
     const best = saveBest(S.wave);
@@ -1160,6 +1177,44 @@ addEventListener('keydown', e => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && !S.over && (S.queue.length || S.enemies.length)) S.paused = true;
 });
+
+/* ---------- rooms: the same map and waves, who holds out longest (hesap/oda.js, server fish/sunucu/src/genel-oda.js) ---------- */
+// Everyone defends their own castle on the same map against the same waves, each at their own pace.
+// When the time is up (or every castle has fallen) the furthest wave wins; castle lives break ties.
+// Score: wave × 100 + lives.
+const odaPuan = () => (S.over === 'lose' ? Math.max(0, S.wave - 1) : S.wave) * 100 + S.lives;
+const dalgaYazi = p => { const w = Math.floor(p / 100), l = p % 100; return w ? `${w}. dalga · ${l} can` : `${l} can`; };
+function odaGonder() { oda.gonder(odaPuan(), [S.wave, S.lives]); }
+const oda = Oda.kur({
+  oyun: 'sur', ad: 'Sur Muhafızı', surum: 1, skor: 'sur-muhafizi-oda', sira: 'puan', saat: true,
+  tema: { zemin: '#2b2017', yazi: '#f1e5cb', ana: '#f0b23a', anaYazi: '#2a1a08', satir: '#1c140e', cizgi: 'rgba(241,229,203,.14)', kenar: '#3e2f22', dugme: '#3e2f22', dugmeYazi: '#f1e5cb', kotu: '#e0604a',
+    baslik: '"Grenze Gotisch",Georgia,serif', govde: 'Grenze,Georgia,serif', bildirimUst: '60px' },
+  aciklama: 'Herkes aynı haritada, aynı dalgalara karşı kendi kalesini korur. Süre bitince ya da bütün kaleler düşünce en uzağa giden kazanır; eşitlikte canı çok olan.',
+  ayarlar: [{ k: 'sure', ad: 'Süre', secenek: [{ d: 600, ad: '10 dakika' }, { d: 900, ad: '15 dakika' }, { d: 1500, ad: '25 dakika' }], v: 900 }],
+  canli: { left: '16px', bottom: '150px' },
+  puanYazi: dalgaYazi,
+  canliYazi: p => `${Math.floor(p / 100)}. dalga`,
+  skorAyrinti: () => ({ dalga: S.wave, can: S.lives }),
+  girdi() { if (teklif) { teklif = null; ov.hidden = true; } },
+  basla(m) {
+    odaTur = m;
+    teklif = null;
+    restart();
+    S.paused = false;
+    announce('Oda savaşı', 'Kur, hazırlan, dalgayı başlat');
+    odaGonder();
+  },
+  bitti() {
+    if (odaTur && !S.over) { S.over = 'oda'; S.build = null; S.sel = null; S.ghost = null; } // time's up
+  },
+  cikti() {
+    odaTur = null;
+    restart();
+    devamTeklifEt(); // the solo battle saved before is still there
+  }
+});
+oda.dugme($('odaBtn'));
+$('odaBtn').addEventListener('click', () => { if (!odaTur) S.paused = true; }); // a solo battle waits while the room list is open
 
 /* ---------- boot ---------- */
 function snapshot() {

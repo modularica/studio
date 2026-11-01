@@ -425,7 +425,7 @@ function gameOver() {
     pointers.clear(); joyRelease(); overAt = T;
     setState('izle');
     hesapNotu(`oda · ${bridges} köprü · ${fmt(score)} puan`);
-    oda.bitir(score, undefined, [Math.round(player.x), Math.round(player.y), 2, bridges]);
+    oda.bitir(score, undefined, [Math.round(player.x), Math.round(player.y), 2, bridges], 'Uçakların bitti');
     return;
   }
   $('finalScore').textContent = fmt(score);

@@ -1792,7 +1792,7 @@ const CHAPTERS = [
     mode = 'won';
     setReadout('Bölüm bitti · <b>' + odaTur.stars + ' yıldız</b>');
     hesapNotu(`Oda: ${CHAPTERS[chapterOf(odaTur.from)].name} bitti · ${odaTur.stars} yıldız`);
-    oda.bitir(odaTur.stars, undefined, [odaTur.to - odaTur.from, 0]);
+    oda.bitir(odaTur.stars, undefined, [odaTur.to - odaTur.from, 0], 'Bölüm bitti');
   }
   $('btnPas').addEventListener('click', () => {
     if (!odaTur || mode === 'won' || mode === 'fly') return;

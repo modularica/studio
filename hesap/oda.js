@@ -34,7 +34,8 @@
  *   oda.ac()             the room list
  *   oda.menu(f)          the in-game room menu (the game goes on); f runs on "Oyuna dön" (e.g. to unpause)
  *   oda.gonder(p, v)     my score and live state (sent at most 10 times a second)
- *   oda.olay(e)          a one-off event for the others     oda.bitir(p, eser, v)   I'm done
+ *   oda.olay(e)          a one-off event for the others
+ *   oda.bitir(p, eser, v, ust)   I'm done (ust: the waiting sheet's small title instead of "Bitirdin!")
  *   oda.aktif            a round is on and I'm in it        oda.ben   my number in the room
  *   oda.isim(no)         { ad, renk }
  *
@@ -659,10 +660,11 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       }, bekle);
     }
     function olay(e) { if (o.aktif) yolla({ t: 'o', e }); }
-    function bitir(p, eser, v) {
+    function bitir(p, eser, v, ust) {
       if (!o.aktif || o.bittiBen) return;
       clearTimeout(o.gonderT); o.gonderT = 0; o.bekleyen = null;
       o.bittiBen = true;
+      o.izleUst = ust || null;
       const m = { t: 'bitir', p };
       if (eser !== undefined) m.eser = eser;
       if (v !== undefined) m.v = v;
@@ -672,7 +674,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
     // "you're done": the live ranking while the others play on
     function izle() {
       sayfa('izle', (k) => {
-        baslik(k, Y.bitirdin, '…');
+        baslik(k, o.izleUst || Y.bitirdin, '…');
         const ol = mk('ol', 'liste'); ol.id = 'izleListe';
         const d = mk('p', 'durum'); d.id = 'izleNot';
         const sira = mk('div', 'sira');
@@ -687,7 +689,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       if (!ol) return;
       const ben = o.canliListe.find((x) => x.ben);
       const h = kok.getElementById('oda-h');
-      if (h) h.textContent = ben && o.canliListe.length > 1 ? Y.siradasin(ben.sira) : Y.bitirdin;
+      if (h) h.textContent = ben && o.canliListe.length > 1 ? Y.siradasin(ben.sira) : o.izleUst || Y.bitirdin;
       ol.replaceChildren(...o.canliListe.map(satir));
       const kalan = Math.max(0, o.kalan - (performance.now() - (o.kalanT || 0)));
       kok.getElementById('izleNot').textContent = Y.beklen + (kalan && kalan < 30 * 60000 ? ' ' + Y.kalan(sureYazi(kalan)) : '');
