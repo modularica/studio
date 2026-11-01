@@ -22,6 +22,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Odalarda her sayfa kendi desenini `merhaba`'da yollar, sunucu diğerlerine iletir; diğer koi'ler o desende çizilir (desen yollamayan eski sayfalarda oyuncunun renginde lekeler). İsim etiketi ve haritadaki nokta oyuncunun renginde kalır.
 - İnci: suda arada bir inci belirir, üstünden geçince +3 (odada sadece sana görünür). Tur sonunda her iki balığa 1, her 10 cm'ye 1 inci; odada birinciye +10. Gerçek para yok.
 - Gizli at: F11 (dizüstünde fn+F11), H tuşu ya da başlıktaki "Fish" yazısına 2,5 sn içinde 5 kez dokunmak koi'yi eyerli bir ata çevirir (`atMi`, stil `AT`, çizim `drawHorse`); aynı tuşla geri döner. Sadece görünüş: boy, hız, çarpışma aynı. Kaydedilmez, sayfa yenilenince koi'ye döner. Odada sayfa `desen {d: 'at'}` yollar, diğerleri de atı görür.
+- F7 (dizüstünde fn+F7): tek kişilik oyunda koi 1 cm uzar (`birSantim`; basılı tutmak bir kez sayar). F7 kullanılan tur (`buyutme` > 0) leaderboard'a yazılmaz, en iyi boyu değiştirmez; tur sonunda "… cm from F7" yazar, takip notuna da eklenir. Odalarda boyu sunucu verdiği için çalışmaz, "only works when you play alone" der.
 - Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar (`__fish.atResmi(faz, bükülme)` atı büyük çizip resim adresi verir).
 
 ## Tek kişilik sürümün yapısı

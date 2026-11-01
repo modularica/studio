@@ -708,6 +708,7 @@ const cam = { x: 0, y: 0, scale: 1 };
 let mode = 'attract';   // attract | play | paused | over
 let fish = [];
 let tally = {}, eatenCount = 0, killer = null, chainKey = '';
+let buyutme = 0; // cm added with F7 this round: such a round stays off the leaderboard and the best length
 let sayilan = {}; // part of this round's tally already added to the lifetime count
 let lbSonuc = null; // this round's score upload + this week's leaderboard
 let best = +store.get('fish.best', 0) || 0;
@@ -841,6 +842,7 @@ addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
   if (k && (mode === 'play' || mode === 'oda')) { keys[k] = true; e.preventDefault(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && (mode === 'play' || mode === 'paused')) { mode === 'play' ? pause() : resume(); e.preventDefault(); }
+  if ((e.key === 'F7' || e.code === 'F7')) { e.preventDefault(); if (!e.repeat) birSantim(); }
   // the secret horse: F11 (fn+F11 on laptops); H too, for keyboards where F11 is taken
   if ((e.key === 'F11' || e.code === 'F11' || (e.code === 'KeyH' && !e.ctrlKey && !e.metaKey && !e.altKey)) && !e.repeat) {
     const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
@@ -1166,7 +1168,7 @@ function startGame(fromAttract) {
   ensureAudio();
   if (!fromAttract) resetPlayer();
   else { P.l = P.lShow = 10; P.lives = 3; P.alive = true; P.invuln = 0; P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length; }
-  tally = {}; eatenCount = 0; killer = null; sayilan = {};
+  tally = {}; eatenCount = 0; killer = null; sayilan = {}; buyutme = 0;
   xpBasla = xpToplam(); svGosterilen = levelOf(xpBasla);
   inciTur = 0; inciler.length = 0; inciT = 8;
   P.grace = 2.5;
@@ -1202,10 +1204,26 @@ function eat(f) {
   for (let i = 0; i < 5; i++) bubbles.push({ x: m.x + rand(-1, 1) * f.l * .2, y: m.y + rand(-1, 1) * f.l * .2, vx: rand(-1, 1) * f.l * .4, vy: rand(-1, 1) * f.l * .4, r: rand(1.5, 3.5), life: rand(.5, .9) });
   labels.push({ x: m.x, y: m.y, text: '+ ' + (f.sp.short || f.sp.name), life: 1 });
   sfxGulp(f.l / P.l);
-  const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
-  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); }
+  yemKontrol();
   hesapNotu(`${fmtLenStr(P.l)} · ${eatenCount} balık yedi`);
   seviyeKontrol(tally, sayilan);
+}
+function yemKontrol() { // tell the player when a whole species has become food
+  const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
+  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); return true; }
+  return false;
+}
+// F7 (fn+F7 on laptops): the koi grows 1 cm. Only alone: in rooms the server decides sizes.
+function birSantim() {
+  if (mode === 'oda') { showToast('F7 only works when you play alone'); return; }
+  if (mode !== 'play' || !P.alive) return;
+  P.l += 1; P.gulp = Math.max(P.gulp, .6); buyutme++;
+  const m = P.spine[0];
+  labels.push({ x: m.x, y: m.y, text: '+1 cm', life: 1 });
+  ripples.push({ x: m.x, y: m.y, r: P.l * .15, max: P.l * .8, life: 1 });
+  tone('sine', 520, 880, .12, .16);
+  if (!yemKontrol() && buyutme === 1) showToast(window.Hesap ? '+1 cm · F7 rounds stay off the leaderboard' : '+1 cm');
+  shownLen = ''; updateHud();
 }
 function bitten(f) {
   P.lives--; renderLives();
@@ -1225,17 +1243,18 @@ function gameOver(f) {
   for (let i = 0; i < 9; i++) bubbles.push({ x: m.x, y: m.y, vx: rand(-1, 1) * P.lShow * .6, vy: rand(-1, 1) * P.lShow * .6, r: rand(2, 4.5), life: rand(.6, 1.1) });
   sfxOver(); lockOff();
   hud.hidden = true; toast.hidden = true;
-  const isBest = P.l > best + .001;
+  const isBest = !buyutme && P.l > best + .001;
   if (isBest) { best = P.l; store.set('fish.best', best); }
   sayilmayaniEkle();
   // pearls for the round: one for every two fish, one for every 10 cm
   turInci = Math.floor(eatenCount / 2) + Math.floor(P.l / 10);
   inciEkle(turInci);
-  hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
+  hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}${buyutme ? ` · F7 ile +${buyutme} cm` : ''}`);
   renderStartBest();
   // Post the round to the leaderboard, then read this week's table for the game-over screen.
+  // (a round grown with F7 is not posted)
   lbSonuc = window.Hesap
-    ? Hesap.skor(Math.round(P.l * 10) / 10, { killer: f.sp.name, eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id })
+    ? (buyutme ? Promise.resolve() : Hesap.skor(Math.round(P.l * 10) / 10, { killer: f.sp.name, eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id }))
         .catch(() => {})
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
@@ -1251,7 +1270,7 @@ function showOver(isBest) {
     ? eaten.map(s => `<li><span class="sw" style="background:${s.body}"></span>${tally[s.name]} ${tally[s.name] === 1 ? s.name : s.plural}</li>`).join('')
     : '<li>Nothing eaten this time</li>';
   const b = $('overBest');
-  b.textContent = isBest ? 'New best length' : `Best: ${fmtLenStr(best)}`;
+  b.textContent = isBest ? 'New best length' : buyutme ? `${buyutme} cm from F7 · not on the leaderboard` : `Best: ${fmtLenStr(best)}`;
   b.classList.toggle('new', isBest);
   lbGoster(lbSonuc);
   xpSonCiz($('overXp'), xpBasla, xpToplam(), turInci + inciTur);
@@ -2775,7 +2794,7 @@ function boot(data) {
   shownLen = ''; chainKey = ''; updateHud();
   if ((data.mode === 'play' || data.mode === 'paused') && data.l > 0) {
     startGame(true);
-    P.l = P.lShow = data.l; P.lives = data.lives || 3; tally = data.tally || {}; eatenCount = data.eaten || 0;
+    P.l = P.lShow = data.l; P.lives = data.lives || 3; tally = data.tally || {}; eatenCount = data.eaten || 0; buyutme = data.buyutme || 0;
     P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length; P.grace = 2.5;
     cam.scale = targetScale(P.l); initSpine(P, P.l);
     renderLives(); shownLen = ''; chainKey = ''; updateHud();
@@ -2788,7 +2807,7 @@ function boot(data) {
 { let n = 0, t0 = 0; const el = document.querySelector('.title');
   if (el) el.addEventListener('pointerdown', () => { const now = performance.now(); if (now - t0 > 2500) n = 0; if (!n) t0 = now; if (++n >= 5) { n = 0; atDegistir(); } }); }
 // For testing: localStorage 'fish.debug' = '1' opens the page up as window.__fish.
-try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get mode() { return mode; }, get fish() { return fish; }, get harita() { return HARITA.id; }, get desen() { return seciliDesen; }, get at() { return atMi; }, atDegistir, atResmi: (ph, bend) => {
+try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get mode() { return mode; }, get fish() { return fish; }, get harita() { return HARITA.id; }, get desen() { return seciliDesen; }, get at() { return atMi; }, get buyutme() { return buyutme; }, atDegistir, atResmi: (ph, bend) => {
     const w = 640, h = 320, c = document.createElement('canvas'); c.width = w; c.height = h;
     const eski = { ctx, W, H, x: cam.x, y: cam.y, s: cam.scale };
     try {
@@ -2801,7 +2820,7 @@ try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get m
     } finally { ctx = eski.ctx; W = eski.W; H = eski.H; cam.x = eski.x; cam.y = eski.y; cam.scale = eski.s; }
   }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally }; } catch (e) {}
 const hot = window.claude && window.claude.hot;
-try { if (hot && hot.snapshot) hot.snapshot(() => ({ mode, l: P.l, lives: P.lives, tally, eaten: eatenCount })); } catch (e) {}
+try { if (hot && hot.snapshot) hot.snapshot(() => ({ mode, l: P.l, lives: P.lives, tally, eaten: eatenCount, buyutme })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
 })();
 </script>
