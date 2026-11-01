@@ -12,6 +12,7 @@
     { "source": "/kanyon/:path*", "destination": "/lab/kanyon/:path*", "permanent": false },
     { "source": "/tank/:path*", "destination": "/lab/tank/:path*", "permanent": false },
     { "source": "/balon-yarisi/:path*", "destination": "/lab/balon-yarisi/:path*", "permanent": false },
+    { "source": "/karinca-yolu/:path*", "destination": "/lab/karinca-yolu/:path*", "permanent": false },
     { "source": "/oyunlar.json", "destination": "/lab/oyunlar.json", "permanent": false }
   ]
 }
