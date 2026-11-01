@@ -18,16 +18,19 @@
  *     ayarlar: [{ k: 'sure', ad: 'Süre', secenek: [{ d: 180, ad: '3 dk' }, …], v: 300 }],  // host's choices
  *     ayarYazi: (ayar) => '…',       // a short summary for the room list
  *     puanYazi: (p, x) => p + ' puan',
- *     canli: { top: '60px', right: '8px' },   // where the live ranking goes (false: none)
+ *     canli: { top: '60px', right: '8px' },   // where the live ranking goes (false: none); oda.canliYer() moves it
+ *     saat: false,                   // true: always show the round's clock under the live ranking
  *     izle: true,                    // after oda.bitir(), show "you're done, waiting for the others"
  *     basla(m) {},                   // a round starts: { tohum, tur, ayar, kadro, gecen (ms since it started), sure, ben }
  *     durum(liste, m) {},            // ~10 a second: [{ no, ad, renk, p, b (ms when done, 0 still playing), v, ben }]
  *     olay(no, e) {},                // someone sent oda.olay(e)
  *     bitti(sonuc) {},               // the round is over (sonuc null: it was cut off); stop playing
+ *     girdi() {},                    // we're in a room now (e.g. hide the game's own start button)
  *     cikti() {}                     // we left the room: back to the game's menu
  *   });
  *   oda.dugme(el)        shows el ("Arkadaşlarla oyna") when rooms can be used; a click opens the list
- *   oda.ac()             the room list          oda.menu()   the in-game room menu
+ *   oda.ac()             the room list
+ *   oda.menu(f)          the in-game room menu (the game goes on); f runs on "Oyuna dön" (e.g. to unpause)
  *   oda.gonder(p, v)     my score and live state (sent at most 10 times a second)
  *   oda.olay(e)          a one-off event for the others     oda.bitir(p, eser, v)   I'm done
  *   oda.aktif            a round is on and I'm in it        oda.ben   my number in the room
@@ -271,7 +274,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
     }
     window.addEventListener('keydown', (e) => {
       if (sahne.hidden || e.composedPath().includes(host)) return;
-      if (e.key === 'Escape' && o.ekran === 'menu') kapatSayfa();
+      if (e.key === 'Escape' && o.ekran === 'menu') menuKapat();
       e.stopImmediatePropagation();
     }, true);
     const ekle = () => { if (!host.isConnected) document.body.appendChild(host); };
@@ -286,6 +289,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 
     /* the sheet */
     function sayfa(ad, kur) {
+      if (ad !== 'menu') o.menuCb = null;
       o.ekran = ad;
       kart.replaceChildren();
       kur(kart);
@@ -293,7 +297,13 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       const ilk = kart.querySelector('button:not(:disabled)');
       if (ilk && !COARSE) setTimeout(() => { try { ilk.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 30);
     }
-    function kapatSayfa() { sahne.hidden = true; o.ekran = null; }
+    function kapatSayfa() { sahne.hidden = true; o.ekran = null; o.menuCb = null; }
+    // "back to the game" from the room menu
+    function menuKapat() {
+      const f = o.menuCb;
+      kapatSayfa();
+      if (f) { try { f(); } catch (e) { console.error(e); } }
+    }
     function baslik(k, ust, h, lead) {
       if (ust) k.append(mk('p', 'ust', ust));
       const h2 = mk('h2', '', h); h2.id = 'oda-h'; k.append(h2);
@@ -477,7 +487,12 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 
     function mesaj(m) {
       switch (m.t) {
-        case 'hos': o.ben = m.ben; o.deneme = 0; break;
+        case 'hos': {
+          const yeni = !o.ben;
+          o.ben = m.ben; o.deneme = 0;
+          if (yeni && cfg.girdi) { try { cfg.girdi(); } catch (e) { console.error(e); } }
+          break;
+        }
         case 'oda': odaBilgi(m); break;
         case 'basla': basla(m); break;
         case 's': anlik(m); break;
@@ -624,7 +639,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       }
       // the clock, when time is short or someone has finished and the others are hurrying
       const kalan = o.kalan;
-      if (kalan && (kalan < 120000 || (o.sonra && o.bitenler.size))) canli.append(mk('div', 'saat', '⏱ ' + sureYazi(kalan)));
+      if (kalan && (cfg.saat || kalan < 120000 || (o.sonra && o.bitenler.size))) canli.append(mk('div', 'saat', '⏱ ' + sureYazi(kalan)));
     }
     function gonder(p, v) {
       if (!o.aktif || o.bittiBen) return;
@@ -725,18 +740,19 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       });
     }
 
-    function menu() {
+    function menu(kapaninca) {
       if (!o.id) return;
       if (o.bittiBen && o.aktif) { izle(); return; }
       sayfa('menu', (k) => {
         baslik(k, Y.odadasin, Y.suruyor, Y.menuLead);
         const sira = mk('div', 'sira');
-        sira.append(dugme(Y.don, 'ana', kapatSayfa));
+        sira.append(dugme(Y.don, 'ana', menuKapat));
         if (o.ben === o.kurucu) sira.append(dugme(Y.turuBitir, '', () => { yolla({ t: 'son' }); }));
         const nb = nasildiDugme(); if (nb) sira.append(nb);
         sira.append(dugme(Y.cik, '', cik));
         k.append(sira);
       });
+      o.menuCb = typeof kapaninca === 'function' ? kapaninca : null;
     }
 
     function kullanilir() { return !!(window.Hesap && Hesap.profil && 'WebSocket' in window && cfg.oyun); }
@@ -755,6 +771,8 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       katil(id) { if (kullanilir() && /^[a-z0-9]{8}$/.test(id)) katil(id, false); },
       menu, gonder, olay, bitir, izle, cik,
       kapat: kapatSayfa,
+      // where the live ranking goes, e.g. after the game's canvas moved: { top, right, bottom, left }
+      canliYer(yer) { for (const k of ['top', 'right', 'bottom', 'left']) canli.style[k] = yer && yer[k] != null ? yer[k] : ''; },
       dugme(el) {
         if (!el) return;
         el.hidden = true;

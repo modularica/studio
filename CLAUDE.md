@@ -28,7 +28,7 @@ lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
 lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya; tek başına ya da arkadaşlarla odalarda). Kurallar lab/kar-savasi/oyun.js (sunucu da kullanır)
-lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık
+lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık (tek başına ya da arkadaşlarla odalarda)
 lab/tank/          Tank Arenası: 2–8 tank, her isabet bir puan; botlarla ya da arkadaşlarla odalarda. Kurallar lab/tank/oyun.js (sunucu da kullanır)
 lab/balon-yarisi/  Balon Yarışı: botla ya da arkadaşlarla (odalar) matematik yarışı; 4 işlem, her işlemin kendi 8 seviyesi, zorlanılan sorular sonraki yarışlarda tekrar gelir
 fish/sunucu/       Lab'ın oda sunucusu: Fish, Tank Arenası, Kar Savaşı ve ortak odalar (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
@@ -113,6 +113,7 @@ Yeni oyunlar önce Lab'a girer.
     Odalar ("Arkadaşlarla oyna"): biten (ya da yarıda bırakılan) oyunun takım puanı `scores`'a oyun `kar-savasi-oda` olarak yazılır (ayrıntı: dalga, oyuncunun devirdiği çocuk sayısı, oyuncu sayısı). Not: oda, dalga ve takım puanı.
   - Kanyon: `kanyon.hi` (en iyi puan), `kanyon.uzak` (şimdiye kadar yıkılan en uzak köprü; ses tercihi `kanyon.mute` cihazda kalır). Not: yeni oyun, yıkılan köprü ve puan, oyun sonu. Her biten oyunun puanı `scores`'a yazılır (ayrıntı: köprü sayısı).
     Nehir ve üstündeki her şey her oyunda aynı (`RIVER_SEED`); oyuncular ezberleyip ilerliyor. Tohumu değiştirirsen herkesin öğrendiği harita ve `kanyon.uzak` anlamını yitirir.
+    Odalar ("Arkadaşlarla uç"): herkes aynı nehirde aynı anda kendi uçağını uçurur, diğerleri renkli gölge uçak (ekran dışındakiler üstte/altta isimle) olarak görünür; uçaklar birbirine çarpmaz. Kurucu süreyi seçer (3/5/10 dk); süre bitince ya da herkesin uçakları bitince en yüksek puan kazanır. Odadayken mola yok: oda menüsü açılınca sadece kendi uçağın bekler. Skor `kanyon-oda` (ayrıntı: köprü).
   - Tank Arenası: `tank.rekor` (botlarla bir turdaki en çok isabet; bot sayısı/zorluk `tank.ayar` ve ses `tank.ses` cihazda kalır). Not: botlarla başlama, tur sonu (isabet ve sıra), oda turu. Botlarla biten her tur `scores`'a oyun `tank` olarak, oda turları `tank-oda` olarak yazılır (ayrıntı: bot sayısı, zorluk, sıra, kaç kez boyandığı).
   - Balon Yarışı: `balon.ayar` (seçili işlemler, işlem başına seviye, rakip), `balon.zayif` (yanlış yapılan sorular; yarışlarda tekrar sorulur, doğru bilinince azalır). Ses tercihi `balon.ses` cihazda kalır. Not: yarış başı (işlem ve seviyeler, rakip), yarış sonu (kazandı/kaybetti, doğru sayısı, süre).
     Odalar ("Arkadaşlarla yarış"): herkes kendi işlem ve seviyelerinde soru çözer, 1000 metreye ilk çıkan kazanır; ilk bitirenden sonra diğerlerinin 45 saniyesi kalır. Skor `balon-yarisi-oda` (doğru sayısı; ayrıntı: sıra, süre, işlemler).
