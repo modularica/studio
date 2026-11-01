@@ -134,6 +134,7 @@ body{
   margin:0 0 4px;font-family:var(--font-display);font-weight:400;
   font-size:clamp(100px,31vw,184px);line-height:.82;color:var(--koi);
   text-shadow:0 8px 0 rgba(5,26,28,.45);display:flex;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
 }
 .title span{display:inline-block;animation:bob 2.8s ease-in-out infinite}
 .title span:nth-child(2){animation-delay:-.7s}
@@ -511,7 +512,8 @@ const PROF = {
   std:  [0.58, 0.9, 1, 0.97, 0.88, 0.75, 0.6, 0.45, 0.31, 0.2],
   deep: [0.62, 0.93, 1, 1, 0.94, 0.82, 0.66, 0.48, 0.32, 0.2],
   slim: [0.4, 0.64, 0.8, 0.92, 1, 0.96, 0.84, 0.64, 0.43, 0.26],
-  flat: [0.92, 1, 0.97, 0.9, 0.8, 0.68, 0.55, 0.42, 0.3, 0.2]
+  flat: [0.92, 1, 0.97, 0.9, 0.8, 0.68, 0.55, 0.42, 0.3, 0.2],
+  at:   [0.4, 0.52, 0.5, 0.37, 0.48, 0.8, 0.94, 1, 0.92, 0.62] // the horse: head, neck, barrel, rump
 };
 const POND_SPECIES = [
   { name: 'minnow', plural: 'minnows', min: 3,   max: 10,  body: '#a0ad7f', back: '#56633f', fin: 'rgba(196,198,156,.85)', w: .11,  prof: 'std',  pat: 'none',   tail: 'fork' },
@@ -637,6 +639,10 @@ function koiStili(id) {
     finSize: d.long ? .13 : undefined, tailLen: d.long ? 1.7 : 1
   }));
 }
+
+// The secret horse (F11, or H, or five taps on the title): looks only, it swims and eats like the koi.
+const AT = Object.assign({}, KOI, { name: 'horse', at: true, body: '#a2602f', back: '#7d4520', w: .14, prof: 'at', pat: 'none', wig: .45 });
+let atMi = false;
 
 // Bigger fish are slower for their size: speeds are body lengths per second times this.
 // 10 cm → 1, 30 cm → 0.72, 1 m → 0.5, 3 m → 0.36 (same as hizCarpani in fish/sunucu/src/kurallar.js).
@@ -835,6 +841,11 @@ addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
   if (k && (mode === 'play' || mode === 'oda')) { keys[k] = true; e.preventDefault(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && (mode === 'play' || mode === 'paused')) { mode === 'play' ? pause() : resume(); e.preventDefault(); }
+  // the secret horse: F11 (fn+F11 on laptops); H too, for keyboards where F11 is taken
+  if ((e.key === 'F11' || e.code === 'F11' || (e.code === 'KeyH' && !e.ctrlKey && !e.metaKey && !e.altKey)) && !e.repeat) {
+    const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    e.preventDefault(); atDegistir();
+  }
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; joyBirak(); });
@@ -892,6 +903,34 @@ const sfxGulp = r => { const f = 640 - clamp(r, 0, 1) * 320; tone('sine', f, f *
 const sfxBite = () => { tone('triangle', 150, 48, .28, .45); tone('square', 90, 40, .12, .05); };
 const sfxOver = () => { tone('sine', 392, 380, .22, .22); tone('sine', 311, 300, .22, .22, .2); tone('sine', 233, 140, .55, .25, .4); };
 const sfxLevel = () => { tone('sine', 523, 523, .1, .14); tone('sine', 784, 784, .18, .14, .09); };
+function sfxAt() { // a whinny, then two snorts
+  if (!AC || !soundOn) return;
+  try {
+    const t = AC.currentTime, o = AC.createOscillator(), lfo = AC.createOscillator(), lg = AC.createGain(), bp = AC.createBiquadFilter(), g = AC.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(560, t); o.frequency.linearRampToValueAtTime(1180, t + .16); o.frequency.linearRampToValueAtTime(1020, t + .5); o.frequency.exponentialRampToValueAtTime(380, t + 1.05);
+    lfo.frequency.setValueAtTime(15, t); lfo.frequency.linearRampToValueAtTime(23, t + 1);
+    lg.gain.setValueAtTime(30, t); lg.gain.linearRampToValueAtTime(110, t + .9);
+    lfo.connect(lg); lg.connect(o.frequency);
+    bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 1.3;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.3, t + .05); g.gain.setValueAtTime(.26, t + .72); g.gain.exponentialRampToValueAtTime(.0001, t + 1.1);
+    o.connect(bp); bp.connect(g); g.connect(master);
+    o.start(t); lfo.start(t); o.stop(t + 1.15); lfo.stop(t + 1.15);
+    const n = Math.floor(AC.sampleRate * .16), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    for (const dt of [1.22, 1.42]) {
+      const src = AC.createBufferSource(), lp = AC.createBiquadFilter(), sg = AC.createGain();
+      src.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 700; sg.gain.value = .5;
+      src.connect(lp); lp.connect(sg); sg.connect(master); src.start(t + dt);
+    }
+  } catch (e) {}
+}
+function atDegistir() {
+  atMi = !atMi; ensureAudio();
+  if (atMi) { sfxAt(); showToast("Neigh! You're a horse 🐴"); }
+  else { sfxGulp(.3); showToast('Back to koi 🐟'); }
+  if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'desen', d: atMi ? 'at' : seciliDesen }));
+}
 const sfxInci = () => { tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
 
 const SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -1301,7 +1340,7 @@ function koiStil(renk) {
   return koiStilleri[r] || (koiStilleri[r] = Object.assign({}, KOI, { patch: r }));
 }
 // Another player's koi: in the pattern they picked (older pages send none: patches in their colour).
-const baskaKoi = k => (k.desen && DESEN[k.desen] ? koiStili(k.desen) : koiStil(k.renk));
+const baskaKoi = k => (k.desen === 'at' ? AT : k.desen && DESEN[k.desen] ? koiStili(k.desen) : koiStil(k.renk));
 const oda = {
   lobi: null, lobiPing: 0, liste: [], listeT: 0, listeSaat: 0,
   ws: null, ping: 0, id: null, kur: false, ben: 0, kurucu: 0, durum: null, oyuncular: [], kimler: new Map(),
@@ -1433,7 +1472,7 @@ async function odaBaglan() {
   let ws;
   try { ws = new WebSocket(ODA_SUNUCU + '/oda/' + oda.id); } catch (e) { odaHata('ag'); return; }
   oda.ws = ws;
-  ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token, profil: p.id, ad: p.name, renk: p.color, kur: oda.kur, ekran: [Math.round(W), Math.round(H)], harita: soloHarita, desen: seciliDesen }));
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token, profil: p.id, ad: p.name, renk: p.color, kur: oda.kur, ekran: [Math.round(W), Math.round(H)], harita: soloHarita, desen: atMi ? 'at' : seciliDesen }));
   ws.onmessage = e => {
     if (e.data === 'pong' || oda.ws !== ws) return;
     let m; try { m = JSON.parse(e.data); } catch (_) { return; }
@@ -2095,7 +2134,7 @@ function drawInciler() {
 function makeG() { return { x: new Float32Array(10), y: new Float32Array(10), tx: new Float32Array(10), ty: new Float32Array(10), w: new Float32Array(10), len: 0 }; }
 function geo(f, st, l, gulp) {
   const s = f.spine, sc = cam.scale, prof = PROF[st.prof], g = f.g || (f.g = makeG());
-  const amp = l * .055 * (.3 + .7 * Math.min(1, f.speed / (l * 1.4)));
+  const amp = l * .055 * (st.wig || 1) * (.3 + .7 * Math.min(1, f.speed / (l * 1.4)));
   for (let i = 0; i < 10; i++) {
     const a = s[i > 0 ? i - 1 : 0], b = s[i < 9 ? i + 1 : 9];
     let tx = a.x - b.x, ty = a.y - b.y; const d = Math.hypot(tx, ty) || 1; tx /= d; ty /= d;
@@ -2319,6 +2358,7 @@ function drawShadow(f, st) {
   bodyPath(g, st, o, o * 1.3); ctx.fill();
 }
 function drawFish(f, st, danger) {
+  if (st.at) return drawHorse(f, st, danger);
   const g = f.g, len = g.len;
   if (len < 2.4) { ctx.fillStyle = st.body; ctx.beginPath(); ctx.arc(g.x[3], g.y[3], 1.2, 0, TAU); ctx.fill(); return; }
   ctx.fillStyle = st.fin; tailPath(g, st, f.phase); ctx.fill();
@@ -2337,6 +2377,119 @@ function drawFish(f, st, danger) {
   const ex = e.x, ey = e.y, enx = -e.ty * e.w * .72, eny = e.tx * e.w * .72;
   ctx.fillStyle = danger ? '#ff7b62' : '#10201c';
   ctx.beginPath(); ctx.arc(ex + enx, ey + eny, er, 0, TAU); ctx.arc(ex - enx, ey - eny, er, 0, TAU); ctx.fill();
+  if (danger) {
+    bodyPath(g, st, 0, 0);
+    ctx.lineWidth = Math.max(1.5, len * .014);
+    ctx.strokeStyle = `rgba(255,128,104,${(.55 + .3 * Math.sin(time * 7)).toFixed(3)})`;
+    ctx.stroke();
+  }
+}
+// A horse seen from above, paddling: a saddle on its back, a mane falling to one side, a bushy tail.
+const ATR = { mane: '#33200f', hoof: '#2a1c12', sock: '#efe6d6', blaze: '#f6efe3', muzzle: '#7a4a2c', ear: '#7a4220', earIn: '#4a2812',
+  blanket: '#c8362e', trim: '#f2cf6a', saddle: '#5b2f16', saddleTop: '#7a4123', stirrup: '#cfd3d8' };
+function yan(r, side, k) { return [r.x - r.ty * r.w * side * k, r.y + r.tx * r.w * side * k]; } // a point across the body at fi
+function drawHorse(f, st, danger) {
+  const g = f.g, len = g.len, ph = f.phase;
+  if (len < 4) { ctx.fillStyle = st.body; ctx.beginPath(); ctx.arc(g.x[3], g.y[3], 1.4, 0, TAU); ctx.fill(); return; }
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const big = len > 14;
+  // tail: one bushy lock swishing behind, with a few hairs
+  const t9 = frameAt(g, 9), bx = -t9.tx, by = -t9.ty, nx = -by, ny = bx, TL = len * .4;
+  const rx0 = t9.x + bx * t9.w * .45, ry0 = t9.y + by * t9.w * .45, sw = Math.sin(ph * .8 - 1.2);
+  const kuyruk = (t, o) => { const c = sw * TL * .42 * t * t + o; return [rx0 + bx * TL * t + nx * c, ry0 + by * TL * t + ny * c]; };
+  ctx.fillStyle = ATR.mane; ctx.beginPath();
+  for (let i = 0; i <= 12; i++) { const t = i / 12, hw = len * .052 * Math.sin(Math.PI * (.12 + t * .78)) + len * .006; const [x, y] = kuyruk(t, hw); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  for (let i = 12; i >= 0; i--) { const t = i / 12, hw = len * .052 * Math.sin(Math.PI * (.12 + t * .78)) + len * .006; const [x, y] = kuyruk(t, -hw); ctx.lineTo(x, y); }
+  ctx.closePath(); ctx.fill();
+  if (big) {
+    ctx.strokeStyle = 'rgba(120,80,50,.45)'; ctx.lineWidth = Math.max(.7, len * .008);
+    for (const o of [-.025, 0, .025]) { ctx.beginPath(); for (let i = 1; i <= 11; i++) { const [x, y] = kuyruk(i / 12, o * len * Math.sin(Math.PI * i / 12)); i > 1 ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+  }
+  // legs: out to the sides, paddling in diagonal pairs; white socks behind
+  const LL = len * .2, lw = Math.max(1.1, len * .036);
+  for (const [fi, s, off, sock] of [[4.9, 1, 0, 0], [4.9, -1, Math.PI, 0], [7.7, 1, Math.PI, 1], [7.7, -1, 0, 1]]) {
+    const r = frameAt(g, fi), qx = -r.ty * s, qy = r.tx * s, rx = r.x + qx * r.w * .7, ry = r.y + qy * r.w * .7;
+    const th = .5 + .6 * Math.sin(ph * .75 + off), c = Math.cos(th), sn = Math.sin(th);
+    const dx = qx * c - r.tx * sn, dy = qy * c - r.ty * sn; // out, swept back by th
+    const kx = rx + dx * LL * .5 + r.tx * LL * .14, ky = ry + dy * LL * .5 + r.ty * LL * .14, fx = rx + dx * LL, fy = ry + dy * LL;
+    ctx.strokeStyle = st.body; ctx.lineWidth = lw * 1.25;
+    ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(kx, ky); ctx.stroke();
+    ctx.strokeStyle = sock ? ATR.sock : st.body; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
+    const hx = fx - kx, hy = fy - ky, hd = Math.hypot(hx, hy) || 1;
+    ctx.fillStyle = ATR.hoof; ctx.beginPath(); ctx.ellipse(fx, fy, lw * .72, lw * .6, Math.atan2(hy / hd, hx / hd), 0, TAU); ctx.fill();
+  }
+  bodyPath(g, st, 0, 0); ctx.fillStyle = st.body; ctx.fill();
+  if (big) {
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = 'rgba(255,222,184,.14)'; // shine on the shoulder and the rump
+    for (const fi of [5.4, 7.6]) { const h = frameAt(g, fi); ctx.beginPath(); ctx.ellipse(h.x - h.ty * h.w * .35, h.y + h.tx * h.w * .35, h.w * .5, h.w * .3, Math.atan2(h.ty, h.tx), 0, TAU); ctx.fill(); }
+    const m = frameAt(g, .1); // a darker, softer muzzle
+    ctx.fillStyle = ATR.muzzle; ctx.beginPath(); ctx.ellipse(m.x + m.tx * m.w * .25, m.y + m.ty * m.w * .25, m.w * .95, m.w * 1.05, Math.atan2(m.ty, m.tx), 0, TAU); ctx.fill();
+    ctx.restore();
+    // nostrils
+    const n0 = frameAt(g, 0), nr = Math.max(.7, len * .01), [ax, ay] = yan(n0, 1, .5), [cx2, cy2] = yan(n0, -1, .5);
+    ctx.fillStyle = '#24140b'; ctx.beginPath();
+    ctx.ellipse(ax + n0.tx * n0.w * .35, ay + n0.ty * n0.w * .35, nr * 1.4, nr, Math.atan2(n0.ty, n0.tx), 0, TAU);
+    ctx.ellipse(cx2 + n0.tx * n0.w * .35, cy2 + n0.ty * n0.w * .35, nr * 1.4, nr, Math.atan2(n0.ty, n0.tx), 0, TAU); ctx.fill();
+    // white blaze down the face
+    const b0 = frameAt(g, .45), b0x = b0.x, b0y = b0.y, b1 = frameAt(g, 1.5);
+    ctx.strokeStyle = ATR.blaze; ctx.lineWidth = Math.max(1, len * .02);
+    ctx.beginPath(); ctx.moveTo(b0x, b0y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+    // saddle: red blanket with a gold edge, leather seat, stirrups hanging out at the sides
+    const s0 = frameAt(g, 5.1), s0x = s0.x, s0y = s0.y, s0tx = s0.tx, s0ty = s0.ty, s0w = s0.w, s1 = frameAt(g, 6.5);
+    const quad = (ka, kb, wa, wb) => { // a band across the back from fi ka to kb, wa/wb of the width
+      const p = frameAt(g, ka), px = p.x, py = p.y, pw = p.w, ptx = p.tx, pty = p.ty, q = frameAt(g, kb);
+      ctx.beginPath();
+      ctx.moveTo(px - pty * pw * wa, py + ptx * pw * wa);
+      ctx.quadraticCurveTo((px + q.x) / 2 - q.ty * q.w * wb * 1.08, (py + q.y) / 2 + q.tx * q.w * wb * 1.08, q.x - q.ty * q.w * wb, q.y + q.tx * q.w * wb);
+      ctx.lineTo(q.x + q.ty * q.w * wb, q.y - q.tx * q.w * wb);
+      ctx.quadraticCurveTo((px + q.x) / 2 + q.ty * q.w * wb * 1.08, (py + q.y) / 2 - q.tx * q.w * wb * 1.08, px + pty * pw * wa, py - ptx * pw * wa);
+      ctx.closePath();
+    };
+    quad(5.3, 6.9, 1.02, 1.02); ctx.fillStyle = ATR.trim; ctx.fill();
+    quad(5.38, 6.82, .94, .94); ctx.fillStyle = ATR.blanket; ctx.fill();
+    // stirrups
+    const st5 = frameAt(g, 6.05), stw = Math.max(1, len * .014);
+    ctx.strokeStyle = ATR.saddleTop; ctx.lineWidth = stw;
+    for (const sd of [1, -1]) {
+      const [ix, iy] = yan(st5, sd, .55), [ox, oy] = yan(st5, sd, 1.22);
+      ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ox, oy); ctx.stroke();
+    }
+    ctx.strokeStyle = ATR.stirrup; ctx.lineWidth = stw * 1.1;
+    for (const sd of [1, -1]) { const [ox, oy] = yan(st5, sd, 1.36); ctx.beginPath(); ctx.arc(ox, oy, len * .018, 0, TAU); ctx.stroke(); }
+    quad(5.55, 6.6, .62, .5); ctx.fillStyle = ATR.saddle; ctx.fill();
+    quad(5.75, 6.4, .42, .36); ctx.fillStyle = ATR.saddleTop; ctx.fill();
+    const pm = frameAt(g, 5.55); ctx.fillStyle = ATR.saddle; ctx.beginPath(); ctx.arc(pm.x, pm.y, Math.max(1, len * .02), 0, TAU); ctx.fill(); // the horn
+    // mane: falls to one side of the neck, wavy
+    ctx.fillStyle = ATR.mane; ctx.beginPath();
+    const M0 = 1.85, M1 = 5.2;
+    for (let fi = M0; fi <= M1 + .001; fi += .15) { const r = frameAt(g, fi), [x, y] = yan(r, 1, -.18); fi === M0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    for (let fi = M1; fi >= M0 - .001; fi -= .15) {
+      const r = frameAt(g, fi), k = Math.sin(Math.PI * (fi - M0) / (M1 - M0)), wv = .1 * Math.sin(fi * 9 + ph * .4);
+      const [x, y] = yan(r, 1, .55 + .75 * k + wv); ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.fill();
+    // ears: pointed, standing up and a little out
+    for (const sd of [1, -1]) {
+      const r = frameAt(g, 1.95), rtx = r.tx, rty = r.ty, [ex, ey] = yan(r, sd, .55), qx = -rty * sd, qy = rtx * sd, el = len * .085, ew = len * .028;
+      const tx2 = ex - rtx * el * .8 + qx * el * .55, ty2 = ey - rty * el * .8 + qy * el * .55;
+      ctx.fillStyle = ATR.ear; ctx.beginPath(); ctx.moveTo(ex + rtx * ew, ey + rty * ew);
+      ctx.quadraticCurveTo(ex + qx * ew * 1.5 + rtx * ew * .2, ey + qy * ew * 1.5 + rty * ew * .2, tx2, ty2);
+      ctx.quadraticCurveTo(ex - qx * ew * .6 - rtx * ew * .6, ey - qy * ew * .6 - rty * ew * .6, ex + rtx * ew, ey + rty * ew); ctx.fill();
+      ctx.fillStyle = ATR.earIn; ctx.beginPath(); ctx.moveTo(ex + rtx * ew * .4, ey + rty * ew * .4);
+      ctx.lineTo(ex * .35 + tx2 * .65 + qx * ew * .1, ey * .35 + ty2 * .65 + qy * ew * .1); ctx.lineTo(ex - rtx * ew * .2 - qx * ew * .1, ey - rty * ew * .2 - qy * ew * .1); ctx.closePath(); ctx.fill();
+    }
+    // forelock: a little tuft between the ears, falling forward
+    const fl = frameAt(g, 1.85), fl2 = frameAt(g, 1.5);
+    ctx.strokeStyle = ATR.mane; ctx.lineWidth = Math.max(1, len * .022);
+    ctx.beginPath(); ctx.moveTo(fl.x, fl.y); ctx.quadraticCurveTo(fl2.x - fl2.ty * fl2.w * .3 + fl2.tx * len * .02, fl2.y + fl2.tx * fl2.w * .3 + fl2.ty * len * .02, fl2.x + fl2.ty * fl2.w * .15, fl2.y - fl2.tx * fl2.w * .15); ctx.stroke();
+  }
+  // eyes on the sides of the head, with a glint
+  const e = frameAt(g, 1.35), er = Math.max(1.1, len * .017), [e1x, e1y] = yan(e, 1, .88), [e2x, e2y] = yan(e, -1, .88);
+  ctx.fillStyle = danger ? '#ff7b62' : '#10201c';
+  ctx.beginPath(); ctx.arc(e1x, e1y, er, 0, TAU); ctx.arc(e2x, e2y, er, 0, TAU); ctx.fill();
+  if (big && !danger) { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(e1x + e.tx * er * .35, e1y + e.ty * er * .35, er * .35, 0, TAU); ctx.arc(e2x + e.tx * er * .35, e2y + e.ty * er * .35, er * .35, 0, TAU); ctx.fill(); }
   if (danger) {
     bodyPath(g, st, 0, 0);
     ctx.lineWidth = Math.max(1.5, len * .014);
@@ -2544,7 +2697,7 @@ function render() {
   const inRoom = mode === 'oda';
   if (inRoom) drawBank();
 
-  const list = [], meSt = koiStili(seciliDesen), hunted = (mode === 'play' || inRoom) && P.alive;
+  const list = [], meSt = atMi ? AT : koiStili(seciliDesen), hunted = (mode === 'play' || inRoom) && P.alive;
   for (const f of fish) { if (f.dead) continue; if (onScreen(geo(f, f.sp, f.l, 0))) list.push(f); }
   if (inRoom) for (const e of oda.rakip.values()) { if (e.canli && onScreen(geo(e, e.sp, e.lShow, e.gulp))) list.push(e); }
   if (P.alive && mode !== 'over') { geo(P, meSt, P.lShow, P.gulp); list.push(P); }
@@ -2631,8 +2784,22 @@ function boot(data) {
   last = performance.now();
   requestAnimationFrame(frame);
 }
+// Five quick taps on the title turn the koi into a horse too (phones have no F11).
+{ let n = 0, t0 = 0; const el = document.querySelector('.title');
+  if (el) el.addEventListener('pointerdown', () => { const now = performance.now(); if (now - t0 > 2500) n = 0; if (!n) t0 = now; if (++n >= 5) { n = 0; atDegistir(); } }); }
 // For testing: localStorage 'fish.debug' = '1' opens the page up as window.__fish.
-try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get mode() { return mode; }, get fish() { return fish; }, get harita() { return HARITA.id; }, get desen() { return seciliDesen; }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally }; } catch (e) {}
+try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get mode() { return mode; }, get fish() { return fish; }, get harita() { return HARITA.id; }, get desen() { return seciliDesen; }, get at() { return atMi; }, atDegistir, atResmi: (ph, bend) => {
+    const w = 640, h = 320, c = document.createElement('canvas'); c.width = w; c.height = h;
+    const eski = { ctx, W, H, x: cam.x, y: cam.y, s: cam.scale };
+    try {
+      ctx = c.getContext('2d'); ctx.fillStyle = '#1d5a5c'; ctx.fillRect(0, 0, w, h);
+      W = w; H = h; cam.x = 0; cam.y = 0; cam.scale = w * .55 / 10;
+      const f = { x: 5.4, y: 0, angle: 0, speed: 0, phase: ph, spine: null, g: null };
+      initSpine(f, 10); for (let i = 0; i < 10; i++) f.spine[i].y += Math.pow(i / 9, 2) * (bend || 0);
+      geo(f, AT, 10, 0); ctx.fillStyle = 'rgba(2,20,22,.3)'; drawShadow(f, AT); drawFish(f, AT, false);
+      return c.toDataURL();
+    } finally { ctx = eski.ctx; W = eski.W; H = eski.H; cam.x = eski.x; cam.y = eski.y; cam.scale = eski.s; }
+  }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally }; } catch (e) {}
 const hot = window.claude && window.claude.hot;
 try { if (hot && hot.snapshot) hot.snapshot(() => ({ mode, l: P.l, lives: P.lives, tally, eaten: eatenCount })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});

@@ -43,7 +43,7 @@ Cloudflare Workers Builds deploys this folder on every push to `main` (root dire
 
 ## Messages
 
-Page → server: `merhaba {token, profil, kur, ekran, harita, desen}`, `k {x, y, a, v, h}` (my koi), `basla` and `harita {h}` (host only: the water, one of `K.HARITALAR`), `ekran {e}`, and the text `ping`. In the river (`nehir`) the water carries the wild fish (`K.akinti`) and moves are checked with it; in the sea (`deniz`) wild fish don't hunt a koi inside a kelp bed (`K.yosunda`). `desen` is the koi pattern the page draws, passed on to the others.
+Page → server: `merhaba {token, profil, kur, ekran, harita, desen}`, `k {x, y, a, v, h}` (my koi), `basla` and `harita {h}` (host only: the water, one of `K.HARITALAR`), `ekran {e}`, and the text `ping`. In the river (`nehir`) the water carries the wild fish (`K.akinti`) and moves are checked with it; in the sea (`deniz`) wild fish don't hunt a koi inside a kelp bed (`K.yosunda`). `desen` is the koi pattern the page draws, passed on to the others; `desen {d}` changes it mid-room (the secret horse, `at`).
 
 Server → page: `hos {ben}`, `oda {durum, kurucu, oyuncular (with desen), harita}`, `basla {R, kalan, harita}`, `dog {x, y, a, l, h, can}` (you are in the pond), `d` (snapshot: `p` koi, `f` wild fish, `e` events, `m` my stats), `isir`, `oldun`, `duz` (position correction), `son {sonuc}` (results), `hata {neden}`.
 

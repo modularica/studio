@@ -4,7 +4,7 @@
 // wild fish. Each page moves its own koi (so it feels instant) and reports where it is; the
 // server checks that the move is possible and corrects the page if it isn't.
 //
-// Page -> server:  merhaba {token, profil, kur, ekran, desen}   k {x, y, a, v, h}   basla   ekran {e}   harita {h} (host)
+// Page -> server:  merhaba {token, profil, kur, ekran, desen}   k {x, y, a, v, h}   basla   ekran {e}   harita {h} (host)   desen {d}
 // Server -> page:  hos, oda, basla, dog, d (snapshot, 10 per second), isir, oldun, duz, son, hata
 //
 // The host picks the map (K.HARITALAR): in the river the water carries every fish (K.akinti), in the
@@ -115,6 +115,16 @@ export class Oda extends DurableObject {
     else if (m.t === 'basla') this.basla(o);
     else if (m.t === 'ekran') { o.ekran = ekranAl(m.e); if (o.canli) this.gorus(o); }
     else if (m.t === 'harita') this.haritaSec(o, m.h);
+    else if (m.t === 'desen') this.desenSec(ws, a, o, m.d);
+  }
+
+  // A player changes the koi's look mid-room (the secret horse): everyone redraws it.
+  desenSec(ws, a, o, d) {
+    d = desenAl(d);
+    if (d === o.desen) return;
+    o.desen = d;
+    ws.serializeAttachment(Object.assign({}, a, { desen: d }));
+    this.odaYayinla();
   }
 
   get harita() { return (this.meta && this.meta.harita) || 'golet'; }

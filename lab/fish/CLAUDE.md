@@ -21,7 +21,8 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Koi desenleri (`DESENLER`): 18 gerçek koi çeşidi seviye seviye açılır, 6 özel desen inciyle alınır ("My koi" ekranı). Desenler `koiDeseni()` ile çizilir: büyük lekeler (`patch`, `patch2`), mürekkep benekleri (`spots`), kafada kırmızı daire (`crown`), pul ağı (`net`), yanlarda renk (`sides`), sırtta çizgi (`line`), parlaklık (`metal`) ve özel olanlar için çizgiler, yıldızlar, gökkuşağı, hayalet, uzun yüzgeç. Menüdeki resimler aynı çizim koduyla küçük bir tuvale çizilir (`koiResmi`).
 - Odalarda her sayfa kendi desenini `merhaba`'da yollar, sunucu diğerlerine iletir; diğer koi'ler o desende çizilir (desen yollamayan eski sayfalarda oyuncunun renginde lekeler). İsim etiketi ve haritadaki nokta oyuncunun renginde kalır.
 - İnci: suda arada bir inci belirir, üstünden geçince +3 (odada sadece sana görünür). Tur sonunda her iki balığa 1, her 10 cm'ye 1 inci; odada birinciye +10. Gerçek para yok.
-- Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar.
+- Gizli at: F11 (dizüstünde fn+F11), H tuşu ya da başlıktaki "Fish" yazısına 2,5 sn içinde 5 kez dokunmak koi'yi eyerli bir ata çevirir (`atMi`, stil `AT`, çizim `drawHorse`); aynı tuşla geri döner. Sadece görünüş: boy, hız, çarpışma aynı. Kaydedilmez, sayfa yenilenince koi'ye döner. Odada sayfa `desen {d: 'at'}` yollar, diğerleri de atı görür.
+- Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar (`__fish.atResmi(faz, bükülme)` atı büyük çizip resim adresi verir).
 
 ## Tek kişilik sürümün yapısı
 
