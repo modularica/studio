@@ -1249,7 +1249,7 @@ function gameOver(f) {
   // pearls for the round: one for every two fish, one for every 10 cm
   turInci = Math.floor(eatenCount / 2) + Math.floor(P.l / 10);
   inciEkle(turInci);
-  hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}${buyutme ? ` · F7 ile +${buyutme} cm` : ''}`);
+  hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
   renderStartBest();
   // Post the round to the leaderboard, then read this week's table for the game-over screen.
   // (a round grown with F7 is not posted)
