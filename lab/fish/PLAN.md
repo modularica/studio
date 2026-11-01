@@ -29,5 +29,7 @@
 - [ ] Oyuncu azken gölü dolduran botlar.
 - [ ] Hazır tepkiler (serbest sohbet yok).
 - [ ] Odalar için haftalık "en büyük koi" tablosu (`fish-oda` skorlarından).
-- [ ] Koi deseni seçme (kohaku, showa, ogon…).
+- [x] Dört su: Gölet, Nehir (akıntı), Deniz (yosun), Okyanus (karanlık); seviyelerle açılır. Odalarda kurucu seçer.
+- [ ] Koi deseni seçme (kohaku, showa, ogon…): her seviyede bir desen.
+- [ ] İnci: oynadıkça kazanılır, özel desenler inciyle alınır.
 - [ ] itch.io, CrazyGames gibi portallar.

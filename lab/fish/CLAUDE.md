@@ -9,6 +9,17 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Oda sunucusu repo kökünde `fish/sunucu/` (Cloudflare Worker + Durable Objects; Cloudflare oradan kurduğu için yeri değişmiyor). Ayrıntı `fish/sunucu/README.md`.
 - Leaderboard: tek kişilik tur bitince boy `Hesap.skor` ile kaydedilir; sıralama `Hesap.siralama` ile okunur (ayrıntı kök `CLAUDE.md`'de). İki tablo: Solo (oyun `fish`) ve Rooms (oyun `fish-oda`, odada bir turda ulaşılan en büyük boy). `lbAc(oyun, geriEkran)` tabloyu açar; Back açıldığı ekrana döner. Hesap yoksa (oyun tek başına açılırsa) leaderboard ve odalar gizlenir.
 
+## Haritalar ve seviye
+
+- Dört su (`MAPS`): Gölet, Nehir, Deniz, Okyanus. Her birinin kendi suyu, süsü ve 7 türü var; türlerin boy basamakları (min/max) her yerde aynı, çünkü oda sunucusu sadece basamağı bilir.
+  - Nehir: su +x yönünde şeritler halinde akar (`akinti(x, y)`, en çok 14 cm/sn): koi, balıklar ve parçacıklar sürüklenir; büyüdükçe akıntı az hissedilir. Dipte taşlar.
+  - Deniz: yosun yatakları (`yosunda(x, y)`, hücre başına hash): içindeki koi'yi avcılar kovalamaz. Dipte deniz yıldızları.
+  - Okyanus: koi'nin ışığı dışı karanlık (`drawDark`); avcıların gözleri karanlıkta kırmızı parlar.
+- `akinti()` ve `yosunda()` sunucuda da var (`fish/sunucu/src/kurallar.js`): ikisi aynı kalmalı.
+- Seviye: `fish.toplam`'daki her balık boy basamağı + 1 XP (`xpOf`); L. seviye için `25 × (L−1)^1.7` XP. Haritalar 1, 3, 6, 10. seviyede açılır. Tur sonunda "+XP" ve açılanlar gösterilir; tur içinde seviye atlayınca bildirim çıkar.
+- Odalarda suyu kurucu seçer (kendi açtığı sulardan); bekleme odasının arkasında o su görünür, oda listesinde suyun adı yazar.
+- Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar.
+
 ## Tek kişilik sürümün yapısı
 
 - Büyük balık daha yavaş: bütün hızlar (oyuncu, kaçan, kovalayan, gezinen) boy/saniye × `hizCarpani(boy)` = (boy/10)^-0.3. 10 cm'de 1, 30 cm'de 0.72, 1 m'de 0.5, 3 m'de 0.36. Avcının kovalama hızı yine oyuncunun en yüksek hızının %86'sını geçmez, yani kaçmak her zaman mümkün.

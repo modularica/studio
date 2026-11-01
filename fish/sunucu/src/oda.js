@@ -4,8 +4,11 @@
 // wild fish. Each page moves its own koi (so it feels instant) and reports where it is; the
 // server checks that the move is possible and corrects the page if it isn't.
 //
-// Page -> server:  merhaba {token, profil, kur, ekran}   k {x, y, a, v, h}   basla   ekran {e}
+// Page -> server:  merhaba {token, profil, kur, ekran, desen}   k {x, y, a, v, h}   basla   ekran {e}   harita {h} (host)
 // Server -> page:  hos, oda, basla, dog, d (snapshot, 10 per second), isir, oldun, duz, son, hata
+//
+// The host picks the map (K.HARITALAR): in the river the water carries every fish (K.akinti), in the
+// sea a koi inside a kelp bed is hidden from hunters (K.yosunda). The page draws everything else.
 import { DurableObject } from 'cloudflare:workers';
 import { oyuncu as kimlik } from './dogrula.js';
 import * as K from './kurallar.js';
@@ -48,6 +51,8 @@ function ekranAl(e) {
   const w = clamp(+(e && e[0]) || 390, 240, 3000), h = clamp(+(e && e[1]) || 844, 240, 3000);
   return { w, h };
 }
+// The koi pattern a page says its koi wears (only drawn by the pages; any short name is fine).
+function desenAl(d) { return typeof d === 'string' && /^[a-z0-9-]{1,20}$/.test(d) ? d : ''; }
 function gonder(ws, m) {
   if (!ws) return;
   try { ws.send(typeof m === 'string' ? m : JSON.stringify(m)); } catch (e) {}
@@ -56,7 +61,7 @@ function gonder(ws, m) {
 export class Oda extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.meta = null;            // { id, kurucu (profile id), durum: 'bekliyor' | 'oyunda', bitis, olusturma, tur }
+    this.meta = null;            // { id, kurucu (profile id), durum: 'bekliyor' | 'oyunda', bitis, olusturma, tur, harita }
     this.oyuncular = new Map();  // profile id -> koi
     this.canli = [];             // koi in the pond this step
     this.npc = [];
@@ -109,6 +114,17 @@ export class Oda extends DurableObject {
     if (m.t === 'k') this.konum(o, m);
     else if (m.t === 'basla') this.basla(o);
     else if (m.t === 'ekran') { o.ekran = ekranAl(m.e); if (o.canli) this.gorus(o); }
+    else if (m.t === 'harita') this.haritaSec(o, m.h);
+  }
+
+  get harita() { return (this.meta && this.meta.harita) || 'golet'; }
+
+  haritaSec(o, h) {
+    if (!this.meta || this.meta.durum !== 'bekliyor' || this.meta.kurucu !== o.pid || !K.HARITALAR.includes(h)) return;
+    this.meta.harita = h;
+    this.ctx.storage.put('meta', this.meta);
+    this.odaYayinla();
+    this.lobiyeBildir();
   }
 
   async webSocketClose(ws) {
@@ -126,7 +142,7 @@ export class Oda extends DurableObject {
     if (!kim) return kapat('giris', 4001);
     if (!this.meta) {
       if (!m.kur) return kapat('yok', 4004);
-      this.meta = { id: odaId, kurucu: kim.pid, durum: 'bekliyor', bitis: 0, olusturma: Date.now(), tur: 0 };
+      this.meta = { id: odaId, kurucu: kim.pid, durum: 'bekliyor', bitis: 0, olusturma: Date.now(), tur: 0, harita: K.HARITALAR.includes(m.harita) ? m.harita : 'golet' };
       await this.ctx.storage.put('meta', this.meta);
     }
     let o = this.oyuncular.get(kim.pid);
@@ -142,9 +158,9 @@ export class Oda extends DurableObject {
       o = this.yeniKoi({ pid: kim.pid, no: this.no++, ad: kim.ad, renk: kim.renk, giris: Date.now() }, ws);
       this.oyuncular.set(kim.pid, o);
     }
-    o.ad = kim.ad; o.renk = kim.renk;
+    o.ad = kim.ad; o.renk = kim.renk; o.desen = desenAl(m.desen);
     o.ws = ws; o.gitti = 0; o.ekran = ekranAl(m.ekran);
-    ws.serializeAttachment({ oda: odaId, pid: o.pid, no: o.no, ad: o.ad, renk: o.renk, giris: o.giris });
+    ws.serializeAttachment({ oda: odaId, pid: o.pid, no: o.no, ad: o.ad, renk: o.renk, giris: o.giris, desen: o.desen });
     this.kurucuSec();
     gonder(ws, { t: 'hos', ben: o.no });
     this.odaYayinla();
@@ -197,7 +213,7 @@ export class Oda extends DurableObject {
 
   yeniKoi(a, ws) {
     return {
-      pid: a.pid, no: a.no, ad: a.ad, renk: a.renk, giris: a.giris || Date.now(), ws, gitti: 0, ekran: { w: 390, h: 844 },
+      pid: a.pid, no: a.no, ad: a.ad, renk: a.renk, desen: a.desen || '', giris: a.giris || Date.now(), ws, gitti: 0, ekran: { w: 390, h: 844 },
       x: 0, y: 0, ex: 0, ey: 0, angle: 0, v: 0, rt: 0, l: K.BASLANGIC, can: K.CAN, canli: false, olumT: 0,
       koruma: 0, invuln: 0, hayat: 0, spine: null, hw: 40, hh: 80, spawnT: 0, geriL: 0,
       enBuyuk: K.BASLANGIC, yedigi: 0, koi: 0, tally: {}
@@ -226,7 +242,7 @@ export class Oda extends DurableObject {
     try {
       await this.lobi().oda(this.meta.id, {
         kurucu: k ? k.ad : '?', renk: k ? k.renk : '#f27a32', n: this.bagliSayisi(), en: K.EN_COK,
-        durum: this.meta.durum, bitis: this.meta.bitis, olusturma: this.meta.olusturma
+        durum: this.meta.durum, bitis: this.meta.bitis, olusturma: this.meta.olusturma, not: K.HARITA_ADI[this.harita]
       });
     } catch (e) {}
   }
@@ -241,13 +257,13 @@ export class Oda extends DurableObject {
   odaMesaji() {
     const k = this.oyuncular.get(this.meta.kurucu);
     const liste = [...this.oyuncular.values()].filter(o => o.ws).sort((a, b) => a.giris - b.giris)
-      .map(o => ({ no: o.no, ad: o.ad, renk: o.renk }));
-    return { t: 'oda', id: this.meta.id, durum: this.meta.durum, kurucu: k ? k.no : 0, oyuncular: liste, kalan: this.kalan(), en: K.EN_COK };
+      .map(o => ({ no: o.no, ad: o.ad, renk: o.renk, desen: o.desen }));
+    return { t: 'oda', id: this.meta.id, durum: this.meta.durum, kurucu: k ? k.no : 0, oyuncular: liste, kalan: this.kalan(), en: K.EN_COK, harita: this.harita };
   }
 
   odaYayinla() { if (this.meta) this.yayinla(this.odaMesaji()); }
 
-  baslaMesaji() { return { t: 'basla', R: this.R, kalan: this.kalan(), tur: this.meta.tur }; }
+  baslaMesaji() { return { t: 'basla', R: this.R, kalan: this.kalan(), tur: this.meta.tur, harita: this.harita }; }
 
   dogMesaji(o) {
     return { t: 'dog', x: r1(o.x), y: r1(o.y), a: r2(o.angle), l: r2(o.l), h: o.hayat, can: o.can, R: this.R };
@@ -282,7 +298,7 @@ export class Oda extends DurableObject {
     if (this.dongu) { clearInterval(this.dongu); this.dongu = null; }
     const sonuc = [...this.oyuncular.values()]
       .sort((a, b) => b.enBuyuk - a.enBuyuk || b.yedigi - a.yedigi)
-      .map(o => ({ no: o.no, ad: o.ad, renk: o.renk, enBuyuk: r1(o.enBuyuk), yedigi: o.yedigi, koi: o.koi, tally: o.tally }));
+      .map(o => ({ no: o.no, ad: o.ad, renk: o.renk, desen: o.desen, enBuyuk: r1(o.enBuyuk), yedigi: o.yedigi, koi: o.koi, tally: o.tally }));
     this.meta.durum = 'bekliyor';
     this.meta.bitis = 0;
     this.ctx.storage.put('meta', this.meta);
@@ -336,7 +352,7 @@ export class Oda extends DurableObject {
     let x = +m.x, y = +m.y;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     const simdi = Date.now(), dt = clamp((simdi - o.rt) / 1000, .02, 1);
-    const enFazla = K.HIZ * o.l * K.hizCarpani(o.l) * 1.5 * dt + o.l * .6;
+    const enFazla = (K.HIZ * o.l * K.hizCarpani(o.l) * 1.5 + K.akinti(this.harita, o.x, o.y) * 1.2) * dt + o.l * .6;
     const dx = x - o.x, dy = y - o.y, d = Math.hypot(dx, dy);
     let duz = false;
     if (d > enFazla) { x = o.x + dx / d * enFazla; y = o.y + dy / d * enFazla; duz = d - enFazla > o.l * .5; }
@@ -441,7 +457,9 @@ export class Oda extends DurableObject {
   }
 
   npcGuncelle(dt) {
-    const ps = this.canli, R = this.R, iz = this.tickNo % 3 === 0;
+    const ps = this.canli, R = this.R, iz = this.tickNo % 3 === 0, h = this.harita;
+    // a koi hidden in kelp can't be hunted
+    for (const o of ps) o.gizli = K.yosunda(h, o.ex, o.ey);
     for (const f of this.npc) {
       if (f.dead) continue;
       const tr = clamp(4.6 * Math.pow(8 / f.l, .25), 1.5, 6);
@@ -450,7 +468,7 @@ export class Oda extends DurableObject {
       for (const o of ps) {
         const dx = o.ex - f.x, dy = o.ey - f.y, d = Math.hypot(dx, dy), rel = f.l / o.l;
         if (rel < K.YE) { if (d < o.l * 2.4 + f.l * 2 && d < kd) { kac = o; kd = d; } }
-        else if (rel > K.TEHLIKE && f.hungry && f.cool <= 0 && o.invuln <= 0 && o.koruma <= 0 && d < f.l * 2.2 + o.l * 3 && d < ad) { av = o; ad = d; }
+        else if (rel > K.TEHLIKE && f.hungry && f.cool <= 0 && o.invuln <= 0 && o.koruma <= 0 && !o.gizli && d < f.l * 2.2 + o.l * 3 && d < ad) { av = o; ad = d; }
       }
       f.hedef = 0;
       if (kac) {
@@ -479,7 +497,7 @@ export class Oda extends DurableObject {
       f.speed += (ts - f.speed) * (1 - Math.exp(-dt * 2.6));
       if (iz) { f.ox = f.x; f.oy = f.y; }
       const s = R - f.l * .3;
-      f.x = clamp(f.x + Math.cos(f.angle) * f.speed * dt, -s, s);
+      f.x = clamp(f.x + (Math.cos(f.angle) * f.speed + K.akinti(h, f.x, f.y)) * dt, -s, s);
       f.y = clamp(f.y + Math.sin(f.angle) * f.speed * dt, -s, s);
       updateSpine(f, f.l, f.x, f.y);
     }

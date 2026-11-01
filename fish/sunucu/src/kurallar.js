@@ -46,3 +46,34 @@ export function olcek(w, h, l) {
   const base = Math.min(w, h) / (w < h ? 6.2 : 8);
   return base * Math.pow(l / 10, 0.15) / l;
 }
+
+/* ---------- maps (the host picks one for the room) ---------- */
+// Same names and rules as HARITALAR / akinti() / yosunda() in lab/fish/index.html; change both together.
+export const HARITALAR = ['golet', 'nehir', 'deniz', 'okyanus'];
+export const HARITA_ADI = { golet: 'Pond', nehir: 'River', deniz: 'Sea', okyanus: 'Ocean' };
+
+// River: the water flows toward +x in lanes, fast and slow (cm per second).
+export const AKINTI = 14;
+export function akinti(h, x, y) { return h === 'nehir' ? AKINTI * (.25 + .75 * Math.abs(Math.sin(y / 420))) : 0; }
+
+export function hash(a, b, c) {
+  let h = Math.imul(a | 0, 0x27d4eb2d) ^ Math.imul(b | 0, 0x165667b1) ^ Math.imul(c | 0, 0x5bd1e995);
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d); h = Math.imul(h ^ (h >>> 12), 0x297a2d39); h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+
+// Sea: kelp beds. A koi inside one is hidden: hunters don't go after it.
+export const YOSUN_HUCRE = 520;
+export function yosunYatagi(ix, iy) {
+  if (hash(ix, iy, 7) > .34) return null;
+  return {
+    x: (ix + .3 + .4 * hash(ix, iy, 8)) * YOSUN_HUCRE,
+    y: (iy + .3 + .4 * hash(ix, iy, 9)) * YOSUN_HUCRE,
+    r: (.14 + .1 * hash(ix, iy, 10)) * YOSUN_HUCRE
+  };
+}
+export function yosunda(h, x, y) {
+  if (h !== 'deniz') return false;
+  const b = yosunYatagi(Math.floor(x / YOSUN_HUCRE), Math.floor(y / YOSUN_HUCRE));
+  return !!b && (x - b.x) * (x - b.x) + (y - b.y) * (y - b.y) < b.r * b.r;
+}
