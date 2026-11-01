@@ -16,6 +16,7 @@
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js" data-oyun="balon-yarisi" data-kayit="balon.ayar balon.zayif"></script>
+<script src="/hesap/oda.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Rubik:wght@400;500;600;700&display=swap">
@@ -114,6 +115,8 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .go-bar{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:var(--paper);border-top:2px solid rgba(29,39,66,.12)}
 .go{width:100%;height:58px;border:2.5px solid var(--ink);border-radius:18px;background:var(--tomato);color:#fff;font-family:var(--font-display);font-weight:800;font-size:28px;line-height:1;padding-top:5px;box-shadow:0 5px 0 var(--ink)}
 .go:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.go2{display:block;width:100%;height:48px;margin-top:10px;border:2.5px solid var(--ink);border-radius:16px;background:#fff;font-family:var(--font-display);font-weight:800;font-size:21px;line-height:1;padding-top:4px;box-shadow:0 4px 0 var(--ink)}
+.go2:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 
 /* race */
 .sky{position:relative;flex:1 1 auto;min-height:170px;overflow:hidden;background:linear-gradient(180deg,var(--sky) 0%,var(--sky-mid) 50%,var(--dusk) 100%)}
@@ -134,6 +137,12 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .bal{position:absolute;bottom:calc(var(--p,0) * 100%);transform:translateX(-50%);transition:bottom .75s cubic-bezier(.34,1.45,.55,1)}
 .bal.me{left:43%}
 .bal.bot{left:73%}
+/* rooms: one balloon per player, spread across the sky (left set from the script) */
+.track.kalabalik{--bh:clamp(40px,8vh,64px)}
+.track.cok{--bh:clamp(34px,6.5vh,52px)}
+.track.kalabalik .tag{font-size:11px;padding:1px 6px 0;max-width:var(--tw,70px);overflow:hidden;text-overflow:ellipsis}
+.bal.ben .tag{background:var(--ink);color:var(--paper)}
+.bal.rakip .tilt{opacity:.92}
 .tilt{transition:transform .35s ease}
 .tilt.dip{transform:translateY(7px) rotate(-7deg)}
 .tag{position:absolute;left:50%;top:calc(100% + 3px);transform:translateX(-50%);background:var(--paper);border:1.5px solid var(--ink);border-radius:999px;padding:1px 8px 0;font-size:12px;font-weight:600;line-height:1.45;white-space:nowrap}
@@ -221,7 +230,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
       <p class="weak" id="weak" hidden></p>
     </div>
   </div>
-  <div class="go-bar"><button type="button" class="go" id="go">Kalkış!</button></div>
+  <div class="go-bar"><button type="button" class="go" id="go">Kalkış!</button><button type="button" class="go2" id="odaBtn" hidden>Arkadaşlarla yarış</button></div>
 </section>
 
 <section class="screen race" id="race" aria-label="Yarış">
@@ -567,12 +576,14 @@ function ekran(id) { document.querySelectorAll('.screen').forEach(s => s.classLi
 function zamanTemizle() { zaman.forEach(clearTimeout); zaman = []; $('count').textContent = ''; }
 function padKilit(v) { $('pad').classList.toggle('locked', v); }
 
-function yarisBaslat() {
+function yarisBaslat(odaTur) {
+  if (!odaTur || odaTur.tohum === undefined) odaTur = null; // a click passes its event
   zamanTemizle();
   depo.yaz(K_AYAR, S);
   sesBaglam();
   const rv = RIVALS[S.rival], me = oyuncu();
-  G = { p: 0, b: 0, t: 0, run: false, bitti: false, mola: false, q: null, input: '', kilit: 0, sonra: null, qT: 0, botT: 0, seri: 0, enIyi: 0, log: [], son: [], rv };
+  G = { p: 0, b: 0, t: 0, run: false, bitti: false, mola: false, q: null, input: '', kilit: 0, sonra: null, qT: 0, botT: 0, seri: 0, enIyi: 0, log: [], son: [], rv, oda: odaTur || null };
+  odaBalonlari(odaTur);
   $('tiltP').innerHTML = balonSVG(me.renk, '#fff7ea', false);
   $('tiltB').innerHTML = balonSVG(rv.a, rv.b, true);
   $('tagP').textContent = me.ad;
@@ -591,7 +602,7 @@ function yarisBaslat() {
   ekran('race');
   soruSigdir();
   padKilit(true);
-  hesapNotu(`yarış · ${aktifOps().map(k => OPS[k].sym + S.ops[k].lvl).join(' ')} · ${rv.name}`);
+  hesapNotu(`${G.oda ? 'oda yarışı' : 'yarış'} · ${aktifOps().map(k => OPS[k].sym + S.ops[k].lvl).join(' ')}${G.oda ? '' : ' · ' + rv.name}`);
   const c = $('count');
   ['3', '2', '1', 'Uç!'].forEach((s, i) => zaman.push(setTimeout(() => {
     c.textContent = s;
@@ -609,8 +620,9 @@ function yarisBaslat() {
 
 function konum() {
   $('balP').style.setProperty('--p', G.p / GOAL);
-  $('balB').style.setProperty('--p', G.b / GOAL);
   $('hudPm').textContent = fmt(G.p * 100);
+  if (G.oda) { odaHud(); return; }
+  $('balB').style.setProperty('--p', G.b / GOAL);
   $('hudBm').textContent = fmt(G.b * 100);
 }
 
@@ -680,6 +692,7 @@ function cevapla() {
     arti();
     s.classList.add('good');
     $('fb').textContent = G.seri >= 3 ? `${G.seri} doğru üst üste!` : '';
+    if (G.oda) oda.gonder(G.p);
     if (G.p >= GOAL) { bitir(true); return; }
     kilitle(240, sonrakiSoru, false);
   } else {
@@ -768,6 +781,16 @@ function bitir(kazandi) {
   G.sure = G.t / 1000;
   padKilit(true);
   depo.yaz(K_ZAYIF, M);
+  if (G.oda) {
+    // the room ranks everyone; first to the top gets the confetti
+    const ilk = !oda.liste.some(x => !x.ben && x.b);
+    sfx.kazan();
+    if (ilk) konfeti();
+    $('fb').textContent = 'Bitiş! Diğerleri bekleniyor…';
+    hesapNotu(`oda yarışı bitti · ${G.log.filter(x => x.ok).length}/${G.log.length} doğru · ${fmt1(G.sure)} sn`);
+    oda.bitir(G.p);
+    return;
+  }
   if (kazandi) { sfx.kazan(); konfeti(); } else sfx.kaybet();
   const dogru = G.log.filter(x => x.ok).length;
   hesapNotu(`${kazandi ? 'kazandı' : 'kaybetti'} · ${dogru}/${G.log.length} doğru · ${fmt1(G.sure)} sn · ${G.rv.name}`);
@@ -825,6 +848,7 @@ function oneri(g) {
 }
 
 function mola() {
+  if (G && G.oda) { oda.menu(); return; } // a room race doesn't stop for anyone
   if (!G || !G.run || G.bitti) return;
   G.run = false;
   G.mola = true;
@@ -840,6 +864,7 @@ function devam() {
 function ayarlaraDon() {
   zamanTemizle();
   if (G) { G.run = false; G.bitti = true; }
+  if (G && G.oda) { if (oda.odada) oda.cik(); G.oda = null; odaBalonlari(null); }
   $('pauseOv').hidden = true;
   $('resultOv').hidden = true;
   ekran('menu');
@@ -853,7 +878,7 @@ function kare(now) {
   if (G && G.run) {
     G.t += dt;
     if (G.kilit && G.t >= G.kilit) { G.kilit = 0; const f = G.sonra; G.sonra = null; if (f) f(); }
-    if (G.run && !G.bitti && G.t >= G.botT) botHamle();
+    if (G.run && !G.bitti && !G.oda && G.t >= G.botT) botHamle();
   }
   requestAnimationFrame(kare);
 }
@@ -878,7 +903,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'Enter') { e.preventDefault(); tus('ok'); bas('ok'); }
   else if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') mola();
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden) mola(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && !(G && G.oda)) mola(); });
 $('go').addEventListener('click', yarisBaslat);
 $('pauseBtn').addEventListener('click', mola);
 $('resume').addEventListener('click', devam);
@@ -886,6 +911,97 @@ $('restart').addEventListener('click', yarisBaslat);
 $('quit').addEventListener('click', ayarlaraDon);
 $('again').addEventListener('click', yarisBaslat);
 $('toMenu').addEventListener('click', ayarlaraDon);
+
+/* ---------- rooms: race friends instead of the bot (hesap/oda.js, server fish/sunucu/src/genel-oda.js) ---------- */
+// Everyone answers their own questions at their own operations and levels; the first to 1000 m wins.
+const odaEl = new Map(); // player no -> { el, p }
+function odaBalonlari(tur) {
+  document.querySelectorAll('.bal.rakip').forEach(e => e.remove());
+  odaEl.clear();
+  const track = $('balP').parentElement;
+  $('balB').hidden = !!tur;
+  track.classList.remove('kalabalik', 'cok');
+  $('balP').classList.toggle('ben', !!tur);
+  if (!tur) { $('balP').style.left = ''; $('dotB').parentElement.hidden = false; return; }
+  for (const k of tur.kadro || []) if (k.no !== oda.ben) odaBalonEkle(k.no);
+  odaYerlestir();
+}
+function odaBalonEkle(no) {
+  const n = oda.isim(no);
+  const el = document.createElement('div');
+  el.className = 'bal rakip';
+  el.innerHTML = `<div class="bob"><div class="tilt">${balonSVG(n.renk, '#fff7ea', false)}</div></div><span class="tag"></span>`;
+  el.querySelector('.tag').textContent = n.ad;
+  el.querySelector('.bob').style.animationDelay = (-Math.random() * 3.2).toFixed(2) + 's';
+  el.style.setProperty('--p', 0);
+  $('balP').parentElement.appendChild(el);
+  odaEl.set(no, { el, p: 0 });
+}
+// balloons spread around the middle of the sky, by their number in the room
+function odaYerlestir() {
+  const hepsi = [[oda.ben, $('balP')], ...[...odaEl].map(([no, r]) => [no, r.el])].sort((a, b) => a[0] - b[0]);
+  const n = hepsi.length, aralik = n === 2 ? 30 : Math.min(64, 16 * (n - 1)), track = $('balP').parentElement;
+  track.classList.toggle('kalabalik', n >= 4);
+  track.classList.toggle('cok', n >= 6);
+  track.style.setProperty('--tw', Math.max(40, Math.round(track.clientWidth * (aralik / Math.max(1, n - 1)) / 100) - 4) + 'px');
+  hepsi.forEach(([, el], i) => { el.style.left = (n === 1 ? 57 : 57 - aralik / 2 + aralik * i / (n - 1)) + '%'; });
+}
+// the HUD: my height and the best of the others
+function odaHud() {
+  let en = null;
+  for (const [no, r] of odaEl) if (!en || r.p > en.p) en = { no, p: r.p };
+  const yazi = $('dotB').parentElement;
+  yazi.hidden = !en;
+  if (!en) return;
+  const n = oda.isim(en.no);
+  $('dotB').style.background = n.renk;
+  $('hudBm').textContent = fmt(en.p * 100);
+  yazi.setAttribute('aria-label', n.ad);
+}
+const oda = Oda.kur({
+  oyun: 'balon', ad: 'Balon Yarışı', surum: 1, skor: 'balon-yarisi-oda', sira: 'sure',
+  tema: { zemin: '#fff7ea', yazi: '#1d2742', ana: '#e4472d', anaYazi: '#fff', baslik: '"Baloo 2","Arial Rounded MT Bold",ui-rounded,system-ui,sans-serif', govde: '"Rubik",system-ui,sans-serif' },
+  aciklama: 'Arkadaşlarınla aynı anda yarış. Herkes kendi seçtiği işlem ve seviyelerde soru çözer, 1000 metreye ilk çıkan kazanır. Bir odada en çok 8 kişi olur.',
+  canli: false,
+  puanYazi: p => fmt(Math.round(p) * 100) + ' m',
+  skorAyrinti: () => ({ islem: aktifOps().map(k => OPS[k].sym + S.ops[k].lvl).join(' ') }),
+  basla(m) {
+    $('pauseOv').hidden = true;
+    $('resultOv').hidden = true;
+    yarisBaslat(m);
+  },
+  durum(liste) {
+    if (!G || !G.oda) return;
+    for (const x of liste) {
+      if (x.ben) continue;
+      if (!odaEl.has(x.no)) { odaBalonEkle(x.no); odaYerlestir(); }
+      const r = odaEl.get(x.no), p = Math.max(0, Math.min(GOAL, Math.round(x.p) || 0));
+      if (p > r.p) {
+        r.el.classList.add('burn');
+        clearTimeout(r.el._t);
+        r.el._t = setTimeout(() => r.el.classList.remove('burn'), 550);
+        sfx.bot();
+      }
+      r.p = p;
+      r.el.style.setProperty('--p', p / GOAL);
+    }
+    odaHud();
+  },
+  bitti(sonuc) {
+    if (!G || !G.oda) return;
+    zamanTemizle();
+    if (!G.bitti) {
+      // the time ran out before I got to the top
+      G.bitti = true;
+      G.run = false;
+      padKilit(true);
+      depo.yaz(K_ZAYIF, M);
+      if (sonuc) { sfx.kaybet(); $('fb').textContent = 'Süre doldu!'; }
+    }
+  },
+  cikti() { ayarlaraDon(); }
+});
+oda.dugme($('odaBtn'));
 
 /* ---------- start ---------- */
 opsKur();

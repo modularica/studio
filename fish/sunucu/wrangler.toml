@@ -1,4 +1,4 @@
-# Fish, Tank Arenası and Kar Savaşı rooms: the multiplayer server for /lab/fish/, /lab/tank/ and /lab/kar-savasi/ (Cloudflare Workers + Durable Objects).
+# The Lab's rooms: the multiplayer server for /lab/fish/, /lab/tank/, /lab/kar-savasi/ and the other games (Cloudflare Workers + Durable Objects).
 # Deployed by Cloudflare Workers Builds from this folder (root directory: fish/sunucu).
 name = "fish-odalar"
 main = "src/index.js"
@@ -23,6 +23,12 @@ class_name = "TankOda"
 name = "KAR_ODA"
 class_name = "KarOda"
 
+# Rooms for the other Lab games (Balon Yarışı, Kanyon, Rüzgâr Kaptanı, Sekme, Sur Muhafızı, SONGbox):
+# src/genel-oda.js. Each game's room list is a Lobi object named after the game.
+[[durable_objects.bindings]]
+name = "GENEL_ODA"
+class_name = "GenelOda"
+
 # The free plan needs SQLite-backed Durable Objects.
 [[migrations]]
 tag = "v1"
@@ -35,6 +41,10 @@ new_sqlite_classes = ["TankOda"]
 [[migrations]]
 tag = "v3"
 new_sqlite_classes = ["KarOda"]
+
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["GenelOda"]
 
 [vars]
 # The same Supabase project as the site (hesap/hesap.js). The publishable key is public by design.

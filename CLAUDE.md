@@ -15,7 +15,7 @@ index.html         uzigames.com stüdyo sayfası (herkese açık, hesap yok)
 robots.txt         /lab/ ve /hesap/ arama motorlarına kapalı
 vercel.json        Vercel ayarı (adresler / ile biter) + eski adreslerden /lab/'a yönlendirmeler
 .vercelignore      kökteki fish/ (sunucu), supabase/ ve .md dosyaları siteye çıkmaz (kalıplar / ile başlar, yoksa lab/fish de gider)
-hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya) + nasildi.js ("Nasıldı?" geri bildirim penceresi)
+hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya) + nasildi.js ("Nasıldı?" geri bildirim penceresi) + oda.js (ortak "Arkadaşlarla oyna" odaları)
 lab/index.html     Lab ana sayfası (Uzay'ın sayfası); oyunları lab/oyunlar.json'dan okur
 lab/oyunlar.json   oyun listesi: slug, ad, açıklama, not, listed
 lab/defter.css     Lab ana sayfası, giriş ve takip sayfalarının ortak görünümü (kareli defter)
@@ -30,8 +30,8 @@ lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya; tek başına ya da arkadaşlarla odalarda). Kurallar lab/kar-savasi/oyun.js (sunucu da kullanır)
 lab/kanyon/        Kanyon: kanyondaki nehirde jetle uçuş; yakıt al, gemi ve helikopterleri vur, bölge sonundaki köprüyü yık
 lab/tank/          Tank Arenası: 2–8 tank, her isabet bir puan; botlarla ya da arkadaşlarla odalarda. Kurallar lab/tank/oyun.js (sunucu da kullanır)
-lab/balon-yarisi/  Balon Yarışı: botla matematik yarışı; 4 işlem, her işlemin kendi 8 seviyesi, zorlanılan sorular sonraki yarışlarda tekrar gelir
-fish/sunucu/       Fish, Tank Arenası ve Kar Savaşı oda sunucusu (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
+lab/balon-yarisi/  Balon Yarışı: botla ya da arkadaşlarla (odalar) matematik yarışı; 4 işlem, her işlemin kendi 8 seviyesi, zorlanılan sorular sonraki yarışlarda tekrar gelir
+fish/sunucu/       Lab'ın oda sunucusu: Fish, Tank Arenası, Kar Savaşı ve ortak odalar (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
 supabase/          veritabanı migration'ları
 ```
 
@@ -44,7 +44,7 @@ Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışır
 - Şimdilik derleme adımı yok: dosyalar olduğu gibi yayınlanır.
 - Alan adı `uzigames.com` Vercel'e bağlı.
 - Eski adresler (`/fish/`, `/giris/`, `/takip/`, …) `vercel.json` ile `/lab/...`'a yönlenir; paylaşılmış eski linkler çalışmaya devam eder. Lab'a yeni oyun eklerken oraya da bir satır ekle.
-- Oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a (`wss://fish-odalar.umutguncan.workers.dev`) yayınlar. Root directory ayarı bu klasörü gösterir; klasörü taşırsan Cloudflare'de de değiştir. Fish odaları `/lobi` ve `/oda/<id>`, Tank Arenası odaları `/tank/lobi` ve `/tank/oda/<id>`, Kar Savaşı odaları `/kar/lobi` ve `/kar/oda/<id>` adreslerindedir.
+- Oda sunucusu (`fish/sunucu/`) Vercel'de değil, Cloudflare'de çalışır: Workers Builds `main` dalını `fish/sunucu` klasöründen `fish-odalar` adlı Worker'a (`wss://fish-odalar.umutguncan.workers.dev`) yayınlar. Root directory ayarı bu klasörü gösterir; klasörü taşırsan Cloudflare'de de değiştir. Fish odaları `/lobi` ve `/oda/<id>`, Tank Arenası odaları `/tank/lobi` ve `/tank/oda/<id>`, Kar Savaşı odaları `/kar/lobi` ve `/kar/oda/<id>` adreslerindedir. Ortak odaları kullanan oyunlar `/<oyun>/lobi` ve `/<oyun>/oda/<id>` adreslerindedir (`balon`, `kanyon`, `yelken`, `sekme`, `sur`, `songbox`).
 - Tank sunucusu oyunun kurallarını `lab/tank/oyun.js`'ten alır (`fish/sunucu/src/tank-oda.js` onu içe aktarır). Bu dosyayı taşıma ya da adını değiştirme; değiştirince sunucu da yeniden yayınlanır. Harita ya da kurallar sayfa ile sunucu arasında uyuşmayacak şekilde değişirse `oyun.js`'teki `SURUM`'u bir artır.
 - Kar Savaşı da aynı düzende: kurallar `lab/kar-savasi/oyun.js` (`fish/sunucu/src/kar-oda.js` içe aktarır). Orman üreticisi ya da kurallar sayfa ile sunucu arasında uyuşmayacak şekilde değişirse oradaki `VERSION`'ı bir artır.
 
@@ -66,6 +66,15 @@ Yeni oyunlar önce Lab'a girer.
    Oyunun mola ve bitiş ekranlarına (oyun sırasında değil) bir "Nasıldı?" düğmesi koy: oyunun kendi düğme sınıfıyla `<button type="button" data-nasildi="oyun-sonu">Nasıldı?</button>`. `data-nasildi` değeri nerede sorulduğunu yazar (`oyun-sonu`, `mola`, `seviye-sonu`…). Tıklamayı `hesap.js` yakalar.
 6. `lab/oyunlar.json` listesine bir satır ekle. Sadece linkle paylaşılacak, Lab ana sayfasında görünmeyecek oyunlar için `"listed": false` yaz.
 7. `vercel.json` yönlendirmelerine `/<slug>/:path*` → `/lab/<slug>/:path*` satırını ekle (biri eski usul kısa adresi yazarsa diye).
+
+## Odalar ("Arkadaşlarla oyna")
+
+- Fish, Tank Arenası ve Kar Savaşı'nın odalarını oyunu sunucu yürütür (kendi Durable Object'leri). Diğer oyunlar ortak odaları kullanır: sayfa tarafı `hesap/oda.js`, sunucu tarafı `fish/sunucu/src/genel-oda.js`.
+- Ortak odada her sayfa kendi oyununu oynar (herkese aynı tohum), skorunu ve küçük bir canlı durumunu (balonun yüksekliği, hayalet jet, tekne) odaya yollar; oda bekleme odasını, başlatmayı, durumları dağıtmayı, turun bitişini ve sıralamayı yapar. Skoru sayfa söyler (aile oyunu; hile denetimi yok).
+- `oda.js` oda listesini, bekleme odasını (kurucu başlatır, kurucunun seçebileceği ayarlar), davet linkini (`?oda=<id>`), oyun içi oda menüsünü, "bitirdin, diğerleri bekleniyor" ekranını, küçük canlı sıralamayı ve sonuç kürsüsünü kendisi gösterir (shadow DOM, oyunun renkleri ve yazı tipleriyle). Kullanımı dosyanın başında.
+- Sunucudaki `OYUNLAR` listesi her oyunun kişi sınırını, en uzun tur süresini, ilk bitirenden sonra kalan süreyi (`sonra`) ve sıralamayı (`sure`: önce bitiren, `puan`: en yüksek skor) tutar. Yeni bir oyuna oda eklerken oraya bir satır ekle.
+- Tur bitince skor `scores`'a `<oyun-slug>-oda` olarak yazılır (ayrıntı: sıra, oyuncu sayısı, bitirme süresi).
+- Deneme: `fish/sunucu`'da `npx wrangler dev --var AUTH_YOK:1`, tarayıcıda `localStorage.setItem('oda.sunucu', 'ws://127.0.0.1:8787')`.
 
 ## Hesap sistemi
 
@@ -106,6 +115,7 @@ Yeni oyunlar önce Lab'a girer.
     Nehir ve üstündeki her şey her oyunda aynı (`RIVER_SEED`); oyuncular ezberleyip ilerliyor. Tohumu değiştirirsen herkesin öğrendiği harita ve `kanyon.uzak` anlamını yitirir.
   - Tank Arenası: `tank.rekor` (botlarla bir turdaki en çok isabet; bot sayısı/zorluk `tank.ayar` ve ses `tank.ses` cihazda kalır). Not: botlarla başlama, tur sonu (isabet ve sıra), oda turu. Botlarla biten her tur `scores`'a oyun `tank` olarak, oda turları `tank-oda` olarak yazılır (ayrıntı: bot sayısı, zorluk, sıra, kaç kez boyandığı).
   - Balon Yarışı: `balon.ayar` (seçili işlemler, işlem başına seviye, rakip), `balon.zayif` (yanlış yapılan sorular; yarışlarda tekrar sorulur, doğru bilinince azalır). Ses tercihi `balon.ses` cihazda kalır. Not: yarış başı (işlem ve seviyeler, rakip), yarış sonu (kazandı/kaybetti, doğru sayısı, süre).
+    Odalar ("Arkadaşlarla yarış"): herkes kendi işlem ve seviyelerinde soru çözer, 1000 metreye ilk çıkan kazanır; ilk bitirenden sonra diğerlerinin 45 saniyesi kalır. Skor `balon-yarisi-oda` (doğru sayısı; ayrıntı: sıra, süre, işlemler).
   - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
 - Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 

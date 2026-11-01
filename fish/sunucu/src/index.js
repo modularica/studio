@@ -6,16 +6,21 @@
 //   WS  /tank/oda/<id>   Tank Arenası: one room (rules shared with the page: lab/tank/oyun.js)
 //   WS  /kar/lobi        Kar Savaşı: the room list
 //   WS  /kar/oda/<id>    Kar Savaşı: one room (rules shared with the page: lab/kar-savasi/oyun.js)
+//   WS  /<oyun>/lobi     the other games (balon, kanyon, yelken, sekme, sur, songbox): the room list
+//   WS  /<oyun>/oda/<id> one room of theirs (src/genel-oda.js; the page side is hesap/oda.js)
 import { Lobi } from './lobi.js';
 import { Oda } from './oda.js';
 import { TankOda } from './tank-oda.js';
 import { KarOda } from './kar-oda.js';
+import { GenelOda, OYUNLAR } from './genel-oda.js';
 
-export { Lobi, Oda, TankOda, KarOda };
+export { Lobi, Oda, TankOda, KarOda, GenelOda };
 
 const ODA_ID = /^\/oda\/([a-z0-9]{8})$/;
 const TANK_ODA_ID = /^\/tank\/oda\/([a-z0-9]{8})$/;
 const KAR_ODA_ID = /^\/kar\/oda\/([a-z0-9]{8})$/;
+const GENEL_LOBI = /^\/([a-z]+)\/lobi$/;
+const GENEL_ODA_ID = /^\/([a-z]+)\/oda\/([a-z0-9]{8})$/;
 
 function izinli(env, req) {
   const liste = String(env.IZINLI || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -26,7 +31,7 @@ function izinli(env, req) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === '/') return new Response('fish, tank and snowball rooms\n', { headers: { 'content-type': 'text/plain' } });
+    if (url.pathname === '/') return new Response('Uzi Games Lab rooms\n', { headers: { 'content-type': 'text/plain' } });
     if ((req.headers.get('Upgrade') || '').toLowerCase() !== 'websocket') {
       return new Response('expected a websocket\n', { status: 426 });
     }
@@ -47,6 +52,11 @@ export default {
     }
     const k = url.pathname.match(KAR_ODA_ID);
     if (k) return env.KAR_ODA.get(env.KAR_ODA.idFromName(k[1])).fetch(req);
+    // The other games share one kind of room. Each game has its own room list (a Lobi named after it).
+    const gl = url.pathname.match(GENEL_LOBI);
+    if (gl && OYUNLAR[gl[1]]) return env.LOBI.get(env.LOBI.idFromName(gl[1])).fetch(req);
+    const go = url.pathname.match(GENEL_ODA_ID);
+    if (go && OYUNLAR[go[1]]) return env.GENEL_ODA.get(env.GENEL_ODA.idFromName(go[1] + ':' + go[2])).fetch(req);
     return new Response('not found\n', { status: 404 });
   }
 };
