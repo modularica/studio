@@ -11,6 +11,7 @@
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js" data-oyun="songbox" data-kayit="songbox-unlocked songbox-custom songbox-names songbox-won ritim-orkestrasi-sarkilar"></script>
+<script src="/hesap/oda.js"></script>
 </head><body>
 <title>SONGbox</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -41,6 +42,7 @@ header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:s
 .btn{font:700 15px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--accent);color:#2a1a05;border-color:var(--accent);min-width:110px}
+.btn.friends{border-color:var(--legend);color:var(--legend)}
 .btn.rate{--p:0%;min-width:156px;border-color:var(--hot);
   background:linear-gradient(90deg,color-mix(in srgb,var(--hot) 55%,var(--panel)) var(--p),var(--panel) var(--p))}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
@@ -359,6 +361,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       </label>
       <button class="btn rate" id="rate" type="button">★ Rate my song</button>
       <button class="btn" id="clear" type="button">Clear stage</button>
+      <button class="btn friends" id="odaBtn" type="button" hidden>Play with friends</button>
     </div>
   </header>
 
@@ -2187,7 +2190,7 @@ function updateRateBtn(){
     rateBtn.textContent = `Listening… ${bar}/2`;
     rateBtn.style.setProperty('--p', (perf.steps / PERF_STEPS * 100).toFixed(1) + '%');
   } else {
-    rateBtn.textContent = '★ Rate my song';
+    rateBtn.textContent = odaSarki && !odaSarki.gitti ? '★ Send my song' : '★ Rate my song';
     rateBtn.style.setProperty('--p', '0%');
   }
 }
@@ -2249,6 +2252,7 @@ function finishPerf(){
     if (pick) { wonSongs.push(r.key); saveJSON(WON_KEY, wonSongs.slice(-300)); }
   }
   showVerdict(r, pick);
+  if (odaSarki && !odaSarki.gitti) odaGonderSarki(r.score);
 }
 function showVerdict(r, pick){
   lastPick = pick;
@@ -2325,6 +2329,7 @@ function closeVerdict(){
   $('#verdict').hidden = true;
   $('#confetti').innerHTML = '';
   rateBtn.focus();
+  if (odaSarki && odaSarki.gitti && oda.aktif) oda.izle(); // the song is in: see how the others are doing
 }
 rateBtn.addEventListener('click', () => {
   ensureAudio();
@@ -2524,6 +2529,105 @@ $('#mDelete').addEventListener('click', () => {
 
 /* The custom-sound feature is gone: clear any sound file an earlier version kept in this browser */
 try { indexedDB.deleteDatabase('songbox'); } catch (e) {}
+
+/* ---------- Rooms: a song contest with friends (hesap/oda.js, server fish/sunucu/src/genel-oda.js) ---------- */
+/* Everyone starts from an empty stage and makes a song before the time runs out. "★ Send my song"
+   rates it as usual (and can still unlock a character) and sends it in; a song not sent by the end
+   goes in by itself. The best score wins, and every song can be heard on the results.
+   The stage you had before the room comes back when you leave. */
+let odaSarki = null;   /* { gitti } while a round is on */
+let odaYedek = null;   /* the solo stage, kept while in a room */
+function sahneAl(){
+  return { b: bpm, sc: sceneId, s: slots.map(id => id ? [id, CH_BY[id].v, Math.round(CH_BY[id].vol * 100), CH_BY[id].muted ? 1 : 0] : null) };
+}
+function sahneKur(d, onEk){
+  if (!d || !Array.isArray(d.s)) return;
+  stop();
+  bpm = Math.max(70, Math.min(160, +d.b || 100)); $('#bpm').value = bpm; $('#bpmv').textContent = bpm;
+  if (d.sc) setScene(d.sc);
+  slots = Array.from({ length: SLOTS }, (_, i) => {
+    const x = d.s[i];
+    if (!Array.isArray(x)) return null;
+    const id = (onEk || '') + x[0], c = CH_BY[id];
+    if (!c) return null;
+    c.v = Math.max(0, Math.min(2, x[1] | 0)); c.vol = Math.max(0, Math.min(1.5, (+x[2] || 100) / 100)); c.muted = !!x[3];
+    if (c.bus) c.bus.gain.value = c.vol;
+    return id;
+  });
+  render();
+}
+/* a song to send: the stage, plus the characters you made that are on it */
+function odaEser(){
+  const e = sahneAl();
+  e.c = customData.filter(d => slots.includes(d.id)).map(d => ({ id: d.id, name: d.name, sound: d.sound, look: d.look, color: d.color }));
+  return e;
+}
+function odaGonderSarki(score){
+  if (!odaSarki || odaSarki.gitti) return;
+  odaSarki.gitti = true;
+  updateRateBtn();
+  hesapPuan = { level: judge().level, score }; hesapNotu();
+  oda.bitir(score, odaEser(), [slots.filter(Boolean).length]);
+}
+/* someone's song from the results: their own characters come along under another name */
+function odaDinle(x){
+  const e = x.eser;
+  if (!e) return;
+  const on = 'o' + x.no + '_';
+  (e.c || []).forEach(d => {
+    if (!d || !/^u[a-z0-9]+$/.test(d.id) || !CH_BY[d.sound] || CH_BY[d.sound].custom) return;
+    CH_BY[on + d.id] = buildCustom({ id: on + d.id, name: String(d.name || '?').slice(0, NAME_MAX), sound: d.sound, look: d.look, color: PALETTE.includes(d.color) ? d.color : PALETTE[0] });
+  });
+  sahneKur({ b: e.b, sc: e.sc, s: (e.s || []).map(y => Array.isArray(y) && /^u/.test(y[0]) ? [on + y[0], y[1], y[2], y[3]] : y) });
+  if (slots.some(Boolean)) play();
+  say(`Playing ${x.ad}’s song.`);
+}
+let odaSayac = 0;
+const oda = Oda.kur({
+  oyun: 'songbox', ad: 'SONGbox', surum: 1, skor: 'songbox-oda', sira: 'puan', dil: 'en', saat: true, izle: false,
+  tema: { zemin: '#221b3e', yazi: '#f6f1ff', ana: '#ffd166', anaYazi: '#2a1a05', satir: '#150f2a', cizgi: 'rgba(246,241,255,.12)', kenar: '#5a4c8c', dugme: '#2f2660', dugmeYazi: '#f6f1ff', kotu: '#f783ac',
+    baslik: 'Fredoka,"Trebuchet MS",system-ui,sans-serif', govde: 'Nunito,system-ui,sans-serif', bildirimUst: '72px' },
+  aciklama: 'A song contest: everyone starts with an empty stage and makes a song before the time runs out. Send it with ★ Send my song. The best score wins, and you can listen to every song at the end.',
+  ayarlar: [{ k: 'sure', ad: 'Time', secenek: [{ d: 120, ad: '2 minutes' }, { d: 180, ad: '3 minutes' }, { d: 300, ad: '5 minutes' }], v: 180 }],
+  canli: { top: '12px', right: '12px' },
+  puanYazi: p => Math.round(p) + ' / 100',
+  canliYazi: p => String(Math.round(p)),
+  sonucDugme: { ad: '▶ Listen', tikla: odaDinle },
+  basla(m){
+    if (!odaYedek) odaYedek = sahneAl();
+    odaSarki = { gitti: false };
+    perf = null;
+    $('#verdict').hidden = true;
+    slots = Array(SLOTS).fill(null);
+    CH.forEach(c => { c.muted = false; });
+    stop();
+    render();
+    updateRateBtn();
+    say(m.gecen > 3000 ? 'You joined the contest! Make a song and send it.' : 'The contest is on! Make a song and send it with ★ Send my song.');
+    clearInterval(odaSayac);
+    odaSayac = setInterval(() => { if (odaSarki && !odaSarki.gitti) oda.gonder(judge().score, [slots.filter(Boolean).length]); }, 1000);
+  },
+  durum(liste, m){
+    /* the time is nearly up: send what is on the stage */
+    if (odaSarki && !odaSarki.gitti && m && m.k && m.k < 2500) { perf = null; odaGonderSarki(judge().score); }
+  },
+  bitti(){
+    clearInterval(odaSayac);
+    perf = null;
+    odaSarki = null;
+    updateRateBtn();
+  },
+  cikti(){
+    clearInterval(odaSayac);
+    odaSarki = null;
+    if (odaYedek) { sahneKur(odaYedek); odaYedek = null; }
+    stop();
+    updateRateBtn();
+  }
+});
+oda.dugme($('#odaBtn'));
+/* For testing: localStorage 'songbox.debug' = '1' opens the page up as window.__songbox */
+try { if (localStorage.getItem('songbox.debug') === '1') window.__songbox = { judge, addChar, finishPerf, startPerf, get slots(){ return slots; }, get perf(){ return perf; }, unlocked }; } catch (e) {}
 
 /* ---------- Animation: mouths, blinking, head bobbing ---------- */
 let lastStep = -1;

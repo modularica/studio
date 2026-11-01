@@ -24,7 +24,7 @@ lab/takip/         "Kim ne oynuyor?": son 7 günün oynama kayıtları
 lab/yorumlar/      "Nasıldı?" cevapları: yönetici herkesinkini, diğerleri kendi hesabınınkini görür
 lab/fish/          Fish: koi oyunu (tek kişilik + arkadaşlarla odalar). Plan lab/fish/PLAN.md
 lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu; parkur yarışı arkadaşlarla odalarda da yapılır
-lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
+lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce); odalarda şarkı yarışması
 lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense; odalarda kim daha uzağa gider
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye; odalarda yıldız yarışı
 lab/kar-savasi/    Kar Savaşı: karlı ormanda dalga dalga gelen çocuklara karşı kartopu (açık dünya; tek başına ya da arkadaşlarla odalarda). Kurallar lab/kar-savasi/oyun.js (sunucu da kullanır)
@@ -108,6 +108,7 @@ Yeni oyunlar önce Lab'a girer.
   - Rüzgâr Kaptanı: biten dersler, son ders, parkur rekoru, yeke/dümen dolabı tercihi. Not: açık ders ve kaç ders bittiği, parkur süresi.
     Odalar ("Arkadaşlarla yarış", ders listesinde ve parkur dersinin girişinde): herkes parkur yarışını aynı rüzgârda (rüzgâr salınımı yarış saatine bağlı) aynı anda yapar, diğer tekneler kendi renklerinde görünür, çarpışma yok. Bitişe ilk varan kazanır; ilk varandan sonra diğerlerinin bir dakikası kalır. Odadaki süre de parkur rekoru sayılır. Skor `yelken-oda` (geçilen şamandıra sayısı; süre ayrıntıda). Deneme: `ruzgar-kaptani.debug` = `1` sayfanın içini `window.__yelken` olarak açar.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
+    Odalar ("Play with friends"): şarkı yarışması. Kurucu süreyi seçer (2/3/5 dk); herkes boş sahneden şarkı yapar, "★ Send my song" her zamanki gibi puanlar (karakter açılabilir) ve şarkıyı yollar; süre bitmek üzereyken yollanmamış şarkı kendiliğinden gider. En yüksek puan kazanır; sonuçlarda her şarkı "▶ Listen" ile dinlenir (başkasının kendi yaptığı karakterler de gelir, rafa eklenmez). Odaya girerken sahnen saklanır, çıkınca geri gelir. Skor `songbox-oda`. Deneme: `songbox.debug` = `1` → `window.__songbox`.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.
     Odalar (çubuktaki iki kişi simgesi): yıldız yarışı. Kurucu bölümü ve süreyi (3/5/10 dk) seçer; herkes o bölümün 10 seviyesini sırayla oynar, vurunca yıldızlar gelir ve sonraki seviye kendiliğinden açılır; üç atıştan sonra "Bu seviyeyi geç" çıkar. Süre bitince en çok yıldız kazanır. Odalar `sekme.v1`'i (tek kişilik ilerleme) değiştirmez; odada bütün bölümler açıktır. Skor `sekme-oda` (yıldız; ayrıntı: bölüm, geçilen seviye). Deneme: `sekme.debug` = `1` → `window.__sekme`.
