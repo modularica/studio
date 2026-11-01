@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="fish" data-kayit="fish.best fish.toplam"></script>
+<script src="/hesap/hesap.js" data-oyun="fish" data-kayit="fish.best fish.toplam fish.desen fish.desenler fish.inci"></script>
 </head>
 <body>
 <title>Fish</title>
@@ -215,6 +215,24 @@ body{
 .bekle-harita .hk{width:74px;padding-top:28px}
 .bekle-harita p{margin:0;font-size:15px;font-weight:700}
 
+/* My koi: patterns and pearls */
+.inci-ikon{display:inline-block;width:.95em;height:.95em;border-radius:50%;vertical-align:-.12em;margin-right:.3em;
+  background:radial-gradient(circle at 35% 30%,#fff 0 18%,#f3e9f2 40%,#c9b8d6 80%,#a693b8);box-shadow:0 0 6px rgba(255,240,255,.5)}
+.inci-say{margin:0;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inci-say.buyuk{font-size:18px;margin-top:-6px}
+.koi-btn{display:inline-flex;align-items:center;gap:12px}
+.koi-btn .inci-say{font-size:14px;color:var(--ink-dim)}
+.desenler{width:100%;max-width:400px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:min(46vh,430px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.dk{position:relative;min-width:0;border:1.5px solid var(--glass-line);border-radius:12px;background:var(--glass);color:var(--ink);cursor:pointer;
+  padding:4px 4px 7px;display:grid;justify-items:center;gap:1px;font:800 12.5px/1.15 var(--font-ui)}
+.dk canvas{width:100%;height:auto;aspect-ratio:2/1;display:block}
+.dk small{font-size:10.5px;font-weight:700;color:var(--ink-dim)}
+.dk[aria-selected="true"]{border-color:var(--koi);box-shadow:inset 0 0 0 1.5px var(--koi)}
+.dk.kilit canvas{filter:grayscale(1) brightness(.55)}
+.dk.dukkan small{color:#e8d8f2}
+.dk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.koi-not{font-size:15px;min-height:1.4em;text-wrap:balance}
+
 /* Leaderboard */
 .lb{width:100%;max-width:360px}
 .lb-list{list-style:none;margin:0;padding:0;display:grid;gap:4px;width:100%;max-width:360px}
@@ -367,6 +385,7 @@ body:not(.odada) #cikBtn{display:none}
     <div class="haritalar" id="haritalar" role="radiogroup" aria-label="Where to swim"></div>
     <p class="harita-not" id="haritaNot"></p>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
+    <button class="btn ghost koi-btn" id="koiBtn" type="button"><span>My koi</span><span class="inci-say"><i class="inci-ikon" aria-hidden="true"></i><b id="inciBtn">0</b></span></button>
     <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
     <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
     <p class="best" id="startBest" hidden></p>
@@ -401,6 +420,18 @@ body:not(.odada) #cikBtn{display:none}
     <button class="btn" id="againBtn" type="button">Swim again</button>
     <button class="btn ghost" id="overMenuBtn" type="button">Menu</button>
     <button class="btn ghost" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
+  </div>
+</section>
+
+<section class="overlay" id="koiOv" hidden>
+  <div class="panel">
+    <p class="eyebrow">My koi</p>
+    <h2 class="over-title" id="koiAd">Kohaku</h2>
+    <p class="inci-say buyuk"><i class="inci-ikon" aria-hidden="true"></i><b id="inciSay">0</b> pearls</p>
+    <div class="desenler" id="desenler" role="listbox" aria-label="Koi patterns"></div>
+    <p class="stat koi-not" id="koiNot"></p>
+    <button class="btn" id="koiAl" type="button" hidden></button>
+    <button class="btn ghost" id="koiGeri" type="button">Back</button>
   </div>
 </section>
 
@@ -567,6 +598,46 @@ const mapOpen = (id, L) => L >= MAPS[id].level;
 
 const KOI = { name: 'koi', body: '#f6f1e7', back: '#f6f1e7', fin: 'rgba(250,242,232,.7)', patch: '#ee602c', w: .125, prof: 'std', pat: 'koi', tail: 'fork', pelvic: true };
 
+/* ---------- koi patterns: real koi varieties open level by level; a few special ones cost pearls ---------- */
+// body: base colour · patch / patch2: big patches · spots: small ink spots · crown: a red circle on the head
+// net: a net of scales · sides: colour along both flanks · line: a line down the back · metal: a shine
+// bars, stars, rainbow, ghost, long (butterfly fins) for the special ones
+const DESENLER = [
+  { id: 'kohaku', name: 'Kohaku', level: 1, body: '#f6f1e7', patch: '#ee602c' },
+  { id: 'ogon', name: 'Ogon', level: 2, body: '#f0b530', metal: true, fin: 'rgba(250,214,120,.75)' },
+  { id: 'tancho', name: 'Tancho', level: 3, body: '#f6f1e7', crown: '#e23b2b' },
+  { id: 'showa', name: 'Showa', level: 4, body: '#24211f', patch: '#e2502b', patch2: '#f4efe6', fin: 'rgba(60,54,50,.8)' },
+  { id: 'sanke', name: 'Sanke', level: 5, body: '#f6f1e7', patch: '#e2502b', spots: '#1e1c1b' },
+  { id: 'asagi', name: 'Asagi', level: 6, body: '#a7b9c7', net: '#4e6577', sides: '#e0662f', fin: 'rgba(230,140,90,.75)' },
+  { id: 'kigoi', name: 'Kigoi', level: 7, body: '#f3d34a', fin: 'rgba(250,232,150,.75)' },
+  { id: 'bekko', name: 'Bekko', level: 8, body: '#f6f1e7', spots: '#1e1c1b' },
+  { id: 'chagoi', name: 'Chagoi', level: 9, body: '#9a6a3a', net: '#5e3f20', fin: 'rgba(170,120,70,.8)' },
+  { id: 'kiutsuri', name: 'Ki Utsuri', level: 10, body: '#1f1d1c', patch: '#f3cf3a', fin: 'rgba(60,54,40,.8)' },
+  { id: 'shusui', name: 'Shusui', level: 11, body: '#b9cad6', line: '#36597a', sides: '#e0662f' },
+  { id: 'goshiki', name: 'Goshiki', level: 12, body: '#d9d4cc', net: '#2c3440', patch: '#c8432b' },
+  { id: 'kujaku', name: 'Kujaku', level: 13, body: '#efe9df', metal: true, net: '#8a7350', patch: '#ef8a2c' },
+  { id: 'platinum', name: 'Platinum', level: 14, body: '#e6ecf0', metal: true, fin: 'rgba(240,246,250,.8)' },
+  { id: 'kumonryu', name: 'Kumonryu', level: 15, body: '#18191c', patch2: '#f2f2ee', fin: 'rgba(50,52,58,.8)' },
+  { id: 'midorigoi', name: 'Midorigoi', level: 16, body: '#9cc46a', metal: true, net: '#56803a', fin: 'rgba(200,230,150,.75)' },
+  { id: 'orenji', name: 'Orenji Ogon', level: 17, body: '#f2802a', metal: true, fin: 'rgba(250,170,100,.8)' },
+  { id: 'hariwake', name: 'Hariwake', level: 18, body: '#e6ecf0', metal: true, patch: '#f0b530' },
+  { id: 'tiger', name: 'Tiger', price: 150, body: '#f08a2c', bars: '#1e1a17', fin: 'rgba(250,170,100,.8)' },
+  { id: 'butterfly', name: 'Butterfly', price: 250, body: '#f6f1e7', patch: '#ee602c', long: true },
+  { id: 'galaxy', name: 'Galaxy', price: 350, body: '#1b1f45', patch: '#5a4bd1', stars: '#f3f0ff', fin: 'rgba(120,110,230,.7)' },
+  { id: 'rainbow', name: 'Rainbow', price: 450, body: '#f6f1e7', rainbow: true },
+  { id: 'ghost', name: 'Ghost', price: 500, body: 'rgba(226,236,255,.42)', ghost: true, fin: 'rgba(226,236,255,.3)' },
+  { id: 'dragon', name: 'Gold Dragon', price: 700, body: '#e9b43a', metal: true, net: '#8a5a12', fin: 'rgba(214,64,42,.85)', long: true }
+];
+const DESEN = Object.fromEntries(DESENLER.map(d => [d.id, d]));
+const koiStilleri2 = {};
+function koiStili(id) {
+  const d = DESEN[id] || DESEN.kohaku;
+  return koiStilleri2[d.id] || (koiStilleri2[d.id] = Object.assign({}, KOI, {
+    body: d.body, back: d.body, patch: d.patch || KOI.patch, fin: d.fin || KOI.fin, desen: d,
+    finSize: d.long ? .13 : undefined, tailLen: d.long ? 1.7 : 1
+  }));
+}
+
 // Bigger fish are slower for their size: speeds are body lengths per second times this.
 // 10 cm → 1, 30 cm → 0.72, 1 m → 0.5, 3 m → 0.36 (same as hizCarpani in fish/sunucu/src/kurallar.js).
 function hizCarpani(l) { return clamp(Math.pow(l / 10, -0.3), 0.25, 1.5); }
@@ -576,7 +647,8 @@ function fmtLenStr(l) { const f = fmtLen(l); return f.n + ' ' + f.u; }
 
 /* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
-const cv = $('pond'), ctx = cv.getContext('2d');
+const cv = $('pond');
+let ctx = cv.getContext('2d'); // (koi pictures for the pattern menu borrow the drawing code with another canvas)
 const hud = $('hud'), lenNum = $('lenNum'), lenUnit = $('lenUnit'), livesEl = $('lives');
 const soundBtn = $('soundBtn'), pauseBtn = $('pauseBtn'), toast = $('toast');
 const marker = $('marker'), track = $('track');
@@ -820,6 +892,7 @@ const sfxGulp = r => { const f = 640 - clamp(r, 0, 1) * 320; tone('sine', f, f *
 const sfxBite = () => { tone('triangle', 150, 48, .28, .45); tone('square', 90, 40, .12, .05); };
 const sfxOver = () => { tone('sine', 392, 380, .22, .22); tone('sine', 311, 300, .22, .22, .2); tone('sine', 233, 140, .55, .25, .4); };
 const sfxLevel = () => { tone('sine', 523, 523, .1, .14); tone('sine', 784, 784, .18, .14, .09); };
+const sfxInci = () => { tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
 
 const SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const SOUND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
@@ -883,6 +956,13 @@ const MAP_ICON = {
 let soloHarita = (() => { const h = store.get('fish.harita', 'golet'); return MAPS[h] ? h : 'golet'; })();
 let xpBasla = 0, svGosterilen = 0;
 const xpToplam = () => xpOf(toplamOku());
+/* koi patterns and pearls (kept with the player's account) */
+const alinanlar = () => { const a = store.get('fish.desenler', []); return Array.isArray(a) ? a.filter(id => DESEN[id] && DESEN[id].price) : []; };
+const inciSay = () => Math.max(0, Math.floor(+store.get('fish.inci', 0) || 0));
+function inciEkle(n) { if (n > 0) store.set('fish.inci', inciSay() + Math.round(n)); }
+function sahipMi(id, L) { const d = DESEN[id]; return !!d && (d.level ? L >= d.level : alinanlar().includes(id)); }
+let seciliDesen = (() => { const d = store.get('fish.desen', 'kohaku'); return DESEN[d] ? d : 'kohaku'; })();
+let inciTur = 0, turInci = 0; // pearls picked up in this round, pearls the round earned at its end
 function seviyeBilgi(xp) { const L = levelOf(xp), a = XP_FOR(L), b = XP_FOR(L + 1); return { L, a, b, k: clamp((xp - a) / (b - a), 0, 1) }; }
 const seviyem = () => levelOf(xpToplam());
 // Map cards; maps not open yet say at which level they open.
@@ -924,15 +1004,17 @@ function haritaKur(id) {
   cv.setAttribute('aria-label', `A ${HARITA.name.toLowerCase()} seen from above, with fish swimming`);
 }
 // The experience a round brought, and anything it opened.
-function xpSonCiz(box, once, sonra) {
+function xpSonCiz(box, once, sonra, inci) {
   const s0 = seviyeBilgi(once), s1 = seviyeBilgi(sonra);
   box.replaceChildren();
   const line = mk('p', 'stat'); line.append(mk('b', null, `+${sonra - once} XP`), ` · Level ${s1.L}`);
+  if (inci > 0) { const ik = mk('i', 'inci-ikon'); line.append('  ·  ', ik, mk('b', null, `+${inci}`), ' pearls'); }
   const bar = mk('div', 'sv-bar'), i = mk('i'); i.style.width = (s1.k * 100).toFixed(1) + '%'; bar.append(i);
   box.append(line, bar);
   if (s1.L > s0.L) {
     box.append(mk('p', 'yeni', `Level up! You’re level ${s1.L}`));
     for (const id of MAP_IDS) if (MAPS[id].level > s0.L && MAPS[id].level <= s1.L) box.append(mk('p', 'yeni', `New water: the ${MAPS[id].name} is open`));
+    for (const d of DESENLER) if (d.level > s0.L && d.level <= s1.L) box.append(mk('p', 'yeni', `New koi pattern: ${d.name} (in My koi)`));
   }
   box.hidden = false;
 }
@@ -942,14 +1024,90 @@ function seviyeKontrol(t, sayildi) {
   for (const k in t) { const d = t[k] - ((sayildi && sayildi[k]) || 0); if (d > 0) eksik[k] = d; }
   const L = levelOf(xpToplam() + xpOf(eksik));
   if (svGosterilen && L > svGosterilen) {
-    const yeni = MAP_IDS.find(id => MAPS[id].level === L);
-    showToast(`Level ${L}!` + (yeni ? ` The ${MAPS[yeni].name} is open` : ''));
+    const yeni = MAP_IDS.find(id => MAPS[id].level === L), desen = DESENLER.find(d => d.level === L);
+    showToast(`Level ${L}!` + (yeni ? ` The ${MAPS[yeni].name} is open` : desen ? ` New koi: ${desen.name}` : ''));
     sfxLevel();
   }
   svGosterilen = L;
 }
+/* My koi: pick a pattern, buy a special one with pearls */
+const resimler = {};
+// A picture of a koi in pattern id, drawn with the game's own fish code on a small canvas.
+function koiResmi(id) {
+  if (resimler[id]) return resimler[id];
+  const w = 120, h = 60, d = Math.min(2, window.devicePixelRatio || 1), c = document.createElement('canvas');
+  c.width = w * d; c.height = h * d;
+  const eski = { ctx, W, H, x: cam.x, y: cam.y, s: cam.scale };
+  try {
+    ctx = c.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0);
+    W = w; H = h; cam.x = 0; cam.y = 0; cam.scale = w * .6 / 10;
+    const f = { x: 5.6, y: 0, angle: 0, speed: 0, phase: 1.3, spine: null, g: null };
+    initSpine(f, 10); koiIzleri(f);
+    const st = koiStili(id);
+    geo(f, st, 10, 0); drawFish(f, st, false);
+  } finally {
+    ctx = eski.ctx; W = eski.W; H = eski.H; cam.x = eski.x; cam.y = eski.y; cam.scale = eski.s;
+  }
+  return (resimler[id] = c);
+}
+let koiSecim = null; // the tile looked at in the menu
+function koiAc() {
+  hepsiniGizle(); $('koiOv').hidden = false; document.body.classList.add('lb-acik');
+  koiSecim = seciliDesen;
+  koiCiz();
+  $('koiGeri').focus({ preventScroll: true });
+}
+function koiCiz() {
+  const L = seviyem(), inci = inciSay();
+  $('inciSay').textContent = inci;
+  const d = DESEN[koiSecim] || DESEN.kohaku, sahip = sahipMi(d.id, L);
+  $('koiAd').textContent = d.name;
+  const box = $('desenler');
+  box.replaceChildren(...DESENLER.map(x => {
+    const own = sahipMi(x.id, L), b = mk('button', 'dk' + (own ? '' : x.price ? ' dukkan' : ' kilit'));
+    b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(x.id === koiSecim));
+    const img = koiResmi(x.id), cv2 = document.createElement('canvas');
+    cv2.width = img.width; cv2.height = img.height; cv2.getContext('2d').drawImage(img, 0, 0);
+    const alt = x.id === seciliDesen ? '✓ wearing' : own ? (x.level ? `level ${x.level}` : 'yours') : x.price ? '' : `Level ${x.level}`;
+    const sm = mk('small', null, alt);
+    if (!own && x.price) { sm.append(mk('i', 'inci-ikon'), String(x.price)); }
+    b.append(cv2, x.name, sm);
+    b.setAttribute('aria-label', `${x.name}: ${own ? (x.id === seciliDesen ? 'wearing' : 'yours') : x.price ? `${x.price} pearls` : `opens at level ${x.level}`}`);
+    b.addEventListener('click', () => {
+      koiSecim = x.id;
+      if (own) { seciliDesen = x.id; store.set('fish.desen', x.id); sfxGulp(.3); }
+      koiCiz();
+    });
+    return b;
+  }));
+  const not = $('koiNot'), al = $('koiAl');
+  al.hidden = true;
+  if (sahip) not.textContent = d.id === seciliDesen ? 'Your koi wears this pattern, alone and in rooms.' : '';
+  else if (d.level) not.textContent = `Opens at level ${d.level}. You’re level ${L}.`;
+  else {
+    al.hidden = false;
+    al.disabled = inci < d.price;
+    al.textContent = inci < d.price ? `${d.price - inci} more pearls needed` : `Buy for ${d.price} pearls`;
+    not.textContent = 'Pick up pearls in the water and earn more at the end of every round.';
+  }
+}
+$('koiAl').addEventListener('click', () => {
+  const d = DESEN[koiSecim];
+  if (!d || !d.price || sahipMi(d.id, seviyem()) || inciSay() < d.price) return;
+  store.set('fish.inci', inciSay() - d.price);
+  store.set('fish.desenler', alinanlar().concat(d.id));
+  seciliDesen = d.id; store.set('fish.desen', d.id);
+  sfxLevel(); showToast(`Your koi is a ${d.name} now`);
+  hesapNotu(`Fish: ${d.name} deseni alındı`);
+  koiCiz();
+});
+$('koiBtn').addEventListener('click', () => { ensureAudio(); koiAc(); });
+$('koiGeri').addEventListener('click', () => { hepsiniGizle(); renderStartBest(); startOv.hidden = false; $('koiBtn').focus({ preventScroll: true }); });
+
 function renderStartBest() {
   seviyeCiz();
+  if (!sahipMi(seciliDesen, seviyem())) seciliDesen = 'kohaku';
+  $('inciBtn').textContent = inciSay();
   const el = $('startBest');
   const n = toplamSayi();
   if (best > 0) {
@@ -962,7 +1120,7 @@ function renderStartBest() {
 function resetPlayer() {
   P.l = P.lShow = 10; P.lives = 3; P.alive = true; P.invuln = 0; P.gulp = 0;
   P.x = cam.x; P.y = cam.y; P.speed = P.l * 1.2;
-  P.marks = koiMarks(); initSpine(P, P.l);
+  koiIzleri(P); initSpine(P, P.l);
   P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length;
 }
 function startGame(fromAttract) {
@@ -971,12 +1129,13 @@ function startGame(fromAttract) {
   else { P.l = P.lShow = 10; P.lives = 3; P.alive = true; P.invuln = 0; P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length; }
   tally = {}; eatenCount = 0; killer = null; sayilan = {};
   xpBasla = xpToplam(); svGosterilen = levelOf(xpBasla);
+  inciTur = 0; inciler.length = 0; inciT = 8;
   P.grace = 2.5;
   cam.scale = targetScale(P.l);
   fish = fish.filter(f => f.l < P.l * .85);
   for (let i = 0; i < 4; i++) spawnGroup(true, true);
   mode = 'play';
-  startOv.hidden = true; overOv.hidden = true; pauseOv.hidden = true;
+  startOv.hidden = true; overOv.hidden = true; pauseOv.hidden = true; document.body.classList.remove('lb-acik');
   hud.hidden = false; toast.hidden = true;
   renderLives(); shownLen = ''; chainKey = ''; updateHud();
   hesapNotu(`Yeni tur · ${fmtLenStr(P.l)}`);
@@ -1030,6 +1189,9 @@ function gameOver(f) {
   const isBest = P.l > best + .001;
   if (isBest) { best = P.l; store.set('fish.best', best); }
   sayilmayaniEkle();
+  // pearls for the round: one for every two fish, one for every 10 cm
+  turInci = Math.floor(eatenCount / 2) + Math.floor(P.l / 10);
+  inciEkle(turInci);
   hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
   renderStartBest();
   // Post the round to the leaderboard, then read this week's table for the game-over screen.
@@ -1053,8 +1215,8 @@ function showOver(isBest) {
   b.textContent = isBest ? 'New best length' : `Best: ${fmtLenStr(best)}`;
   b.classList.toggle('new', isBest);
   lbGoster(lbSonuc);
-  xpSonCiz($('overXp'), xpBasla, xpToplam());
-  overOv.hidden = false;
+  xpSonCiz($('overXp'), xpBasla, xpToplam(), turInci + inciTur);
+  overOv.hidden = false; document.body.classList.add('lb-acik');
   $('againBtn').focus({ preventScroll: true });
 }
 /* ---------- leaderboard (only with player accounts) ---------- */
@@ -1138,6 +1300,8 @@ function koiStil(renk) {
   const r = /^#[0-9a-f]{6}$/i.test(renk || '') ? renk : KOI.patch;
   return koiStilleri[r] || (koiStilleri[r] = Object.assign({}, KOI, { patch: r }));
 }
+// Another player's koi: in the pattern they picked (older pages send none: patches in their colour).
+const baskaKoi = k => (k.desen && DESEN[k.desen] ? koiStili(k.desen) : koiStil(k.renk));
 const oda = {
   lobi: null, lobiPing: 0, liste: [], listeT: 0, listeSaat: 0,
   ws: null, ping: 0, id: null, kur: false, ben: 0, kurucu: 0, durum: null, oyuncular: [], kimler: new Map(),
@@ -1161,7 +1325,7 @@ function anahtar() {
   catch (e) { return Promise.resolve(null); }
 }
 function hepsiniGizle() {
-  for (const o of [startOv, pauseOv, overOv, $('lbOv'), odaOv, bekleOv, sonOv]) o.hidden = true;
+  for (const o of [startOv, pauseOv, overOv, $('lbOv'), $('koiOv'), odaOv, bekleOv, sonOv]) o.hidden = true;
   document.body.classList.remove('lb-acik');
 }
 function yeniId() {
@@ -1269,7 +1433,7 @@ async function odaBaglan() {
   let ws;
   try { ws = new WebSocket(ODA_SUNUCU + '/oda/' + oda.id); } catch (e) { odaHata('ag'); return; }
   oda.ws = ws;
-  ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token, profil: p.id, ad: p.name, renk: p.color, kur: oda.kur, ekran: [Math.round(W), Math.round(H)], harita: soloHarita }));
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token, profil: p.id, ad: p.name, renk: p.color, kur: oda.kur, ekran: [Math.round(W), Math.round(H)], harita: soloHarita, desen: seciliDesen }));
   ws.onmessage = e => {
     if (e.data === 'pong' || oda.ws !== ws) return;
     let m; try { m = JSON.parse(e.data); } catch (_) { return; }
@@ -1331,10 +1495,8 @@ function odaMesaj(m) {
 }
 function odaBilgi(m) {
   oda.durum = m.durum; oda.kurucu = m.kurucu; oda.oyuncular = m.oyuncular || []; oda.harita = MAPS[m.harita] ? m.harita : 'golet';
-  for (const o of oda.oyuncular) oda.kimler.set(o.no, { ad: o.ad, renk: o.renk });
-  for (const e of oda.rakip.values()) { const k = oda.kimler.get(e.no); if (k) { e.ad = k.ad; e.renk = k.renk; e.sp = koiStil(k.renk); } }
-  const me = oda.kimler.get(oda.ben);
-  if (me) oda.stil = koiStil(me.renk);
+  for (const o of oda.oyuncular) oda.kimler.set(o.no, { ad: o.ad, renk: o.renk, desen: o.desen });
+  for (const e of oda.rakip.values()) { const k = oda.kimler.get(e.no); if (k) { e.ad = k.ad; e.renk = k.renk; e.sp = baskaKoi(k); } }
   oda.tabloKey = '';
   // back after a dropped connection, and the round ended meanwhile
   if (mode === 'oda' && m.durum !== 'oyunda') { odaSayilanEkle(); odaModundanCik(); }
@@ -1382,6 +1544,7 @@ function odaOyunu(m) {
   mode = 'oda';
   haritaKur(MAPS[m.harita] ? m.harita : oda.harita);
   xpBasla = xpToplam(); svGosterilen = levelOf(xpBasla);
+  inciTur = 0; inciler.length = 0; inciT = 8;
   fish = []; oda.npc.clear(); oda.rakip.clear();
   ripples.length = 0; bubbles.length = 0; labels.length = 0;
   oda.tally = {}; oda.sayilan = {}; oda.yedigi = 0; oda.koi = 0; oda.enBuyuk = 10; oda.tabloKey = '';
@@ -1400,7 +1563,7 @@ function odaModundanCik() {
   if (!oda.id || oda.ayriliyor) kendiSuyum();
   document.body.classList.remove('odada');
   hud.hidden = true; odaPanel.hidden = true; olumOv.hidden = true; toast.hidden = true;
-  fish = []; oda.npc.clear(); oda.rakip.clear();
+  fish = []; oda.npc.clear(); oda.rakip.clear(); inciler.length = 0;
   P.l = P.lShow = 10; P.alive = true; P.invuln = 0; P.grace = 0; P.lives = 3; P.gulp = 0;
   initSpine(P, P.l); cam.scale = targetScale(10);
   for (let i = 0; i < 9; i++) spawnGroup(true, false);
@@ -1411,7 +1574,7 @@ function dogdum(m) {
   if (mode !== 'oda') odaOyunu({ R: m.R, kalan: oda.bitisT - performance.now() });
   oda.hayat = m.h; oda.R = m.R || oda.R;
   Object.assign(P, { x: m.x, y: m.y, angle: m.a, speed: 0, l: m.l, lShow: m.l, lives: m.can, alive: true, invuln: 0, grace: 3, gulp: 0 });
-  if (!P.marks) P.marks = koiMarks();
+  if (!P.marks2) koiIzleri(P);
   initSpine(P, P.l);
   P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length;
   cam.x = P.x; cam.y = P.y; cam.scale = targetScale(P.l);
@@ -1421,8 +1584,9 @@ function dogdum(m) {
 function hedefle(e, x, y, a, v, now) { e.sx = x; e.sy = y; e.sa = a; e.sv = v; e.st = now; }
 function rakipYap(no, r) {
   const k = oda.kimler.get(no) || { ad: 'Koi', renk: KOI.patch };
-  const e = { no, ad: k.ad, renk: k.renk, sp: koiStil(k.renk), x: r[1], y: r[2], angle: r[3], speed: r[5], l: r[4], lShow: r[4],
-    phase: Math.random() * TAU, spine: null, marks: koiMarks(), g: null, canli: false, durum: 0, gulp: 0 };
+  const e = { no, ad: k.ad, renk: k.renk, sp: baskaKoi(k), x: r[1], y: r[2], angle: r[3], speed: r[5], l: r[4], lShow: r[4],
+    phase: Math.random() * TAU, spine: null, marks: null, g: null, canli: false, durum: 0, gulp: 0 };
+  koiIzleri(e);
   initSpine(e, e.l);
   return e;
 }
@@ -1604,7 +1768,8 @@ function haritaCiz() {
     x.beginPath(); x.arc(px(e.x), px(e.y), clamp(2.5 + e.lShow * k * .5, 3, 7), 0, TAU); x.fill();
   }
   if (P.alive) {
-    x.fillStyle = oda.stil.patch; x.strokeStyle = '#fff'; x.lineWidth = 2;
+    const ben = oda.kimler.get(oda.ben);
+    x.fillStyle = ben && /^#[0-9a-f]{6}$/i.test(ben.renk || '') ? ben.renk : KOI.patch; x.strokeStyle = '#fff'; x.lineWidth = 2;
     x.beginPath(); x.arc(px(P.x), px(P.y), clamp(3 + P.lShow * k * .5, 4, 8), 0, TAU); x.fill(); x.stroke();
   }
 }
@@ -1681,7 +1846,10 @@ function turBitti(m) {
   const avci = sonuc.slice().sort((a, b) => b.koi - a.koi)[0];
   if (avci && avci.koi > 0) odul.push(`Most koi caught: ${avci.ad} (${avci.koi})`);
   $('sonOdul').textContent = odul.join(' · ');
-  xpSonCiz($('sonXp'), xpBasla, xpToplam());
+  // pearls: one for every two fish, one for every 10 cm, ten more for the biggest koi
+  turInci = benim ? Math.floor(benim.yedigi / 2) + Math.floor(benim.enBuyuk / 10) + (sira === 1 && sonuc.length > 1 ? 10 : 0) : 0;
+  inciEkle(turInci);
+  xpSonCiz($('sonXp'), xpBasla, xpToplam(), turInci + inciTur);
   hepsiniGizle(); sonOv.hidden = false; document.body.classList.add('lb-acik');
   sfxLevel();
   $('odayaDon').focus({ preventScroll: true });
@@ -1720,10 +1888,10 @@ $('resumeBtn').addEventListener('click', resume);
 // Back to the start screen (to pick another water, a koi pattern…); an unfinished round counts what was eaten.
 function menuyeDon() {
   if (mode === 'paused') { if (P.l > best) { best = P.l; store.set('fish.best', best); } sayilmayaniEkle(); }
-  mode = 'attract'; lockOff();
+  mode = 'attract'; lockOff(); inciler.length = 0;
   resetPlayer(); P.speed = P.l * 1.2; P.grace = 0;
   for (const o of [overOv, pauseOv]) o.hidden = true;
-  hud.hidden = true; toast.hidden = true;
+  hud.hidden = true; toast.hidden = true; document.body.classList.remove('lb-acik');
   renderStartBest();
   startOv.hidden = false; $('startBtn').focus({ preventScroll: true });
 }
@@ -1854,6 +2022,7 @@ function update(dt) {
   cOff[0] -= sdx * .55 - 9 * dt * drift; cOff[1] -= sdy * .55 - 5 * dt * drift;
   cOff[2] -= sdx * .45 + 7 * dt * drift; cOff[3] -= sdy * .45 - 8 * dt * drift;
 
+  inciGuncelle(dt);
   if (mode === 'oda') odaGuncelle(dt);
   else {
     updateFish(dt);
@@ -1874,6 +2043,52 @@ function update(dt) {
   flash = Math.max(0, flash - dt * 2);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) toast.hidden = true; }
   if (mode === 'play' || inPond) updateHud();
+}
+
+/* ---------- pearls in the water: swim over one for 3 pearls ---------- */
+const inciler = [];
+let inciT = 8;
+function inciGuncelle(dt) {
+  if (!(mode === 'play' || (mode === 'oda' && P.alive))) return;
+  const hw = W / 2 / cam.scale, hh = H / 2 / cam.scale;
+  inciT -= dt;
+  if (inciT <= 0) {
+    inciT = rand(12, 20);
+    if (inciler.length < 2) for (let t = 0; t < 8; t++) {
+      const x = cam.x + rand(-.75, .75) * hw, y = cam.y + rand(-.7, .7) * hh;
+      if (Math.hypot(x - P.x, y - P.y) > P.lShow * 2 && !karada(x, y, P.lShow * .4)) { inciler.push({ x, y, t: 0, r: P.lShow * .15 }); break; }
+    }
+  }
+  for (let i = inciler.length - 1; i >= 0; i--) {
+    const p = inciler[i]; p.t += dt;
+    if (p.t > 26 || Math.abs(p.x - cam.x) > hw * 3 || Math.abs(p.y - cam.y) > hh * 3) { inciler.splice(i, 1); continue; }
+    if (Math.hypot(p.x - P.x, p.y - P.y) < P.lShow * .45 + p.r) {
+      inciler.splice(i, 1);
+      inciEkle(3); inciTur += 3;
+      labels.push({ x: p.x, y: p.y, text: '+3 pearls', life: 1.3 });
+      ripples.push({ x: p.x, y: p.y, r: p.r, max: p.r * 6, life: 1 });
+      sfxInci();
+    }
+  }
+}
+function drawInciler() {
+  const sc = cam.scale;
+  for (const p of inciler) {
+    const sx = (p.x - cam.x) * sc + W / 2, sy = (p.y - cam.y) * sc + H / 2, r = Math.max(3, p.r * sc) * (1 + .06 * Math.sin(time * 3 + p.x));
+    if (sx < -r * 3 || sx > W + r * 3 || sy < -r * 3 || sy > H + r * 3) continue;
+    const fade = Math.min(1, p.t * 2, (26 - p.t) / 2);
+    ctx.globalAlpha = fade;
+    const glow = ctx.createRadialGradient(sx, sy, r * .5, sx, sy, r * 2.6);
+    glow.addColorStop(0, 'rgba(255,240,255,.45)'); glow.addColorStop(1, 'rgba(255,240,255,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, r * 2.6, 0, TAU); ctx.fill();
+    const b = ctx.createRadialGradient(sx - r * .35, sy - r * .4, r * .1, sx, sy, r);
+    b.addColorStop(0, '#ffffff'); b.addColorStop(.45, '#f3e9f2'); b.addColorStop(1, '#a693b8');
+    ctx.fillStyle = b; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+    const tw = (Math.sin(time * 5 + p.y) + 1) / 2; // a twinkle
+    ctx.strokeStyle = `rgba(255,255,255,${(.4 + .6 * tw).toFixed(2)})`; ctx.lineWidth = Math.max(1, r * .12);
+    ctx.beginPath(); ctx.moveTo(sx + r * .7, sy - r * 1.5); ctx.lineTo(sx + r * .7, sy - r * .5); ctx.moveTo(sx + r * .2, sy - r); ctx.lineTo(sx + r * 1.2, sy - r); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }
 
 /* ---------- drawing ---------- */
@@ -1927,7 +2142,7 @@ function tailPath(g, st, phase) {
   let bx = g.x[9] - g.x[7], by = g.y[9] - g.y[7]; const d = Math.hypot(bx, by) || 1; bx /= d; by /= d;
   const sw = Math.sin(phase - 6) * .32, c = Math.cos(sw), s = Math.sin(sw);
   const rx = bx * c - by * s, ry = bx * s + by * c; bx = rx; by = ry;
-  const nx = -by, ny = bx, L = g.len * (st.tail === 'round' ? .17 : .21);
+  const nx = -by, ny = bx, L = g.len * (st.tail === 'round' ? .17 : .21) * (st.tailLen || 1);
   const x0 = g.x[9], y0 = g.y[9], bw = Math.max(.8, g.w[9] * .85);
   ctx.beginPath();
   ctx.moveTo(x0 + nx * bw, y0 + ny * bw);
@@ -2020,13 +2235,83 @@ function pattern(f, g, st) {
       ctx.beginPath(); ctx.ellipse(r.x - r.ty * r.w * m.side, r.y + r.tx * r.w * m.side, g.len * m.a, r.w * m.b, Math.atan2(r.ty, r.tx), 0, TAU); ctx.fill();
     }
   } else if (st.pat === 'koi' && f.marks) {
-    ctx.fillStyle = st.patch;
-    for (const m of f.marks) {
-      const r = frameAt(g, m.fi);
-      ctx.beginPath(); ctx.ellipse(r.x - r.ty * r.w * m.side, r.y + r.tx * r.w * m.side, g.len * m.a, Math.max(.5, r.w * m.b), Math.atan2(r.ty, r.tx), 0, TAU); ctx.fill();
+    if (st.desen) koiDeseni(f, g, st.desen);
+    else {
+      ctx.fillStyle = st.patch;
+      for (const m of f.marks) {
+        const r = frameAt(g, m.fi);
+        ctx.beginPath(); ctx.ellipse(r.x - r.ty * r.w * m.side, r.y + r.tx * r.w * m.side, g.len * m.a, Math.max(.5, r.w * m.b), Math.atan2(r.ty, r.tx), 0, TAU); ctx.fill();
+      }
     }
   }
   ctx.globalAlpha = 1;
+}
+function lekeler(g, marks, renk, k) {
+  for (let i = 0; i < marks.length; i++) {
+    const m = marks[i], r = frameAt(g, m.fi);
+    ctx.fillStyle = typeof renk === 'function' ? renk(i) : renk;
+    ctx.beginPath(); ctx.ellipse(r.x - r.ty * r.w * m.side, r.y + r.tx * r.w * m.side, g.len * m.a * (k || 1), Math.max(.5, r.w * m.b * (k || 1)), Math.atan2(r.ty, r.tx), 0, TAU); ctx.fill();
+  }
+}
+function pulAgi(g, renk, a) { // a net of scales over the back
+  if (g.len < 24) return;
+  ctx.strokeStyle = renk; ctx.globalAlpha = a; ctx.lineWidth = Math.max(.7, g.len * .007);
+  const rr = g.len * .028;
+  let row = 0;
+  for (let fi = 1.4; fi < 8.6; fi += .6, row++) {
+    const r = frameAt(g, fi), nx = -r.ty, ny = r.tx, an = Math.atan2(r.ty, r.tx) + Math.PI;
+    for (const s0 of [-.7, -.35, 0, .35, .7]) {
+      const off = s0 + (row % 2 ? .17 : 0); if (Math.abs(off) > .8) continue;
+      ctx.beginPath(); ctx.arc(r.x + nx * r.w * off, r.y + ny * r.w * off, rr, an - 1.2, an + 1.2); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function boyunca(g, side, renk, gen, a, f0, f1) { // a band along the body, at side (-1..1) of the width
+  ctx.strokeStyle = renk; ctx.globalAlpha = a; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (let fi = f0; fi <= f1 + .001; fi += .5) { const r = frameAt(g, fi), x = r.x - r.ty * r.w * side, y = r.y + r.tx * r.w * side; fi === f0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  let mw = 0; for (let i = 0; i < 10; i++) mw = Math.max(mw, g.w[i]);
+  ctx.lineWidth = Math.max(1, mw * gen); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+const GOKKUSAGI = ['#e8403a', '#f08a2c', '#f2c43a', '#5cb85c', '#3a8de0', '#8a5ad6'];
+function koiDeseni(f, g, d) {
+  if (d.sides) { boyunca(g, .85, d.sides, .5, .85, 1.5, 7.8); boyunca(g, -.85, d.sides, .5, .85, 1.5, 7.8); }
+  if (d.net) pulAgi(g, d.net, .55);
+  if (d.line) { boyunca(g, 0, d.line, .38, .85, .8, 8.2); }
+  if (d.bars) {
+    ctx.strokeStyle = d.bars; ctx.globalAlpha = .85; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, g.len * .03);
+    for (const fi of [1.8, 2.7, 3.6, 4.5, 5.4, 6.3, 7.2]) {
+      const r = frameAt(g, fi), nx = -r.ty, ny = r.tx;
+      ctx.beginPath(); ctx.moveTo(r.x + nx * r.w * 1.1, r.y + ny * r.w * 1.1); ctx.quadraticCurveTo(r.x + r.tx * r.w * .4, r.y + r.ty * r.w * .4, r.x - nx * r.w * 1.1, r.y - ny * r.w * 1.1); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (d.patch) { if (d.stars) ctx.globalAlpha = .6; lekeler(g, f.marks, d.patch); ctx.globalAlpha = 1; }
+  if (d.rainbow) lekeler(g, f.marks, i => GOKKUSAGI[i % GOKKUSAGI.length]);
+  if (d.patch2 && f.marks2) lekeler(g, f.marks2, d.patch2, .85);
+  if (d.spots && f.marks3) lekeler(g, f.marks3, d.spots);
+  if (d.stars && f.marks3) { ctx.globalAlpha = .95; lekeler(g, f.marks3, d.stars, .55); ctx.globalAlpha = 1; }
+  if (d.crown) {
+    const r = frameAt(g, .95), rr = r.w * .62;
+    ctx.fillStyle = d.crown; ctx.beginPath(); ctx.arc(r.x, r.y, Math.max(.8, rr), 0, TAU); ctx.fill();
+  }
+  if (d.metal) { // a shine down the back
+    ctx.strokeStyle = '#fffbe8'; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(g.x[1], g.y[1]); for (let i = 2; i < 8; i++) ctx.lineTo(g.x[i], g.y[i]);
+    let mw = 0; for (let i = 0; i < 10; i++) mw = Math.max(mw, g.w[i]);
+    ctx.globalAlpha = .22 + .1 * Math.sin(time * 2 + f.phase); ctx.lineWidth = mw * .9; ctx.stroke();
+    ctx.globalAlpha = .35; ctx.lineWidth = mw * .3; ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+// The patches a koi wears: big ones, a second set, and small spots (each koi gets its own).
+function koiIzleri(f) {
+  f.marks = koiMarks();
+  f.marks2 = koiMarks().map(m => Object.assign(m, { side: -m.side * .8, fi: Math.min(7.6, m.fi + .5) }));
+  f.marks3 = [];
+  for (let i = 0; i < 9; i++) f.marks3.push({ fi: rand(1.2, 7.8), side: rand(-.6, .6), a: rand(.012, .022), b: rand(.12, .2) });
 }
 function drawShadow(f, st) {
   const g = f.g; if (g.len < 3) return;
@@ -2038,9 +2323,10 @@ function drawFish(f, st, danger) {
   if (len < 2.4) { ctx.fillStyle = st.body; ctx.beginPath(); ctx.arc(g.x[3], g.y[3], 1.2, 0, TAU); ctx.fill(); return; }
   ctx.fillStyle = st.fin; tailPath(g, st, f.phase); ctx.fill();
   fins(g, f.phase, 2.1, st.finSize || .075);
-  if (st.pelvic) fins(g, f.phase + 1, 5.2, .045);
+  if (st.pelvic) fins(g, f.phase + 1, 5.2, st.finSize ? st.finSize * .6 : .045);
   if (st.barbels && len > 14) barbels(g, st, f.phase);
   bodyPath(g, st, 0, 0); ctx.fillStyle = st.body; ctx.fill();
+  if (st.desen && st.desen.ghost) { ctx.lineWidth = Math.max(1, len * .012); ctx.strokeStyle = 'rgba(200,225,255,.75)'; ctx.stroke(); }
   if (len > 9) {
     ctx.save(); ctx.clip();
     if (st.back !== st.body) backStroke(g, st);
@@ -2254,10 +2540,11 @@ function render() {
   } else for (const s of specks) { ctx.globalAlpha = HARITA.dark ? Math.min(1, s.a * 2) : s.a; ctx.fillRect((s.x - cam.x) * sc + W / 2, (s.y - cam.y) * sc + H / 2, s.s, s.s); }
   ctx.globalAlpha = 1;
   if (hid === 'golet') { ctx.fillStyle = 'rgba(2,20,22,.24)'; forEachPad(padShadow); }
+  drawInciler();
   const inRoom = mode === 'oda';
   if (inRoom) drawBank();
 
-  const list = [], meSt = inRoom ? oda.stil : KOI, hunted = (mode === 'play' || inRoom) && P.alive;
+  const list = [], meSt = koiStili(seciliDesen), hunted = (mode === 'play' || inRoom) && P.alive;
   for (const f of fish) { if (f.dead) continue; if (onScreen(geo(f, f.sp, f.l, 0))) list.push(f); }
   if (inRoom) for (const e of oda.rakip.values()) { if (e.canli && onScreen(geo(e, e.sp, e.lShow, e.gulp))) list.push(e); }
   if (P.alive && mode !== 'over') { geo(P, meSt, P.lShow, P.gulp); list.push(P); }
@@ -2328,7 +2615,7 @@ function boot(data) {
   renderSound(); renderStartBest();
   HARITA = MAPS[soloHarita]; SPECIES = HARITA.species; suBoya(); chainKur();
   cam.x = 0; cam.y = 0; cam.scale = targetScale(10);
-  P.x = 0; P.y = 0; P.marks = koiMarks(); initSpine(P, P.l); P.speed = P.l * 1.2;
+  P.x = 0; P.y = 0; koiIzleri(P); initSpine(P, P.l); P.speed = P.l * 1.2;
   const vw = W / cam.scale * 1.2, vh = H / cam.scale * 1.2;
   for (let i = 0; i < 70; i++) specks.push({ x: rand(-.5, .5) * vw, y: rand(-.5, .5) * vh, s: rand(.8, 2.2), a: rand(.12, .4), vx: rand(-4, 4), vy: rand(-4, 4) });
   for (let i = 0; i < 9; i++) spawnGroup(true, false);
@@ -2345,7 +2632,7 @@ function boot(data) {
   requestAnimationFrame(frame);
 }
 // For testing: localStorage 'fish.debug' = '1' opens the page up as window.__fish.
-try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get mode() { return mode; }, get fish() { return fish; }, get harita() { return HARITA.id; }, haritaKur, cam, oda, yosunYatagi, yosunda }; } catch (e) {}
+try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get mode() { return mode; }, get fish() { return fish; }, get harita() { return HARITA.id; }, get desen() { return seciliDesen; }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally }; } catch (e) {}
 const hot = window.claude && window.claude.hot;
 try { if (hot && hot.snapshot) hot.snapshot(() => ({ mode, l: P.l, lives: P.lives, tally, eaten: eatenCount })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});

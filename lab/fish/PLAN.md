@@ -30,6 +30,7 @@
 - [ ] Hazır tepkiler (serbest sohbet yok).
 - [ ] Odalar için haftalık "en büyük koi" tablosu (`fish-oda` skorlarından).
 - [x] Dört su: Gölet, Nehir (akıntı), Deniz (yosun), Okyanus (karanlık); seviyelerle açılır. Odalarda kurucu seçer.
-- [ ] Koi deseni seçme (kohaku, showa, ogon…): her seviyede bir desen.
-- [ ] İnci: oynadıkça kazanılır, özel desenler inciyle alınır.
+- [x] Koi deseni seçme (kohaku, showa, ogon…): her seviyede bir desen.
+- [x] İnci: oynadıkça kazanılır, özel desenler inciyle alınır.
+- [ ] Uygulama mağazasına çıkınca: gerçek parayla inci (uygulama içi satın alma).
 - [ ] itch.io, CrazyGames gibi portallar.

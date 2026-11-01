@@ -18,6 +18,9 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - `akinti()` ve `yosunda()` sunucuda da var (`fish/sunucu/src/kurallar.js`): ikisi aynı kalmalı.
 - Seviye: `fish.toplam`'daki her balık boy basamağı + 1 XP (`xpOf`); L. seviye için `25 × (L−1)^1.7` XP. Haritalar 1, 3, 6, 10. seviyede açılır. Tur sonunda "+XP" ve açılanlar gösterilir; tur içinde seviye atlayınca bildirim çıkar.
 - Odalarda suyu kurucu seçer (kendi açtığı sulardan); bekleme odasının arkasında o su görünür, oda listesinde suyun adı yazar.
+- Koi desenleri (`DESENLER`): 18 gerçek koi çeşidi seviye seviye açılır, 6 özel desen inciyle alınır ("My koi" ekranı). Desenler `koiDeseni()` ile çizilir: büyük lekeler (`patch`, `patch2`), mürekkep benekleri (`spots`), kafada kırmızı daire (`crown`), pul ağı (`net`), yanlarda renk (`sides`), sırtta çizgi (`line`), parlaklık (`metal`) ve özel olanlar için çizgiler, yıldızlar, gökkuşağı, hayalet, uzun yüzgeç. Menüdeki resimler aynı çizim koduyla küçük bir tuvale çizilir (`koiResmi`).
+- Odalarda her sayfa kendi desenini `merhaba`'da yollar, sunucu diğerlerine iletir; diğer koi'ler o desende çizilir (desen yollamayan eski sayfalarda oyuncunun renginde lekeler). İsim etiketi ve haritadaki nokta oyuncunun renginde kalır.
+- İnci: suda arada bir inci belirir, üstünden geçince +3 (odada sadece sana görünür). Tur sonunda her iki balığa 1, her 10 cm'ye 1 inci; odada birinciye +10. Gerçek para yok.
 - Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar.
 
 ## Tek kişilik sürümün yapısı
