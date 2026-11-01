@@ -23,7 +23,7 @@ lab/giris/         giriş ve "Kim oynuyor?" (oyuncu seçme, ekleme, düzenleme, 
 lab/takip/         "Kim ne oynuyor?": son 7 günün oynama kayıtları
 lab/yorumlar/      "Nasıldı?" cevapları: yönetici herkesinkini, diğerleri kendi hesabınınkini görür
 lab/fish/          Fish: koi oyunu (tek kişilik + arkadaşlarla odalar). Plan lab/fish/PLAN.md
-lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu
+lab/yelken/        Rüzgâr Kaptanı: adım adım yelken okulu; parkur yarışı arkadaşlarla odalarda da yapılır
 lab/songbox/       SONGbox: karakterlerle şarkı yapma (arayüz İngilizce)
 lab/sur-muhafizi/  Sur Muhafızı: 20 dalgalık tower defense
 lab/sekme/         Sekme: topu duvarlardan sektirip hedefi vurma, 50 seviye
@@ -106,6 +106,7 @@ Yeni oyunlar önce Lab'a girer.
   - Fish: `fish.best` (en iyi boy), `fish.toplam` (şimdiye kadar yenen balıklar, tür tür). Not: boy, yenen balık, yakalayan tür. Leaderboard: her tur bitince boy (cm) `scores`'a yazılır; oyun sonunda bu haftanın ilk 5'i ve oyuncunun yeri, başlangıç ekranındaki Leaderboard düğmesinde bu hafta / tüm zamanlar ilk 10.
     Odalar ("Play with friends"): tur sonunda en büyük boy `scores`'a oyun `fish-oda` olarak yazılır (tek kişilik tabloya karışmaz). Leaderboard'da "Solo" / "Rooms" diye iki tablo var; Rooms tablosu oda listesinden ve tur sonu ekranından da açılır. Odada yenen balıklar `fish.toplam`'a eklenir. Not: oda, boy, kaçıncı olduğu.
   - Rüzgâr Kaptanı: biten dersler, son ders, parkur rekoru, yeke/dümen dolabı tercihi. Not: açık ders ve kaç ders bittiği, parkur süresi.
+    Odalar ("Arkadaşlarla yarış", ders listesinde ve parkur dersinin girişinde): herkes parkur yarışını aynı rüzgârda (rüzgâr salınımı yarış saatine bağlı) aynı anda yapar, diğer tekneler kendi renklerinde görünür, çarpışma yok. Bitişe ilk varan kazanır; ilk varandan sonra diğerlerinin bir dakikası kalır. Odadaki süre de parkur rekoru sayılır. Skor `yelken-oda` (geçilen şamandıra sayısı; süre ayrıntıda). Deneme: `ruzgar-kaptani.debug` = `1` sayfanın içini `window.__yelken` olarak açar.
   - SONGbox: açılan karakterler, kendi karakterleri, verilen adlar, ödül almış şarkılar, kayıtlı şarkılar. Not: karakter sayısı, şarkı sayısı, son puan.
   - Sekme: `sekme.v1` (seviye başına yıldızlar, son seviye, ses). Seviyeler sırayla açılır: bir seviye en az bir yıldızla geçilince sonraki açılır. Not: açık seviye, geçilen seviye ve toplam yıldız.
     Buradaki, oyuncular için olan normal sürüm. Tüm seviyeleri açan geliştirici sürümü (Sekme Dev: `SEKME_DEV = true`, çözüm gösterme, Atölye seviye editörü) siteye konmaz.

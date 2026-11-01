@@ -13,11 +13,13 @@
  *     skor: 'balon-yarisi-oda',      // the round's score goes to `scores` under this game
  *     sira: 'sure' | 'puan',         // the same as on the server: who finished first, or the highest score
  *     dil: 'tr' | 'en',
- *     tema: { zemin, yazi, ana, anaYazi, baslik, govde, bildirimUst },   // colours, fonts, how far down the notes go
+ *     tema: { zemin, yazi, ana, anaYazi, satir, cizgi, kenar, dugme, dugmeYazi, kotu, baslik, govde, bildirimUst },
+ *                                    // colours, fonts, how far down the notes go
  *     aciklama: 'Bir oda kur…',      // the lead on the room list
  *     ayarlar: [{ k: 'sure', ad: 'Süre', secenek: [{ d: 180, ad: '3 dk' }, …], v: 300 }],  // host's choices
  *     ayarYazi: (ayar) => '…',       // a short summary for the room list
  *     puanYazi: (p, x) => p + ' puan',
+ *     canliYazi: (p, x) => p,        // a shorter one for the live ranking (default: puanYazi)
  *     canli: { top: '60px', right: '8px' },   // where the live ranking goes (false: none); oda.canliYer() moves it
  *     saat: false,                   // true: always show the round's clock under the live ranking
  *     izle: true,                    // after oda.bitir(), show "you're done, waiting for the others"
@@ -132,8 +134,8 @@
 [hidden]{display:none!important}
 .kok{position:fixed;inset:0;z-index:2147482000;display:flex;align-items:flex-end;justify-content:center;font-family:var(--govde);color:var(--yazi);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .perde{position:absolute;inset:0;background:rgba(18,24,36,.45);animation:sis .2s ease}
-.kart{position:relative;width:100%;max-width:480px;max-height:calc(100% - 16px);overflow-y:auto;overscroll-behavior:contain;background:var(--zemin);border:2.5px solid var(--yazi);border-bottom:0;border-radius:24px 24px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;gap:12px;box-shadow:0 -10px 40px rgba(18,24,36,.25);animation:gel .26s cubic-bezier(.2,.9,.3,1.1)}
-@media (min-width:640px) and (min-height:560px){.kok{align-items:center}.kart{border-bottom:2.5px solid var(--yazi);border-radius:24px}}
+.kart{position:relative;width:100%;max-width:480px;max-height:calc(100% - 16px);overflow-y:auto;overscroll-behavior:contain;background:var(--zemin);border:2.5px solid var(--kenar);border-bottom:0;border-radius:24px 24px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;gap:12px;box-shadow:0 -10px 40px rgba(18,24,36,.25);animation:gel .26s cubic-bezier(.2,.9,.3,1.1)}
+@media (min-width:640px) and (min-height:560px){.kok{align-items:center}.kart{border-bottom:2.5px solid var(--kenar);border-radius:24px}}
 @keyframes gel{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes sis{from{opacity:0}}
 .ust{margin:0;font:700 12px/1.2 var(--govde);letter-spacing:.14em;text-transform:uppercase;opacity:.6}
@@ -159,18 +161,18 @@ p{margin:0;font-size:15px;line-height:1.42}
 .secimler{display:grid;gap:10px}
 .secim b{display:block;font-size:13px;font-weight:700;margin-bottom:6px;opacity:.75}
 .secim div{display:flex;flex-wrap:wrap;gap:6px}
-.cip{border:2px solid var(--yazi);background:#fff;color:var(--yazi);border-radius:999px;padding:7px 12px;font:600 14px/1.15 var(--govde);cursor:pointer}
-.cip[aria-pressed="true"]{background:var(--yazi);color:var(--zemin)}
+.cip{border:2px solid var(--kenar);background:var(--dugme);color:var(--dugmeYazi);border-radius:999px;padding:7px 12px;font:600 14px/1.15 var(--govde);cursor:pointer}
+.cip[aria-pressed="true"]{background:var(--ana);border-color:var(--ana);color:var(--anaYazi)}
 .cip:disabled{cursor:default}
 .ozet{font-size:14px;font-weight:600;padding:8px 12px;border-radius:12px;background:var(--satir)}
 .sira{display:flex;flex-wrap:wrap;gap:10px}
-.btn{flex:1 1 140px;min-height:50px;border:2.5px solid var(--yazi);border-radius:15px;background:#fff;color:var(--yazi);font:800 18px/1.1 var(--baslik);padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--yazi)}
-.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--yazi)}
+.btn{flex:1 1 140px;min-height:50px;border:2.5px solid var(--kenar);border-radius:15px;background:var(--dugme);color:var(--dugmeYazi);font:800 18px/1.1 var(--baslik);padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--kenar)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--kenar)}
 .btn.ana{background:var(--ana);color:var(--anaYazi)}
-.btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:0 4px 0 var(--yazi)}
+.btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:0 4px 0 var(--kenar)}
 .mini{flex:none;border:2px solid var(--yazi);border-radius:11px;background:var(--yazi);color:var(--zemin);font:800 15px/1 var(--baslik);padding:9px 13px;cursor:pointer}
 .mini:disabled{opacity:.4;cursor:default}
-.mini.acik{background:#fff;color:var(--yazi)}
+.mini.acik{background:var(--dugme);color:var(--dugmeYazi);border-color:var(--kenar)}
 button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 .link{word-break:break-all;font-size:13px;user-select:text;-webkit-user-select:text}
 .nokta::after{content:'';animation:nokta 1.4s steps(4) infinite}
@@ -249,7 +251,11 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       baslik: 'ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif',
       govde: 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'
     }, cfg.tema || {});
+    if (!tema.kenar) tema.kenar = tema.yazi;          // borders and button shadows
+    if (!tema.dugme) tema.dugme = '#fff';             // button background
+    if (!tema.dugmeYazi) tema.dugmeYazi = tema.yazi;
     const puanYazi = (p, x) => (cfg.puanYazi ? cfg.puanYazi(p, x) : String(Math.round(p)));
+    const canliYazi = (p, x) => (cfg.canliYazi ? cfg.canliYazi(p, x) : puanYazi(p, x)); // shorter, for the live ranking
 
     // the shadow root that holds the sheet, the live ranking and the notes
     const host = document.createElement('div');
@@ -633,7 +639,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
         if (ben && !goster.includes(ben)) goster.push(ben);
         for (const x of goster) {
           const d = mk('div', (x.ben ? 'ben' : '') + (x.b ? ' bitti' : ''));
-          d.append(rozet(x.ad, x.renk, 'i'), mk('span', '', x.ad), mk('b', '', o.sira === 'sure' && x.b ? sureYazi(x.b) : puanYazi(x.p, x)));
+          d.append(rozet(x.ad, x.renk, 'i'), mk('span', '', x.ad), mk('b', '', o.sira === 'sure' && x.b ? sureYazi(x.b) : canliYazi(x.p, x)));
           canli.append(d);
         }
       }
