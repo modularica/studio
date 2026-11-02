@@ -31,7 +31,8 @@ edit(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossori
 edit(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2[^"]*">/, '<link rel="stylesheet" href="fonts/fonts.css">', 'Google Fonts stylesheet');
 html = html.replace(/[ \t]*<meta name="robots"[^>]*>\n/, '');
 // "Nasıldı?" buttons talk to the Lab account system, which the app doesn't have.
-edit(/<\/head>/, '<style>[data-nasildi]{display:none!important}</style>\n</head>', '</head>');
+// capacitor.js (Capacitor core, no bundler) + uygulama.js (haptics etc.) load before the game.
+edit(/<\/head>/, '<style>[data-nasildi]{display:none!important}</style>\n<script src="capacitor.js"></script>\n<script src="uygulama.js"></script>\n</head>', '</head>');
 
 if (/https?:\/\/(?!www\.w3\.org)/.test(html.replace(/<meta property="og:[^>]*>/g, '').replace(/wss:\/\/[^'"]+/g, ''))) {
   console.warn('build: warning, the game still references an outside address; check that it works offline.');
@@ -59,5 +60,7 @@ for (const [pkg, weights] of FONTS) {
 }
 if (!css) throw new Error('build: no fonts were copied');
 writeFileSync(join(out, 'fonts/fonts.css'), css);
+copyFileSync(join(dirname(require.resolve('@capacitor/core/package.json')), 'dist/capacitor.js'), join(out, 'capacitor.js'));
+copyFileSync(join(here, 'uygulama.js'), join(out, 'uygulama.js'));
 writeFileSync(join(out, 'index.html'), html);
 console.log('build: www/ ready (' + Math.round(html.length / 1024) + ' KB game, fonts bundled)');

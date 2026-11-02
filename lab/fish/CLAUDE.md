@@ -33,6 +33,7 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Kamera ölçeği `targetScale(L)` ile belirlenir. Balıklar ekran kenarının hemen dışında doğar ve görüş alanının epey dışına çıkınca silinir.
 - Nilüferler dünya hücrelerine göre hash'lenir; havuz sonsuzdur ama her yer hep aynı görünür.
 - Sesler WebAudio ile üretilir; ses dosyası yoktur.
+- Titreşim: ses efektleri (`sfxGulp`, `sfxBite`, `sfxOver`, `sfxLevel`, `sfxInci`) `titret()`'i de çağırır; ses kapalıyken de çalışır. iOS uygulamasında `window.uygulama.titret` (`apps/fish/uygulama.js`), Android tarayıcılarda `navigator.vibrate`. iPad ve iOS Safari titremez.
 
 ## Odalar (index.html içinde "rooms" bölümü)
 

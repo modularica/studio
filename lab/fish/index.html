@@ -899,10 +899,20 @@ function tone(type, f0, f1, dur, vol, delay) {
     o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .03);
   } catch (e) {}
 }
-const sfxGulp = r => { const f = 640 - clamp(r, 0, 1) * 320; tone('sine', f, f * .38, .13, .3); tone('sine', f * 1.9, f * 1.6, .05, .07, .09); };
-const sfxBite = () => { tone('triangle', 150, 48, .28, .45); tone('square', 90, 40, .12, .05); };
-const sfxOver = () => { tone('sine', 392, 380, .22, .22); tone('sine', 311, 300, .22, .22, .2); tone('sine', 233, 140, .55, .25, .4); };
-const sfxLevel = () => { tone('sine', 523, 523, .1, .14); tone('sine', 784, 784, .18, .14, .09); };
+/* Haptics ride along with the sounds but don't depend on the sound switch.
+   The iOS app (apps/fish) sets window.uygulama.titret and uses the iPhone's Taptic Engine
+   (iPads have no vibration motor). Android browsers have navigator.vibrate; iOS Safari has nothing. */
+const TITRESIM = { yut: 12, isir: [35, 40, 35], olum: 140, seviye: [15, 50, 15], inci: 8 };
+function titret(tur, guc) {
+  try {
+    if (window.uygulama && window.uygulama.titret) window.uygulama.titret(tur, guc);
+    else if (navigator.vibrate) navigator.vibrate(TITRESIM[tur] || 10);
+  } catch (e) {}
+}
+const sfxGulp = r => { titret('yut', r); const f = 640 - clamp(r, 0, 1) * 320; tone('sine', f, f * .38, .13, .3); tone('sine', f * 1.9, f * 1.6, .05, .07, .09); };
+const sfxBite = () => { titret('isir'); tone('triangle', 150, 48, .28, .45); tone('square', 90, 40, .12, .05); };
+const sfxOver = () => { titret('olum'); tone('sine', 392, 380, .22, .22); tone('sine', 311, 300, .22, .22, .2); tone('sine', 233, 140, .55, .25, .4); };
+const sfxLevel = () => { titret('seviye'); tone('sine', 523, 523, .1, .14); tone('sine', 784, 784, .18, .14, .09); };
 function sfxAt() { // a whinny, then two snorts
   if (!AC || !soundOn) return;
   try {
@@ -931,7 +941,7 @@ function atDegistir() {
   else { sfxGulp(.3); showToast('Back to koi 🐟'); }
   if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'desen', d: atMi ? 'at' : seciliDesen }));
 }
-const sfxInci = () => { tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
+const sfxInci = () => { titret('inci'); tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
 
 const SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const SOUND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
