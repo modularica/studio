@@ -2773,6 +2773,9 @@ function frame(now) {
 function boot(data) {
   data = data || {};
   resize(); addEventListener('resize', resize);
+  // In the iOS app the web view can get its real size after the game has started, with no resize event:
+  // the canvas then keeps its first size and the pond looks stretched. Watch the canvas box itself too.
+  if (window.ResizeObserver) new ResizeObserver(() => { if (cv.clientWidth !== W || cv.clientHeight !== H) resize(); }).observe(cv);
   makeCaustics();
   chainKur();
   renderSound(); renderStartBest();
