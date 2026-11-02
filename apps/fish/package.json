@@ -1,0 +1,20 @@
+{
+  "name": "uzigames-fish-app",
+  "private": true,
+  "description": "Fish as an iOS app (Capacitor). The game itself lives in lab/fish/.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "sync": "npm run build && npx cap sync ios",
+    "ios": "npm run build && npx cap sync ios && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/ios": "^8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
+    "@fontsource/bagel-fat-one": "^5.3.0",
+    "@fontsource/figtree": "^5.3.0"
+  }
+}

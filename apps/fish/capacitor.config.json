@@ -1,0 +1,11 @@
+{
+  "appId": "com.uzigames.fish",
+  "appName": "Fish",
+  "webDir": "www",
+  "backgroundColor": "#0f3d40",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0f3d40",
+    "scrollEnabled": false
+  }
+}

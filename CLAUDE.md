@@ -14,7 +14,7 @@ Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Baba
 index.html         uzigames.com stüdyo sayfası (herkese açık, hesap yok)
 robots.txt         /lab/ ve /hesap/ arama motorlarına kapalı
 vercel.json        Vercel ayarı (adresler / ile biter) + eski adreslerden /lab/'a yönlendirmeler
-.vercelignore      kökteki fish/ (sunucu), supabase/ ve .md dosyaları siteye çıkmaz (kalıplar / ile başlar, yoksa lab/fish de gider)
+.vercelignore      kökteki fish/ (sunucu), supabase/, apps/ ve .md dosyaları siteye çıkmaz (kalıplar / ile başlar, yoksa lab/fish de gider)
 hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya) + nasildi.js ("Nasıldı?" geri bildirim penceresi) + oda.js (ortak "Arkadaşlarla oyna" odaları)
 lab/index.html     Lab ana sayfası (Uzay'ın sayfası); oyunları lab/oyunlar.json'dan okur
 lab/oyunlar.json   oyun listesi: slug, ad, açıklama, not, listed
@@ -34,6 +34,7 @@ lab/balon-yarisi/  Balon Yarışı: botla ya da arkadaşlarla (odalar) matematik
 lab/karinca-yolu/  Karınca Yolu: yuva kapmaca strateji; sık kullanılan yol feromon izi olup karıncaları hızlandırır. 8 bölüm (bilgisayara karşı) + aynı ekranda iki kişi. Fontlar dosyaya gömülü
 fish/sunucu/       Lab'ın oda sunucusu: Fish, Tank Arenası, Kar Savaşı ve ortak odalar (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
 supabase/          veritabanı migration'ları
+apps/fish/         Fish'in iOS uygulaması (Capacitor). Oyunu lab/fish/'ten alır; ayrıntı apps/fish/CLAUDE.md
 ```
 
 Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışırken onu da oku.
@@ -126,7 +127,8 @@ Yeni oyunlar önce Lab'a girer.
   - Karınca Yolu: `karinca-yolu:progress` (bölüm başına yıldız, `all` = tüm bölümler açık). Ses tercihi `karinca-yolu:sound` cihazda kalır. Bölümler sırayla açılır; "Tüm bölümleri aç" Lab'da sadece yöneticilere görünür. Not: bölüm başı, bölüm sonu (kazandı/kaybetti, yıldız, süre), iki kişilik maç sonucu. Odası yok. Deneme: sayfa içi `window.karincaYolu` (Game, LEVELS, UI).
   - Sur Muhafızı: `sur-muhafizi-best` (en iyi dalga), `sur-muhafizi-kayit` (tahta temizken alınan savaş görüntüsü: dalga başlarken ve dalga püskürtülünce). Açılışta kayıt varsa "Kaldığın yerden devam?" sorulur. Oyun bitince kayıt silinir. Not: dalga ve can.
     Odalar (üstteki "Arkadaşlarla"): herkes aynı haritada aynı dalgalara karşı kendi kalesini kendi hızında korur; kurucu süreyi seçer (10/15/25 dk). Süre bitince ya da bütün kaleler düşünce en uzağa giden kazanır (puan = dalga × 100 + can; düşen kalede o dalga sayılmaz). Oda savaşı tek kişilik kaydı (`sur-muhafizi-kayit`) değiştirmez; odadan çıkınca "Kaldığın yerden devam?" yine sorulur. Skor `sur-muhafizi-oda`.
-- Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
+- App Store sürümleri `apps/<oyun>/` altında (şimdilik Fish). İlk sürüm hesapsız, tek kişilik ve internetsiz çalışır.
+- Bir oyun ayrıca (App Store ya da başka bir adres) hesaplarla yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 
 ## Paylaşım görselleri
 
