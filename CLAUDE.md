@@ -2,11 +2,11 @@
 
 Uzay ile babası Umut'un oyun stüdyosu **Uzi Games** (uzigames.com). Repo adı şimdilik `studio`.
 
-- `uzigames.com/` herkese açık stüdyo sayfası. Henüz yayınlanmış oyun yok, "yakında" diyor. Arama motorlarına açık, giriş istemez.
+- `uzigames.com/` herkese açık stüdyo sayfası. Henüz yayınlanmış oyun yok, "Coming soon" diyor. Sayfa sadece İngilizce; ortada Lab'a giden büyük "Enter the Lab" düğmesi var. Arama motorlarına açık, giriş istemez.
 - `uzigames.com/lab/` Lab: Uzay'ın sayfası ve bütün deneme oyunları. Seçilen kişilere açılır, giriş ister, arama motorlarına kapalı (`noindex`, `robots.txt`). Burada tutan oyunlar sonra ilgili platformlarda (App Store, Google Play, web portalları) yayınlanır.
 - Her oyun kendi klasöründe, kendi adresinde açılır: `/lab/<slug>/`.
 
-Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Babamla birlikte yaptığımız oyunlar", "Merhaba, ben Uzay!". Yeni metin eklerken bu sesi koru.
+Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Babamla birlikte yaptığımız oyunlar", "Merhaba, ben Uzay!" (stüdyo sayfasında İngilizce: "Hi, I'm Uzay!"). Yeni metin eklerken bu sesi koru.
 
 ## Yapı
 
