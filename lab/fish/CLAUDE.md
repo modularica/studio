@@ -22,7 +22,8 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 - Odalarda her sayfa kendi desenini `merhaba`'da yollar, sunucu diğerlerine iletir; diğer koi'ler o desende çizilir (desen yollamayan eski sayfalarda oyuncunun renginde lekeler). İsim etiketi ve haritadaki nokta oyuncunun renginde kalır.
 - İnci: suda arada bir inci belirir, üstünden geçince +3 (odada sadece sana görünür). Tur sonunda her iki balığa 1, her 10 cm'ye 1 inci; odada birinciye +10. Gerçek para yok.
 - Gizli at: F11 (dizüstünde fn+F11), H tuşu ya da başlıktaki "Fish" yazısına 2,5 sn içinde 5 kez dokunmak koi'yi eyerli bir ata çevirir (`atMi`, stil `AT`, çizim `drawHorse`); aynı tuşla geri döner. Sadece görünüş: boy, hız, çarpışma aynı. Kaydedilmez, sayfa yenilenince koi'ye döner. Odada sayfa `desen {d: 'at'}` yollar, diğerleri de atı görür.
-- Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar (`__fish.atResmi(faz, bükülme)` atı büyük çizip resim adresi verir).
+- Gizli palyaço: AltGr+3 (Türkçe klavyede # tuşu; Mac'te Option+3) koi'yi durmadan dönen bir palyaço yüzüne çevirir (`kilik = 'palyaco'`, çizim `drawPalyaco`): yaka, gökkuşağı peruk, külah, kırmızı burun. Yüz koi'nin ön yarısının üstünde (yediği ve ısırıldığı yer) döner, yön tuşları/joystick yine yönetir. Dönüşürken korna sesi ve konfeti. At ile palyaço aynı anda olmaz (`kilik`: '' / 'at' / 'palyaco'); aynı tuş geri çevirir. Odada `desen {d: 'palyaco'}`.
+- Deneme: `localStorage.setItem('fish.debug', '1')` sayfanın içini `window.__fish` olarak açar (`__fish.atResmi(faz, bükülme, 'at' | 'palyaco')` atı ya da palyaçoyu büyük çizip resim adresi verir).
 
 ## Tek kişilik sürümün yapısı
 
