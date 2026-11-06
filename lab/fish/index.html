@@ -2034,14 +2034,14 @@ function updateFish(dt) {
     const tr = clamp(4.6 * Math.pow(8 / f.l, .25), 1.5, 6);
     let ta = f.angle, ts = f.cruise, turn = tr;
     f.cool -= dt;
-    if (fleeOn && rel < .9 && dp < P.lShow * 2.4 + f.l * 2) {
+    if (fleeOn && rel < .9 && dp < P.lShow * 2 + f.l * 1.6) { // kids said small fish kept getting away: they notice you later and swim slower
       f.jukeT -= dt; if (f.jukeT <= 0) { f.juke = rand(-.75, .75); f.jukeT = rand(.3, .8); }
-      ta = Math.atan2(-dyp, -dxp) + f.juke; ts = f.l * 3.1 * hizCarpani(f.l); turn = tr * 1.3; f.mode = 'flee';
+      ta = Math.atan2(-dyp, -dxp) + f.juke; ts = f.l * 2.6 * hizCarpani(f.l); turn = tr * 1.2; f.mode = 'flee';
     } else if (live && rel > 1.1 && f.hungry && f.cool <= 0 && P.invuln <= 0 && P.grace <= 0 && !P.gizli && dp < f.l * 2.2 + P.lShow * 3) {
       const lead = Math.min(.5, dp / (f.l * 4));
       ta = Math.atan2(dyp + Math.sin(P.angle) * P.speed * lead, dxp + Math.cos(P.angle) * P.speed * lead);
-      ts = Math.min(f.l * 2.6 * hizCarpani(f.l), 3.6 * P.lShow * hizCarpani(P.lShow) * .86); f.mode = 'chase';
-      f.chaseT += dt; if (f.chaseT > 3.8) { f.cool = rand(3.5, 6); f.chaseT = 0; }
+      ts = Math.min(f.l * 2.4 * hizCarpani(f.l), 3.6 * P.lShow * hizCarpani(P.lShow) * .78); f.mode = 'chase'; // "big fish are too fast": slower and they give up sooner
+      f.chaseT += dt; if (f.chaseT > 3) { f.cool = rand(3.5, 6); f.chaseT = 0; }
     } else {
       f.wanderT -= dt; if (f.wanderT <= 0) { f.wander = f.angle + rand(-1.1, 1.1); f.wanderT = rand(1.5, 4); }
       ta = f.wander; f.mode = 'wander';
