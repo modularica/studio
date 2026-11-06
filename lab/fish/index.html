@@ -420,6 +420,7 @@ body:not(.odada) #cikBtn{display:none}
     <div class="xp-son" id="overXp" hidden></div>
     <button class="btn" id="againBtn" type="button">Swim again</button>
     <button class="btn ghost" id="overMenuBtn" type="button">Menu</button>
+    <button class="btn ghost" id="gcBtn" type="button" hidden>Leaderboard</button>
     <button class="btn ghost" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
   </div>
 </section>
@@ -1297,6 +1298,7 @@ function gameOver(f) {
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
     : null;
+  if (window.uygulama && uygulama.skor) uygulama.skor(P.l); // iOS app: Game Center
   setTimeout(() => showOver(isBest), 1100);
 }
 function showOver(isBest) {
@@ -1369,6 +1371,15 @@ function lbYukle() {
     () => { if (no === lbIstek) $('lbList').replaceChildren(mk('li', 'lb-empty', "Couldn't load the leaderboard.")); }
   );
 }
+// iOS app (no player accounts): the Leaderboard buttons open Game Center instead. apps/fish/uygulama.js
+// sets uygulama.gameCenter once the player is signed in and fires a 'gamecenter' event.
+function gcGoster() {
+  if (window.Hesap || !(window.uygulama && uygulama.gameCenter)) return;
+  $('lbBtn').hidden = false; $('gcBtn').hidden = false;
+}
+addEventListener('gamecenter', gcGoster); gcGoster();
+$('gcBtn').addEventListener('click', () => uygulama.liderlik());
+if (!window.Hesap) $('lbBtn').addEventListener('click', () => { if (window.uygulama && uygulama.gameCenter) uygulama.liderlik(); });
 if (window.Hesap) {
   $('lbBtn').hidden = false;
   $('lbBtn').addEventListener('click', () => lbAc('fish', startOv));
