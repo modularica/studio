@@ -1,22 +1,22 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Uzi Games</title>
-<meta name="description" content="Uzay ve babasının birlikte oyun yaptığı küçük bir stüdyo. İlk oyunlarımız çok yakında burada.">
+<meta name="description" content="A tiny studio where Uzay and his dad make games together. Our first games are coming soon.">
 <link rel="canonical" href="https://uzigames.com/">
 <meta name="theme-color" content="#fbf6ec">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://uzigames.com/">
 <meta property="og:title" content="Uzi Games">
-<meta property="og:description" content="Uzay ve babasının birlikte oyun yaptığı küçük bir stüdyo. İlk oyunlarımız çok yakında burada.">
+<meta property="og:description" content="A tiny studio where Uzay and his dad make games together. Our first games are coming soon.">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@500;600;700&display=swap">
 <style>
-/* Layout: one centered column on squared notebook paper — a badge, the bobbing wordmark, a short hello in Turkish and English; a quiet footer with the Lab link */
+/* Layout: one centered column on squared notebook paper — a badge, the bobbing wordmark, a short hello and a big button into the Lab; a quiet footer */
 :root{
   --paper:#fbf6ec;
   --grid:rgba(35,67,196,.07);
@@ -67,7 +67,19 @@ main{
 .logo i:nth-child(5){animation-delay:-.35s}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
 .merhaba{margin:34px 0 0;max-width:30ch;font-size:clamp(18px,4.6vw,21px);line-height:1.5;font-weight:600;text-wrap:balance}
-.en{margin:12px 0 0;max-width:36ch;font-size:15px;line-height:1.5;color:var(--ink-dim);text-wrap:balance}
+.lab{
+  margin:34px 0 0;display:inline-flex;align-items:center;gap:.45em;
+  padding:18px 34px 20px;border-radius:999px;background:var(--koi);color:#1d2433;
+  font-family:var(--font-display);font-weight:400;font-size:clamp(26px,7vw,34px);line-height:1;
+  text-decoration:none;box-shadow:0 6px 0 var(--koi-deep);
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+.lab .ok{display:inline-block;transition:transform .2s ease}
+.lab:hover .ok{transform:translateX(4px)}
+.lab:active{transform:translateY(4px);box-shadow:0 2px 0 var(--koi-deep)}
+.lab:focus-visible{outline:3px solid var(--blue);outline-offset:4px}
+@media (prefers-color-scheme:dark){.lab:focus-visible{outline-color:#8aa0ff}}
+.lab-not{margin:16px 0 0;max-width:34ch;font-size:15px;line-height:1.5;color:var(--ink-dim);text-wrap:balance}
 footer{
   width:100%;max-width:640px;margin:0 auto;
   display:flex;justify-content:space-between;align-items:center;gap:12px;
@@ -82,13 +94,14 @@ footer a:focus-visible{outline:2px solid var(--koi);outline-offset:3px;border-ra
 </head>
 <body>
 <main>
-  <p class="rozet">Yakında · <span lang="en">Coming soon</span></p>
+  <p class="rozet">Coming soon</p>
   <h1 class="logo" aria-label="Uzi Games">
     <span class="s" aria-hidden="true"><i>u</i><i>z</i><i>i</i></span>
     <span class="s" aria-hidden="true"><i>g</i><i>a</i><i>m</i><i>e</i><i>s</i></span>
   </h1>
-  <p class="merhaba">Merhaba, ben Uzay! Babamla birlikte oyunlar yapıyoruz. İlk oyunlarımız çok yakında burada.</p>
-  <p class="en" lang="en">Hi, I’m Uzay! My dad and I make games together. Our first games are coming soon.</p>
+  <p class="merhaba">Hi, I’m Uzay! My dad and I make games together. Our first games are coming soon.</p>
+  <a class="lab" href="/lab/">Enter the Lab <span class="ok" aria-hidden="true">→</span></a>
+  <p class="lab-not">Come and play the games we’re still testing. For friends and family, with a sign-in.</p>
 </main>
 <footer>
   <span>© 2026 Uzi Games</span>
