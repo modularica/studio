@@ -24,14 +24,16 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin, GKGameCenterControll
         }
         var answered = false
         DispatchQueue.main.async {
-            player.authenticateHandler = { [weak self] viewController, _ in
+            player.authenticateHandler = { [weak self] viewController, error in
                 if let viewController = viewController {
                     self?.bridge?.viewController?.present(viewController, animated: true)
                     return
                 }
                 if answered { return }
                 answered = true
-                call.resolve(["signedIn": player.isAuthenticated])
+                var result: [String: Any] = ["signedIn": player.isAuthenticated]
+                if let error = error { result["error"] = error.localizedDescription }
+                call.resolve(result)
             }
         }
     }

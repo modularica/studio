@@ -15,21 +15,34 @@
   function enIyi() { try { return +JSON.parse(localStorage.getItem('fish.best')) || 0; } catch (e) { return 0; } }
   function gonder(cm) {
     if (!window.uygulama.gameCenter || !(cm > 0)) return;
-    sessiz(GameCenter.submitScore({ leaderboardId: LIDERLIK, score: Math.round(cm * 10) }));
+    GameCenter.submitScore({ leaderboardId: LIDERLIK, score: Math.round(cm * 10) }).then(
+      function (r) { console.log('[gamecenter] score', Math.round(cm * 10), JSON.stringify(r)); },
+      function (e) { console.log('[gamecenter] score failed', e && e.message); });
   }
   // Sign in at launch (iOS shows its own Game Center sheet the first time, a "Welcome back" banner after).
   // Then send the best length already on this device, so players who were here before 1.0 show up too.
-  sessiz(GameCenter.signIn().then(function (r) {
-    if (!r || !r.signedIn) return;
-    window.uygulama.gameCenter = true;
-    gonder(enIyi());
-    window.dispatchEvent(new Event('gamecenter'));
-  }));
+  // If that fails (signed out, or sign-in sheet dismissed), the Leaderboard buttons try again.
+  // console.log lines show up in Xcode's console when the app runs from Xcode.
+  function girisYap() {
+    return GameCenter.signIn().then(function (r) {
+      console.log('[gamecenter] signIn', JSON.stringify(r));
+      if (!r || !r.signedIn) return false;
+      if (!window.uygulama.gameCenter) { window.uygulama.gameCenter = true; gonder(enIyi()); }
+      return true;
+    }, function (e) { console.log('[gamecenter] signIn failed', e && e.message); return false; });
+  }
+  girisYap();
   window.uygulama = {
     gameCenter: false, // true once the player is signed in to Game Center
     // a finished round's length in cm (gameOver in lab/fish/index.html)
     skor: function (cm) { gonder(cm); },
-    liderlik: function () { sessiz(GameCenter.showLeaderboard({ leaderboardId: LIDERLIK })); },
+    // Leaderboard buttons: resolves true if Game Center's leaderboard opened, false if the player isn't signed in.
+    liderlik: function () {
+      return (window.uygulama.gameCenter ? Promise.resolve(true) : girisYap()).then(function (girdi) {
+        if (!girdi) return false;
+        return GameCenter.showLeaderboard({ leaderboardId: LIDERLIK }).then(function (r) { return !!(r && r.shown); });
+      }).catch(function (e) { console.log('[gamecenter] leaderboard failed', e && e.message); return false; });
+    },
     // tur: yut (ate a fish, guc = its size next to yours, 0..1), isir (bitten), olum (game over),
     // seviye (level up, new food, new koi), inci (pearl). iPads have no Taptic Engine: these do nothing there.
     titret: function (tur, guc) {

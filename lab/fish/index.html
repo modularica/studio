@@ -1371,15 +1371,16 @@ function lbYukle() {
     () => { if (no === lbIstek) $('lbList').replaceChildren(mk('li', 'lb-empty', "Couldn't load the leaderboard.")); }
   );
 }
-// iOS app (no player accounts): the Leaderboard buttons open Game Center instead. apps/fish/uygulama.js
-// sets uygulama.gameCenter once the player is signed in and fires a 'gamecenter' event.
-function gcGoster() {
-  if (window.Hesap || !(window.uygulama && uygulama.gameCenter)) return;
-  $('lbBtn').hidden = false; $('gcBtn').hidden = false;
+// iOS app (no player accounts): the Leaderboard buttons open Game Center instead (apps/fish/uygulama.js).
+// uygulama.liderlik() resolves false when the player isn't signed in to Game Center; the button says where to sign in.
+if (!window.Hesap && window.uygulama && uygulama.liderlik) {
+  const gcAc = btn => uygulama.liderlik().then(acildi => {
+    if (acildi || btn.dataset.yazi) return;
+    btn.dataset.yazi = btn.textContent; btn.textContent = 'Sign in to Game Center in Settings';
+    setTimeout(() => { btn.textContent = btn.dataset.yazi; delete btn.dataset.yazi; }, 3500);
+  });
+  for (const id of ['lbBtn', 'gcBtn']) { $(id).hidden = false; $(id).addEventListener('click', () => gcAc($(id))); }
 }
-addEventListener('gamecenter', gcGoster); gcGoster();
-$('gcBtn').addEventListener('click', () => uygulama.liderlik());
-if (!window.Hesap) $('lbBtn').addEventListener('click', () => { if (window.uygulama && uygulama.gameCenter) uygulama.liderlik(); });
 if (window.Hesap) {
   $('lbBtn').hidden = false;
   $('lbBtn').addEventListener('click', () => lbAc('fish', startOv));
