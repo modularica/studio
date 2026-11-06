@@ -13,6 +13,7 @@ Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Baba
 ```
 index.html         uzigames.com stüdyo sayfası (herkese açık, hesap yok)
 robots.txt         /lab/ ve /hesap/ arama motorlarına kapalı
+privacy/, support/ App Store'un istediği gizlilik ve destek sayfaları (İngilizce, herkese açık, iletişim hello@uzigames.com); görünüm legal.css. Uygulamalara veri toplama ya da oyun eklenirse gizlilik metnini güncelle
 vercel.json        Vercel ayarı (adresler / ile biter) + eski adreslerden /lab/'a yönlendirmeler
 .vercelignore      kökteki fish/ (sunucu), supabase/, apps/ ve .md dosyaları siteye çıkmaz (kalıplar / ile başlar, yoksa lab/fish de gider)
 hesap/             ortak hesap sistemi: hesap.js + supabase.js (supabase-js 2.117.3 UMD, kopya) + nasildi.js ("Nasıldı?" geri bildirim penceresi) + oda.js (ortak "Arkadaşlarla oyna" odaları)

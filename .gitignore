@@ -7,3 +7,6 @@ dist/
 .wrangler/
 .dev.vars
 apps/fish/www/
+apps/fish/ios/App/App/public/
+apps/fish/ios/App/App/capacitor.config.json
+apps/fish/ios/App/App/config.xml
