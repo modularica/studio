@@ -1178,7 +1178,7 @@ function koiCiz() {
   }));
   const not = $('koiNot'), al = $('koiAl');
   al.hidden = true;
-  if (sahip) not.textContent = d.id === seciliDesen ? 'Your koi wears this pattern, alone and in rooms.' : '';
+  if (sahip) not.textContent = d.id === seciliDesen ? (window.Hesap ? 'Your koi wears this pattern, alone and in rooms.' : 'Your koi is wearing this pattern.') : ''; // no rooms without the Lab account system (iOS app)
   else if (d.level) not.textContent = `Opens at level ${d.level}. You’re level ${L}.`;
   else {
     al.hidden = false;

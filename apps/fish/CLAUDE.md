@@ -1,4 +1,4 @@
-# Fish — iOS uygulaması
+# Fish — iOS uygulaması (App Store adı: Little Koi)
 
 Fish'in App Store sürümü. Capacitor 8 ile `lab/fish/index.html` bir iOS uygulamasına sarılır. Oyunun kendisi burada değil, `lab/fish/` klasöründe; oyunu orada düzelt, uygulama oradan alır.
 
@@ -8,9 +8,11 @@ Fish'in App Store sürümü. Capacitor 8 ile `lab/fish/index.html` bir iOS uygul
   - `/hesap/...` betiklerini çıkarır. Uygulamada Lab hesap sistemi yok; oyun `window.Hesap` yoksa leaderboard ve odaları kendisi gizler. Kalan tek kişilik oyun internetsiz çalışır.
   - Google Fonts yerine fontları (`@fontsource`, sadece latin + latin-ext woff2) `www/fonts/` içine koyar.
   - "Nasıldı?" düğmelerini gizler (Lab hesap sistemine yazar).
+  - Başlığı ve sayfa adını "Little Koi" yapar (iki satırlık başlık). Lab'da oyunun adı hâlâ Fish.
   - Oyundan önce `capacitor.js` (Capacitor çekirdeği, paketleyicisiz) ve `uygulama.js`'i yükler.
   - Her değişiklik `lab/fish/index.html`'de tam bir kez eşleşmeli; eşleşmezse derleme durur. Oyunun `<head>` kısmını değiştirirsen burayı da güncelle.
 - `uygulama.js`: oyunla iOS arasındaki yapıştırıcı, sadece uygulamada yüklenir. `window.uygulama.titret(tur, guc)`: titreşim (`@capacitor/haptics`). Oyun bunu ses efektlerinden çağırır: `yut` (hafif; yenen balık büyükse orta, 45 ms'den sık değil), `isir` (ağır), `olum` (hata), `seviye` (başarı), `inci` (hafif). iPad'lerde titreşim motoru yok, orada hiçbir şey olmaz; sadece iPhone'da hissedilir.
+- Her yüklemede build numarası artmalı: `project.pbxproj` → `CURRENT_PROJECT_VERSION` (1.0 için 2. build yüklendi). Sürüm `MARKETING_VERSION`.
 - `capacitor.config.json`: uygulama kimliği `com.uzigames.fish` (App Store Connect'te bir kez kaydedilince değişmez), görünen ad, su rengi arka plan.
 - `ios/`: Xcode projesi (Swift Package Manager; CocoaPods yok).
   - `Info.plist`: durum çubuğu gizli, `ITSAppUsesNonExemptEncryption = false` (sadece HTTPS kullanıyoruz; yükleme sırasında şifreleme sorusu çıkmaz).

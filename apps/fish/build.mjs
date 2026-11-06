@@ -30,9 +30,15 @@ edit(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">\n/, 
 edit(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>\n/, '', 'fonts.gstatic preconnect');
 edit(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2[^"]*">/, '<link rel="stylesheet" href="fonts/fonts.css">', 'Google Fonts stylesheet');
 html = html.replace(/[ \t]*<meta name="robots"[^>]*>\n/, '');
+// The App Store name is "Little Koi" (the Lab still calls the game Fish): two-line bobbing title, page title.
+edit(/<title>Fish<\/title>/, '<title>Little Koi</title>', '<title>');
+edit(/<h1 class="title" aria-label="Fish">.*?<\/h1>/, '<h1 class="title iki" aria-label="Little Koi"><b>' + [...'Little'].map(c => `<span>${c}</span>`).join('') + '</b><b>' + [...'Koi'].map(c => `<span>${c}</span>`).join('') + '</b></h1>', 'start screen title');
 // "Nasıldı?" buttons talk to the Lab account system, which the app doesn't have.
 // capacitor.js (Capacitor core, no bundler) + uygulama.js (haptics etc.) load before the game.
-edit(/<\/head>/, '<style>[data-nasildi]{display:none!important}</style>\n<script src="capacitor.js"></script>\n<script src="uygulama.js"></script>\n</head>', '</head>');
+edit(/<\/head>/, '<style>[data-nasildi]{display:none!important}'
+  + '.title.iki{flex-direction:column;align-items:center;line-height:.8}.title.iki b{display:flex;font-weight:inherit}'
+  + '.title.iki b:first-child{font-size:.42em;color:var(--ink);margin-bottom:.06em}.title.iki b:last-child{font-size:1.08em}'
+  + '.title.iki span:nth-child(5){animation-delay:-.35s}.title.iki span:nth-child(6){animation-delay:-1.75s}</style>\n<script src="capacitor.js"></script>\n<script src="uygulama.js"></script>\n</head>', '</head>');
 
 if (/https?:\/\/(?!www\.w3\.org)/.test(html.replace(/<meta property="og:[^>]*>/g, '').replace(/wss:\/\/[^'"]+/g, ''))) {
   console.warn('build: warning, the game still references an outside address; check that it works offline.');
