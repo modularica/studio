@@ -17,6 +17,7 @@ Uzi Games (uzigames.com): the games Uzay and his dad make together.
 | `/lab/tank/` | Tank Arenası: 2–8 tanks, every hit is a point; against bots or with friends in rooms (server in `fish/sunucu`) |
 | `/lab/balon-yarisi/` | Balon Yarışı: a math race against a bot; four operations, each with its own 8 levels |
 | `/lab/karinca-yolu/` | Karınca Yolu: send ants to capture nests; busy paths glow and speed ants up. 8 levels and same-screen 2 players |
+| `/lab/kis-uykusu-oteli/` | Kış Uykusu Oteli: a hibernation hotel tycoon; seat forest animals in autumn, keep them asleep all winter, get paid in spring, build in summer. Same-screen 2 players |
 
 ## Run locally
 
