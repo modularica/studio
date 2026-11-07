@@ -96,6 +96,7 @@ button:focus-visible { outline: 3px solid var(--mustard); outline-offset: 2px; }
 @keyframes rise { from { transform: translateY(10px); opacity: 0; } }
 .summerbar { pointer-events: auto; display: flex; gap: 10px; width: 100%; max-width: 520px; }
 .summerbar[hidden] { display: none; }
+body.tray .bottom { bottom: calc(var(--sb) + 92px); }
 .summerbar .btn { flex: 1; }
 
 .btn { font: 600 17px/1.1 var(--display); padding: 14px 18px; border-radius: 15px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; box-shadow: 0 3px 12px rgba(20, 20, 30, 0.14); }
@@ -223,36 +224,40 @@ const ROWS = 5;
 const SPECIES = {
   fare: {
     name: 'Fındık faresi', room: 'yuva', price: 12,
-    toss: 0.5, cold: 0.8, heat: 1.0, noise: 0.5, snore: 0, blanket: true,
+    toss: 0.5, cold: 0.8, heat: 1.0, noise: 0.5, snore: 0, blanket: true, food: ['findik'],
     note: 'Dünyanın en uykucu hayvanı. Kolay kolay uyanmaz.',
   },
   kirpi: {
     name: 'Kirpi', room: 'yuva', price: 15,
-    toss: 1.3, cold: 1.3, heat: 0.8, noise: 1.0, snore: 0, blanket: true,
+    toss: 1.3, cold: 1.3, heat: 0.8, noise: 1.0, snore: 0, blanket: true, food: ['bocek'],
     note: 'Üşümeyi hiç sevmez. Battaniyesine göz kulak ol.',
   },
   kurbaga: {
     name: 'Kurbağa', room: 'havuz', price: 22,
-    toss: 0.7, cold: 0.4, heat: 1.8, noise: 0.8, snore: 0, blanket: true,
+    toss: 0.7, cold: 0.4, heat: 1.8, noise: 0.8, snore: 0, blanket: true, food: ['sinek'],
     note: 'Serin çamuru sever. Soba fazla yanarsa bunalır.',
   },
   ayi: {
     name: 'Ayı', room: 'magara', price: 45,
-    toss: 0.8, cold: 0.6, heat: 1.2, noise: 0.6, snore: 1.0, blanket: true,
+    toss: 0.8, cold: 0.6, heat: 1.2, noise: 0.6, snore: 1.0, blanket: true, food: ['bal', 'balik'],
     note: 'En iyi ödeyen misafir. Ama çok horlar, yanındakiler uyanır.',
   },
   porsuk: {
     name: 'Porsuk', room: 'oda', price: 32,
-    toss: 1.0, cold: 1.0, heat: 1.0, noise: 1.5, snore: 0.45, blanket: true,
+    toss: 1.0, cold: 1.0, heat: 1.0, noise: 1.5, snore: 0.45, blanket: true, food: ['solucan'],
     note: 'Sese çok hassas. Arada bir kendisi de horlar.',
   },
   yarasa: {
     name: 'Yarasa', room: 'tunek', price: 38,
-    toss: 0, cold: 0.9, heat: 1.6, noise: 1.6, snore: 0, blanket: false,
+    toss: 0, cold: 0.9, heat: 1.6, noise: 1.6, snore: 0, blanket: false, food: ['guve'],
     note: 'Kanatlarına sarılıp baş aşağı uyur. Sesi ve sıcağı sevmez.',
   },
 };
 const SPECIES_ORDER = ['fare', 'kirpi', 'kurbaga', 'ayi', 'porsuk', 'yarasa'];
+
+// What guests dream about in winter. The tray at the bottom offers these.
+const FOODS = { findik: 'Fındık', bocek: 'Böcek', sinek: 'Sinek', bal: 'Bal', balik: 'Balık', solucan: 'Solucan', guve: 'Güve' };
+const FOOD_ORDER = ['findik', 'bocek', 'sinek', 'bal', 'balik', 'solucan', 'guve'];
 
 // Room types. fame = hearts needed before this room can be built.
 const ROOMS = {
@@ -362,7 +367,29 @@ const TUNE = {
   baykusFly: 1.0,
   geyikBelow: 48,
   geyikCooldown: 3.2,
+
+  // Fun in winter: nuts falling with the snow, dreams, the northern lights.
+  dropGap: [4.0, 7.0],   // seconds between falling nuts
+  dropFall: [5.5, 7.0],  // seconds a nut takes to reach the ground
+  goldChance: 0.08,
+  peaceFill: 5,          // per second while nobody needs anything
+  peaceDrain: 2,         // per second while something is wrong
+  peaceFix: 5,           // a fix
+  peaceQuick: 10,        // a fix within quickT seconds
+  peaceFeed: 8,          // a dream come true
+  quickT: 2,
+  auroraLen: 7,
+  auroraGap: 0.45,       // nuts rain this often under the northern lights
+  auroraFall: 3.2,
+  auroraGold: 0.15,
+  auroraRegen: 3,
+  dreamFirst: (year) => (year === 1 ? 13 : 6),
+  dreamGap: (n) => Math.max(5, 12 - n * 0.5),
+  dreamLen: 10,
+  dreamSleep: 25,
+  dreamTip: 0.2,
 };
+const dropValue = (year, gold) => (gold ? 3 : 1) * (1 + Math.floor((year - 1) / 4));
 
 function guestsWanted(save) {
   return 2 + starsFor(save.fame) + Math.floor(save.year / 2) + (save.upgrades.ilan ? 3 : 0);
@@ -526,7 +553,7 @@ class Game {
     run.queue.splice(run.queue.indexOf(q), 1);
     run.guests.push({
       id: q.id, sp: q.sp, cell, sleep: 100, blanket: true, offT: 0,
-      snore: 0, rest: 6 + this.rand() * 8, woke: false, gone: false, drain: 0, by: null,
+      snore: 0, rest: 6 + this.rand() * 8, woke: false, gone: false, drain: 0, by: null, dream: null,
     });
     this.emit('placed', { id, cell, sp: q.sp });
     return 'ok';
@@ -584,6 +611,11 @@ class Game {
     for (let k = 0; k < s.staff.sincap; k++) run.squirrels.push({ x: SQ_HOME(k).x, y: SQ_HOME(k).y, state: 'idle', target: null, t: 0, k });
     run.owl = s.staff.baykus ? { state: 'perch', target: null, t: 0, col: 3 } : null;
     run.deer = s.staff.geyik ? { cd: 0, t: 0 } : null;
+    // the fun part: falling nuts, dreams and the northern lights
+    run.drops = []; run.dropId = 1; run.nextDrop = 2.5 + this.rand() * 2; run.caught = 0;
+    run.peace = 0; run.aurora = 0; run.auroras = 0;
+    run.dreams = 0; run.dreamTip = 0; run.nextDream = TUNE.dreamFirst(s.year) + this.rand() * 3;
+    run.foods = FOOD_ORDER.filter((f) => run.guests.some((g) => SPECIES[g.sp].food.includes(f)));
     this.emit('winter', { len: run.len });
     if (!run.guests.length) run.t = run.len;
   }
@@ -597,6 +629,7 @@ class Game {
       if (run.logCd > 0) return false;
       run.logCd = TUNE.logCooldown;
     }
+    if (by !== 'geyik' && run.temp + this.pendingHeat() < TUNE.ZONE[0] + 5) this.peaceBonus(false, { cabin: true });
     run.heat.push(TUNE.logHeat);
     this.emit('log', { by: by || 'player' });
     return true;
@@ -604,13 +637,55 @@ class Game {
 
   pendingHeat() { return this.run.heat.reduce((a, b) => a + b, 0); }
 
+  // Fixing something fills the northern-lights bar; a quick fix fills it more.
+  peaceBonus(quick, where) {
+    const run = this.run;
+    if (run.aurora > 0) return;
+    run.peace = Math.min(100, run.peace + (quick ? TUNE.peaceQuick : TUNE.peaceFix));
+    if (quick) this.emit('quick', where);
+  }
+
+  // How many things need the player right now.
+  issueCount() {
+    const run = this.run, T = TUNE;
+    let n = run.wps.length + (run.temp < T.ZONE[0] || run.temp > T.ZONE[1] ? 1 : 0);
+    for (const g of run.guests) if (!g.gone && ((!g.blanket && SPECIES[g.sp].blanket) || g.snore > 0)) n++;
+    return n;
+  }
+
+  catchDrop(id) {
+    if (this.phase !== 'winter') return 0;
+    const run = this.run, d = run.drops.find((x) => x.id === id);
+    if (!d) return 0;
+    run.drops.splice(run.drops.indexOf(d), 1);
+    const v = dropValue(this.save.year, d.gold);
+    run.caught += v;
+    this.emit('caught', { id, x: d.x, p: d.p, ph: d.ph, v, gold: d.gold });
+    return v;
+  }
+
+  feed(cell, item) {
+    if (this.phase !== 'winter') return 'phase';
+    const run = this.run, g = this.roomGuest(cell);
+    if (!g || g.woke || !g.dream) return 'none';
+    if (g.dream.item !== item) return 'wrong';
+    g.dream = null;
+    g.sleep = Math.min(100, g.sleep + TUNE.dreamSleep);
+    const tip = Math.max(1, Math.round(SPECIES[g.sp].price * LEVELS[this.save.grid[cell].lvl].pay * TUNE.dreamTip));
+    run.dreamTip += tip; run.dreams++;
+    if (run.aurora <= 0) run.peace = Math.min(100, run.peace + TUNE.peaceFeed);
+    this.emit('fed', { cell, item, tip, sp: g.sp });
+    return 'ok';
+  }
+
   tapRoom(cell) {
     if (this.phase !== 'winter') return false;
     const g = this.roomGuest(cell);
     if (!g || g.woke) return false;
-    let did = false;
-    if (!g.blanket) { g.blanket = true; g.offT = 0; this.emit('tucked', { cell, by: 'player' }); did = true; }
-    if (g.snore > 0) { g.snore = 0; g.rest = TUNE.snoreRest; this.emit('rolled', { cell }); did = true; }
+    let did = false, quick = false;
+    if (!g.blanket) { quick = g.offT <= TUNE.quickT; g.blanket = true; g.offT = 0; this.emit('tucked', { cell, by: 'player' }); did = true; }
+    if (g.snore > 0) { quick = quick || TUNE.snoreLen - g.snore <= TUNE.quickT; g.snore = 0; g.rest = TUNE.snoreRest; this.emit('rolled', { cell }); did = true; }
+    if (did) this.peaceBonus(quick, { cell });
     return did;
   }
 
@@ -621,6 +696,7 @@ class Game {
     if (!wp) return false;
     run.wps.splice(run.wps.indexOf(wp), 1);
     this.emit('shoo', { id, col: wp.col, by: by || 'player' });
+    if (!by || by === 'player') this.peaceBonus(wp.t <= TUNE.quickT, { col: wp.col });
     return true;
   }
 
@@ -636,7 +712,7 @@ class Game {
       run.ayazWarned = true; this.emit('ayazWarn');
     }
     if (run.ayaz > 0) { run.ayaz -= dt; if (run.ayaz <= 0) this.emit('ayazEnd'); }
-    const decay = T.decay * (s.year === 1 ? 0.75 : 1) * (s.upgrades.duvar ? T.decayDuvar : 1) * (run.ayaz > 0 ? T.ayazDecay : 1);
+    const decay = T.decay * (s.year === 1 ? 0.75 : 1) * (s.upgrades.duvar ? T.decayDuvar : 1) * (run.ayaz > 0 ? T.ayazDecay : 1) * (run.aurora > 0 ? 0.5 : 1);
     run.temp -= decay * dt;
     for (let k = run.heat.length - 1; k >= 0; k--) {
       const add = Math.min(run.heat[k], T.logHeat * dt / T.logTime);
@@ -652,7 +728,8 @@ class Game {
 
     // Woodpeckers.
     const awake = run.guests.filter((g) => !g.gone);
-    if (s.year >= T.wpFrom && awake.length) {
+    const calm = run.aurora > 0;
+    if (s.year >= T.wpFrom && awake.length && !calm) {
       run.nextWp -= dt;
       const maxWp = 1 + Math.floor(s.year / 5);
       if (run.nextWp <= 0 && run.t < run.len - 4) {
@@ -679,11 +756,11 @@ class Game {
     for (const g of awake) {
       const sp = SPECIES[g.sp];
       g.rest -= dt;
-      if (sp.blanket && g.blanket && this.rand() < bRate * sp.toss * dt) {
+      if (!calm && sp.blanket && g.blanket && this.rand() < bRate * sp.toss * dt) {
         g.blanket = false; g.offT = 0; this.emit('blanket', { cell: g.cell, sp: g.sp });
       }
       if (!g.blanket) g.offT += dt;
-      if (sp.snore && g.snore <= 0 && g.rest <= 0 && this.rand() < T.snoreRate * sp.snore * dt) {
+      if (!calm && sp.snore && g.snore <= 0 && g.rest <= 0 && this.rand() < T.snoreRate * sp.snore * dt) {
         g.snore = T.snoreLen; this.emit('snore', { cell: g.cell, sp: g.sp });
       }
       if (g.snore > 0) {
@@ -709,16 +786,58 @@ class Game {
       d *= LEVELS[s.grid[g.cell].lvl].drain * (ninni ? T.ninniDrain : 1);
       g.drain = d;
       if (d > 0.05) g.sleep -= d * dt;
-      else g.sleep += (T.regen + (ninni ? T.regenNinni : 0)) * dt;
+      else g.sleep += (T.regen + (ninni ? T.regenNinni : 0) + (calm ? T.auroraRegen : 0)) * dt;
       g.sleep = Math.max(0, Math.min(100, g.sleep));
       if (g.sleep <= 0) {
-        g.woke = true; g.gone = true; g.snore = 0;
+        g.woke = true; g.gone = true; g.snore = 0; g.dream = null;
         this.emit('woke', { cell: g.cell, sp: g.sp, id: g.id });
       }
     }
 
     this.updateStaff(dt);
+    this.updateFun(dt, awake);
     if (run.t >= run.len) this.startSpring();
+  }
+
+  updateFun(dt, awake) {
+    const run = this.run, T = TUNE;
+    // nuts falling with the snow (a downpour under the northern lights)
+    run.nextDrop -= dt;
+    if (run.nextDrop <= 0 && run.t < run.len - 1.5) {
+      const a = run.aurora > 0;
+      run.nextDrop = a ? T.auroraGap : T.dropGap[0] + this.rand() * (T.dropGap[1] - T.dropGap[0]);
+      const fall = a ? T.auroraFall : T.dropFall[0] + this.rand() * (T.dropFall[1] - T.dropFall[0]);
+      run.drops.push({ id: run.dropId++, x: 0.05 + this.rand() * 0.9, p: 0, v: 1 / fall, gold: this.rand() < (a ? T.auroraGold : T.goldChance), ph: this.rand() * 6 });
+    }
+    for (const d of run.drops.slice()) { d.p += d.v * dt; if (d.p >= 1) run.drops.splice(run.drops.indexOf(d), 1); }
+    // dreams
+    if (run.aurora <= 0) run.nextDream -= dt;
+    if (run.nextDream <= 0) {
+      run.nextDream = T.dreamGap(awake.length) * (0.8 + 0.4 * this.rand());
+      const cand = awake.filter((g) => !g.dream && g.sleep > 25 && (g.blanket || !SPECIES[g.sp].blanket) && g.snore <= 0);
+      if (cand.length && run.t < run.len - 6) {
+        const g = this.pick(cand);
+        g.dream = { item: this.pick(SPECIES[g.sp].food), t: 0 };
+        this.emit('dream', { cell: g.cell, item: g.dream.item, sp: g.sp });
+      }
+    }
+    for (const g of awake) {
+      if (!g.dream) continue;
+      g.dream.t += dt;
+      if (g.dream.t > T.dreamLen) { g.dream = null; this.emit('dreamGone', { cell: g.cell }); }
+    }
+    // the northern lights
+    if (run.aurora > 0) {
+      run.aurora -= dt;
+      if (run.aurora <= 0) { run.aurora = 0; this.emit('auroraEnd'); }
+    } else if (awake.length) {
+      run.peace += (this.issueCount() ? -T.peaceDrain : T.peaceFill) * dt;
+      run.peace = Math.max(0, Math.min(100, run.peace));
+      if (run.peace >= 100 && run.t < run.len - 3) {
+        run.peace = 0; run.aurora = T.auroraLen; run.auroras++; run.nextDrop = 0.2;
+        this.emit('aurora');
+      }
+    }
   }
 
   updateStaff(dt) {
@@ -797,6 +916,7 @@ class Game {
     this.phase = 'spring';
     run.t = 0;
     run.wps = [];
+    run.drops = [];
     const rows = [];
     let pay = 0, tip = 0, hearts = 0;
     for (const g of run.guests) {
@@ -805,18 +925,20 @@ class Game {
       rows.push({ id: g.id, sp: g.sp, cell: g.cell, sleep: Math.round(g.woke ? 0 : g.sleep), hearts: h, pay: p.pay, tip: p.tip, woke: g.woke });
       pay += p.pay; tip += p.tip; hearts += h;
     }
+    const caught = run.caught || 0, dreamTip = run.dreamTip || 0;
     const starsBefore = starsFor(s.fame);
     const unlockedBefore = ROOM_ORDER.filter((t) => roomUnlocked(s, t));
-    s.money += pay + tip;
+    s.money += pay + tip + caught + dreamTip;
     s.fame += hearts;
     s.total.guests += rows.length;
     s.total.hearts += hearts;
-    s.total.nuts += pay + tip;
+    s.total.nuts += pay + tip + caught + dreamTip;
     s.total.woke += rows.filter((x) => x.woke).length;
     s.year += 1;
     const unlocked = ROOM_ORDER.filter((t) => roomUnlocked(s, t) && !unlockedBefore.includes(t));
     run.results = {
       year: run.year, rows, pay, tip, hearts, left: run.left,
+      caught, dreamTip, dreams: run.dreams || 0, auroras: run.auroras || 0,
       starsBefore, starsAfter: starsFor(s.fame), unlocked,
     };
     this.emit('spring', { results: run.results });
@@ -1095,19 +1217,23 @@ function paintBackground(ctx, season) {
 
 // ---- sky life: aurora, weather particles ---------------------------------
 
-function drawAurora(ctx, t) {
+function drawAurora(ctx, t, k) {
   const { w, top, surfH } = LAY;
   const y0 = top + surfH * 0.05;
+  k = k == null ? 1 : k;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (let band = 0; band < 2; band++) {
+  ctx.globalAlpha = Math.min(1, k);
+  const bands = k > 1.5 ? 4 : 2;
+  for (let band = 0; band < bands; band++) {
     ctx.beginPath();
     for (let x = 0; x <= w; x += 12) {
       const y = y0 + surfH * (0.16 + band * 0.1) + Math.sin(x * 0.008 + t * 0.35 + band * 2) * surfH * 0.07 + Math.sin(x * 0.021 - t * 0.2) * surfH * 0.03;
       if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
-    ctx.lineWidth = surfH * (0.09 - band * 0.03);
-    ctx.strokeStyle = band ? 'rgba(130,190,200,0.10)' : 'rgba(120,210,170,0.13)';
+    ctx.lineWidth = surfH * Math.max(0.03, 0.09 - (band % 2) * 0.03) * (k > 1.5 ? 1.4 : 1);
+    const boost = k > 1.5 ? 3.2 : 1 + k * 0.6;
+    ctx.strokeStyle = ['rgba(120,210,170,', 'rgba(130,190,200,', 'rgba(180,150,230,', 'rgba(140,230,190,'][band] + (0.11 * boost).toFixed(3) + ')';
     ctx.stroke();
   }
   ctx.restore();
@@ -1883,6 +2009,152 @@ function spriteIcon(kind, size) {
   return cv;
 }
 
+// ---- winter fun: food, dreams, falling nuts, the northern lights -------------
+
+function drawFood(ctx, item, x, y, r) {
+  ctx.save();
+  switch (item) {
+    case 'findik': drawNut(ctx, x, y, r * 0.78); break;
+    case 'bal': {
+      ctx.fillStyle = '#D9A13A'; rrPath(ctx, x - r * 0.58, y - r * 0.42, r * 1.16, r * 1.12, r * 0.3); ctx.fill();
+      ctx.fillStyle = '#7C5030'; rrPath(ctx, x - r * 0.64, y - r * 0.68, r * 1.28, r * 0.32, r * 0.1); ctx.fill();
+      ctx.fillStyle = '#F4EAD2'; rrPath(ctx, x - r * 0.42, y - r * 0.12, r * 0.84, r * 0.4, r * 0.08); ctx.fill();
+      ctx.fillStyle = '#E9B44C'; ctx.beginPath(); ctx.arc(x - r * 0.25, y - r * 0.36, r * 0.12, 0, Math.PI); ctx.fill();
+      break;
+    }
+    case 'balik': {
+      ctx.fillStyle = '#6F95B5';
+      ctx.beginPath(); ctx.moveTo(x + r * 0.45, y); ctx.lineTo(x + r * 0.9, y - r * 0.4); ctx.lineTo(x + r * 0.9, y + r * 0.4); ctx.closePath(); ctx.fill();
+      fillEll(ctx, x - r * 0.08, y, r * 0.62, r * 0.36, '#6F95B5');
+      fillEll(ctx, x - r * 0.12, y + r * 0.12, r * 0.42, r * 0.14, '#BFD3E0');
+      fillCirc(ctx, x - r * 0.42, y - r * 0.08, r * 0.08, PAL.ink);
+      break;
+    }
+    case 'bocek': {
+      ctx.strokeStyle = '#3A2A22'; ctx.lineWidth = Math.max(1, r * 0.08); ctx.lineCap = 'round';
+      for (const s of [-1, 1]) for (const k of [-0.25, 0.05, 0.35]) { ctx.beginPath(); ctx.moveTo(x, y + r * k); ctx.lineTo(x + s * r * 0.62, y + r * (k + 0.12)); ctx.stroke(); }
+      fillEll(ctx, x, y + r * 0.08, r * 0.46, r * 0.56, '#7A4A34');
+      fillCirc(ctx, x, y - r * 0.5, r * 0.24, '#3A2A22');
+      ctx.strokeStyle = '#5A3626'; ctx.beginPath(); ctx.moveTo(x, y - r * 0.28); ctx.lineTo(x, y + r * 0.62); ctx.stroke();
+      fillEll(ctx, x - r * 0.18, y - r * 0.06, r * 0.1, r * 0.16, 'rgba(255,255,255,0.3)');
+      break;
+    }
+    case 'solucan': {
+      ctx.strokeStyle = '#D98C86'; ctx.lineWidth = r * 0.3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x - r * 0.7, y + r * 0.1);
+      ctx.bezierCurveTo(x - r * 0.4, y - r * 0.5, x - r * 0.1, y + r * 0.5, x + r * 0.2, y - r * 0.05);
+      ctx.bezierCurveTo(x + r * 0.35, y - r * 0.3, x + r * 0.55, y - r * 0.25, x + r * 0.7, y - r * 0.15); ctx.stroke();
+      fillCirc(ctx, x + r * 0.64, y - r * 0.2, r * 0.05, PAL.ink);
+      break;
+    }
+    case 'sinek': {
+      fillEll(ctx, x - r * 0.22, y - r * 0.3, r * 0.34, r * 0.22, 'rgba(190,215,230,0.85)', -0.5);
+      fillEll(ctx, x + r * 0.22, y - r * 0.3, r * 0.34, r * 0.22, 'rgba(190,215,230,0.85)', 0.5);
+      fillEll(ctx, x, y + r * 0.08, r * 0.24, r * 0.38, '#3A3A3E');
+      fillCirc(ctx, x, y - r * 0.34, r * 0.2, '#3A3A3E');
+      fillCirc(ctx, x - r * 0.1, y - r * 0.38, r * 0.08, '#C2553D'); fillCirc(ctx, x + r * 0.1, y - r * 0.38, r * 0.08, '#C2553D');
+      break;
+    }
+    case 'guve': {
+      for (const s of [-1, 1]) {
+        fillEll(ctx, x + s * r * 0.38, y - r * 0.12, r * 0.42, r * 0.34, '#D8C7A3', s * 0.4);
+        fillEll(ctx, x + s * r * 0.3, y + r * 0.3, r * 0.26, r * 0.22, '#C9B48C', -s * 0.4);
+        fillCirc(ctx, x + s * r * 0.4, y - r * 0.12, r * 0.09, '#8C7556');
+      }
+      fillEll(ctx, x, y + r * 0.05, r * 0.12, r * 0.42, '#7C6448');
+      ctx.strokeStyle = '#7C6448'; ctx.lineWidth = Math.max(1, r * 0.06);
+      ctx.beginPath(); ctx.moveTo(x - r * 0.05, y - r * 0.35); ctx.lineTo(x - r * 0.25, y - r * 0.7); ctx.moveTo(x + r * 0.05, y - r * 0.35); ctx.lineTo(x + r * 0.25, y - r * 0.7); ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+// A cloud-shaped dream bubble with the dreamed food inside.
+function drawDreamBubble(ctx, x, y, r, item, t, left, toX, toY) {
+  const blink = left < 2.5 ? 0.55 + 0.45 * Math.abs(Math.sin(t * 6)) : 1;
+  const bob = Math.sin(t * 2) * r * 0.06;
+  ctx.save();
+  ctx.globalAlpha = blink;
+  for (let k = 1; k <= 2; k++) fillCirc(ctx, lerp(x, toX, 0.35 + k * 0.22), lerp(y + r * 0.8, toY, 0.35 + k * 0.22), r * (0.2 - k * 0.05), 'rgba(250,247,255,0.95)');
+  ctx.fillStyle = 'rgba(250,247,255,0.97)';
+  for (const [dx, dy, rr] of [[-0.55, 0.15, 0.55], [0.55, 0.15, 0.55], [0, -0.3, 0.65], [-0.25, 0.35, 0.5], [0.3, 0.38, 0.5]]) { circ(ctx, x + dx * r, y + dy * r + bob, rr * r); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(150,130,190,0.55)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y + bob, r * 1.12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp01(left / TUNE.dreamLen)); ctx.stroke();
+  drawFood(ctx, item, x, y + r * 0.05 + bob, r * 0.62);
+  ctx.restore();
+}
+
+function dropPos(d, t) {
+  const y0 = LAY.top + 12, y1 = LAY.groundY - 8;
+  return { x: d.x * LAY.w + Math.sin(t * 1.7 + d.ph) * Math.min(18, LAY.w * 0.03), y: lerp(y0, y1, d.p) };
+}
+function dropR() { return Math.max(9, Math.min(15, LAY.cellW * 0.12)); }
+function drawDrop(ctx, d, t) {
+  const p = dropPos(d, t), r = dropR();
+  ctx.save();
+  ctx.globalAlpha = d.p > 0.9 ? Math.max(0, 1 - (d.p - 0.9) / 0.1) : 1;
+  fillCirc(ctx, p.x, p.y, r * 1.7, d.gold ? 'rgba(247,205,107,0.32)' : 'rgba(255,245,225,0.22)');
+  // a little leaf it rides on
+  ctx.save(); ctx.translate(p.x, p.y - r * 1.05); ctx.rotate(Math.sin(t * 1.7 + d.ph) * 0.35);
+  fillEll(ctx, 0, 0, r * 0.95, r * 0.3, d.gold ? '#E9B44C' : '#9DB37A');
+  ctx.strokeStyle = 'rgba(60,50,30,0.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-r * 0.8, 0); ctx.lineTo(r * 0.8, 0); ctx.stroke();
+  ctx.restore();
+  if (d.gold) {
+    fillEll(ctx, p.x, p.y + r * 0.15, r * 0.85, r * 0.8, '#E0A93A');
+    ctx.fillStyle = '#B9822C'; ctx.beginPath(); ctx.ellipse(p.x, p.y - r * 0.2, r * 0.9, r * 0.5, 0, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#FBE7A6'; ctx.lineWidth = 1.5;
+    for (let k = 0; k < 4; k++) { const a = t * 2 + k * Math.PI / 2; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(a) * r * 1.2, p.y + Math.sin(a) * r * 1.2); ctx.lineTo(p.x + Math.cos(a) * r * 1.6, p.y + Math.sin(a) * r * 1.6); ctx.stroke(); }
+  } else drawNut(ctx, p.x, p.y, r);
+  ctx.restore();
+}
+
+// The northern-lights bar under the HUD: fills while everybody sleeps well.
+function drawPeaceMeter(ctx, peace, aurora, t) {
+  const w = Math.min(230, LAY.w * 0.5), h = 10, x = LAY.w / 2 - w / 2 + 12, y = LAY.inset.top + 70;
+  ctx.save();
+  // icon: three little waves of light
+  ctx.lineCap = 'round'; ctx.lineWidth = 2.4;
+  const cols = ['#8FE0B8', '#7CC9D6', '#B7A3E8'];
+  for (let k = 0; k < 3; k++) {
+    ctx.strokeStyle = cols[k]; ctx.beginPath();
+    for (let i = 0; i <= 8; i++) { const xx = x - 26 + i * 2.2, yy = y + 1 + k * 4 + Math.sin(i * 0.9 + t * 3 + k) * 1.6; if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy); }
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(15,22,38,0.55)'; rrPath(ctx, x - 2, y - 2, w + 4, h + 4, (h + 4) / 2); ctx.fill();
+  const v = aurora > 0 ? aurora / TUNE.auroraLen : peace / 100;
+  if (v > 0.01) {
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, '#7FD6A8'); g.addColorStop(0.6, '#7CC9D6'); g.addColorStop(1, '#B7A3E8');
+    ctx.fillStyle = g; rrPath(ctx, x, y, Math.max(h, w * v), h, h / 2); ctx.fill();
+    if (aurora > 0 || v > 0.8) { ctx.globalAlpha = 0.35 + 0.35 * Math.sin(t * 8); fillCirc(ctx, x + w * v, y + h / 2, h * 1.1, '#FFFFFF'); }
+  }
+  ctx.restore();
+}
+
+function trayLayout(n) {
+  const r = Math.max(16, Math.min(24, (LAY.w - 48) / (n * 2.5)));
+  const gap = r * 2.5, w = n * gap + r * 0.5;
+  const cy = LAY.h - LAY.inset.bottom - 12 - r * 1.3;
+  const x0 = LAY.w / 2 - w / 2 + r * 0.25 + gap / 2;
+  return { r, cy, w, slots: Array.from({ length: n }, (_, k) => ({ x: x0 + k * gap, y: cy })) };
+}
+function drawTray(ctx, foods, t, wanted, selected) {
+  if (!foods.length) return;
+  const T = trayLayout(foods.length);
+  ctx.save();
+  ctx.fillStyle = 'rgba(20,20,30,0.18)'; rrPath(ctx, LAY.w / 2 - T.w / 2 + 2, T.cy - T.r * 1.3 + 3, T.w, T.r * 2.6, T.r * 1.3); ctx.fill();
+  ctx.fillStyle = 'rgba(251,248,242,0.94)'; rrPath(ctx, LAY.w / 2 - T.w / 2, T.cy - T.r * 1.3, T.w, T.r * 2.6, T.r * 1.3); ctx.fill();
+  foods.forEach((f, k) => {
+    const s = T.slots[k], want = wanted.has(f);
+    const pulse = want ? 1 + Math.sin(t * 6) * 0.06 : 1;
+    fillCirc(ctx, s.x, s.y, T.r * pulse, want ? '#EDE6F7' : '#F2ECE1');
+    if (want || selected === f) { ctx.strokeStyle = selected === f ? PAL.good : 'rgba(150,130,190,0.8)'; ctx.lineWidth = selected === f ? 3 : 2; circ(ctx, s.x, s.y, T.r * pulse); ctx.stroke(); }
+    drawFood(ctx, f, s.x, s.y, T.r * 0.72);
+  });
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------------------
 // Sound: everything is synthesised with WebAudio, so there are no files.
 // These are placeholders until the studio's own music and effects arrive.
@@ -1969,6 +2241,11 @@ const Sound = {
       case 'season': [523, 659, 784, 1047].forEach((f, k) => this.tone(f, 0.8, { vol: 0.05, type: 'triangle', delay: k * 0.12 })); break;
       case 'ayaz': this.noise(2.4, { freq: 500, to: 1400, type: 'bandpass', q: 1.5, vol: 0.14, attack: 0.8 }); break;
       case 'leave': this.tone(440, 0.25, { vol: 0.05, to: 330 }); break;
+      case 'catch': this.tone(1319, 0.12, { vol: 0.08, type: 'triangle' }); this.tone(1760, 0.18, { vol: 0.06, type: 'triangle', delay: 0.05 }); break;
+      case 'gold': [1319, 1568, 2093, 2637].forEach((f, k) => this.tone(f, 0.3, { vol: 0.07, type: 'triangle', delay: k * 0.05 })); break;
+      case 'dream': this.tone(1175, 0.6, { vol: 0.04 }); this.tone(1568, 0.7, { vol: 0.035, delay: 0.12 }); break;
+      case 'fed': this.noise(0.12, { freq: 900, vol: 0.08 }); this.noise(0.12, { freq: 900, vol: 0.08, delay: 0.14 }); [784, 988, 1319].forEach((f, k) => this.tone(f, 0.4, { vol: 0.06, type: 'triangle', delay: 0.25 + k * 0.07 })); break;
+      case 'aurora': [523, 659, 784, 988, 1175, 1568].forEach((f, k) => this.tone(f, 1.4, { vol: 0.05, delay: k * 0.09 })); break;
     }
   },
 
@@ -2076,7 +2353,7 @@ const SEASON_NAME = { autumn: 'Sonbahar', winter: 'Kış', spring: 'Bahar', summ
 const App = {
   save: null, game: null, screen: 'menu', paused: false,
   cv: null, ctx: null, dpr: 1, t: 0, dt: 0,
-  qvis: new Map(), drags: new Map(), selected: null,
+  qvis: new Map(), drags: new Map(), selected: null, selFood: null, hintQueue: [],
   wake: [], moneyHold: 0, shownMoney: -1,
   hand: null, hintUntil: 0, hintKeyed: 0,
   sheet: null, bgSeason: null, bgPrev: null, bgFade: 1,
@@ -2129,7 +2406,7 @@ function init() {
   }
   updateMenu();
   if (document.fonts && document.fonts.load) document.fonts.load('600 20px Fredoka').catch(() => {});
-  if (store.get('debug', false) || location.hash === '#debug') window.__otel = { App, TUNE, Game, cleanSave, newSave, LAY, innerRect, wpPos, queueSlot, cellAt };
+  if (store.get('debug', false) || location.hash === '#debug') window.__otel = { App, TUNE, Game, cleanSave, newSave, LAY, innerRect, wpPos, queueSlot, cellAt, trayLayout, dropPos, SPECIES_FOOD: (sp) => SPECIES[sp].food[0] };
   requestAnimationFrame(frame);
 }
 
@@ -2237,8 +2514,8 @@ function onEvent(e) {
     }
     case 'winter':
       banner('Kış', 'Misafirler uyuyor. Uykularını bozma!'); Sound.play('season');
-      App.selected = null; App.drags.clear();
-      if (run.year === 1) hint('winter1', '<b>Kış geldi.</b> Herkes uyuyor. Altlarındaki çubuk dolu kalsın, baharda iyi uyuyan çok öder.', { time: 7 });
+      App.selected = null; App.selFood = null; App.drags.clear();
+      if (run.year === 1) hint('winter1', '<b>Kış geldi, herkes uyuyor.</b> Kimsenin uykusu bölünmezse yukarıdaki ışık çubuğu dolar. Dolunca kuzey ışıkları gelir, gökten fındık yağar!', { time: 8 });
       break;
     case 'blanket':
       Sound.play('slip');
@@ -2306,6 +2583,37 @@ function onEvent(e) {
       Sound.play('ayaz');
       hint('ayaz', '<b>Ayaz geliyor.</b> Birkaç saniye soba çok çabuk soğur, sık sık odun at.', { time: 6 });
       break;
+    case 'caught': {
+      const p = dropPos(e, App.t);
+      addFx({ kind: 'text', text: `+${e.v}`, x: p.x, y: p.y - 10, vy: -40, size: e.gold ? 22 : 17, col: e.gold ? PAL.mustard : '#FBF8F2', life: 0.8 });
+      for (let k = 0; k < (e.gold ? 8 : 4); k++) addFx({ kind: 'puff', x: p.x, y: p.y, vx: (Math.random() - 0.5) * 90, vy: (Math.random() - 0.7) * 70, size: 2.5, col: e.gold ? 'rgba(247,205,107,0.95)' : 'rgba(255,250,235,0.9)', life: 0.5 });
+      Sound.play(e.gold ? 'gold' : 'catch'); bumpMoney();
+      solved('drop');
+      break;
+    }
+    case 'dream':
+      Sound.play('dream');
+      hint('dream', `<b>${esc(SPECIES[e.sp].name)} rüya görüyor!</b> Rüyasında ${esc(lower(FOODS[e.item]))} var. Aşağıdaki kilerden onu sürükleyip odasına bırak.`, { time: 10, tag: 'dream', hand: { kind: 'drag', from: () => { const run = g.run; if (!run || !run.foods) return null; const k = run.foods.indexOf(e.item); const x = g.roomGuest(e.cell); return k < 0 || !x || !x.dream ? null : trayLayout(run.foods.length).slots[k]; }, to: () => centerOf(e.cell) } });
+      break;
+    case 'fed': {
+      const I = innerRect(e.cell);
+      addFx({ kind: 'text', text: 'mmm!', x: I.x + I.w * 0.5, y: I.y + I.h * 0.3, vy: -18, size: Math.max(13, I.h * 0.17), col: '#8A6FB8', life: 1.1 });
+      addFx({ kind: 'text', text: `+${e.tip}`, x: I.x + I.w * 0.75, y: I.y + I.h * 0.5, vy: -26, size: Math.max(12, I.h * 0.15), col: PAL.mustard, life: 1.1 });
+      for (let k = 0; k < 2; k++) addFx({ kind: 'heart', x: I.x + I.w * (0.4 + k * 0.2), y: I.y + I.h * 0.35, vy: -24, size: Math.max(5, I.w * 0.06), life: 1.2 });
+      Sound.play('fed'); bumpMoney();
+      solved('dream');
+      break;
+    }
+    case 'quick': {
+      const at = e.cell != null ? centerOf(e.cell) : e.col != null ? wpPos(e.col) : { x: LAY.cabin.x + LAY.cabin.w / 2, y: LAY.cabin.y };
+      addFx({ kind: 'text', text: 'Hızlı!', x: at.x, y: at.y - 24, vy: -30, size: Math.max(14, LAY.cellH * 0.16), col: '#7FD6A8', life: 0.9 });
+      break;
+    }
+    case 'aurora':
+      banner('Kuzey ışıkları!', 'Herkes mışıl mışıl. Gökten fındık yağıyor, yakala!');
+      Sound.play('aurora');
+      hint('aurora', '<b>Kuzey ışıkları geldi!</b> Kimsenin uykusu bölünmedi diye gökten fındık yağıyor. Hepsine dokunup yakala!', { time: 6 });
+      break;
     case 'spring': springStart(e.results); break;
     case 'summary': openSummary(e.results); break;
     case 'summer': showSummer(true); break;
@@ -2321,7 +2629,7 @@ function springStart(res) {
   App.wake = [];
   App.moneyHold = res.pay + res.tip;
   const woke = res.rows.filter((r) => r.woke).length;
-  lab.note(`Yıl ${res.year} bitti · ${res.rows.length} misafir, ${res.hearts} kalp, +${res.pay + res.tip} fındık${woke ? `, ${woke} uyandı` : ''}${res.left ? `, ${res.left} gitti` : ''}`);
+  lab.note(`Yıl ${res.year} bitti · ${res.rows.length} misafir, ${res.hearts} kalp, +${res.pay + res.tip + res.caught + res.dreamTip} fındık${woke ? `, ${woke} uyandı` : ''}${res.left ? `, ${res.left} gitti` : ''} · ${res.caught} yakalanan, ${res.dreams} rüya, ${res.auroras} kuzey ışığı`);
   let k = 0;
   for (const row of res.rows) {
     if (row.woke) continue;
@@ -2402,9 +2710,21 @@ function onDown(e) {
   } else if (g.phase === 'winter') {
     const wp = wpAt(p);
     if (wp) { g.shoo(wp.id); return; }
-    if (inCabin(p)) { g.addLog(); return; }
+    const dr = dropAt(p);
+    if (dr) { g.catchDrop(dr.id); return; }
+    const food = trayAt(p);
+    if (food) {
+      App.drags.set(e.pointerId, { food, x: p.x, y: p.y, sx: p.x, sy: p.y, moved: false });
+      try { App.cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      return;
+    }
     const cell = cellAt(p.x, p.y);
-    if (cell >= 0) g.tapRoom(cell);
+    if (cell >= 0 && App.selFood) { feedTry(cell, App.selFood); App.selFood = null; return; }
+    if (inCabin(p)) { g.addLog(); return; }
+    if (cell >= 0 && !g.tapRoom(cell)) {
+      const x = g.roomGuest(cell);
+      if (x && x.dream) toast(`${esc(SPECIES[x.sp].name)} rüyasında <b>${esc(lower(FOODS[x.dream.item]))}</b> görüyor. Aşağıdan sürükleyip ona ver.`, 3.5);
+    }
   } else if (g.phase === 'summer') {
     if (inCabin(p)) { openShop(); return; }
     const cell = cellAt(p.x, p.y);
@@ -2421,6 +2741,11 @@ function onUp(e) {
   const d = App.drags.get(e.pointerId); if (!d) return;
   App.drags.delete(e.pointerId);
   const p = pt(e);
+  if (d.food) {
+    if (d.moved) { const cell = cellAt(p.x, p.y); if (cell >= 0) feedTry(cell, d.food); }
+    else App.selFood = App.selFood === d.food ? null : d.food;
+    return;
+  }
   if (d.moved) {
     const cell = cellAt(p.x, p.y - LAY.guestS * 0.35);
     const cell2 = cell >= 0 ? cell : cellAt(p.x, p.y);
@@ -2434,6 +2759,28 @@ function onUp(e) {
   }
 }
 function onCancel(e) { App.drags.delete(e.pointerId); }
+
+function dropAt(p) {
+  const run = App.game.run, R = Math.max(30, dropR() * 2.4);
+  let best = null, bd = Infinity;
+  for (const d of run.drops) { const q = dropPos(d, App.t), dd = Math.hypot(p.x - q.x, p.y - q.y); if (dd < R && dd < bd) { bd = dd; best = d; } }
+  return best;
+}
+function trayAt(p) {
+  const foods = App.game.run.foods || [];
+  if (!foods.length) return null;
+  const T = trayLayout(foods.length);
+  let best = null, bd = Infinity;
+  foods.forEach((f, k) => { const s = T.slots[k], dd = Math.hypot(p.x - s.x, p.y - s.y); if (dd < T.r * 1.3 && dd < bd) { bd = dd; best = f; } });
+  return best;
+}
+function feedTry(cell, item) {
+  const g = App.game, x = g.roomGuest(cell);
+  const r = g.feed(cell, item);
+  if (r === 'ok') return;
+  if (r === 'wrong' && x && x.dream) { Sound.play('no'); toast(`${esc(SPECIES[x.sp].name)} rüyasında <b>${esc(lower(FOODS[x.dream.item]))}</b> görüyor, ${esc(lower(FOODS[item]))} değil.`); }
+  else if (x) toast(`${esc(SPECIES[x.sp].name)} şu an rüya görmüyor. Üstünde rüya bulutu olanı bul.`);
+}
 
 function tryPlace(qid, cell) {
   const g = App.game, q = g.run.queue.find((x) => x.id === qid);
@@ -2479,7 +2826,8 @@ function render(dt) {
   ctx.setTransform(App.dpr, 0, 0, App.dpr, 0, 0);
   const season = seasonNow(), phase = App.screen === 'menu' ? 'menu' : g.phase;
   drawBg(ctx, season, dt);
-  if (season === 'winter') drawAurora(ctx, t);
+  const winterNow = phase === 'winter' && run;
+  if (season === 'winter') drawAurora(ctx, t, winterNow ? (run.aurora > 0 ? 2.6 : 0.45 + run.peace / 100 * 0.9) : 1);
   drawWeather(ctx, season);
   drawTrees(ctx, season);
 
@@ -2503,6 +2851,8 @@ function render(dt) {
       drawWoodpecker(ctx, p.x, p.y, ws, t, p.side);
     }
   }
+
+  if (winterRun) { for (const d of run.drops) drawDrop(ctx, d, t); drawPeaceMeter(ctx, run.peace, run.aurora, t); }
 
   // hill
   drawTunnels(ctx, s);
@@ -2543,6 +2893,10 @@ function render(dt) {
       const I = innerRect(x.cell), r = Math.max(12, Math.min(I.w, I.h) * 0.16);
       const kind = !x.blanket && SPECIES[x.sp].blanket ? 'blanket' : x.snore > 0 ? 'snore' : null;
       if (kind) drawBubble(ctx, I.x + I.w * 0.83, I.y + r * 1.05, r, kind, t, x.sleep < 35);
+      if (x.dream) {
+        const G = guestGeom(x.sp, I), dr = Math.max(16, Math.min(I.w * 0.2, I.h * 0.25));
+        drawDreamBubble(ctx, I.x + Math.max(dr * 1.2, I.w * 0.28), I.y + dr * 1.1, dr, x.dream.item, t, TUNE.dreamLen - x.dream.t, G.x - G.s * 0.2, G.base - G.s * 0.45);
+      }
     }
   } else if (run && phase === 'spring') drawWake(ctx, t);
 
@@ -2558,9 +2912,28 @@ function render(dt) {
   // queue
   if (phase === 'autumn' && run) drawQueue(ctx, run, t, dt);
 
+  // the pantry tray and food being carried
+  if (winterRun && run.foods) {
+    const wanted = new Set(run.guests.filter((x) => !x.gone && x.dream).map((x) => x.dream.item));
+    const carrying = [...App.drags.values()].find((d) => d.food && d.moved);
+    const food = carrying ? carrying.food : App.selFood;
+    if (food) for (const x of run.guests) {
+      if (x.gone || !x.dream || x.dream.item !== food) continue;
+      const I = innerRect(x.cell), hover = carrying && cellAt(carrying.x, carrying.y) === x.cell;
+      ctx.save(); ctx.strokeStyle = hover ? PAL.good : `rgba(111,148,104,${0.55 + Math.sin(t * 6) * 0.3})`; ctx.lineWidth = hover ? 5 : 3;
+      archPath(ctx, I.x - 2, I.y - 2, I.w + 4, I.h + 4, Math.min(I.w, I.h) * 0.45, Math.min(I.w, I.h) * 0.14); ctx.stroke(); ctx.restore();
+    }
+    drawTray(ctx, run.foods, t, wanted, App.selFood);
+  }
+
   drawFx(ctx);
   for (const f of fx) if (f.kind === 'bird') { ctx.save(); ctx.globalAlpha = 1 - f.t / f.life; drawWoodpecker(ctx, f.x, f.y, Math.max(12, LAY.cellW * 0.18), t, f.side); ctx.restore(); }
 
+  if (winterRun) for (const d of App.drags.values()) {
+    if (!d.food || !d.moved) continue;
+    fillCirc(ctx, d.x, d.y - 26, 26, 'rgba(251,248,242,0.9)');
+    drawFood(ctx, d.food, d.x, d.y - 26, 20);
+  }
   // the carried guest, under the finger
   if (phase === 'autumn' && run) for (const d of App.drags.values()) {
     if (!d.moved) continue;
@@ -2741,6 +3114,10 @@ function ambient(dt) {
     }
   }
   if (g.phase === 'winter') {
+    if (run.drops.length && !App.save.seen.drop && run.aurora <= 0) {
+      const id = run.drops[0].id;
+      hint('drop', '<b>Gökten fındık düşüyor!</b> Yere düşmeden dokunup yakala. Yakaladıkların senin.', { time: 7, tag: 'drop', hand: { kind: 'tap', at: () => { const d = g.run && g.run.drops && g.run.drops.find((x) => x.id === id); return d ? dropPos(d, App.t) : null; } } });
+    }
     const T = App.fxT;
     T.tok -= dt;
     if (run.wps.length && T.tok <= 0) {
@@ -2771,7 +3148,7 @@ function updateHud() {
   else if (phase === 'spring' || phase === 'summary') bar = 1;
   const bw = Math.round(bar * 100) + '%';
   if (App.hud.bar !== bw) { App.hud.bar = bw; $('seasonBar').style.width = bw; }
-  const m = Math.max(0, s.money - App.moneyHold);
+  const m = Math.max(0, s.money - App.moneyHold + (phase === 'winter' && run ? (run.caught || 0) + (run.dreamTip || 0) : 0));
   setText('money', String(m));
   const st = starsFor(s.fame);
   setHtml('stars', `<span class="full">${[1, 2, 3, 4, 5].map((k) => ICON.star(k <= st, 17)).join('')}</span><span class="mini">${ICON.star(true, 17)}${st}</span>`);
@@ -2780,6 +3157,12 @@ function updateHud() {
   const showBar = phase === 'summer' && !App.sheet;
   if ($('summerBar').hidden === showBar) $('summerBar').hidden = !showBar;
   if (!$('hint').hidden && App.t > App.hintUntil) hideHint();
+  if ($('hint').hidden && App.hintQueue.length && !App.sheet && (phase === 'autumn' || phase === 'winter')) {
+    const q = App.hintQueue.shift();
+    hint(q.key, q.html, Object.assign({}, q.o, { now: true }));
+  }
+  const tray = phase === 'winter';
+  if (App.hud.tray !== tray) { App.hud.tray = tray; document.body.classList.toggle('tray', tray); }
 }
 
 function banner(title, sub, small) {
@@ -2794,6 +3177,10 @@ function hint(key, html, o) {
   o = o || {};
   if (key) {
     if (App.save.seen[key]) return false;
+    if (!$('hint').hidden && App.hintTag && App.t - App.hintKeyed < 3.5 && !o.now) {
+      if (!App.hintQueue.some((q) => q.key === key)) App.hintQueue.push({ key, html, o });
+      return true;
+    }
     App.save.seen[key] = 1; persist();
     App.hintKeyed = App.t;
   } else if (App.t - App.hintKeyed < 4 && !$('hint').hidden) return true;
@@ -2806,7 +3193,7 @@ function hint(key, html, o) {
 }
 function solved(tag) { if (App.hintTag === tag && !$('hint').hidden) { App.hintUntil = Math.min(App.hintUntil, App.t + 0.8); App.hand = null; } }
 function toast(html, time) { hint(null, html, { time: time || 3.5 }); }
-function hideHint() { $('hint').hidden = true; App.hand = null; }
+function hideHint() { $('hint').hidden = true; App.hand = null; App.hintTag = null; }
 
 function starInfo() {
   const s = App.save, next = STAR_AT.find((x) => x > s.fame);
@@ -2936,10 +3323,15 @@ function openSummary(res) {
   const tips = [];
   if (res.left) tips.push(`${res.left} misafir yer bulamadı ya da beklemekten sıkıldı. Daha çok oda yapabilirsin.`);
   if (res.rows.some((r) => r.woke)) tips.push('Uyanan misafir ödeme yapmaz. Dükkândaki yardımcılar işini kolaylaştırır.');
+  const extras = [];
+  if (res.caught) extras.push(`${res.caught} fındık yakaladın`);
+  if (res.dreams) extras.push(`${res.dreams} rüya gerçek oldu (+${res.dreamTip})`);
+  if (res.auroras) extras.push(`${res.auroras} kez kuzey ışıkları geldi`);
   const empty = !res.rows.length;
   openSheet(`<h2>Bahar geldi · Yıl ${res.year}</h2>
     ${empty ? '<p>Bu kış otelde kimse uyumadı. Sonbaharda misafirleri sürükleyip odalarına bırakmayı unutma.</p>' : `<div class="list">${rows}</div>`}
-    <div class="total"><div>${ICON.nut(22)}+${res.pay + res.tip}<small>${res.tip ? `${res.tip} bahşiş` : 'fındık'}</small></div><div>${ICON.heart(true, 20)}+${res.hearts}<small>kalp</small></div></div>
+    <div class="total"><div>${ICON.nut(22)}+${res.pay + res.tip + (res.caught || 0) + (res.dreamTip || 0)}<small>${res.tip ? `${res.tip} bahşiş` : 'fındık'}</small></div><div>${ICON.heart(true, 20)}+${res.hearts}<small>kalp</small></div></div>
+    ${extras.length ? `<p class="muted">Kışın: ${extras.join(', ')}.</p>` : ''}
     ${news.map((n) => `<div class="news">${n}</div>`).join('')}
     ${tips.map((x) => `<p class="muted">${x}</p>`).join('')}
     <div class="actions"><button class="btn primary" data-act="go">Yaza geç</button>${lab.ask('yil-sonu')}</div>`,
@@ -2965,7 +3357,7 @@ function openPause() {
 function openHelp(back) {
   openSheet(`<h2>Nasıl oynanır</h2><ul class="steps">
     <li><b>Sonbahar</b><span>Misafirler kulübenin önünde sıraya girer. Her birini parmağınla sürükleyip kendi odasına bırak. Kirpi ile fındık faresi yaprak yuvasında, ayı mağarada uyur.</span></li>
-    <li><b>Kış</b><span>Herkes uyur. Battaniyesi düşene dokun, horlayanı çevir, ağaçkakanı kov. Kulübeye dokununca sobaya odun atarsın: termometre yeşilde kalsın.</span></li>
+    <li><b>Kış</b><span>Herkes uyur. Battaniyesi düşene dokun, horlayanı çevir, ağaçkakanı kov. Kulübeye dokununca sobaya odun atarsın: termometre yeşilde kalsın. Gökten düşen fındıkları yakala, rüya görenlere rüyasındaki yiyeceği aşağıdaki kilerden sürükle. Kimsenin uykusu bölünmezse kuzey ışıkları gelir ve gökten fındık yağar.</span></li>
     <li><b>Bahar</b><span>İyi uyuyan çok fındık öder ve 3 kalp bırakır. Kalpler otele yıldız getirir, yeni yıldızlarda yeni misafirler gelir.</span></li>
     <li><b>Yaz</b><span>Toprağı kaz, oda yap, odaları güzelleştir. Dükkândan yardımcı al: sincap, baykuş ve ren geyiği kışın sana yardım eder.</span></li>
     <li><b>İki kişi</b><span>Aynı ekranda iki kişi birden dokunabilir. Biri sobaya baksın, öteki misafirlere.</span></li></ul>

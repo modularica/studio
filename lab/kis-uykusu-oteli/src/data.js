@@ -12,36 +12,40 @@ const ROWS = 5;
 const SPECIES = {
   fare: {
     name: 'Fındık faresi', room: 'yuva', price: 12,
-    toss: 0.5, cold: 0.8, heat: 1.0, noise: 0.5, snore: 0, blanket: true,
+    toss: 0.5, cold: 0.8, heat: 1.0, noise: 0.5, snore: 0, blanket: true, food: ['findik'],
     note: 'Dünyanın en uykucu hayvanı. Kolay kolay uyanmaz.',
   },
   kirpi: {
     name: 'Kirpi', room: 'yuva', price: 15,
-    toss: 1.3, cold: 1.3, heat: 0.8, noise: 1.0, snore: 0, blanket: true,
+    toss: 1.3, cold: 1.3, heat: 0.8, noise: 1.0, snore: 0, blanket: true, food: ['bocek'],
     note: 'Üşümeyi hiç sevmez. Battaniyesine göz kulak ol.',
   },
   kurbaga: {
     name: 'Kurbağa', room: 'havuz', price: 22,
-    toss: 0.7, cold: 0.4, heat: 1.8, noise: 0.8, snore: 0, blanket: true,
+    toss: 0.7, cold: 0.4, heat: 1.8, noise: 0.8, snore: 0, blanket: true, food: ['sinek'],
     note: 'Serin çamuru sever. Soba fazla yanarsa bunalır.',
   },
   ayi: {
     name: 'Ayı', room: 'magara', price: 45,
-    toss: 0.8, cold: 0.6, heat: 1.2, noise: 0.6, snore: 1.0, blanket: true,
+    toss: 0.8, cold: 0.6, heat: 1.2, noise: 0.6, snore: 1.0, blanket: true, food: ['bal', 'balik'],
     note: 'En iyi ödeyen misafir. Ama çok horlar, yanındakiler uyanır.',
   },
   porsuk: {
     name: 'Porsuk', room: 'oda', price: 32,
-    toss: 1.0, cold: 1.0, heat: 1.0, noise: 1.5, snore: 0.45, blanket: true,
+    toss: 1.0, cold: 1.0, heat: 1.0, noise: 1.5, snore: 0.45, blanket: true, food: ['solucan'],
     note: 'Sese çok hassas. Arada bir kendisi de horlar.',
   },
   yarasa: {
     name: 'Yarasa', room: 'tunek', price: 38,
-    toss: 0, cold: 0.9, heat: 1.6, noise: 1.6, snore: 0, blanket: false,
+    toss: 0, cold: 0.9, heat: 1.6, noise: 1.6, snore: 0, blanket: false, food: ['guve'],
     note: 'Kanatlarına sarılıp baş aşağı uyur. Sesi ve sıcağı sevmez.',
   },
 };
 const SPECIES_ORDER = ['fare', 'kirpi', 'kurbaga', 'ayi', 'porsuk', 'yarasa'];
+
+// What guests dream about in winter. The tray at the bottom offers these.
+const FOODS = { findik: 'Fındık', bocek: 'Böcek', sinek: 'Sinek', bal: 'Bal', balik: 'Balık', solucan: 'Solucan', guve: 'Güve' };
+const FOOD_ORDER = ['findik', 'bocek', 'sinek', 'bal', 'balik', 'solucan', 'guve'];
 
 // Room types. fame = hearts needed before this room can be built.
 const ROOMS = {
@@ -151,7 +155,29 @@ const TUNE = {
   baykusFly: 1.0,
   geyikBelow: 48,
   geyikCooldown: 3.2,
+
+  // Fun in winter: nuts falling with the snow, dreams, the northern lights.
+  dropGap: [4.0, 7.0],   // seconds between falling nuts
+  dropFall: [5.5, 7.0],  // seconds a nut takes to reach the ground
+  goldChance: 0.08,
+  peaceFill: 5,          // per second while nobody needs anything
+  peaceDrain: 2,         // per second while something is wrong
+  peaceFix: 5,           // a fix
+  peaceQuick: 10,        // a fix within quickT seconds
+  peaceFeed: 8,          // a dream come true
+  quickT: 2,
+  auroraLen: 7,
+  auroraGap: 0.45,       // nuts rain this often under the northern lights
+  auroraFall: 3.2,
+  auroraGold: 0.15,
+  auroraRegen: 3,
+  dreamFirst: (year) => (year === 1 ? 13 : 6),
+  dreamGap: (n) => Math.max(5, 12 - n * 0.5),
+  dreamLen: 10,
+  dreamSleep: 25,
+  dreamTip: 0.2,
 };
+const dropValue = (year, gold) => (gold ? 3 : 1) * (1 + Math.floor((year - 1) / 4));
 
 function guestsWanted(save) {
   return 2 + starsFor(save.fame) + Math.floor(save.year / 2) + (save.upgrades.ilan ? 3 : 0);

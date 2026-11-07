@@ -75,6 +75,7 @@ button:focus-visible { outline: 3px solid var(--mustard); outline-offset: 2px; }
 @keyframes rise { from { transform: translateY(10px); opacity: 0; } }
 .summerbar { pointer-events: auto; display: flex; gap: 10px; width: 100%; max-width: 520px; }
 .summerbar[hidden] { display: none; }
+body.tray .bottom { bottom: calc(var(--sb) + 92px); }
 .summerbar .btn { flex: 1; }
 
 .btn { font: 600 17px/1.1 var(--display); padding: 14px 18px; border-radius: 15px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; box-shadow: 0 3px 12px rgba(20, 20, 30, 0.14); }

@@ -144,7 +144,7 @@ class Game {
     run.queue.splice(run.queue.indexOf(q), 1);
     run.guests.push({
       id: q.id, sp: q.sp, cell, sleep: 100, blanket: true, offT: 0,
-      snore: 0, rest: 6 + this.rand() * 8, woke: false, gone: false, drain: 0, by: null,
+      snore: 0, rest: 6 + this.rand() * 8, woke: false, gone: false, drain: 0, by: null, dream: null,
     });
     this.emit('placed', { id, cell, sp: q.sp });
     return 'ok';
@@ -202,6 +202,11 @@ class Game {
     for (let k = 0; k < s.staff.sincap; k++) run.squirrels.push({ x: SQ_HOME(k).x, y: SQ_HOME(k).y, state: 'idle', target: null, t: 0, k });
     run.owl = s.staff.baykus ? { state: 'perch', target: null, t: 0, col: 3 } : null;
     run.deer = s.staff.geyik ? { cd: 0, t: 0 } : null;
+    // the fun part: falling nuts, dreams and the northern lights
+    run.drops = []; run.dropId = 1; run.nextDrop = 2.5 + this.rand() * 2; run.caught = 0;
+    run.peace = 0; run.aurora = 0; run.auroras = 0;
+    run.dreams = 0; run.dreamTip = 0; run.nextDream = TUNE.dreamFirst(s.year) + this.rand() * 3;
+    run.foods = FOOD_ORDER.filter((f) => run.guests.some((g) => SPECIES[g.sp].food.includes(f)));
     this.emit('winter', { len: run.len });
     if (!run.guests.length) run.t = run.len;
   }
@@ -215,6 +220,7 @@ class Game {
       if (run.logCd > 0) return false;
       run.logCd = TUNE.logCooldown;
     }
+    if (by !== 'geyik' && run.temp + this.pendingHeat() < TUNE.ZONE[0] + 5) this.peaceBonus(false, { cabin: true });
     run.heat.push(TUNE.logHeat);
     this.emit('log', { by: by || 'player' });
     return true;
@@ -222,13 +228,55 @@ class Game {
 
   pendingHeat() { return this.run.heat.reduce((a, b) => a + b, 0); }
 
+  // Fixing something fills the northern-lights bar; a quick fix fills it more.
+  peaceBonus(quick, where) {
+    const run = this.run;
+    if (run.aurora > 0) return;
+    run.peace = Math.min(100, run.peace + (quick ? TUNE.peaceQuick : TUNE.peaceFix));
+    if (quick) this.emit('quick', where);
+  }
+
+  // How many things need the player right now.
+  issueCount() {
+    const run = this.run, T = TUNE;
+    let n = run.wps.length + (run.temp < T.ZONE[0] || run.temp > T.ZONE[1] ? 1 : 0);
+    for (const g of run.guests) if (!g.gone && ((!g.blanket && SPECIES[g.sp].blanket) || g.snore > 0)) n++;
+    return n;
+  }
+
+  catchDrop(id) {
+    if (this.phase !== 'winter') return 0;
+    const run = this.run, d = run.drops.find((x) => x.id === id);
+    if (!d) return 0;
+    run.drops.splice(run.drops.indexOf(d), 1);
+    const v = dropValue(this.save.year, d.gold);
+    run.caught += v;
+    this.emit('caught', { id, x: d.x, p: d.p, ph: d.ph, v, gold: d.gold });
+    return v;
+  }
+
+  feed(cell, item) {
+    if (this.phase !== 'winter') return 'phase';
+    const run = this.run, g = this.roomGuest(cell);
+    if (!g || g.woke || !g.dream) return 'none';
+    if (g.dream.item !== item) return 'wrong';
+    g.dream = null;
+    g.sleep = Math.min(100, g.sleep + TUNE.dreamSleep);
+    const tip = Math.max(1, Math.round(SPECIES[g.sp].price * LEVELS[this.save.grid[cell].lvl].pay * TUNE.dreamTip));
+    run.dreamTip += tip; run.dreams++;
+    if (run.aurora <= 0) run.peace = Math.min(100, run.peace + TUNE.peaceFeed);
+    this.emit('fed', { cell, item, tip, sp: g.sp });
+    return 'ok';
+  }
+
   tapRoom(cell) {
     if (this.phase !== 'winter') return false;
     const g = this.roomGuest(cell);
     if (!g || g.woke) return false;
-    let did = false;
-    if (!g.blanket) { g.blanket = true; g.offT = 0; this.emit('tucked', { cell, by: 'player' }); did = true; }
-    if (g.snore > 0) { g.snore = 0; g.rest = TUNE.snoreRest; this.emit('rolled', { cell }); did = true; }
+    let did = false, quick = false;
+    if (!g.blanket) { quick = g.offT <= TUNE.quickT; g.blanket = true; g.offT = 0; this.emit('tucked', { cell, by: 'player' }); did = true; }
+    if (g.snore > 0) { quick = quick || TUNE.snoreLen - g.snore <= TUNE.quickT; g.snore = 0; g.rest = TUNE.snoreRest; this.emit('rolled', { cell }); did = true; }
+    if (did) this.peaceBonus(quick, { cell });
     return did;
   }
 
@@ -239,6 +287,7 @@ class Game {
     if (!wp) return false;
     run.wps.splice(run.wps.indexOf(wp), 1);
     this.emit('shoo', { id, col: wp.col, by: by || 'player' });
+    if (!by || by === 'player') this.peaceBonus(wp.t <= TUNE.quickT, { col: wp.col });
     return true;
   }
 
@@ -254,7 +303,7 @@ class Game {
       run.ayazWarned = true; this.emit('ayazWarn');
     }
     if (run.ayaz > 0) { run.ayaz -= dt; if (run.ayaz <= 0) this.emit('ayazEnd'); }
-    const decay = T.decay * (s.year === 1 ? 0.75 : 1) * (s.upgrades.duvar ? T.decayDuvar : 1) * (run.ayaz > 0 ? T.ayazDecay : 1);
+    const decay = T.decay * (s.year === 1 ? 0.75 : 1) * (s.upgrades.duvar ? T.decayDuvar : 1) * (run.ayaz > 0 ? T.ayazDecay : 1) * (run.aurora > 0 ? 0.5 : 1);
     run.temp -= decay * dt;
     for (let k = run.heat.length - 1; k >= 0; k--) {
       const add = Math.min(run.heat[k], T.logHeat * dt / T.logTime);
@@ -270,7 +319,8 @@ class Game {
 
     // Woodpeckers.
     const awake = run.guests.filter((g) => !g.gone);
-    if (s.year >= T.wpFrom && awake.length) {
+    const calm = run.aurora > 0;
+    if (s.year >= T.wpFrom && awake.length && !calm) {
       run.nextWp -= dt;
       const maxWp = 1 + Math.floor(s.year / 5);
       if (run.nextWp <= 0 && run.t < run.len - 4) {
@@ -297,11 +347,11 @@ class Game {
     for (const g of awake) {
       const sp = SPECIES[g.sp];
       g.rest -= dt;
-      if (sp.blanket && g.blanket && this.rand() < bRate * sp.toss * dt) {
+      if (!calm && sp.blanket && g.blanket && this.rand() < bRate * sp.toss * dt) {
         g.blanket = false; g.offT = 0; this.emit('blanket', { cell: g.cell, sp: g.sp });
       }
       if (!g.blanket) g.offT += dt;
-      if (sp.snore && g.snore <= 0 && g.rest <= 0 && this.rand() < T.snoreRate * sp.snore * dt) {
+      if (!calm && sp.snore && g.snore <= 0 && g.rest <= 0 && this.rand() < T.snoreRate * sp.snore * dt) {
         g.snore = T.snoreLen; this.emit('snore', { cell: g.cell, sp: g.sp });
       }
       if (g.snore > 0) {
@@ -327,16 +377,58 @@ class Game {
       d *= LEVELS[s.grid[g.cell].lvl].drain * (ninni ? T.ninniDrain : 1);
       g.drain = d;
       if (d > 0.05) g.sleep -= d * dt;
-      else g.sleep += (T.regen + (ninni ? T.regenNinni : 0)) * dt;
+      else g.sleep += (T.regen + (ninni ? T.regenNinni : 0) + (calm ? T.auroraRegen : 0)) * dt;
       g.sleep = Math.max(0, Math.min(100, g.sleep));
       if (g.sleep <= 0) {
-        g.woke = true; g.gone = true; g.snore = 0;
+        g.woke = true; g.gone = true; g.snore = 0; g.dream = null;
         this.emit('woke', { cell: g.cell, sp: g.sp, id: g.id });
       }
     }
 
     this.updateStaff(dt);
+    this.updateFun(dt, awake);
     if (run.t >= run.len) this.startSpring();
+  }
+
+  updateFun(dt, awake) {
+    const run = this.run, T = TUNE;
+    // nuts falling with the snow (a downpour under the northern lights)
+    run.nextDrop -= dt;
+    if (run.nextDrop <= 0 && run.t < run.len - 1.5) {
+      const a = run.aurora > 0;
+      run.nextDrop = a ? T.auroraGap : T.dropGap[0] + this.rand() * (T.dropGap[1] - T.dropGap[0]);
+      const fall = a ? T.auroraFall : T.dropFall[0] + this.rand() * (T.dropFall[1] - T.dropFall[0]);
+      run.drops.push({ id: run.dropId++, x: 0.05 + this.rand() * 0.9, p: 0, v: 1 / fall, gold: this.rand() < (a ? T.auroraGold : T.goldChance), ph: this.rand() * 6 });
+    }
+    for (const d of run.drops.slice()) { d.p += d.v * dt; if (d.p >= 1) run.drops.splice(run.drops.indexOf(d), 1); }
+    // dreams
+    if (run.aurora <= 0) run.nextDream -= dt;
+    if (run.nextDream <= 0) {
+      run.nextDream = T.dreamGap(awake.length) * (0.8 + 0.4 * this.rand());
+      const cand = awake.filter((g) => !g.dream && g.sleep > 25 && (g.blanket || !SPECIES[g.sp].blanket) && g.snore <= 0);
+      if (cand.length && run.t < run.len - 6) {
+        const g = this.pick(cand);
+        g.dream = { item: this.pick(SPECIES[g.sp].food), t: 0 };
+        this.emit('dream', { cell: g.cell, item: g.dream.item, sp: g.sp });
+      }
+    }
+    for (const g of awake) {
+      if (!g.dream) continue;
+      g.dream.t += dt;
+      if (g.dream.t > T.dreamLen) { g.dream = null; this.emit('dreamGone', { cell: g.cell }); }
+    }
+    // the northern lights
+    if (run.aurora > 0) {
+      run.aurora -= dt;
+      if (run.aurora <= 0) { run.aurora = 0; this.emit('auroraEnd'); }
+    } else if (awake.length) {
+      run.peace += (this.issueCount() ? -T.peaceDrain : T.peaceFill) * dt;
+      run.peace = Math.max(0, Math.min(100, run.peace));
+      if (run.peace >= 100 && run.t < run.len - 3) {
+        run.peace = 0; run.aurora = T.auroraLen; run.auroras++; run.nextDrop = 0.2;
+        this.emit('aurora');
+      }
+    }
   }
 
   updateStaff(dt) {
@@ -415,6 +507,7 @@ class Game {
     this.phase = 'spring';
     run.t = 0;
     run.wps = [];
+    run.drops = [];
     const rows = [];
     let pay = 0, tip = 0, hearts = 0;
     for (const g of run.guests) {
@@ -423,18 +516,20 @@ class Game {
       rows.push({ id: g.id, sp: g.sp, cell: g.cell, sleep: Math.round(g.woke ? 0 : g.sleep), hearts: h, pay: p.pay, tip: p.tip, woke: g.woke });
       pay += p.pay; tip += p.tip; hearts += h;
     }
+    const caught = run.caught || 0, dreamTip = run.dreamTip || 0;
     const starsBefore = starsFor(s.fame);
     const unlockedBefore = ROOM_ORDER.filter((t) => roomUnlocked(s, t));
-    s.money += pay + tip;
+    s.money += pay + tip + caught + dreamTip;
     s.fame += hearts;
     s.total.guests += rows.length;
     s.total.hearts += hearts;
-    s.total.nuts += pay + tip;
+    s.total.nuts += pay + tip + caught + dreamTip;
     s.total.woke += rows.filter((x) => x.woke).length;
     s.year += 1;
     const unlocked = ROOM_ORDER.filter((t) => roomUnlocked(s, t) && !unlockedBefore.includes(t));
     run.results = {
       year: run.year, rows, pay, tip, hearts, left: run.left,
+      caught, dreamTip, dreams: run.dreams || 0, auroras: run.auroras || 0,
       starsBefore, starsAfter: starsFor(s.fame), unlocked,
     };
     this.emit('spring', { results: run.results });

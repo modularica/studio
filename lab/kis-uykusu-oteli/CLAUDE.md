@@ -1,6 +1,8 @@
 # Kış Uykusu Oteli
 
-Tycoon tarzı otel oyunu. Bir yıl dört mevsim: sonbaharda misafirler sıraya girer ve sürüklenip odalarına bırakılır, kışın uyurlar (battaniye düşer, ayı/porsuk horlar, ağaçkakan sütunundaki odaları uyandırır, soba söner ya da fazla ısınır), baharda iyi uyuyan fındıkla öder ve kalp bırakır, yazın oteli büyütürsün. Tasarım notları ve denge tablosu claude.ai'daki uzigames projesinde (`kis-uykusu-oteli.md`).
+Tycoon tarzı otel oyunu. Bir yıl dört mevsim: sonbaharda misafirler sıraya girer ve sürüklenip odalarına bırakılır, kışın uyurlar (battaniye düşer, ayı/porsuk horlar, ağaçkakan sütunundaki odaları uyandırır, soba söner ya da fazla ısınır), baharda iyi uyuyan fındıkla öder ve kalp bırakır, yazın oteli büyütürsün.
+
+Kışı eğlenceli tutan şeyler (`sim.js` → `updateFun`, ayarlar `TUNE`'da): gökten yaprağa binmiş fındıklar düşer, dokunup yakalanır (bazen altın fındık). Misafirler rüya görür (rüya bulutunda yiyecekleri: fındık faresi fındık, kirpi böcek, kurbağa sinek, ayı bal ya da balık, porsuk solucan, yarasa güve); alttaki kilerden doğru yiyecek sürüklenince uyku artar ve bahşiş gelir. Kimsenin bir sorunu yokken (ve her düzeltmede, hızlı düzeltmede daha çok) üstteki kuzey ışıkları çubuğu dolar; dolunca birkaç saniye yeni sorun çıkmaz, herkes derinleşir ve gökten fındık yağar. Yakalanan fındık ve rüya bahşişi baharda kasaya girer. Tasarım notları ve denge tablosu claude.ai'daki uzigames projesinde (`kis-uykusu-oteli.md`).
 
 ## Dosyalar
 

@@ -39,7 +39,7 @@ const SEASON_NAME = { autumn: 'Sonbahar', winter: 'Kış', spring: 'Bahar', summ
 const App = {
   save: null, game: null, screen: 'menu', paused: false,
   cv: null, ctx: null, dpr: 1, t: 0, dt: 0,
-  qvis: new Map(), drags: new Map(), selected: null,
+  qvis: new Map(), drags: new Map(), selected: null, selFood: null, hintQueue: [],
   wake: [], moneyHold: 0, shownMoney: -1,
   hand: null, hintUntil: 0, hintKeyed: 0,
   sheet: null, bgSeason: null, bgPrev: null, bgFade: 1,
@@ -92,7 +92,7 @@ function init() {
   }
   updateMenu();
   if (document.fonts && document.fonts.load) document.fonts.load('600 20px Fredoka').catch(() => {});
-  if (store.get('debug', false) || location.hash === '#debug') window.__otel = { App, TUNE, Game, cleanSave, newSave, LAY, innerRect, wpPos, queueSlot, cellAt };
+  if (store.get('debug', false) || location.hash === '#debug') window.__otel = { App, TUNE, Game, cleanSave, newSave, LAY, innerRect, wpPos, queueSlot, cellAt, trayLayout, dropPos, SPECIES_FOOD: (sp) => SPECIES[sp].food[0] };
   requestAnimationFrame(frame);
 }
 
@@ -200,8 +200,8 @@ function onEvent(e) {
     }
     case 'winter':
       banner('Kış', 'Misafirler uyuyor. Uykularını bozma!'); Sound.play('season');
-      App.selected = null; App.drags.clear();
-      if (run.year === 1) hint('winter1', '<b>Kış geldi.</b> Herkes uyuyor. Altlarındaki çubuk dolu kalsın, baharda iyi uyuyan çok öder.', { time: 7 });
+      App.selected = null; App.selFood = null; App.drags.clear();
+      if (run.year === 1) hint('winter1', '<b>Kış geldi, herkes uyuyor.</b> Kimsenin uykusu bölünmezse yukarıdaki ışık çubuğu dolar. Dolunca kuzey ışıkları gelir, gökten fındık yağar!', { time: 8 });
       break;
     case 'blanket':
       Sound.play('slip');
@@ -269,6 +269,37 @@ function onEvent(e) {
       Sound.play('ayaz');
       hint('ayaz', '<b>Ayaz geliyor.</b> Birkaç saniye soba çok çabuk soğur, sık sık odun at.', { time: 6 });
       break;
+    case 'caught': {
+      const p = dropPos(e, App.t);
+      addFx({ kind: 'text', text: `+${e.v}`, x: p.x, y: p.y - 10, vy: -40, size: e.gold ? 22 : 17, col: e.gold ? PAL.mustard : '#FBF8F2', life: 0.8 });
+      for (let k = 0; k < (e.gold ? 8 : 4); k++) addFx({ kind: 'puff', x: p.x, y: p.y, vx: (Math.random() - 0.5) * 90, vy: (Math.random() - 0.7) * 70, size: 2.5, col: e.gold ? 'rgba(247,205,107,0.95)' : 'rgba(255,250,235,0.9)', life: 0.5 });
+      Sound.play(e.gold ? 'gold' : 'catch'); bumpMoney();
+      solved('drop');
+      break;
+    }
+    case 'dream':
+      Sound.play('dream');
+      hint('dream', `<b>${esc(SPECIES[e.sp].name)} rüya görüyor!</b> Rüyasında ${esc(lower(FOODS[e.item]))} var. Aşağıdaki kilerden onu sürükleyip odasına bırak.`, { time: 10, tag: 'dream', hand: { kind: 'drag', from: () => { const run = g.run; if (!run || !run.foods) return null; const k = run.foods.indexOf(e.item); const x = g.roomGuest(e.cell); return k < 0 || !x || !x.dream ? null : trayLayout(run.foods.length).slots[k]; }, to: () => centerOf(e.cell) } });
+      break;
+    case 'fed': {
+      const I = innerRect(e.cell);
+      addFx({ kind: 'text', text: 'mmm!', x: I.x + I.w * 0.5, y: I.y + I.h * 0.3, vy: -18, size: Math.max(13, I.h * 0.17), col: '#8A6FB8', life: 1.1 });
+      addFx({ kind: 'text', text: `+${e.tip}`, x: I.x + I.w * 0.75, y: I.y + I.h * 0.5, vy: -26, size: Math.max(12, I.h * 0.15), col: PAL.mustard, life: 1.1 });
+      for (let k = 0; k < 2; k++) addFx({ kind: 'heart', x: I.x + I.w * (0.4 + k * 0.2), y: I.y + I.h * 0.35, vy: -24, size: Math.max(5, I.w * 0.06), life: 1.2 });
+      Sound.play('fed'); bumpMoney();
+      solved('dream');
+      break;
+    }
+    case 'quick': {
+      const at = e.cell != null ? centerOf(e.cell) : e.col != null ? wpPos(e.col) : { x: LAY.cabin.x + LAY.cabin.w / 2, y: LAY.cabin.y };
+      addFx({ kind: 'text', text: 'Hızlı!', x: at.x, y: at.y - 24, vy: -30, size: Math.max(14, LAY.cellH * 0.16), col: '#7FD6A8', life: 0.9 });
+      break;
+    }
+    case 'aurora':
+      banner('Kuzey ışıkları!', 'Herkes mışıl mışıl. Gökten fındık yağıyor, yakala!');
+      Sound.play('aurora');
+      hint('aurora', '<b>Kuzey ışıkları geldi!</b> Kimsenin uykusu bölünmedi diye gökten fındık yağıyor. Hepsine dokunup yakala!', { time: 6 });
+      break;
     case 'spring': springStart(e.results); break;
     case 'summary': openSummary(e.results); break;
     case 'summer': showSummer(true); break;
@@ -284,7 +315,7 @@ function springStart(res) {
   App.wake = [];
   App.moneyHold = res.pay + res.tip;
   const woke = res.rows.filter((r) => r.woke).length;
-  lab.note(`Yıl ${res.year} bitti · ${res.rows.length} misafir, ${res.hearts} kalp, +${res.pay + res.tip} fındık${woke ? `, ${woke} uyandı` : ''}${res.left ? `, ${res.left} gitti` : ''}`);
+  lab.note(`Yıl ${res.year} bitti · ${res.rows.length} misafir, ${res.hearts} kalp, +${res.pay + res.tip + res.caught + res.dreamTip} fındık${woke ? `, ${woke} uyandı` : ''}${res.left ? `, ${res.left} gitti` : ''} · ${res.caught} yakalanan, ${res.dreams} rüya, ${res.auroras} kuzey ışığı`);
   let k = 0;
   for (const row of res.rows) {
     if (row.woke) continue;
@@ -365,9 +396,21 @@ function onDown(e) {
   } else if (g.phase === 'winter') {
     const wp = wpAt(p);
     if (wp) { g.shoo(wp.id); return; }
-    if (inCabin(p)) { g.addLog(); return; }
+    const dr = dropAt(p);
+    if (dr) { g.catchDrop(dr.id); return; }
+    const food = trayAt(p);
+    if (food) {
+      App.drags.set(e.pointerId, { food, x: p.x, y: p.y, sx: p.x, sy: p.y, moved: false });
+      try { App.cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      return;
+    }
     const cell = cellAt(p.x, p.y);
-    if (cell >= 0) g.tapRoom(cell);
+    if (cell >= 0 && App.selFood) { feedTry(cell, App.selFood); App.selFood = null; return; }
+    if (inCabin(p)) { g.addLog(); return; }
+    if (cell >= 0 && !g.tapRoom(cell)) {
+      const x = g.roomGuest(cell);
+      if (x && x.dream) toast(`${esc(SPECIES[x.sp].name)} rüyasında <b>${esc(lower(FOODS[x.dream.item]))}</b> görüyor. Aşağıdan sürükleyip ona ver.`, 3.5);
+    }
   } else if (g.phase === 'summer') {
     if (inCabin(p)) { openShop(); return; }
     const cell = cellAt(p.x, p.y);
@@ -384,6 +427,11 @@ function onUp(e) {
   const d = App.drags.get(e.pointerId); if (!d) return;
   App.drags.delete(e.pointerId);
   const p = pt(e);
+  if (d.food) {
+    if (d.moved) { const cell = cellAt(p.x, p.y); if (cell >= 0) feedTry(cell, d.food); }
+    else App.selFood = App.selFood === d.food ? null : d.food;
+    return;
+  }
   if (d.moved) {
     const cell = cellAt(p.x, p.y - LAY.guestS * 0.35);
     const cell2 = cell >= 0 ? cell : cellAt(p.x, p.y);
@@ -397,6 +445,28 @@ function onUp(e) {
   }
 }
 function onCancel(e) { App.drags.delete(e.pointerId); }
+
+function dropAt(p) {
+  const run = App.game.run, R = Math.max(30, dropR() * 2.4);
+  let best = null, bd = Infinity;
+  for (const d of run.drops) { const q = dropPos(d, App.t), dd = Math.hypot(p.x - q.x, p.y - q.y); if (dd < R && dd < bd) { bd = dd; best = d; } }
+  return best;
+}
+function trayAt(p) {
+  const foods = App.game.run.foods || [];
+  if (!foods.length) return null;
+  const T = trayLayout(foods.length);
+  let best = null, bd = Infinity;
+  foods.forEach((f, k) => { const s = T.slots[k], dd = Math.hypot(p.x - s.x, p.y - s.y); if (dd < T.r * 1.3 && dd < bd) { bd = dd; best = f; } });
+  return best;
+}
+function feedTry(cell, item) {
+  const g = App.game, x = g.roomGuest(cell);
+  const r = g.feed(cell, item);
+  if (r === 'ok') return;
+  if (r === 'wrong' && x && x.dream) { Sound.play('no'); toast(`${esc(SPECIES[x.sp].name)} rüyasında <b>${esc(lower(FOODS[x.dream.item]))}</b> görüyor, ${esc(lower(FOODS[item]))} değil.`); }
+  else if (x) toast(`${esc(SPECIES[x.sp].name)} şu an rüya görmüyor. Üstünde rüya bulutu olanı bul.`);
+}
 
 function tryPlace(qid, cell) {
   const g = App.game, q = g.run.queue.find((x) => x.id === qid);
@@ -442,7 +512,8 @@ function render(dt) {
   ctx.setTransform(App.dpr, 0, 0, App.dpr, 0, 0);
   const season = seasonNow(), phase = App.screen === 'menu' ? 'menu' : g.phase;
   drawBg(ctx, season, dt);
-  if (season === 'winter') drawAurora(ctx, t);
+  const winterNow = phase === 'winter' && run;
+  if (season === 'winter') drawAurora(ctx, t, winterNow ? (run.aurora > 0 ? 2.6 : 0.45 + run.peace / 100 * 0.9) : 1);
   drawWeather(ctx, season);
   drawTrees(ctx, season);
 
@@ -466,6 +537,8 @@ function render(dt) {
       drawWoodpecker(ctx, p.x, p.y, ws, t, p.side);
     }
   }
+
+  if (winterRun) { for (const d of run.drops) drawDrop(ctx, d, t); drawPeaceMeter(ctx, run.peace, run.aurora, t); }
 
   // hill
   drawTunnels(ctx, s);
@@ -506,6 +579,10 @@ function render(dt) {
       const I = innerRect(x.cell), r = Math.max(12, Math.min(I.w, I.h) * 0.16);
       const kind = !x.blanket && SPECIES[x.sp].blanket ? 'blanket' : x.snore > 0 ? 'snore' : null;
       if (kind) drawBubble(ctx, I.x + I.w * 0.83, I.y + r * 1.05, r, kind, t, x.sleep < 35);
+      if (x.dream) {
+        const G = guestGeom(x.sp, I), dr = Math.max(16, Math.min(I.w * 0.2, I.h * 0.25));
+        drawDreamBubble(ctx, I.x + Math.max(dr * 1.2, I.w * 0.28), I.y + dr * 1.1, dr, x.dream.item, t, TUNE.dreamLen - x.dream.t, G.x - G.s * 0.2, G.base - G.s * 0.45);
+      }
     }
   } else if (run && phase === 'spring') drawWake(ctx, t);
 
@@ -521,9 +598,28 @@ function render(dt) {
   // queue
   if (phase === 'autumn' && run) drawQueue(ctx, run, t, dt);
 
+  // the pantry tray and food being carried
+  if (winterRun && run.foods) {
+    const wanted = new Set(run.guests.filter((x) => !x.gone && x.dream).map((x) => x.dream.item));
+    const carrying = [...App.drags.values()].find((d) => d.food && d.moved);
+    const food = carrying ? carrying.food : App.selFood;
+    if (food) for (const x of run.guests) {
+      if (x.gone || !x.dream || x.dream.item !== food) continue;
+      const I = innerRect(x.cell), hover = carrying && cellAt(carrying.x, carrying.y) === x.cell;
+      ctx.save(); ctx.strokeStyle = hover ? PAL.good : `rgba(111,148,104,${0.55 + Math.sin(t * 6) * 0.3})`; ctx.lineWidth = hover ? 5 : 3;
+      archPath(ctx, I.x - 2, I.y - 2, I.w + 4, I.h + 4, Math.min(I.w, I.h) * 0.45, Math.min(I.w, I.h) * 0.14); ctx.stroke(); ctx.restore();
+    }
+    drawTray(ctx, run.foods, t, wanted, App.selFood);
+  }
+
   drawFx(ctx);
   for (const f of fx) if (f.kind === 'bird') { ctx.save(); ctx.globalAlpha = 1 - f.t / f.life; drawWoodpecker(ctx, f.x, f.y, Math.max(12, LAY.cellW * 0.18), t, f.side); ctx.restore(); }
 
+  if (winterRun) for (const d of App.drags.values()) {
+    if (!d.food || !d.moved) continue;
+    fillCirc(ctx, d.x, d.y - 26, 26, 'rgba(251,248,242,0.9)');
+    drawFood(ctx, d.food, d.x, d.y - 26, 20);
+  }
   // the carried guest, under the finger
   if (phase === 'autumn' && run) for (const d of App.drags.values()) {
     if (!d.moved) continue;
@@ -704,6 +800,10 @@ function ambient(dt) {
     }
   }
   if (g.phase === 'winter') {
+    if (run.drops.length && !App.save.seen.drop && run.aurora <= 0) {
+      const id = run.drops[0].id;
+      hint('drop', '<b>Gökten fındık düşüyor!</b> Yere düşmeden dokunup yakala. Yakaladıkların senin.', { time: 7, tag: 'drop', hand: { kind: 'tap', at: () => { const d = g.run && g.run.drops && g.run.drops.find((x) => x.id === id); return d ? dropPos(d, App.t) : null; } } });
+    }
     const T = App.fxT;
     T.tok -= dt;
     if (run.wps.length && T.tok <= 0) {
@@ -734,7 +834,7 @@ function updateHud() {
   else if (phase === 'spring' || phase === 'summary') bar = 1;
   const bw = Math.round(bar * 100) + '%';
   if (App.hud.bar !== bw) { App.hud.bar = bw; $('seasonBar').style.width = bw; }
-  const m = Math.max(0, s.money - App.moneyHold);
+  const m = Math.max(0, s.money - App.moneyHold + (phase === 'winter' && run ? (run.caught || 0) + (run.dreamTip || 0) : 0));
   setText('money', String(m));
   const st = starsFor(s.fame);
   setHtml('stars', `<span class="full">${[1, 2, 3, 4, 5].map((k) => ICON.star(k <= st, 17)).join('')}</span><span class="mini">${ICON.star(true, 17)}${st}</span>`);
@@ -743,6 +843,12 @@ function updateHud() {
   const showBar = phase === 'summer' && !App.sheet;
   if ($('summerBar').hidden === showBar) $('summerBar').hidden = !showBar;
   if (!$('hint').hidden && App.t > App.hintUntil) hideHint();
+  if ($('hint').hidden && App.hintQueue.length && !App.sheet && (phase === 'autumn' || phase === 'winter')) {
+    const q = App.hintQueue.shift();
+    hint(q.key, q.html, Object.assign({}, q.o, { now: true }));
+  }
+  const tray = phase === 'winter';
+  if (App.hud.tray !== tray) { App.hud.tray = tray; document.body.classList.toggle('tray', tray); }
 }
 
 function banner(title, sub, small) {
@@ -757,6 +863,10 @@ function hint(key, html, o) {
   o = o || {};
   if (key) {
     if (App.save.seen[key]) return false;
+    if (!$('hint').hidden && App.hintTag && App.t - App.hintKeyed < 3.5 && !o.now) {
+      if (!App.hintQueue.some((q) => q.key === key)) App.hintQueue.push({ key, html, o });
+      return true;
+    }
     App.save.seen[key] = 1; persist();
     App.hintKeyed = App.t;
   } else if (App.t - App.hintKeyed < 4 && !$('hint').hidden) return true;
@@ -769,7 +879,7 @@ function hint(key, html, o) {
 }
 function solved(tag) { if (App.hintTag === tag && !$('hint').hidden) { App.hintUntil = Math.min(App.hintUntil, App.t + 0.8); App.hand = null; } }
 function toast(html, time) { hint(null, html, { time: time || 3.5 }); }
-function hideHint() { $('hint').hidden = true; App.hand = null; }
+function hideHint() { $('hint').hidden = true; App.hand = null; App.hintTag = null; }
 
 function starInfo() {
   const s = App.save, next = STAR_AT.find((x) => x > s.fame);
@@ -899,10 +1009,15 @@ function openSummary(res) {
   const tips = [];
   if (res.left) tips.push(`${res.left} misafir yer bulamadı ya da beklemekten sıkıldı. Daha çok oda yapabilirsin.`);
   if (res.rows.some((r) => r.woke)) tips.push('Uyanan misafir ödeme yapmaz. Dükkândaki yardımcılar işini kolaylaştırır.');
+  const extras = [];
+  if (res.caught) extras.push(`${res.caught} fındık yakaladın`);
+  if (res.dreams) extras.push(`${res.dreams} rüya gerçek oldu (+${res.dreamTip})`);
+  if (res.auroras) extras.push(`${res.auroras} kez kuzey ışıkları geldi`);
   const empty = !res.rows.length;
   openSheet(`<h2>Bahar geldi · Yıl ${res.year}</h2>
     ${empty ? '<p>Bu kış otelde kimse uyumadı. Sonbaharda misafirleri sürükleyip odalarına bırakmayı unutma.</p>' : `<div class="list">${rows}</div>`}
-    <div class="total"><div>${ICON.nut(22)}+${res.pay + res.tip}<small>${res.tip ? `${res.tip} bahşiş` : 'fındık'}</small></div><div>${ICON.heart(true, 20)}+${res.hearts}<small>kalp</small></div></div>
+    <div class="total"><div>${ICON.nut(22)}+${res.pay + res.tip + (res.caught || 0) + (res.dreamTip || 0)}<small>${res.tip ? `${res.tip} bahşiş` : 'fındık'}</small></div><div>${ICON.heart(true, 20)}+${res.hearts}<small>kalp</small></div></div>
+    ${extras.length ? `<p class="muted">Kışın: ${extras.join(', ')}.</p>` : ''}
     ${news.map((n) => `<div class="news">${n}</div>`).join('')}
     ${tips.map((x) => `<p class="muted">${x}</p>`).join('')}
     <div class="actions"><button class="btn primary" data-act="go">Yaza geç</button>${lab.ask('yil-sonu')}</div>`,
@@ -928,7 +1043,7 @@ function openPause() {
 function openHelp(back) {
   openSheet(`<h2>Nasıl oynanır</h2><ul class="steps">
     <li><b>Sonbahar</b><span>Misafirler kulübenin önünde sıraya girer. Her birini parmağınla sürükleyip kendi odasına bırak. Kirpi ile fındık faresi yaprak yuvasında, ayı mağarada uyur.</span></li>
-    <li><b>Kış</b><span>Herkes uyur. Battaniyesi düşene dokun, horlayanı çevir, ağaçkakanı kov. Kulübeye dokununca sobaya odun atarsın: termometre yeşilde kalsın.</span></li>
+    <li><b>Kış</b><span>Herkes uyur. Battaniyesi düşene dokun, horlayanı çevir, ağaçkakanı kov. Kulübeye dokununca sobaya odun atarsın: termometre yeşilde kalsın. Gökten düşen fındıkları yakala, rüya görenlere rüyasındaki yiyeceği aşağıdaki kilerden sürükle. Kimsenin uykusu bölünmezse kuzey ışıkları gelir ve gökten fındık yağar.</span></li>
     <li><b>Bahar</b><span>İyi uyuyan çok fındık öder ve 3 kalp bırakır. Kalpler otele yıldız getirir, yeni yıldızlarda yeni misafirler gelir.</span></li>
     <li><b>Yaz</b><span>Toprağı kaz, oda yap, odaları güzelleştir. Dükkândan yardımcı al: sincap, baykuş ve ren geyiği kışın sana yardım eder.</span></li>
     <li><b>İki kişi</b><span>Aynı ekranda iki kişi birden dokunabilir. Biri sobaya baksın, öteki misafirlere.</span></li></ul>

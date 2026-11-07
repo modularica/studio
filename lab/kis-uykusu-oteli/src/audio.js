@@ -84,6 +84,11 @@ const Sound = {
       case 'season': [523, 659, 784, 1047].forEach((f, k) => this.tone(f, 0.8, { vol: 0.05, type: 'triangle', delay: k * 0.12 })); break;
       case 'ayaz': this.noise(2.4, { freq: 500, to: 1400, type: 'bandpass', q: 1.5, vol: 0.14, attack: 0.8 }); break;
       case 'leave': this.tone(440, 0.25, { vol: 0.05, to: 330 }); break;
+      case 'catch': this.tone(1319, 0.12, { vol: 0.08, type: 'triangle' }); this.tone(1760, 0.18, { vol: 0.06, type: 'triangle', delay: 0.05 }); break;
+      case 'gold': [1319, 1568, 2093, 2637].forEach((f, k) => this.tone(f, 0.3, { vol: 0.07, type: 'triangle', delay: k * 0.05 })); break;
+      case 'dream': this.tone(1175, 0.6, { vol: 0.04 }); this.tone(1568, 0.7, { vol: 0.035, delay: 0.12 }); break;
+      case 'fed': this.noise(0.12, { freq: 900, vol: 0.08 }); this.noise(0.12, { freq: 900, vol: 0.08, delay: 0.14 }); [784, 988, 1319].forEach((f, k) => this.tone(f, 0.4, { vol: 0.06, type: 'triangle', delay: 0.25 + k * 0.07 })); break;
+      case 'aurora': [523, 659, 784, 988, 1175, 1568].forEach((f, k) => this.tone(f, 1.4, { vol: 0.05, delay: k * 0.09 })); break;
     }
   },
 

@@ -8,7 +8,7 @@ function loadGame() {
   const ctx = { console, Math, Date, Object, Array, Set, Infinity, isFinite, JSON };
   vm.createContext(ctx);
   const src = ['data.js', 'sim.js'].map((f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8')).join('\n');
-  vm.runInContext(src + '\nthis.API = { Game, newSave, cleanSave, SPECIES, ROOMS, STAFF, UPGRADES, TUNE, starsFor, guestsWanted, canDig, digCost, dugCount, upgradeCost, cellRC, ROOM_ORDER, STAFF_ORDER, UPGRADE_ORDER, COLS, ROWS };', ctx);
+  vm.runInContext(src + '\nthis.API = { Game, newSave, cleanSave, FOOD_ORDER, SPECIES, ROOMS, STAFF, UPGRADES, TUNE, starsFor, guestsWanted, canDig, digCost, dugCount, upgradeCost, cellRC, ROOM_ORDER, STAFF_ORDER, UPGRADE_ORDER, COLS, ROWS };', ctx);
   return ctx.API;
 }
 
@@ -40,7 +40,14 @@ class Bot {
         if (need && x.sleep < bs) { bs = x.sleep; best = x; }
       }
       if (best && this.g.rand() < o.accuracy) { g.tapRoom(best.cell); this.cd = o.gap; this.actions++; return; }
-      if (best) this.cd = o.gap;   // missed tap
+      if (best) { this.cd = o.gap; return; }   // missed tap
+      // nothing to fix: chase the fun things
+      if (o.fun) {
+        const d = run.drops.find((x) => x.p > 0.25 && x.p < 0.95 && x.p / x.v >= o.react * 0.6);
+        if (d && this.g.rand() < o.fun) { g.catchDrop(d.id); this.cd = o.gap * 0.8; this.actions++; return; }
+        const dr = run.guests.find((x) => !x.gone && x.dream && x.dream.t >= o.react);
+        if (dr && this.g.rand() < o.fun) { g.feed(dr.cell, dr.dream.item); this.cd = o.gap * 2; this.actions++; return; }
+      }
     } else if (g.phase === 'summary') {
       g.toSummer();
     }
@@ -122,6 +129,7 @@ function play(A, opt, years, seed) {
       cold: Math.round(coldS), hot: Math.round(hotS),
       stars: A.starsFor(save.fame), fame: save.fame,
       rooms: save.grid.filter((x) => x.room).length,
+      auroras: r.auroras, caught: r.caught, dreams: r.dreams, extra: r.caught + r.dreamTip,
     });
     bot.summer();
     log[log.length - 1].moneyAfter = save.money;

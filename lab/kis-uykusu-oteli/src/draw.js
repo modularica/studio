@@ -195,19 +195,23 @@ function paintBackground(ctx, season) {
 
 // ---- sky life: aurora, weather particles ---------------------------------
 
-function drawAurora(ctx, t) {
+function drawAurora(ctx, t, k) {
   const { w, top, surfH } = LAY;
   const y0 = top + surfH * 0.05;
+  k = k == null ? 1 : k;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (let band = 0; band < 2; band++) {
+  ctx.globalAlpha = Math.min(1, k);
+  const bands = k > 1.5 ? 4 : 2;
+  for (let band = 0; band < bands; band++) {
     ctx.beginPath();
     for (let x = 0; x <= w; x += 12) {
       const y = y0 + surfH * (0.16 + band * 0.1) + Math.sin(x * 0.008 + t * 0.35 + band * 2) * surfH * 0.07 + Math.sin(x * 0.021 - t * 0.2) * surfH * 0.03;
       if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
-    ctx.lineWidth = surfH * (0.09 - band * 0.03);
-    ctx.strokeStyle = band ? 'rgba(130,190,200,0.10)' : 'rgba(120,210,170,0.13)';
+    ctx.lineWidth = surfH * Math.max(0.03, 0.09 - (band % 2) * 0.03) * (k > 1.5 ? 1.4 : 1);
+    const boost = k > 1.5 ? 3.2 : 1 + k * 0.6;
+    ctx.strokeStyle = ['rgba(120,210,170,', 'rgba(130,190,200,', 'rgba(180,150,230,', 'rgba(140,230,190,'][band] + (0.11 * boost).toFixed(3) + ')';
     ctx.stroke();
   }
   ctx.restore();
@@ -981,4 +985,150 @@ function spriteIcon(kind, size) {
   else if (kind === 'baykus') drawOwl(c, size / 2, size * 0.98, size * 1.25, 0, false);
   else if (kind === 'geyik') drawDeer(c, size * 0.6, size * 0.98, size * 0.95, 0, false);
   return cv;
+}
+
+// ---- winter fun: food, dreams, falling nuts, the northern lights -------------
+
+function drawFood(ctx, item, x, y, r) {
+  ctx.save();
+  switch (item) {
+    case 'findik': drawNut(ctx, x, y, r * 0.78); break;
+    case 'bal': {
+      ctx.fillStyle = '#D9A13A'; rrPath(ctx, x - r * 0.58, y - r * 0.42, r * 1.16, r * 1.12, r * 0.3); ctx.fill();
+      ctx.fillStyle = '#7C5030'; rrPath(ctx, x - r * 0.64, y - r * 0.68, r * 1.28, r * 0.32, r * 0.1); ctx.fill();
+      ctx.fillStyle = '#F4EAD2'; rrPath(ctx, x - r * 0.42, y - r * 0.12, r * 0.84, r * 0.4, r * 0.08); ctx.fill();
+      ctx.fillStyle = '#E9B44C'; ctx.beginPath(); ctx.arc(x - r * 0.25, y - r * 0.36, r * 0.12, 0, Math.PI); ctx.fill();
+      break;
+    }
+    case 'balik': {
+      ctx.fillStyle = '#6F95B5';
+      ctx.beginPath(); ctx.moveTo(x + r * 0.45, y); ctx.lineTo(x + r * 0.9, y - r * 0.4); ctx.lineTo(x + r * 0.9, y + r * 0.4); ctx.closePath(); ctx.fill();
+      fillEll(ctx, x - r * 0.08, y, r * 0.62, r * 0.36, '#6F95B5');
+      fillEll(ctx, x - r * 0.12, y + r * 0.12, r * 0.42, r * 0.14, '#BFD3E0');
+      fillCirc(ctx, x - r * 0.42, y - r * 0.08, r * 0.08, PAL.ink);
+      break;
+    }
+    case 'bocek': {
+      ctx.strokeStyle = '#3A2A22'; ctx.lineWidth = Math.max(1, r * 0.08); ctx.lineCap = 'round';
+      for (const s of [-1, 1]) for (const k of [-0.25, 0.05, 0.35]) { ctx.beginPath(); ctx.moveTo(x, y + r * k); ctx.lineTo(x + s * r * 0.62, y + r * (k + 0.12)); ctx.stroke(); }
+      fillEll(ctx, x, y + r * 0.08, r * 0.46, r * 0.56, '#7A4A34');
+      fillCirc(ctx, x, y - r * 0.5, r * 0.24, '#3A2A22');
+      ctx.strokeStyle = '#5A3626'; ctx.beginPath(); ctx.moveTo(x, y - r * 0.28); ctx.lineTo(x, y + r * 0.62); ctx.stroke();
+      fillEll(ctx, x - r * 0.18, y - r * 0.06, r * 0.1, r * 0.16, 'rgba(255,255,255,0.3)');
+      break;
+    }
+    case 'solucan': {
+      ctx.strokeStyle = '#D98C86'; ctx.lineWidth = r * 0.3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x - r * 0.7, y + r * 0.1);
+      ctx.bezierCurveTo(x - r * 0.4, y - r * 0.5, x - r * 0.1, y + r * 0.5, x + r * 0.2, y - r * 0.05);
+      ctx.bezierCurveTo(x + r * 0.35, y - r * 0.3, x + r * 0.55, y - r * 0.25, x + r * 0.7, y - r * 0.15); ctx.stroke();
+      fillCirc(ctx, x + r * 0.64, y - r * 0.2, r * 0.05, PAL.ink);
+      break;
+    }
+    case 'sinek': {
+      fillEll(ctx, x - r * 0.22, y - r * 0.3, r * 0.34, r * 0.22, 'rgba(190,215,230,0.85)', -0.5);
+      fillEll(ctx, x + r * 0.22, y - r * 0.3, r * 0.34, r * 0.22, 'rgba(190,215,230,0.85)', 0.5);
+      fillEll(ctx, x, y + r * 0.08, r * 0.24, r * 0.38, '#3A3A3E');
+      fillCirc(ctx, x, y - r * 0.34, r * 0.2, '#3A3A3E');
+      fillCirc(ctx, x - r * 0.1, y - r * 0.38, r * 0.08, '#C2553D'); fillCirc(ctx, x + r * 0.1, y - r * 0.38, r * 0.08, '#C2553D');
+      break;
+    }
+    case 'guve': {
+      for (const s of [-1, 1]) {
+        fillEll(ctx, x + s * r * 0.38, y - r * 0.12, r * 0.42, r * 0.34, '#D8C7A3', s * 0.4);
+        fillEll(ctx, x + s * r * 0.3, y + r * 0.3, r * 0.26, r * 0.22, '#C9B48C', -s * 0.4);
+        fillCirc(ctx, x + s * r * 0.4, y - r * 0.12, r * 0.09, '#8C7556');
+      }
+      fillEll(ctx, x, y + r * 0.05, r * 0.12, r * 0.42, '#7C6448');
+      ctx.strokeStyle = '#7C6448'; ctx.lineWidth = Math.max(1, r * 0.06);
+      ctx.beginPath(); ctx.moveTo(x - r * 0.05, y - r * 0.35); ctx.lineTo(x - r * 0.25, y - r * 0.7); ctx.moveTo(x + r * 0.05, y - r * 0.35); ctx.lineTo(x + r * 0.25, y - r * 0.7); ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+// A cloud-shaped dream bubble with the dreamed food inside.
+function drawDreamBubble(ctx, x, y, r, item, t, left, toX, toY) {
+  const blink = left < 2.5 ? 0.55 + 0.45 * Math.abs(Math.sin(t * 6)) : 1;
+  const bob = Math.sin(t * 2) * r * 0.06;
+  ctx.save();
+  ctx.globalAlpha = blink;
+  for (let k = 1; k <= 2; k++) fillCirc(ctx, lerp(x, toX, 0.35 + k * 0.22), lerp(y + r * 0.8, toY, 0.35 + k * 0.22), r * (0.2 - k * 0.05), 'rgba(250,247,255,0.95)');
+  ctx.fillStyle = 'rgba(250,247,255,0.97)';
+  for (const [dx, dy, rr] of [[-0.55, 0.15, 0.55], [0.55, 0.15, 0.55], [0, -0.3, 0.65], [-0.25, 0.35, 0.5], [0.3, 0.38, 0.5]]) { circ(ctx, x + dx * r, y + dy * r + bob, rr * r); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(150,130,190,0.55)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y + bob, r * 1.12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp01(left / TUNE.dreamLen)); ctx.stroke();
+  drawFood(ctx, item, x, y + r * 0.05 + bob, r * 0.62);
+  ctx.restore();
+}
+
+function dropPos(d, t) {
+  const y0 = LAY.top + 12, y1 = LAY.groundY - 8;
+  return { x: d.x * LAY.w + Math.sin(t * 1.7 + d.ph) * Math.min(18, LAY.w * 0.03), y: lerp(y0, y1, d.p) };
+}
+function dropR() { return Math.max(9, Math.min(15, LAY.cellW * 0.12)); }
+function drawDrop(ctx, d, t) {
+  const p = dropPos(d, t), r = dropR();
+  ctx.save();
+  ctx.globalAlpha = d.p > 0.9 ? Math.max(0, 1 - (d.p - 0.9) / 0.1) : 1;
+  fillCirc(ctx, p.x, p.y, r * 1.7, d.gold ? 'rgba(247,205,107,0.32)' : 'rgba(255,245,225,0.22)');
+  // a little leaf it rides on
+  ctx.save(); ctx.translate(p.x, p.y - r * 1.05); ctx.rotate(Math.sin(t * 1.7 + d.ph) * 0.35);
+  fillEll(ctx, 0, 0, r * 0.95, r * 0.3, d.gold ? '#E9B44C' : '#9DB37A');
+  ctx.strokeStyle = 'rgba(60,50,30,0.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-r * 0.8, 0); ctx.lineTo(r * 0.8, 0); ctx.stroke();
+  ctx.restore();
+  if (d.gold) {
+    fillEll(ctx, p.x, p.y + r * 0.15, r * 0.85, r * 0.8, '#E0A93A');
+    ctx.fillStyle = '#B9822C'; ctx.beginPath(); ctx.ellipse(p.x, p.y - r * 0.2, r * 0.9, r * 0.5, 0, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#FBE7A6'; ctx.lineWidth = 1.5;
+    for (let k = 0; k < 4; k++) { const a = t * 2 + k * Math.PI / 2; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(a) * r * 1.2, p.y + Math.sin(a) * r * 1.2); ctx.lineTo(p.x + Math.cos(a) * r * 1.6, p.y + Math.sin(a) * r * 1.6); ctx.stroke(); }
+  } else drawNut(ctx, p.x, p.y, r);
+  ctx.restore();
+}
+
+// The northern-lights bar under the HUD: fills while everybody sleeps well.
+function drawPeaceMeter(ctx, peace, aurora, t) {
+  const w = Math.min(230, LAY.w * 0.5), h = 10, x = LAY.w / 2 - w / 2 + 12, y = LAY.inset.top + 70;
+  ctx.save();
+  // icon: three little waves of light
+  ctx.lineCap = 'round'; ctx.lineWidth = 2.4;
+  const cols = ['#8FE0B8', '#7CC9D6', '#B7A3E8'];
+  for (let k = 0; k < 3; k++) {
+    ctx.strokeStyle = cols[k]; ctx.beginPath();
+    for (let i = 0; i <= 8; i++) { const xx = x - 26 + i * 2.2, yy = y + 1 + k * 4 + Math.sin(i * 0.9 + t * 3 + k) * 1.6; if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy); }
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(15,22,38,0.55)'; rrPath(ctx, x - 2, y - 2, w + 4, h + 4, (h + 4) / 2); ctx.fill();
+  const v = aurora > 0 ? aurora / TUNE.auroraLen : peace / 100;
+  if (v > 0.01) {
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, '#7FD6A8'); g.addColorStop(0.6, '#7CC9D6'); g.addColorStop(1, '#B7A3E8');
+    ctx.fillStyle = g; rrPath(ctx, x, y, Math.max(h, w * v), h, h / 2); ctx.fill();
+    if (aurora > 0 || v > 0.8) { ctx.globalAlpha = 0.35 + 0.35 * Math.sin(t * 8); fillCirc(ctx, x + w * v, y + h / 2, h * 1.1, '#FFFFFF'); }
+  }
+  ctx.restore();
+}
+
+function trayLayout(n) {
+  const r = Math.max(16, Math.min(24, (LAY.w - 48) / (n * 2.5)));
+  const gap = r * 2.5, w = n * gap + r * 0.5;
+  const cy = LAY.h - LAY.inset.bottom - 12 - r * 1.3;
+  const x0 = LAY.w / 2 - w / 2 + r * 0.25 + gap / 2;
+  return { r, cy, w, slots: Array.from({ length: n }, (_, k) => ({ x: x0 + k * gap, y: cy })) };
+}
+function drawTray(ctx, foods, t, wanted, selected) {
+  if (!foods.length) return;
+  const T = trayLayout(foods.length);
+  ctx.save();
+  ctx.fillStyle = 'rgba(20,20,30,0.18)'; rrPath(ctx, LAY.w / 2 - T.w / 2 + 2, T.cy - T.r * 1.3 + 3, T.w, T.r * 2.6, T.r * 1.3); ctx.fill();
+  ctx.fillStyle = 'rgba(251,248,242,0.94)'; rrPath(ctx, LAY.w / 2 - T.w / 2, T.cy - T.r * 1.3, T.w, T.r * 2.6, T.r * 1.3); ctx.fill();
+  foods.forEach((f, k) => {
+    const s = T.slots[k], want = wanted.has(f);
+    const pulse = want ? 1 + Math.sin(t * 6) * 0.06 : 1;
+    fillCirc(ctx, s.x, s.y, T.r * pulse, want ? '#EDE6F7' : '#F2ECE1');
+    if (want || selected === f) { ctx.strokeStyle = selected === f ? PAL.good : 'rgba(150,130,190,0.8)'; ctx.lineWidth = selected === f ? 3 : 2; circ(ctx, s.x, s.y, T.r * pulse); ctx.stroke(); }
+    drawFood(ctx, f, s.x, s.y, T.r * 0.72);
+  });
+  ctx.restore();
 }
