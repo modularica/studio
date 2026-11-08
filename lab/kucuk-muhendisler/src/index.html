@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Küçük Mühendisler</title>
+<!--LAB_HEAD-->
+<!--FONTS-->
+<style>
+/*STYLE*/
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="titleblock">
+    <div class="tb tb-logo"><span class="cap">Uzi Games · Atölye</span><span class="stencil">Küçük<br>Mühendisler</span></div>
+    <div class="tb tb-no"><span class="cap">Çizim no</span><span class="val" id="tb-no">01 / 05</span></div>
+    <div class="tb tb-name"><span class="cap">Bölüm</span><span class="val" id="tb-name">İlk rampa</span></div>
+    <div class="tb tb-task"><span class="cap">Görev</span><span class="val" id="tb-task">Topu kovaya ulaştır.</span></div>
+    <div class="tb tb-btns">
+      <button class="tbtn" id="btn-look" type="button" aria-label="Görünüm">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="3" width="15" height="11" rx="1"/><path d="M2.5 11l4-3.5 3 2.5 3-3 4.5 4"/><path d="M7 17h6"/></svg>
+        <span class="lbl" id="look-label">Çizim → canlı</span>
+      </button>
+      <button class="tbtn" id="btn-levels" type="button" aria-label="Bölümler">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="11.5" y="2.5" width="6" height="6"/><rect x="2.5" y="11.5" width="6" height="6"/><rect x="11.5" y="11.5" width="6" height="6"/></svg>
+        <span class="lbl">Bölümler</span>
+      </button>
+      <button class="tbtn" id="btn-sound" type="button" aria-label="Ses" aria-pressed="true">
+        <svg id="ico-sound" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/></svg>
+      </button>
+    </div>
+  </header>
+  <main id="stage">
+    <section id="sheet" aria-label="Çizim tahtası">
+      <canvas id="board"></canvas>
+      <div id="toast" role="status" aria-live="polite"></div>
+    </section>
+    <aside id="side">
+      <div class="note"><span class="cap">Not</span><p id="hint"></p></div>
+      <div class="panel" id="bom">
+        <div class="panel-head"><span class="cap">Parça listesi</span><span class="cap">Adet</span></div>
+        <ol id="bom-list"></ol>
+        <p class="panel-foot" id="bom-foot">Sürükle: yerleştir · Dokun: döndür · Tahtanın dışına at: geri al</p>
+      </div>
+      <div class="panel" id="pult" hidden>
+        <div class="panel-head"><span class="cap">Kumanda</span><span class="cap" id="press-count">Elle: 0</span></div>
+        <div id="pult-buttons"></div>
+        <p class="panel-foot" id="pult-foot">Turuncu cihazlar senin elinde. Sayı tuşları da çalışır.</p>
+      </div>
+      <div class="panel" id="goals">
+        <div class="panel-head"><span class="cap">Onay damgaları</span></div>
+        <ul id="goal-list"></ul>
+      </div>
+      <button id="run" type="button">
+        <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
+        <span id="run-label">Çalıştır</span>
+      </button>
+    </aside>
+  </main>
+</div>
+
+<div class="overlay" id="result" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <span class="cap" id="result-cap">Çizim 01 · onaylandı</span>
+    <h2 class="stencil result-title" id="result-title">Makine çalıştı</h2>
+    <ul id="result-stamps"></ul>
+    <dl class="stats">
+      <div><dt class="cap">Süre</dt><dd id="st-time">0,0 sn</dd></div>
+      <div><dt class="cap">Parça</dt><dd id="st-parts">0</dd></div>
+      <div><dt class="cap">Elle müdahale</dt><dd id="st-press">0</dd></div>
+    </dl>
+    <p id="result-tip"></p>
+    <div class="actions">
+      <button class="btn lab-only" type="button" data-nasildi="seviye-sonu">Nasıldı?</button>
+      <button class="btn" id="btn-retry" type="button">Tekrar kur</button>
+      <button class="btn primary" id="btn-next" type="button">Sonraki çizim</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="levels" hidden>
+  <div class="sheet-card levels-card" role="dialog" aria-modal="true" aria-labelledby="levels-title">
+    <div class="levels-head">
+      <div>
+        <span class="cap">Uzi Games · Atölye defteri</span>
+        <h1 class="stencil" id="levels-title">Küçük Mühendisler</h1>
+        <p>Bir çizim seç. Her çizimde topu kovaya ulaştıran makineyi sen kuruyorsun.</p>
+      </div>
+      <div class="actions">
+        <button class="btn lab-only" type="button" data-nasildi="mola">Nasıldı?</button>
+        <button class="btn" id="levels-close" type="button">Kapat</button>
+      </div>
+    </div>
+    <div id="level-grid"></div>
+  </div>
+</div>
+
+<div id="dragimg" aria-hidden="true"></div>
+
+<!--LIBS-->
+<script>
+/*SIM*/
+</script>
+<script>
+/*LEVELS*/
+</script>
+<script>
+/*GAME*/
+</script>
+</body>
+</html>

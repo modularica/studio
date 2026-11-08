@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Küçük Mühendisler</title>
+<meta name="description" content="Rampa, yay, piston ve pervanelerle topu kovaya ulaştıran makineyi kur. Makine çalışırken turuncu cihazlar senin elinde; sensör koyarsan kendi kendine çalışır.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Küçük Mühendisler">
+<meta property="og:description" content="Rampa, yay, piston ve pervanelerle topu kovaya ulaştıran makineyi kur. Makine çalışırken turuncu cihazlar senin elinde; sensör koyarsan kendi kendine çalışır.">
+<meta property="og:image" content="https://uzigames.com/lab/kucuk-muhendisler/cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noindex">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-oyun="kucuk-muhendisler" data-kayit="kucuk-muhendisler.v1"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Big+Shoulders+Stencil:wght@800&display=swap">
+<style>
+:root {
+  /* Teknik çizim masası: üstte antet, solda çizim, sağda parça listesi ve kumanda.
+     Tek renk dünyası: siyanotip mavi kâğıt, beyaz mürekkep; turuncu yalnızca elle kumanda edilen her şey. */
+  --paper: #0d3361;
+  --paper-hi: #184e8a;
+  --paper-deep: #0a2748;
+  --ink: #e6f0ff;
+  --ink-dim: #9fb9dc;
+  --line: rgba(230, 240, 255, 0.16);
+  --line-strong: rgba(230, 240, 255, 0.42);
+  --hand: #ff9440;
+  --ball: #ffd54a;
+  --eye: #72e6f2;
+  --bad: #ff6b6b;
+  --display: 'Big Shoulders Stencil', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+  --body: 'Barlow Semi Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(120% 90% at 40% 35%, rgba(36, 98, 168, 0.55), rgba(13, 51, 97, 0) 70%),
+    var(--noise, none);
+  color: var(--ink);
+  font-family: var(--body);
+  font-weight: 500;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; touch-action: manipulation; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ball); outline-offset: 2px; }
+
+.cap {
+  font-size: 10.5px; line-height: 1.1; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-dim);
+}
+.stencil { font-family: var(--display); font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+
+#app { height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+
+/* Antet (çizim kâğıdının köşesindeki bilgi kutusu) */
+.titleblock {
+  display: flex; align-items: stretch; flex: none;
+  border: 1.5px solid var(--ink); background: rgba(10, 39, 72, 0.55);
+  min-height: 52px;
+}
+.tb { display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 6px 12px; border-right: 1px solid var(--line-strong); min-width: 0; }
+.tb:last-child { border-right: 0; }
+.tb .val { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-logo { flex: none; padding-right: 16px; }
+.tb-logo .stencil { font-size: 24px; line-height: 1.02; }
+.tb-no .val { font-variant-numeric: tabular-nums; }
+.tb-task { flex: 1; }
+.tb-task .val { font-size: 16px; font-weight: 600; letter-spacing: 0.01em; text-transform: none; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.tb-btns { flex-direction: row; align-items: center; gap: 6px; padding: 6px 8px; }
+.tbtn {
+  height: 38px; min-width: 38px; padding: 0 12px; border: 1px solid var(--line-strong); background: transparent;
+  font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; font-size: 13px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.tbtn:hover { background: rgba(230, 240, 255, 0.08); }
+.tbtn svg { width: 18px; height: 18px; }
+
+#stage { flex: 1; min-height: 0; display: flex; gap: 12px; }
+#sheet { flex: 1; min-width: 0; min-height: 0; position: relative; }
+#board { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+#toast {
+  position: absolute; left: 50%; top: 4px; transform: translate(-50%, -6px); opacity: 0;
+  background: var(--paper-deep); border: 1px solid var(--ink); padding: 8px 14px; max-width: min(92%, 520px);
+  font-size: 15px; font-weight: 600; text-align: center; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Yan sütun */
+#side { width: clamp(214px, 21vw, 280px); flex: none; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.panel { border: 1px solid var(--line-strong); background: rgba(10, 39, 72, 0.5); }
+.panel-head { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px 6px; border-bottom: 1px solid var(--line-strong); }
+.note { border-left: 3px solid var(--ball); padding: 8px 10px 9px 11px; background: rgba(10, 39, 72, 0.5); }
+.note p { margin: 4px 0 0; font-size: 15.5px; line-height: 1.3; font-weight: 600; text-wrap: pretty; }
+
+#bom-list { list-style: none; margin: 0; padding: 0; }
+.bom-row {
+  display: grid; grid-template-columns: 22px 52px 1fr auto; align-items: center; gap: 8px;
+  padding: 6px 10px; border-bottom: 1px solid var(--line); cursor: grab; touch-action: none;
+}
+.bom-row:last-child { border-bottom: 0; }
+.bom-row:hover { background: rgba(230, 240, 255, 0.06); }
+.bom-row.empty { opacity: 0.38; cursor: default; }
+.bom-row .no { font-variant-numeric: tabular-nums; color: var(--ink-dim); font-weight: 700; font-size: 13px; }
+.bom-row canvas { width: 100%; height: 30px; display: block; }
+.bom-row .nm { font-size: 17px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.bom-row .qty { font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 700; }
+.bom-none { padding: 10px; font-size: 14.5px; color: var(--ink-dim); margin: 0; }
+.panel-foot { margin: 0; padding: 7px 10px 8px; font-size: 13px; line-height: 1.3; color: var(--ink-dim); border-top: 1px solid var(--line); }
+
+#pult-buttons { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+.dev {
+  display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center;
+  min-height: 64px; padding: 8px 12px; border: 2px solid var(--hand); background: rgba(255, 148, 64, 0.12);
+  text-align: left; cursor: pointer; touch-action: none;
+}
+.dev .num {
+  grid-row: 1 / 3; width: 40px; height: 40px; border-radius: 50%; background: var(--hand); color: var(--paper-deep);
+  display: grid; place-items: center; font-size: 22px; font-weight: 700;
+}
+.dev .nm { font-size: 18px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.dev .act { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--hand); }
+.dev.on { background: var(--hand); }
+.dev.on .num { background: var(--paper-deep); color: var(--hand); }
+.dev.on .act, .dev.on .nm { color: var(--paper-deep); }
+.pult-none { padding: 10px; margin: 0; font-size: 14.5px; color: var(--ink-dim); }
+
+#goal-list { list-style: none; margin: 0; padding: 4px 0; }
+.goal { display: flex; align-items: center; gap: 10px; padding: 5px 10px; font-size: 15px; font-weight: 600; }
+.stamp {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed var(--line-strong);
+  display: grid; place-items: center;
+}
+.stamp svg { width: 16px; height: 16px; opacity: 0; }
+.goal.got .stamp { border: 2px solid var(--ball); transform: rotate(-8deg); }
+.goal.got .stamp svg { opacity: 1; }
+.goal.got { color: var(--ink); }
+.goal:not(.got) { color: var(--ink-dim); }
+
+#run {
+  margin-top: auto; flex: none; height: 62px; border: 0; background: var(--ink); color: var(--paper-deep);
+  font-size: 21px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+#run:hover { background: #ffffff; }
+#run svg { width: 20px; height: 20px; }
+#run.stop { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+
+/* Üst katmanlar */
+.overlay {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+  background: rgba(7, 26, 50, 0.78);
+}
+.overlay[hidden] { display: none; }
+.sheet-card {
+  width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--paper);
+  border: 1.5px solid var(--ink); outline: 1px solid var(--line-strong); outline-offset: 5px;
+  padding: 22px 24px 20px;
+}
+.result-title { font-size: clamp(40px, 7vw, 60px); line-height: 0.9; margin: 8px 0 14px; }
+#result-stamps { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 4px; }
+#result-stamps .goal { padding-left: 0; font-size: 17px; }
+#result-stamps .goal.new .stamp { animation: stampIn 0.45s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes stampIn { from { transform: scale(1.8) rotate(-24deg); opacity: 0; } to { transform: scale(1) rotate(-8deg); opacity: 1; } }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 14px; border: 1px solid var(--line-strong); }
+.stats div { padding: 7px 10px; border-right: 1px solid var(--line-strong); }
+.stats div:last-child { border-right: 0; }
+.stats dt { margin: 0; }
+.stats dd { margin: 3px 0 0; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#result-tip { margin: 0 0 18px; font-size: 16px; line-height: 1.35; font-weight: 600; text-wrap: pretty; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.lab-only { display: none; }
+html.lab .lab-only { display: inline-flex; align-items: center; }
+.btn {
+  height: 50px; padding: 0 20px; border: 1.5px solid var(--ink); background: transparent; cursor: pointer;
+  font-size: 16px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.btn.primary { background: var(--ink); color: var(--paper-deep); }
+.btn:hover { background: rgba(230, 240, 255, 0.1); }
+.btn.primary:hover { background: #fff; }
+
+.levels-card { width: min(980px, 100%); }
+.levels-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.levels-head .cap { display: block; margin-bottom: 8px; }
+.levels-head h1 { margin: 0; font-size: clamp(38px, 6vw, 64px); line-height: 0.95; }
+.levels-head p { margin: 6px 0 0; font-size: 16px; color: var(--ink-dim); font-weight: 600; }
+#level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.lvl {
+  display: flex; flex-direction: column; text-align: left; padding: 0; border: 1.5px solid var(--line-strong);
+  background: rgba(10, 39, 72, 0.5); cursor: pointer; position: relative;
+}
+.lvl:hover:not(:disabled) { border-color: var(--ink); }
+.lvl.cur { border-color: var(--ball); }
+.lvl canvas { width: 100%; aspect-ratio: 17 / 11; display: block; border-bottom: 1px solid var(--line-strong); }
+.lvl .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; }
+.lvl .nm { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.lvl .dots { display: flex; gap: 4px; }
+.lvl .dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line-strong); }
+.lvl .dot.got { background: var(--ball); border-color: var(--ball); }
+.lvl:disabled { cursor: not-allowed; }
+.lvl:disabled canvas, .lvl:disabled .meta { opacity: 0.35; }
+.lvl .lock { position: absolute; top: 10px; right: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; background: var(--paper-deep); border: 1px solid var(--line-strong); padding: 3px 7px; }
+
+#dragimg { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 30; display: none; }
+#dragimg canvas { display: block; }
+
+/* Dikey ekran ya da dar alan: çizim üstte, liste ve kumanda altta */
+@media (max-aspect-ratio: 5/4) {
+  #app { padding: 8px 10px 10px; gap: 8px; }
+  #stage { flex-direction: column; gap: 8px; }
+  #sheet { flex: none; width: 100%; aspect-ratio: 17.1 / 11.1; }
+  #side { width: auto; flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, auto) 1fr auto; gap: 8px; }
+  .note { grid-column: 1 / 3; }
+  #bom, #pult { grid-column: 1; grid-row: 2; overflow: auto; align-self: start; }
+  #goals { grid-column: 2; grid-row: 2; overflow: auto; align-self: start; }
+  #run { grid-column: 1 / 3; grid-row: 4; height: 56px; }
+}
+@media (max-width: 700px) {
+  .tb-logo, .tb-scale { display: none; }
+  .tb { padding: 5px 9px; }
+  .tb .val { font-size: 16px; }
+  .tb-task .val { font-size: 14px; }
+  .tbtn .lbl { display: none; }
+  .note p { font-size: 14.5px; }
+  .bom-row { grid-template-columns: 18px 44px 1fr auto; padding: 5px 8px; gap: 6px; }
+  .bom-row .nm { font-size: 15px; }
+  .goal { font-size: 14px; padding: 4px 8px; }
+  .dev { min-height: 54px; }
+}
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  #app { padding: 6px 10px 8px; gap: 6px; }
+  .titleblock { min-height: 44px; }
+  .tb-logo .stencil { font-size: 20px; }
+  .tb .val { font-size: 15px; }
+  .tb-task .val { font-size: 14px; -webkit-line-clamp: 1; }
+  .note p { font-size: 14px; }
+  .bom-row { padding: 4px 8px; }
+  .panel-foot { display: none; }
+  #goals { display: none; }
+  #run { height: 50px; font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #toast { transition: none; }
+  #result-stamps .goal.new .stamp { animation: none; }
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="titleblock">
+    <div class="tb tb-logo"><span class="cap">Uzi Games · Atölye</span><span class="stencil">Küçük<br>Mühendisler</span></div>
+    <div class="tb tb-no"><span class="cap">Çizim no</span><span class="val" id="tb-no">01 / 05</span></div>
+    <div class="tb tb-name"><span class="cap">Bölüm</span><span class="val" id="tb-name">İlk rampa</span></div>
+    <div class="tb tb-task"><span class="cap">Görev</span><span class="val" id="tb-task">Topu kovaya ulaştır.</span></div>
+    <div class="tb tb-btns">
+      <button class="tbtn" id="btn-look" type="button" aria-label="Görünüm">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="3" width="15" height="11" rx="1"/><path d="M2.5 11l4-3.5 3 2.5 3-3 4.5 4"/><path d="M7 17h6"/></svg>
+        <span class="lbl" id="look-label">Çizim → canlı</span>
+      </button>
+      <button class="tbtn" id="btn-levels" type="button" aria-label="Bölümler">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="11.5" y="2.5" width="6" height="6"/><rect x="2.5" y="11.5" width="6" height="6"/><rect x="11.5" y="11.5" width="6" height="6"/></svg>
+        <span class="lbl">Bölümler</span>
+      </button>
+      <button class="tbtn" id="btn-sound" type="button" aria-label="Ses" aria-pressed="true">
+        <svg id="ico-sound" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/></svg>
+      </button>
+    </div>
+  </header>
+  <main id="stage">
+    <section id="sheet" aria-label="Çizim tahtası">
+      <canvas id="board"></canvas>
+      <div id="toast" role="status" aria-live="polite"></div>
+    </section>
+    <aside id="side">
+      <div class="note"><span class="cap">Not</span><p id="hint"></p></div>
+      <div class="panel" id="bom">
+        <div class="panel-head"><span class="cap">Parça listesi</span><span class="cap">Adet</span></div>
+        <ol id="bom-list"></ol>
+        <p class="panel-foot" id="bom-foot">Sürükle: yerleştir · Dokun: döndür · Tahtanın dışına at: geri al</p>
+      </div>
+      <div class="panel" id="pult" hidden>
+        <div class="panel-head"><span class="cap">Kumanda</span><span class="cap" id="press-count">Elle: 0</span></div>
+        <div id="pult-buttons"></div>
+        <p class="panel-foot" id="pult-foot">Turuncu cihazlar senin elinde. Sayı tuşları da çalışır.</p>
+      </div>
+      <div class="panel" id="goals">
+        <div class="panel-head"><span class="cap">Onay damgaları</span></div>
+        <ul id="goal-list"></ul>
+      </div>
+      <button id="run" type="button">
+        <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
+        <span id="run-label">Çalıştır</span>
+      </button>
+    </aside>
+  </main>
+</div>
+
+<div class="overlay" id="result" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <span class="cap" id="result-cap">Çizim 01 · onaylandı</span>
+    <h2 class="stencil result-title" id="result-title">Makine çalıştı</h2>
+    <ul id="result-stamps"></ul>
+    <dl class="stats">
+      <div><dt class="cap">Süre</dt><dd id="st-time">0,0 sn</dd></div>
+      <div><dt class="cap">Parça</dt><dd id="st-parts">0</dd></div>
+      <div><dt class="cap">Elle müdahale</dt><dd id="st-press">0</dd></div>
+    </dl>
+    <p id="result-tip"></p>
+    <div class="actions">
+      <button class="btn lab-only" type="button" data-nasildi="seviye-sonu">Nasıldı?</button>
+      <button class="btn" id="btn-retry" type="button">Tekrar kur</button>
+      <button class="btn primary" id="btn-next" type="button">Sonraki çizim</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="levels" hidden>
+  <div class="sheet-card levels-card" role="dialog" aria-modal="true" aria-labelledby="levels-title">
+    <div class="levels-head">
+      <div>
+        <span class="cap">Uzi Games · Atölye defteri</span>
+        <h1 class="stencil" id="levels-title">Küçük Mühendisler</h1>
+        <p>Bir çizim seç. Her çizimde topu kovaya ulaştıran makineyi sen kuruyorsun.</p>
+      </div>
+      <div class="actions">
+        <button class="btn lab-only" type="button" data-nasildi="mola">Nasıldı?</button>
+        <button class="btn" id="levels-close" type="button">Kapat</button>
+      </div>
+    </div>
+    <div id="level-grid"></div>
+  </div>
+</div>
+
+<div id="dragimg" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/planck@1.5.1/dist/planck.min.js"></script>
+<script>
+// Küçük Mühendisler — fizik çekirdeği.
+// Tarayıcıda window.KM olarak, Node'da require('./sim') ile çalışır.
+// Sabit zaman adımı (1/120 sn) kullanır: aynı kurulum + aynı adımda basılan
+// düğme her seferinde aynı sonucu verir.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('planck'));
+  else root.KM = factory(root.planck);
+}(typeof globalThis !== 'undefined' ? globalThis : this, function (pl) {
+  'use strict';
+
+  const W = 16, H = 10, DT = 1 / 120;
+
+  // Ayar düğmeleri. Bölümler bu değerlerle doğrulandı; değiştirirsen testleri yeniden çalıştır.
+  const T = {
+    G: 15,
+    R: 0.28,
+    ballFriction: 0.5, ballRest: 0.2, ballAngDamp: 0.3, ballLinDamp: 0.02,
+    plank: 0.14,
+    springV: 11.5,
+    pistonDist: 1.0, pistonV: 11, pistonHold: 0.12, pistonBackV: 4,
+    fanLen: 6, fanForce: 1.2, fanFalloff: 0.1,
+    beltV: 7.5,
+    restTime: 1.5,
+    maxTime: 40,
+  };
+
+  const PARTS = {
+    ramp:   { orients: ['dr', 'dl', 'flat'], w: 2, h: 1 },
+    spring: { orients: ['u'], w: 1, h: 1 },
+    belt:   { orients: ['r', 'l'], w: 2, h: 1 },
+    piston: { orients: ['u', 'r', 'l'], w: 1, h: 1, manual: 'press' },
+    fan:    { orients: ['r', 'l', 'u'], w: 1, h: 1, manual: 'hold' },
+    sensor: { orients: ['-'], w: 1, h: 1, sensor: true },
+  };
+
+  const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
+
+  function cellsOf(p) {
+    const d = PARTS[p.type], out = [];
+    for (let i = 0; i < d.w; i++) for (let j = 0; j < d.h; j++) out.push([p.x + i, p.y + j]);
+    return out;
+  }
+
+  function rampLine(o) {
+    if (o === 'dr') return [[0, 1], [2, 0]];
+    if (o === 'dl') return [[0, 0], [2, 1]];
+    return [[0, 0], [2, 0]];
+  }
+
+  function pistonGeom(o) {
+    if (o === 'u') return { base: [0.14, 0, 0.86, 0.6], head: [0.04, 0.82, 0.96, 1.0] };
+    if (o === 'r') return { base: [0, 0.14, 0.6, 0.86], head: [0.82, 0.04, 1.0, 0.96] };
+    return { base: [0.4, 0.14, 1, 0.86], head: [0, 0.04, 0.18, 0.96] };
+  }
+
+  function fanZone(p) {
+    const L = T.fanLen;
+    if (p.o === 'r') return [p.x + 1, p.y + 0.05, p.x + 1 + L, p.y + 0.95];
+    if (p.o === 'l') return [p.x - L, p.y + 0.05, p.x, p.y + 0.95];
+    return [p.x + 0.05, p.y + 1, p.x + 0.95, p.y + 1 + L];
+  }
+
+  const CUP = { wall: 0.12, rim: 0.8 };
+  const cupsOf = level => level.cups || [level.cup];
+  const startsOf = level => level.balls || [level.start];
+  function cupBoxes(cup) {
+    const { x, y, w } = cup, t = CUP.wall, out = [];
+    const back = cup.back || null;
+    const lh = back && back.side === 'l' ? back.h : CUP.rim;
+    const rh = back && back.side === 'r' ? back.h : CUP.rim;
+    out.push([x, y, x + t, y + lh]);
+    out.push([x + w - t, y, x + w, y + rh]);
+    out.push([x, y, x + w, y + t]);
+    return out;
+  }
+
+  // Parçaları çizim ve test için ortak sıraya koyar: önce bölümün sabit
+  // parçaları, sonra oyuncunun parçaları. Elle kumandalı cihazlar 1, 2, 3...
+  function listParts(level, placed) {
+    const all = [];
+    (level.fixed || []).forEach((f, i) => all.push(Object.assign({ id: 'f' + i, fixed: true }, f)));
+    (placed || []).forEach(p => all.push(p));
+    let n = 0;
+    for (const p of all) if (PARTS[p.type].manual) p.num = ++n; else delete p.num;
+    return all;
+  }
+
+  function pointInPoly(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+
+  // Hücre başına duvarla kaplı oran (0..1), 5x5 örnekle.
+  function coverage(level) {
+    const cov = {};
+    const rects = (level.walls || []).filter(w => typeof w[0] === 'number');
+    for (const c of cupsOf(level)) rects.push(...cupBoxes(c));
+    const polys = (level.walls || []).filter(w => typeof w[0] !== 'number');
+    for (let cx = 0; cx < W; cx++) for (let cy = 0; cy < H; cy++) {
+      let hit = 0;
+      for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+        const x = cx + 0.1 + i * 0.2, y = cy + 0.1 + j * 0.2;
+        if (rects.some(r => x > r[0] && x < r[2] && y > r[1] && y < r[3]) || polys.some(pg => pointInPoly(x, y, pg))) hit++;
+      }
+      if (hit) cov[cx + ',' + cy] = hit / 25;
+    }
+    return cov;
+  }
+
+  // Oyuncunun parça koyamayacağı hücreler.
+  function occupancy(level) {
+    const cov = coverage(level);
+    const solid = new Set(), sensor = new Set();
+    for (const k in cov) { if (cov[k] > 0) solid.add(k); if (cov[k] >= 0.5) sensor.add(k); }
+    for (const c of cupsOf(level)) for (let i = 0; i < c.w; i++) solid.add((c.x + i) + ',' + c.y);
+    if (level.pipe) solid.add(level.pipe.x + ',' + level.pipe.y);
+    for (const f of level.fixed || []) for (const q of cellsOf(f)) solid.add(q[0] + ',' + q[1]);
+    return { solid, sensor };
+  }
+
+  function canPlace(level, occ, parts, cand, ignoreId) {
+    const d = PARTS[cand.type];
+    if (cand.x < 0 || cand.y < 0 || cand.x + d.w > W || cand.y + d.h > H) return false;
+    const mine = cellsOf(cand).map(q => q[0] + ',' + q[1]);
+    if (d.sensor) {
+      if (mine.some(k => occ.sensor.has(k))) return false;
+      for (const p of parts) if (p.id !== ignoreId && PARTS[p.type].sensor && cellsOf(p).some(q => mine.includes(q[0] + ',' + q[1]))) return false;
+      return true;
+    }
+    if (mine.some(k => occ.solid.has(k))) return false;
+    for (const p of parts) if (p.id !== ignoreId && !PARTS[p.type].sensor && cellsOf(p).some(q => mine.includes(q[0] + ',' + q[1]))) return false;
+    return true;
+  }
+
+  function createSim(level, placed) {
+    const world = new pl.World({ gravity: pl.Vec2(0, -T.G) });
+    const statics = world.createBody();
+    const box = (body, r, opts, ud) => {
+      const f = body.createFixture(
+        pl.Box((r[2] - r[0]) / 2, (r[3] - r[1]) / 2, pl.Vec2((r[0] + r[2]) / 2, (r[1] + r[3]) / 2), 0),
+        Object.assign({ friction: 0.6 }, opts || {}));
+      if (ud) f.setUserData(ud);
+      return f;
+    };
+
+    for (const w of level.walls || []) {
+      if (typeof w[0] === 'number') box(statics, w);
+      else statics.createFixture(pl.Polygon(w.map(q => pl.Vec2(q[0], q[1]))), { friction: 0.6 });
+    }
+    const cups = cupsOf(level);
+    for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
+
+    const parts = listParts(level, placed);
+    const rts = [], pistons = [], fans = [], sensors = [], byId = {};
+    for (const p of parts) {
+      const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
+        state: 'idle', offset: 0, timer: 0, held: false, latched: false, on: false, blade: 0,
+        flash: 0, compress: 0, inside: false, link: null, fires: 0 };
+      byId[p.id] = rt;
+      rts.push(rt);
+      if (p.type === 'ramp') {
+        const [a, b] = rampLine(p.o);
+        const ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
+        const len = Math.hypot(bx - ax, by - ay);
+        statics.createFixture(pl.Box(len / 2, T.plank / 2, pl.Vec2((ax + bx) / 2, (ay + by) / 2), Math.atan2(by - ay, bx - ax)),
+          { friction: 0.6 });
+      } else if (p.type === 'spring') {
+        box(statics, [p.x + 0.08, p.y, p.x + 0.92, p.y + 0.36], { friction: 0.6 }, { kind: 'spring', rt });
+      } else if (p.type === 'belt') {
+        box(statics, [p.x, p.y - T.plank / 2, p.x + 2, p.y + T.plank / 2], { friction: 0.9 }, { kind: 'belt', rt });
+      } else if (p.type === 'piston') {
+        const g = pistonGeom(p.o);
+        box(statics, [p.x + g.base[0], p.y + g.base[1], p.x + g.base[2], p.y + g.base[3]]);
+        const head = world.createKinematicBody({ position: pl.Vec2(0, 0) });
+        box(head, [p.x + g.head[0], p.y + g.head[1], p.x + g.head[2], p.y + g.head[3]], { friction: 0.6 }, { kind: 'head', rt });
+        rt.head = head;
+        pistons.push(rt);
+      } else if (p.type === 'fan') {
+        box(statics, [p.x + 0.16, p.y + 0.16, p.x + 0.84, p.y + 0.84]);
+        rt.zone = fanZone(p);
+        fans.push(rt);
+      } else if (p.type === 'sensor') {
+        sensors.push(rt);
+      }
+    }
+    for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
+
+    const balls = startsOf(level).map((st, i) => {
+      const b = world.createDynamicBody({ position: pl.Vec2(st.x, st.y), bullet: true,
+        angularDamping: T.ballAngDamp, linearDamping: T.ballLinDamp });
+      b.createFixture(pl.Circle(T.R), { density: 1, friction: T.ballFriction, restitution: T.ballRest })
+        .setUserData({ kind: 'ball', i });
+      b.setLinearVelocity(pl.Vec2(st.vx || 0, st.vy || 0));
+      if (st.vx && !st.vy) b.setAngularVelocity(-(st.vx) / T.R);
+      return b;
+    });
+    const ball = balls[0];
+    const mass = ball.getMass();
+    const need = Math.min(level.need || balls.length, balls.length);
+
+    const launches = [];
+    world.on('begin-contact', c => {
+      const fa = c.getFixtureA(), fb = c.getFixtureB(), ua = fa.getUserData(), ub = fb.getUserData();
+      const s = ua && ua.kind === 'spring' ? ua.rt : ub && ub.kind === 'spring' ? ub.rt : null;
+      const bf = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
+      if (!s || !bf) return;
+      const body = bf.getBody(), bp = body.getPosition();
+      if (bp.y > s.y + 0.36 && bp.x > s.x - 0.05 && bp.x < s.x + 1.05) launches.push([s, body]);
+    });
+    world.on('pre-solve', c => {
+      const ua = c.getFixtureA().getUserData(), ub = c.getFixtureB().getUserData();
+      if (ua && ua.kind === 'belt') c.setTangentSpeed((ua.rt.o === 'r' ? 1 : -1) * T.beltV);
+      else if (ub && ub.kind === 'belt') c.setTangentSpeed((ub.rt.o === 'r' ? -1 : 1) * T.beltV);
+      if ((ua && ua.kind === 'head') || (ub && ub.kind === 'head')) c.setRestitution(0);
+    });
+
+    const sim = {
+      world, ball, balls, rts, pistons, fans, sensors, need,
+      bstate: balls.map(() => 'run'), goals: 0,
+      devices: rts.filter(r => PARTS[r.type].manual),
+      steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
+      trails: balls.map(() => []),
+      time() { return sim.steps * DT; },
+      press(rt, manual) {
+        if (sim.status === 'out') return false;
+        if (rt.type === 'piston') {
+          if (rt.state !== 'idle') return false;
+          rt.state = 'out'; rt.fires++;
+          if (manual) sim.presses++;
+          return true;
+        }
+        if (rt.type === 'fan') {
+          // Sensör pervaneyi anahtar gibi açar; bir daha tetiklenirse kapatır.
+          rt.latched = !rt.latched;
+          if (manual) sim.presses++;
+          return true;
+        }
+        return false;
+      },
+      hold(rt, down) {
+        if (rt.type !== 'fan') return sim.press(rt, true);
+        if (down && !rt.held) sim.presses++;
+        rt.held = !!down;
+        return true;
+      },
+      step() {
+        if (sim.status === 'out') return;
+        for (const rt of pistons) {
+          const d = DIRS[rt.o];
+          let v = 0;
+          if (rt.state === 'out') {
+            v = T.pistonV;
+            if (rt.offset + v * DT >= T.pistonDist) { v = (T.pistonDist - rt.offset) / DT; rt.state = 'hold'; rt.timer = T.pistonHold; }
+          } else if (rt.state === 'hold') {
+            rt.timer -= DT;
+            if (rt.timer <= 0) rt.state = 'back';
+          } else if (rt.state === 'back') {
+            v = -T.pistonBackV;
+            if (rt.offset + v * DT <= 0) { v = -rt.offset / DT; rt.state = 'idle'; }
+          }
+          rt.offset += v * DT;
+          rt.head.setLinearVelocity(pl.Vec2(d[0] * v, d[1] * v));
+        }
+        for (const rt of fans) {
+          rt.on = rt.held || rt.latched;
+          if (!rt.on) continue;
+          rt.blade += DT * 30;
+          const z = rt.zone, d = DIRS[rt.o];
+          balls.forEach((b, i) => {
+            if (sim.bstate[i] === 'out') return;
+            const bp = b.getPosition();
+            if (bp.x < z[0] || bp.x > z[2] || bp.y < z[1] || bp.y > z[3]) return;
+            const dist = rt.o === 'r' ? bp.x - z[0] : rt.o === 'l' ? z[2] - bp.x : bp.y - z[1];
+            const f = T.fanForce * mass * T.G * (1 - T.fanFalloff * Math.max(0, dist) / T.fanLen);
+            b.applyForceToCenter(pl.Vec2(d[0] * f, d[1] * f), true);
+          });
+        }
+
+        world.step(DT, 8, 3);
+        sim.steps++;
+
+        if (launches.length) {
+          const done = new Set();
+          for (const [sp, body] of launches) {
+            sp.compress = 0.18;
+            if (done.has(body)) continue;
+            done.add(body);
+            const v = body.getLinearVelocity();
+            body.setLinearVelocity(pl.Vec2(v.x, T.springV));
+          }
+          launches.length = 0;
+        }
+
+        // Sensör, bir top hücrenin ortasına (gidiş yönünde) varınca bir kez tetikler;
+        // aynı topla yeniden tetiklemek için topun hücreden çıkması gerekir.
+        for (const s of sensors) {
+          if (!s.armedBy) s.armedBy = balls.map(() => true);
+          let any = false;
+          balls.forEach((b, i) => {
+            if (sim.bstate[i] === 'out') return;
+            const p = b.getPosition(), bv = b.getLinearVelocity();
+            const inside = p.x >= s.x && p.x < s.x + 1 && p.y >= s.y && p.y < s.y + 1;
+            if (!inside) { s.armedBy[i] = true; return; }
+            any = true;
+            if (!s.armedBy[i]) return;
+            const dx = p.x - (s.x + 0.5), dy = p.y - (s.y + 0.5), sp = Math.hypot(bv.x, bv.y);
+            const hit = sp < 0.3 ? Math.hypot(dx, dy) < 0.35 : dx * bv.x + dy * bv.y >= 0;
+            if (hit) { s.armedBy[i] = false; s.flash = 0.4; s.fires++; if (s.link) sim.press(s.link, false); }
+          });
+          s.inside = any;
+        }
+        for (const rt of rts) {
+          if (rt.flash > 0) rt.flash -= DT;
+          if (rt.compress > 0) rt.compress -= DT;
+        }
+        if (sim.steps % 3 === 0) balls.forEach((b, i) => {
+          if (sim.bstate[i] === 'out' || sim.trails[i].length >= 1600) return;
+          const p = b.getPosition(); sim.trails[i].push([p.x, p.y]);
+        });
+
+        let slow = true;
+        balls.forEach((b, i) => {
+          if (sim.bstate[i] === 'out') return;
+          const v = b.getLinearVelocity();
+          if (Math.hypot(v.x, v.y) >= 0.05 || Math.abs(b.getAngularVelocity()) >= 0.25) slow = false;
+        });
+        sim.restT = slow ? sim.restT + DT : 0;
+
+        let goals = 0, outs = 0;
+        balls.forEach((b, i) => {
+          if (sim.bstate[i] === 'run') {
+            const p = b.getPosition();
+            if (cups.some(c => p.x > c.x + CUP.wall && p.x < c.x + c.w - CUP.wall && p.y > c.y && p.y < c.y + CUP.rim)) sim.bstate[i] = 'goal';
+            else if (p.y < -1.5 || p.x < -1.5 || p.x > W + 1.5) { sim.bstate[i] = 'out'; b.setActive(false); }
+          }
+          if (sim.bstate[i] === 'goal') goals++; else if (sim.bstate[i] === 'out') outs++;
+        });
+        sim.goals = goals;
+        if (sim.status === 'run') {
+          if (goals >= need) { sim.status = 'goal'; sim.goalStep = sim.steps; }
+          else if (outs > balls.length - need) sim.status = 'out';
+          else if (sim.steps * DT > T.maxTime) sim.status = 'timeout';
+        }
+      },
+    };
+    return sim;
+  }
+
+  // Test ve bot için: kurulumu verilen girdilerle sonuna kadar çalıştırır.
+  // inputs: [{t: saniye, num: cihaz no, act: 'press'|'down'|'up'}]
+  function runHeadless(level, placed, inputs, maxSec) {
+    const sim = createSim(level, placed);
+    const queue = (inputs || []).map(i => Object.assign({ step: Math.round(i.t / DT) }, i)).sort((a, b) => a.step - b.step);
+    const limit = Math.round((maxSec || 20) / DT);
+    let qi = 0;
+    while (sim.status === 'run' && sim.steps < limit) {
+      while (qi < queue.length && queue[qi].step <= sim.steps) {
+        const inp = queue[qi++];
+        const dev = sim.devices.find(d => d.num === inp.num);
+        if (!dev) continue;
+        if (inp.act === 'press') sim.press(dev, true);
+        else sim.hold(dev, inp.act === 'down');
+      }
+      sim.step();
+    }
+    const p = sim.ball.getPosition();
+    return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
+  }
+
+  return { W, H, DT, T, PARTS, DIRS, CUP, cupsOf, startsOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, cupBoxes, listParts, createSim, runHeadless };
+}));
+
+</script>
+<script>
+// Küçük Mühendisler — bölümler.
+// Koordinatlar hücre cinsinden: x 0..16 soldan sağa, y 0..10 aşağıdan yukarı.
+// walls: [x0, y0, x1, y1] dikdörtgen ya da [[x, y], ...] dışbükey çokgen.
+// sol: testlerin doğruladığı çözümler (oyunda gösterilmez).
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.KM_LEVELS = factory();
+}(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  return [
+    {
+      id: 'rampa',
+      name: 'İlk rampa',
+      task: 'Topu kovaya ulaştır.',
+      start: { x: 0.6, y: 8.28, vx: 2.5 },
+      pipe: { x: 0, y: 8, dir: 'r' },
+      walls: [[0, 7.7, 6, 8]],
+      cup: { x: 3, y: 1, w: 2, back: { side: 'l', h: 2.6 } },
+      tray: { ramp: 2 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'Parça listesindeki rampayı tutup tahtaya sürükle.',
+        ready: 'Rampaya dokununca döner. Top kovaya doğru yuvarlanmalı. Hazırsan Çalıştır.',
+        fail: 'Noktalı çizgi topun son yolu. Rampayı topun düştüğü yere koy, eğimi kovaya baksın.',
+        after: 'Tek rampa yeter. Daha az parçayla dene.',
+      },
+      sol: [{ name: 'tek rampa', parts: [{ type: 'ramp', x: 6, y: 5, o: 'dl' }] }],
+    },
+    {
+      id: 'yay',
+      name: 'Zıpla',
+      task: 'Boşluğun üstünden atla, kovaya gir.',
+      start: { x: 0.6, y: 2.28, vx: 2.6 },
+      pipe: { x: 0, y: 2, dir: 'r' },
+      walls: [[0, 1.6, 5, 2], [8, 0, 12, 4], [12, 0, 14, 3.2], [14, 0, 16, 4]],
+      cup: { x: 12, y: 3.2, w: 2 },
+      tray: { spring: 1, ramp: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'Yay, üstüne düşen topu yukarı fırlatır. Boşluğa koy.',
+        ready: 'Hazırsan Çalıştır.',
+        fail: 'İze bak: top boşluğun neresine düşüyor? Yayı tam oraya koy.',
+        after: 'Rampasız, tek yayla da olur.',
+      },
+      sol: [{ name: 'yay', parts: [{ type: 'spring', x: 5, y: 0, o: 'u' }] }],
+    },
+    {
+      id: 'piston',
+      name: 'Piston',
+      task: 'Top pistona yaslanınca ateşle. Kovaya uçması için atlama rampası kur.',
+      start: { x: 2.5, y: 5.3, vx: -1.0 },
+      pipe: { x: 2, y: 5, dir: 'd' },
+      walls: [[0, 3.7, 9, 4], [10.6, 0, 11.4, 4.2]],
+      fixed: [{ type: 'piston', x: 0, y: 4, o: 'r' }],
+      cup: { x: 10, y: 4.2, w: 2, back: { side: 'r', h: 2.2 } },
+      tray: { ramp: 2 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
+      hints: {
+        place: 'Bu çizimde piston elle çalışır. Önce rafa bir atlama rampası kur.',
+        ready: 'Çalıştır. Top pistona yaslanınca 1 numaralı düğmeye bas.',
+        run: 'Top pistona yaslanınca 1’e bas. Pistona dokunmak da olur.',
+        fail: 'Rampanın yerini değiştir: top kovanın kenarını aşabilmeli.',
+        after: 'Tek basışla çöz: topun pistona yaslanmasını bekle.',
+      },
+      sol: [{ name: 'rampa + bas', parts: [{ type: 'ramp', x: 7, y: 4, o: 'dl' }], inputs: [{ t: 3, num: 1, act: 'press' }] }],
+    },
+    {
+      id: 'pervane',
+      name: 'Pervane',
+      task: 'Pervaneyi basılı tut, topu tepeden aşır. Fazla üflersen kovayı geçer.',
+      start: { x: 1.6, y: 2.28 },
+      walls: [[0, 1.6, 7, 2], [[7, 1.6], [11, 1.6], [11, 2.5], [10, 2.5], [7, 2]], [11, 0.9, 13, 1.7], [13, 1.6, 13.6, 2.5]],
+      fixed: [{ type: 'fan', x: 0, y: 2, o: 'r' }],
+      cup: { x: 11, y: 1.7, w: 2 },
+      tray: {},
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
+      hints: {
+        place: 'Bu çizimde parça yok, iş senin elinde. Çalıştır, sonra pervaneyi basılı tut.',
+        ready: 'Çalıştır, sonra pervaneyi basılı tut.',
+        run: 'Basılı tut, sonra bırak. Fazla üflersen top kovayı geçer.',
+        fail: 'Top kovayı geçtiyse daha kısa, tepeye çıkamadıysa daha uzun tut.',
+        after: 'Tek seferde dene: bir kez basılı tut, bir kez bırak.',
+      },
+      sol: [{ name: 'tut-bırak', parts: [], inputs: [{ t: 0.5, num: 1, act: 'down' }, { t: 1.15, num: 1, act: 'up' }] }],
+    },
+    {
+      id: 'sensor',
+      name: 'Sensör',
+      task: 'Topu raftaki kovaya fırlat. Önce elle, sonra sensörle.',
+      start: { x: 0.6, y: 2.28, vx: 2.6 },
+      pipe: { x: 0, y: 2, dir: 'r' },
+      walls: [[0, 1.6, 6, 2], [7, 1.6, 7.6, 2], [6, 0, 7, 1], [[8.5, 4.7], [11, 4.7], [11, 5], [8.5, 5.3]], [13, 4.7, 16, 5]],
+      fixed: [{ type: 'piston', x: 6, y: 1, o: 'u' }],
+      cup: { x: 11, y: 4.2, w: 2 },
+      tray: { sensor: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'Önce elle dene: hiçbir şey koymadan çalıştır, top pistonun üstündeyken 1’e bas.',
+        ready: 'Top sensörlü hücrenin ortasına gelince bağlı cihaz kendiliğinden çalışır.',
+        run: 'Top pistonun üstüne gelince 1’e bas.',
+        fail: 'Erken mi ateşlendi, geç mi? Sensörü pistonun tam üstüne koy.',
+        after: 'Elle oldu. Ama sıradaki çizimlerde elin yetmeyecek. Sensörü burada öğren: pistonun üstüne koy ve hiçbir şeye dokunma.',
+      },
+      sol: [
+        { name: 'elle', parts: [], inputs: [{ t: 2.65, num: 1, act: 'press' }] },
+        { name: 'sensör', parts: [{ type: 'sensor', x: 6, y: 2, o: '-', link: 'f0' }], inputs: [] },
+      ],
+    },
+    {
+      id: 'hizli',
+      name: 'Hızlı top',
+      task: 'Düşen topu pistonla deliğe it, kovaya düşür.',
+      start: { x: 3.5, y: 9.3 },
+      pipe: { x: 3, y: 9, dir: 'd' },
+      walls: [[2.7, 0, 3, 3], [2.7, 4, 3, 9], [4, 0, 4.3, 3], [4, 5, 4.3, 9]],
+      fixed: [{ type: 'piston', x: 2, y: 3, o: 'r' }],
+      cup: { x: 5, y: 0.4, w: 3, back: { side: 'r', h: 6 } },
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'Bu top çok hızlı düşüyor, elle yakalamak neredeyse imkânsız. Bir sensör koy.',
+        ready: 'Çalıştır ve izle: piston topu deliğe itmeli.',
+        run: 'İstersen 1’e basmayı dene ama top çok hızlı.',
+        fail: 'Piston geç mi kaldı? Top hızlıyken sensörü bir kare yukarı koy: piston çıkana kadar top aşağı iner.',
+        after: 'Tek sensörle çöz: doğru kareyi bul.',
+      },
+      sol: [{ name: 'sensör bir üstte', parts: [{ type: 'sensor', x: 3, y: 4, o: '-', link: 'f0' }], inputs: [] }],
+    },
+    {
+      id: 'iki-piston',
+      name: 'İki piston',
+      task: 'Topu iki pistonla kat kat yukarı fırlat.',
+      start: { x: 0.6, y: 2.28, vx: 2.5 },
+      pipe: { x: 0, y: 2, dir: 'r' },
+      walls: [[0, 1.6, 5, 2], [5, 0, 6, 1], [6, 1.6, 6.6, 2], [[7, 3.6], [11, 3.6], [11, 4], [7, 6]], [11, 3.6, 12, 4], [12, 0, 13, 3], [14.6, 0, 15.4, 4.2]],
+      fixed: [{ type: 'piston', x: 5, y: 1, o: 'u' }, { type: 'piston', x: 12, y: 3, o: 'u' }],
+      cup: { x: 14, y: 4.2, w: 2, back: { side: 'r', h: 5.5 } },
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'İki piston var. Birincisi yavaş topu, ikincisi yokuştan hızla inen topu fırlatır. Elle de olur ama ikincisi zor.',
+        ready: 'Her sensör en yakın cihaza bağlanır. Başka cihaza bağlamak için sensöre dokun, sonra cihaza dokun.',
+        run: '1 alttaki piston, 2 üstteki. Top üstlerine gelince bas.',
+        fail: 'İze bak: top hangi pistonda kaçtı? O pistonun üstüne sensör koy.',
+        after: 'Tam otomatik: iki sensörle, hiçbir şeye dokunmadan.',
+      },
+      sol: [
+        { name: 'iki sensör', parts: [{ type: 'sensor', x: 5, y: 2, o: '-', link: 'f0' }, { type: 'sensor', x: 12, y: 4, o: '-', link: 'f1' }], inputs: [] },
+        { name: 'elle + sensör', parts: [{ type: 'sensor', x: 12, y: 4, o: '-', link: 'f1' }], inputs: [{ t: 2.2, num: 1, act: 'press' }] },
+      ],
+    },
+    {
+      id: 'buyuk-makine',
+      name: 'Büyük makine',
+      task: 'Topu banda indir, asansörle kaldır, pistonla kovaya it.',
+      start: { x: 1.5, y: 9.3 },
+      pipe: { x: 1, y: 9, dir: 'd' },
+      walls: [[3.6, 0, 4, 1], [7.7, 2, 8, 5], [7.7, 6, 8, 8.5], [9, 0, 9.3, 5], [9, 6, 9.3, 8.5], [9.3, 4.7, 13, 5], [13.6, 0, 14.4, 4.2], [8, 0.93, 9, 1.07]],
+      fixed: [
+        { type: 'belt', x: 4, y: 1, o: 'r' }, { type: 'belt', x: 6, y: 1, o: 'r' },
+        { type: 'fan', x: 8, y: 0, o: 'u' }, { type: 'piston', x: 7, y: 5, o: 'r' },
+      ],
+      cup: { x: 13, y: 4.2, w: 2, back: { side: 'r', h: 2.6 } },
+      tray: { ramp: 2, sensor: 3 },
+      badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'Büyük makine. Önce topu banda indirecek rampayı kur.',
+        ready: 'Elle yapmak için iki el gerekir: pervaneyi basılı tutarken pistona basacaksın. Birlikte oynayın ya da sensör kullanın.',
+        run: '1’i basılı tut, asansör kalksın. Top pistonun önüne gelince 2’ye bas.',
+        fail: 'Pervaneye bağlı sensör anahtar gibidir: top geçince açar, bir daha geçerse kapatır.',
+        after: 'Tam otomatik: biri pervaneyi açan, biri pistonu ateşleyen iki sensör.',
+      },
+      sol: [
+        { name: 'elle iki el', parts: [{ type: 'ramp', x: 1, y: 3, o: 'dr' }], inputs: [{ t: 2.3, num: 1, act: 'down' }, { t: 4.45, num: 2, act: 'press' }, { t: 6, num: 1, act: 'up' }] },
+        { name: 'tam otomatik', parts: [{ type: 'ramp', x: 1, y: 3, o: 'dr' }, { type: 'sensor', x: 4, y: 1, o: '-', link: 'f2' }, { type: 'sensor', x: 8, y: 5, o: '-', link: 'f3' }], inputs: [] },
+      ],
+    },
+    {
+      id: 'bant',
+      name: 'Bant',
+      task: 'Duran topu bantla kovaya taşı.',
+      start: { x: 9.5, y: 6.3 },
+      pipe: { x: 9, y: 6, dir: 'd' },
+      walls: [[6, 4.6, 12, 5], [3.6, 0, 4.4, 2]],
+      cup: { x: 3, y: 2, w: 2, back: { side: 'l', h: 2.4 } },
+      tray: { belt: 3 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
+      hints: {
+        place: 'Konveyör, üstündeki topu taşır. Top düştüğü yerde duruyor: altına bant koy. Banda dokununca yönü değişir.',
+        ready: 'Hazırsan Çalıştır.',
+        fail: 'Bant bitince top durur. Bandı rafın ucuna kadar uzat.',
+        after: 'İki bant yeter.',
+      },
+      sol: [{ name: 'iki bant', parts: [{ type: 'belt', x: 6, y: 5, o: 'l' }, { type: 'belt', x: 8, y: 5, o: 'l' }], inputs: [] }],
+    },
+    {
+      id: 'yay-merdiveni',
+      name: 'Yay merdiveni',
+      task: 'Topu iki yayla iki kat yukarı çıkar.',
+      start: { x: 0.6, y: 2.28, vx: 3.0 },
+      pipe: { x: 0, y: 2, dir: 'r' },
+      walls: [[0, 1.6, 4, 2], [7, 3.6, 10, 4], [12, 5.6, 14, 6], [14.6, 0, 15.4, 5.2]],
+      cup: { x: 14, y: 5.2, w: 2, back: { side: 'r', h: 2.2 } },
+      tray: { spring: 2, ramp: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
+      hints: {
+        place: 'İki yay, iki kat. İlk yayı topun ilk düştüğü yere koy, sonra izine bak.',
+        ready: 'Çalıştır, top ikinci kez nereye düşüyor bak.',
+        fail: 'İkinci yay havada da durabilir: topun ikinci kez düştüğü yere, biraz yukarıya koy.',
+        after: 'Rampasız, iki yayla çöz.',
+      },
+      sol: [{ name: 'iki yay', parts: [{ type: 'spring', x: 5, y: 0, o: 'u' }, { type: 'spring', x: 10, y: 3, o: 'u' }], inputs: [] }],
+    },
+    {
+      id: 'ac-kapa',
+      name: 'Aç-kapa',
+      task: 'Topu rüzgârla boşluktan kovaya uçur.',
+      start: { x: 2.5, y: 7.3 },
+      pipe: { x: 2, y: 7, dir: 'd' },
+      walls: [[0, 4.6, 7, 5], [10.6, 0, 11.4, 2]],
+      fixed: [{ type: 'fan', x: 0, y: 5, o: 'r' }],
+      cup: { x: 10, y: 2, w: 2 },
+      tray: { sensor: 3 },
+      badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 2 }],
+      hints: {
+        place: 'Pervaneyi iki sensör yönetebilir: biri açar, öteki kapatır. Top fazla hızlanırsa kovayı geçer.',
+        ready: 'Aynı pervaneye bağlı ikinci sensör, top geçince pervaneyi kapatır.',
+        run: 'Top yere oturunca 1’i basılı tut, yeterince hızlanınca bırak.',
+        fail: 'Top kovayı geçtiyse kapatma sensörünü geri çek; yetişemediyse ileri al.',
+        after: 'Tam otomatik: iki sensörle aç ve kapat.',
+      },
+      sol: [
+        { name: 'aç + kapa', parts: [{ type: 'sensor', x: 2, y: 5, o: '-', link: 'f0' }, { type: 'sensor', x: 4, y: 5, o: '-', link: 'f0' }], inputs: [] },
+        { name: 'elle', parts: [], inputs: [{ t: 1.2, num: 1, act: 'down' }, { t: 1.84, num: 1, act: 'up' }] },
+      ],
+    },
+    {
+      id: 'domino',
+      name: 'Domino',
+      task: 'Sarı topu çelik bilyeye çarptır; ikisi de kovaya girsin.',
+      balls: [{ x: 0.6, y: 8.28, vx: 2.5 }, { x: 11.5, y: 5.28 }],
+      pipe: { x: 0, y: 8, dir: 'r' },
+      walls: [[0, 7.7, 4, 8], [7, 4.6, 12, 5], [12.6, 0, 13.4, 2]],
+      cup: { x: 12, y: 2, w: 2, back: { side: 'r', h: 3 } },
+      tray: { ramp: 2 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'İki top var: çelik bilye rafta bekliyor. Sarı topu ona çarptır, ikisi de kovaya girsin.',
+        ready: 'Hazırsan Çalıştır.',
+        fail: 'Sarı top rafa inmeli. Rampayı topun düştüğü yere koy.',
+        after: 'Tek rampa yeter.',
+      },
+      sol: [{ name: 'tek rampa', parts: [{ type: 'ramp', x: 4, y: 6, o: 'dr' }], inputs: [] }],
+    },
+    {
+      id: 'iki-top',
+      name: 'İki top',
+      task: 'İki topu da pistonla raftaki kovaya fırlat.',
+      balls: [{ x: 2.6, y: 2.28, vx: 2.6 }, { x: 0.6, y: 2.28, vx: 2.6 }],
+      pipe: { x: 0, y: 2, dir: 'r' },
+      walls: [[0, 1.6, 6, 2], [7, 1.6, 7.6, 2], [6, 0, 7, 1], [[8.5, 4.7], [11, 4.7], [11, 5], [8.5, 5.3]], [13, 4.7, 16, 5]],
+      fixed: [{ type: 'piston', x: 6, y: 1, o: 'u' }],
+      cup: { x: 11, y: 4.2, w: 2 },
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'İki top arka arkaya geliyor. Pistona iki kez basman gerekecek, ya da sensöre bırak.',
+        ready: 'Sensör her top geçişinde yeniden çalışır.',
+        run: 'Her top pistonun üstüne gelince 1’e bas.',
+        fail: 'İkisi de kovaya girmeli. Sensör her topta ayrı ayrı tetiklenir.',
+        after: 'Tek sensör iki topa da yeter.',
+      },
+      sol: [
+        { name: 'tek sensör', parts: [{ type: 'sensor', x: 6, y: 2, o: '-', link: 'f0' }], inputs: [] },
+        { name: 'elle iki basış', parts: [], inputs: [{ t: 1.65, num: 1, act: 'press' }, { t: 2.65, num: 1, act: 'press' }] },
+      ],
+    },
+    {
+      id: 'tetik',
+      name: 'Tetik',
+      task: 'Sarı top alt kovaya, çelik bilye asansörle üst kovaya.',
+      balls: [{ x: 1.5, y: 9.3 }, { x: 12.5, y: 1.35 }],
+      pipe: { x: 1, y: 9, dir: 'd' },
+      walls: [[[2, 1.6], [9, 1.6], [9, 2], [2, 3]], [9.6, 0, 10.4, 1.2],
+        [11.7, 0, 12, 6], [11.7, 7, 12, 9], [13, 0, 13.3, 6], [13, 7, 13.3, 9], [12, 0.93, 13, 1.07],
+        [7, 5.6, 11.7, 6]],
+      fixed: [{ type: 'fan', x: 12, y: 0, o: 'u' }, { type: 'piston', x: 13, y: 6, o: 'l' }],
+      cups: [{ x: 9, y: 1.2, w: 2, back: { side: 'r', h: 1.6 } }, { x: 5, y: 5.2, w: 2, back: { side: 'l', h: 2.2 } }],
+      tray: { ramp: 2, sensor: 3 },
+      badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'İki top, iki kova. Önce sarı topu alt kovaya indirecek rampayı kur.',
+        ready: 'Çelik bilyeyi asansör kaldırır, piston üst kovaya iter. Elle oynarken iki el gerekir.',
+        run: '1’i basılı tut, bilye pistonun önüne gelince 2’ye bas.',
+        fail: 'Tam otomatik için: sarı topun yoluna pervaneyi açan bir sensör, pistonun önüne de bir sensör koy.',
+        after: 'Sarı topun yoluna konan sensör asansörü çalıştırır. Hiç dokunmadan çöz.',
+      },
+      sol: [
+        { name: 'tam otomatik', parts: [{ type: 'ramp', x: 0, y: 6, o: 'dr' }, { type: 'sensor', x: 5, y: 2, o: '-', link: 'f0' }, { type: 'sensor', x: 12, y: 6, o: '-', link: 'f1' }], inputs: [] },
+        { name: 'elle iki el', parts: [{ type: 'ramp', x: 0, y: 6, o: 'dr' }], inputs: [{ t: 0.2, num: 1, act: 'down' }, { t: 2.17, num: 2, act: 'press' }, { t: 8, num: 1, act: 'up' }] },
+      ],
+    },
+  ];
+}));
+</script>
+<script>
+// Küçük Mühendisler — oyun arayüzü ve çizim.
+(function () {
+  'use strict';
+  const KM = window.KM, LEVELS = window.KM_LEVELS;
+  const { W, H, DT, T, PARTS, DIRS } = KM;
+  const TAU = Math.PI * 2;
+  const NAMES = { ramp: 'Rampa', spring: 'Yay', belt: 'Konveyör', piston: 'Piston', fan: 'Pervane', sensor: 'Sensör' };
+  const ORDER = ['ramp', 'spring', 'belt', 'piston', 'fan', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-' };
+  const $ = id => document.getElementById(id);
+  const css = getComputedStyle(document.documentElement);
+  const C = {};
+  for (const k of ['paper', 'paper-hi', 'paper-deep', 'ink', 'ink-dim', 'hand', 'ball', 'eye', 'bad']) C[k] = css.getPropertyValue('--' + k).trim();
+  const FONT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
+  const ALL_OPEN = location.hash === '#hepsi';
+  const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+  const pad2 = n => String(n).padStart(2, '0');
+  const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function rgba(hex, a) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  // ---------------------------------------------------------------- kayıt
+  // İlerleme (damgalar, kurulumlar, son çizim) Lab'da hesaba eşitlenir; ses ve görünüm cihazda kalır.
+  const KEY = 'kucuk-muhendisler.v1';
+  const DEVICE_KEY = 'kucuk-muhendisler.cihaz';
+  let saved = {}, device = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  try { device = JSON.parse(localStorage.getItem(DEVICE_KEY) || '{}') || {}; } catch (e) { device = {}; }
+  for (const k of ['muted', 'look', 'lookTip']) if (device[k] === undefined && saved[k] !== undefined) device[k] = saved[k];
+
+  // Lab (uzigames.com/lab) bağlantıları: hesap.js varsa ilerleme notu ve "Nasıldı?" düğmeleri.
+  const lab = {
+    on: !!window.Hesap,
+    note(t) { try { if (window.Hesap) window.Hesap.not(t); } catch (e) { /* yok say */ } },
+  };
+
+  const LOOKS_OK = v => v === 'cizim' || v === 'gecis' || v === 'canli';
+  const S = {
+    li: 0, level: null, occ: null, parts: [], nextId: 1,
+    mode: 'build', sim: null, acc: 0, endT: 0, restNoted: false, goalPlayed: false,
+    trails: null, lastFail: null, drag: null, press: null, linkFrom: null,
+    held: new Map(), seen: null, time: 0,
+    progress: saved.progress && typeof saved.progress === 'object' ? saved.progress : {},
+    setups: saved.setups && typeof saved.setups === 'object' ? saved.setups : {},
+    muted: !!device.muted,
+    look: LOOKS_OK(device.look) ? device.look : 'gecis', morph: 0, lookTip: !!device.lookTip,
+  };
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li })); } catch (e) { /* kayıt yoksa da oynanır */ }
+  }
+  function persistDevice() {
+    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, look: S.look, lookTip: S.lookTip })); } catch (e) { /* yok say */ }
+  }
+  function saveSetup() {
+    S.setups[S.level.id] = S.parts.map(p => ({ id: p.id, type: p.type, o: p.o, x: p.x, y: p.y, link: p.link == null ? null : p.link }));
+    persist();
+  }
+
+  // ---------------------------------------------------------------- ses
+  let AC = null;
+  function audio() {
+    if (S.muted) return null;
+    if (AC === null) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = false; } }
+    if (AC && AC.state === 'suspended') AC.resume().catch(() => {});
+    return AC || null;
+  }
+  function tone(f0, dur, type, vol, f1, delay) {
+    const a = audio(); if (!a) return;
+    const t0 = a.currentTime + (delay || 0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t0);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  function noise(dur, vol, freq) {
+    const a = audio(); if (!a) return;
+    const len = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    s.buffer = buf; f.type = 'lowpass'; f.frequency.value = freq; g.gain.value = vol;
+    s.connect(f).connect(g).connect(a.destination); s.start();
+  }
+  const SFX = {
+    place: () => { tone(420, 0.05, 'square', 0.035); tone(210, 0.09, 'triangle', 0.06); },
+    tick: () => tone(950, 0.03, 'square', 0.025),
+    remove: () => tone(320, 0.12, 'triangle', 0.05, 150),
+    link: () => { tone(880, 0.05, 'sine', 0.05); tone(1320, 0.07, 'sine', 0.05, null, 0.05); },
+    run: () => tone(300, 0.14, 'triangle', 0.05, 620),
+    piston: () => { noise(0.07, 0.18, 1100); tone(120, 0.12, 'sine', 0.18, 55); },
+    spring: () => tone(190, 0.28, 'triangle', 0.09, 760),
+    sensor: () => tone(1500, 0.05, 'sine', 0.045),
+    goal: () => { tone(660, 0.14, 'triangle', 0.08); tone(990, 0.3, 'triangle', 0.08, null, 0.12); },
+    fail: () => tone(240, 0.32, 'sawtooth', 0.035, 90),
+  };
+  const sfx = k => { try { SFX[k] && SFX[k](); } catch (e) { /* ses opsiyonel */ } };
+
+  // ---------------------------------------------------------------- görünüm
+  function makeView(cssW, cssH, dpr, wx0, wy0, ww, wh) {
+    const cs = Math.min(cssW / ww, cssH / wh);
+    const ox = (cssW - ww * cs) / 2 - wx0 * cs;
+    const top = (cssH - wh * cs) / 2 + (wy0 + wh) * cs;
+    return {
+      cs, dpr,
+      sx: x => ox + x * cs,
+      sy: y => top - y * cs,
+      wx: sx => (sx - ox) / cs,
+      wy: sy => (top - sy) / cs,
+      px: n => n / cs,
+      tf: c => c.setTransform(dpr * cs, 0, 0, -dpr * cs, dpr * ox, dpr * top),
+      screen: c => c.setTransform(dpr, 0, 0, dpr, 0, 0),
+    };
+  }
+
+  const cv = $('board'), ctx = cv.getContext('2d');
+  const M = 0.62;
+  let V = null;
+  function layout() {
+    const r = $('sheet').getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    cv.width = Math.max(1, Math.round(r.width * dpr));
+    cv.height = Math.max(1, Math.round(r.height * dpr));
+    V = makeView(r.width, r.height, dpr, -M, -M, W + 2 * M, H + 2 * M);
+  }
+
+  // ---------------------------------------------------------------- çizim yardımcıları
+  function fillStroke(c, Vw, fill, stroke, width) {
+    if (fill) { c.fillStyle = fill; c.fill(); }
+    if (stroke) { c.lineWidth = Vw.px(width); c.strokeStyle = stroke; c.stroke(); }
+  }
+  function rrect(c, x, y, w, h, r) {
+    c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+    c.lineTo(x + w, y + h - r); c.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+    c.lineTo(x + r, y + h); c.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+    c.lineTo(x, y + r); c.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5); c.closePath();
+  }
+  function textAt(c, Vw, str, x, y, size, color, align, weight) {
+    c.save(); Vw.screen(c);
+    c.font = `${weight || 700} ${size}px ${FONT}`;
+    c.fillStyle = color; c.textAlign = align || 'center'; c.textBaseline = 'middle';
+    c.fillText(str, Vw.sx(x), Vw.sy(y));
+    c.restore();
+  }
+  function badge(c, Vw, num, x, y, r) {
+    c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = C.hand; c.fill();
+    if (num) textAt(c, Vw, String(num), x, y - r * 0.05, Math.max(8, r * Vw.cs * 1.3), C['paper-deep'], 'center', 700);
+  }
+
+  function drawGrid(c, Vw, labels, live) {
+    c.fillStyle = live ? 'rgba(4,16,38,0.22)' : 'rgba(255,255,255,0.025)'; c.fillRect(0, 0, W, H);
+    c.beginPath();
+    for (let x = 0.5; x < W; x += 1) { c.moveTo(x, 0); c.lineTo(x, H); }
+    for (let y = 0.5; y < H; y += 1) { c.moveTo(0, y); c.lineTo(W, y); }
+    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, live ? 0.02 : 0.035); c.stroke();
+    c.beginPath();
+    for (let x = 1; x < W; x++) { c.moveTo(x, 0); c.lineTo(x, H); }
+    for (let y = 1; y < H; y++) { c.moveTo(0, y); c.lineTo(W, y); }
+    c.strokeStyle = rgba(C.ink, live ? 0.055 : 0.1); c.stroke();
+    c.lineWidth = Vw.px(1.5); c.strokeStyle = rgba(C.ink, 0.85); c.strokeRect(0, 0, W, H);
+    if (!labels) return;
+    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.32);
+    c.strokeRect(-M * 0.84, -M * 0.84, W + M * 1.68, H + M * 1.68);
+    const fs = Math.max(9, Math.min(13, Vw.cs * 0.3));
+    for (let i = 0; i < W; i++) textAt(c, Vw, String.fromCharCode(65 + i), i + 0.5, H + M * 0.42, fs, rgba(C.ink, 0.5), 'center', 600);
+    for (let j = 0; j < H; j++) textAt(c, Vw, String(j + 1), -M * 0.42, j + 0.5, fs, rgba(C.ink, 0.5), 'center', 600);
+    c.beginPath();
+    for (let i = 0; i <= W; i++) { c.moveTo(i, H); c.lineTo(i, H + 0.12); c.moveTo(i, 0); c.lineTo(i, -0.12); }
+    for (let j = 0; j <= H; j++) { c.moveTo(0, j); c.lineTo(-0.12, j); c.moveTo(W, j); c.lineTo(W + 0.12, j); }
+    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.5); c.stroke();
+  }
+
+  function wallPath(c, w) {
+    c.beginPath();
+    if (typeof w[0] === 'number') c.rect(w[0], w[1], w[2] - w[0], w[3] - w[1]);
+    else { c.moveTo(w[0][0], w[0][1]); for (let i = 1; i < w.length; i++) c.lineTo(w[i][0], w[i][1]); c.closePath(); }
+  }
+  function wallBounds(w) {
+    if (typeof w[0] === 'number') return w;
+    const xs = w.map(q => q[0]), ys = w.map(q => q[1]);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+  function drawWalls(c, Vw, level) {
+    for (const w of level.walls || []) {
+      c.save();
+      wallPath(c, w); c.fillStyle = rgba(C.ink, 0.07); c.fill(); c.clip();
+      const b = wallBounds(w), h = b[3] - b[1];
+      c.beginPath();
+      for (let k = b[0] - h; k < b[2]; k += 0.2) { c.moveTo(k, b[1]); c.lineTo(k + h, b[3]); }
+      c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.3); c.stroke();
+      c.restore();
+      wallPath(c, w); c.lineWidth = Vw.px(1.5); c.strokeStyle = rgba(C.ink, 0.9); c.stroke();
+    }
+  }
+
+  function drawCup(c, Vw, cup) {
+    const rim = KM.CUP.rim, t = KM.CUP.wall;
+    c.fillStyle = rgba(C.ball, 0.09); c.fillRect(cup.x + t, cup.y + t, cup.w - 2 * t, rim - t);
+    for (const b of KM.cupBoxes(cup)) { c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]); fillStroke(c, Vw, rgba(C.ink, 0.16), C.ink, 1.5); }
+    const left = !(cup.back && cup.back.side === 'l');
+    const px = left ? cup.x + t / 2 : cup.x + cup.w - t / 2, py0 = cup.y + rim, py1 = py0 + 0.9, dir = left ? 1 : -1;
+    c.beginPath(); c.moveTo(px, py0); c.lineTo(px, py1); c.lineWidth = Vw.px(1.4); c.strokeStyle = C.ink; c.stroke();
+    c.beginPath(); c.moveTo(px, py1); c.lineTo(px + dir * 0.46, py1 - 0.14); c.lineTo(px, py1 - 0.28); c.closePath();
+    c.fillStyle = C.ball; c.fill();
+  }
+
+  function drawPipe(c, Vw, level) {
+    const p = level.pipe; if (!p) return;
+    const st = KM.startsOf(level)[0], r = 0.34;
+    let b, mouth;
+    if (p.dir === 'r') { b = [-0.4, st.y - r, st.x + 0.02, st.y + r]; mouth = [b[2] - 0.09, b[1] - 0.07, b[2], b[3] + 0.07]; }
+    else if (p.dir === 'l') { b = [st.x - 0.02, st.y - r, W + 0.4, st.y + r]; mouth = [b[0], b[1] - 0.07, b[0] + 0.09, b[3] + 0.07]; }
+    else { b = [st.x - r, st.y - 0.02, st.x + r, Math.min(H + 0.4, p.y + 1.7)]; mouth = [b[0] - 0.07, b[1], b[2] + 0.07, b[1] + 0.09]; }
+    c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]); fillStroke(c, Vw, C.paper, null, 0);
+    c.fillStyle = rgba(C.ink, 0.1); c.fill(); c.lineWidth = Vw.px(1.5); c.strokeStyle = C.ink; c.stroke();
+    c.beginPath();
+    if (p.dir === 'd') { c.moveTo(b[0] + 0.12, b[1] + 0.3); c.lineTo(b[0] + 0.12, b[3]); } else { c.moveTo(b[0], b[3] - 0.12); c.lineTo(b[2] - 0.3, b[3] - 0.12); }
+    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.45); c.stroke();
+    c.beginPath(); c.rect(mouth[0], mouth[1], mouth[2] - mouth[0], mouth[3] - mouth[1]); fillStroke(c, Vw, C.paper, C.ink, 1.5);
+  }
+
+  function drawRamp(c, Vw, p) {
+    const [a, b] = KM.rampLine(p.o);
+    const ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
+    const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax), t = T.plank;
+    c.save(); c.translate(ax, ay); c.rotate(ang);
+    c.beginPath(); c.rect(0, -t / 2, len, t);
+    c.fillStyle = C.paper; c.fill();
+    fillStroke(c, Vw, rgba(C.ink, 0.15), C.ink, 1.6);
+    const n = Math.max(4, Math.round(len / 0.17));
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x0 = i * len / n, x1 = (i + 1) * len / n, up = i % 2 === 0;
+      c.moveTo(x0, up ? -t / 2 : t / 2); c.lineTo(x1, up ? t / 2 : -t / 2);
+    }
+    c.lineWidth = Vw.px(0.9); c.strokeStyle = rgba(C.ink, 0.7); c.stroke();
+    for (const x of [0.08, len - 0.08]) {
+      c.beginPath(); c.arc(x, 0, 0.034, 0, TAU); c.fillStyle = C.paper; c.fill();
+      c.lineWidth = Vw.px(1.2); c.strokeStyle = C.ink; c.stroke();
+    }
+    c.restore();
+  }
+
+  function drawSpring(c, Vw, p, rt) {
+    const k = rt && rt.compress > 0 ? Math.sin((1 - rt.compress / 0.18) * Math.PI) : 0;
+    const top = 0.36 - 0.13 * k, padH = 0.085, x = p.x, y = p.y;
+    c.beginPath(); c.rect(x + 0.12, y, 0.76, 0.07); fillStroke(c, Vw, rgba(C.ink, 0.2), C.ink, 1.3);
+    const y0 = y + 0.07, y1 = y + top - padH, n = 6;
+    c.beginPath(); c.moveTo(x + 0.5, y0);
+    for (let i = 1; i < n; i++) c.lineTo(x + (i % 2 ? 0.26 : 0.74), y0 + (y1 - y0) * (i / n));
+    c.lineTo(x + 0.5, y1);
+    c.lineWidth = Vw.px(1.5); c.strokeStyle = C.ink; c.stroke();
+    c.beginPath(); c.rect(x + 0.08, y + top - padH, 0.84, padH); fillStroke(c, Vw, rgba(C.ink, 0.3), C.ink, 1.5);
+  }
+
+  function drawBelt(c, Vw, p, time) {
+    const x = p.x, y = p.y, t = T.plank, dir = p.o === 'r' ? 1 : -1;
+    c.beginPath(); rrect(c, x, y - t / 2, 2, t, t / 2); fillStroke(c, Vw, rgba(C.ink, 0.12), C.ink, 1.5);
+    for (const rx of [x + t / 2, x + 2 - t / 2]) { c.beginPath(); c.arc(rx, y, t * 0.3, 0, TAU); c.lineWidth = Vw.px(1.1); c.stroke(); }
+    const ph = (time * 0.9) % 0.25;
+    c.beginPath();
+    for (let k = 0.15; k < 2; k += 0.25) {
+      const cx = dir > 0 ? x + k + ph : x + 2 - k - ph;
+      if (cx < x + 0.18 || cx > x + 1.82) continue;
+      c.moveTo(cx - 0.035 * dir, y + 0.035); c.lineTo(cx + 0.03 * dir, y); c.lineTo(cx - 0.035 * dir, y - 0.035);
+    }
+    c.lineWidth = Vw.px(1.2); c.stroke();
+  }
+
+  function drawPiston(c, Vw, p, rt) {
+    const g = KM.pistonGeom(p.o), d = DIRS[p.o], off = rt ? rt.offset : 0;
+    const bx0 = p.x + g.base[0], by0 = p.y + g.base[1], bx1 = p.x + g.base[2], by1 = p.y + g.base[3];
+    const hx0 = p.x + g.head[0] + d[0] * off, hy0 = p.y + g.head[1] + d[1] * off;
+    const hx1 = p.x + g.head[2] + d[0] * off, hy1 = p.y + g.head[3] + d[1] * off;
+    c.beginPath();
+    if (p.o === 'u') c.rect(p.x + 0.44, by1, 0.12, hy0 - by1);
+    else if (p.o === 'r') c.rect(bx1, p.y + 0.44, hx0 - bx1, 0.12);
+    else c.rect(hx1, p.y + 0.44, bx0 - hx1, 0.12);
+    fillStroke(c, Vw, rgba(C.ink, 0.35), C.ink, 1.1);
+    c.beginPath(); c.rect(bx0, by0, bx1 - bx0, by1 - by0);
+    c.fillStyle = C.paper; c.fill();
+    fillStroke(c, Vw, rgba(C.hand, 0.22), C.hand, 1.8);
+    c.beginPath();
+    if (p.o === 'u') for (const yy of [by0 + 0.12, by1 - 0.12]) { c.moveTo(bx0, yy); c.lineTo(bx1, yy); }
+    else for (const xx of [bx0 + 0.12, bx1 - 0.12]) { c.moveTo(xx, by0); c.lineTo(xx, by1); }
+    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.hand, 0.7); c.stroke();
+    c.beginPath(); c.rect(hx0, hy0, hx1 - hx0, hy1 - hy0); fillStroke(c, Vw, rgba(C.ink, 0.4), C.ink, 1.5);
+    badge(c, Vw, p.num, (bx0 + bx1) / 2, (by0 + by1) / 2, 0.16);
+  }
+
+  function drawFanZone(c, Vw, p, rt, time) {
+    const z = KM.fanZone(p), on = !!(rt && rt.on), L = T.fanLen;
+    const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
+    const d = DIRS[p.o], width = 0.9;
+    c.save();
+    c.beginPath(); c.rect(z[0], z[1], z[2] - z[0], z[3] - z[1]);
+    c.setLineDash([Vw.px(4), Vw.px(4)]); c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, on ? 0.4 : 0.17); c.stroke();
+    c.setLineDash([]); c.clip();
+    c.beginPath();
+    if (on) {
+      for (let i = 0; i < 12; i++) {
+        const lat = 0.1 + ((i * 0.618) % 1) * (width - 0.2), u = ((time * 1.9 + i * 0.137) % 1) * (L + 0.6) - 0.3;
+        const a = pt(u, lat), b = pt(u + 0.5, lat);
+        c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]);
+      }
+      c.lineWidth = Vw.px(1.3); c.strokeStyle = rgba(C.ink, 0.55);
+    } else {
+      for (let u = 0.8; u < L; u += 1.6) {
+        const tip = pt(u + 0.12, width / 2), l1 = pt(u - 0.06, width / 2 + 0.14), l2 = pt(u - 0.06, width / 2 - 0.14);
+        c.moveTo(l1[0], l1[1]); c.lineTo(tip[0], tip[1]); c.lineTo(l2[0], l2[1]);
+      }
+      c.lineWidth = Vw.px(1.2); c.strokeStyle = rgba(C.ink, 0.22);
+    }
+    c.stroke(); c.restore();
+    void d;
+  }
+
+  function drawFan(c, Vw, p, rt) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, on = !!(rt && rt.on), ang = rt ? rt.blade : 0;
+    c.beginPath(); c.rect(p.x + 0.16, p.y + 0.16, 0.68, 0.68);
+    c.fillStyle = C.paper; c.fill();
+    fillStroke(c, Vw, rgba(C.hand, on ? 0.3 : 0.16), C.hand, 1.8);
+    c.save(); c.translate(cx, cy); c.rotate(-ang);
+    for (let i = 0; i < 3; i++) {
+      c.rotate(TAU / 3);
+      c.beginPath(); c.ellipse(0.135, 0, 0.13, 0.055, 0, 0, TAU);
+      fillStroke(c, Vw, rgba(C.ink, on ? 0.5 : 0.25), C.ink, 1.1);
+    }
+    c.restore();
+    c.beginPath(); c.arc(cx, cy, 0.045, 0, TAU); c.fillStyle = C.ink; c.fill();
+    const d = DIRS[p.o];
+    c.beginPath();
+    for (let k = -1; k <= 1; k++) {
+      if (d[0]) { const gx = p.x + (d[0] > 0 ? 0.92 : 0.08); c.moveTo(gx, cy + k * 0.2 - 0.06); c.lineTo(gx, cy + k * 0.2 + 0.06); }
+      else { const gy = p.y + 0.92; c.moveTo(cx + k * 0.2 - 0.06, gy); c.lineTo(cx + k * 0.2 + 0.06, gy); }
+    }
+    c.lineWidth = Vw.px(1.8); c.strokeStyle = C.hand; c.stroke();
+    badge(c, Vw, p.num, p.x + 0.18, p.y + 0.82, 0.14);
+  }
+
+  function drawSensor(c, Vw, p, rt, linked) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
+    if (f > 0) { c.beginPath(); c.arc(cx, cy, 0.18 + 0.32 * (1 - f), 0, TAU); c.fillStyle = rgba(C.eye, 0.4 * f); c.fill(); }
+    c.save(); c.setLineDash([Vw.px(3), Vw.px(3)]);
+    c.beginPath(); c.rect(p.x + 0.06, p.y + 0.06, 0.88, 0.88); c.lineWidth = Vw.px(1.1); c.strokeStyle = rgba(C.eye, 0.8); c.stroke();
+    c.restore();
+    c.beginPath();
+    c.moveTo(cx - 0.26, cy); c.lineTo(cx - 0.11, cy); c.moveTo(cx + 0.11, cy); c.lineTo(cx + 0.26, cy);
+    c.moveTo(cx, cy - 0.26); c.lineTo(cx, cy - 0.11); c.moveTo(cx, cy + 0.11); c.lineTo(cx, cy + 0.26);
+    c.lineWidth = Vw.px(1.4); c.strokeStyle = C.eye; c.stroke();
+    c.beginPath(); c.arc(cx, cy, 0.1, 0, TAU); c.stroke();
+    c.beginPath(); c.arc(cx, cy, 0.035, 0, TAU); c.fillStyle = C.eye; c.fill();
+    if (!linked) { c.beginPath(); c.arc(p.x + 0.84, p.y + 0.84, 0.075, 0, TAU); c.fillStyle = C.bad; c.fill(); }
+  }
+
+  function drawLink(c, Vw, s, t) {
+    const td = PARTS[t.type];
+    const sx = s.x + 0.5, sy = s.y + 0.5, tx = t.x + td.w / 2, ty = t.y + td.h / 2;
+    const mx = (sx + tx) / 2 + (sx === tx ? 0.9 : 0), my = Math.max(sy, ty) + 0.7;
+    c.save(); c.setLineDash([Vw.px(5), Vw.px(4)]);
+    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(mx, my, tx, ty);
+    c.lineWidth = Vw.px(1.7); c.strokeStyle = rgba(C.eye, 0.85); c.stroke();
+    c.restore();
+    c.beginPath(); c.arc(tx, ty, 0.06, 0, TAU); c.fillStyle = C.eye; c.fill();
+  }
+
+  function bolts(c, Vw, p) {
+    const d = PARTS[p.type];
+    for (const [bx, by] of [[p.x + 0.09, p.y + 0.09], [p.x + d.w - 0.09, p.y + 0.09]]) {
+      c.beginPath(); c.arc(bx, by, 0.045, 0, TAU); c.fillStyle = C.paper; c.fill();
+      c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.85); c.stroke();
+      c.beginPath(); c.moveTo(bx - 0.028, by - 0.028); c.lineTo(bx + 0.028, by + 0.028); c.stroke();
+    }
+  }
+
+  function drawPart(c, Vw, p, rt, time) {
+    if (p.type === 'ramp') drawRamp(c, Vw, p);
+    else if (p.type === 'spring') drawSpring(c, Vw, p, rt);
+    else if (p.type === 'belt') drawBelt(c, Vw, p, time);
+    else if (p.type === 'piston') drawPiston(c, Vw, p, rt);
+    else if (p.type === 'fan') drawFan(c, Vw, p, rt);
+    else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
+    if (p.fixed) bolts(c, Vw, p);
+  }
+
+  // 0 numaralı top sarı; diğerleri çelik bilye (aynı fizik, farklı görünüm).
+  const BALL_LOOK = [
+    { fill: null, edge: '#a77a12', mark: 'rgba(130,90,10,0.75)' },
+    { fill: '#cdd8e8', edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
+  ];
+  const ballFill = i => (i ? BALL_LOOK[1].fill : C.ball);
+  function drawBall(c, Vw, x, y, ang, alpha, idx) {
+    const R = T.R, look = BALL_LOOK[idx ? 1 : 0];
+    c.save(); c.globalAlpha = alpha; c.translate(x, y);
+    c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fillStyle = ballFill(idx); c.fill();
+    c.lineWidth = Vw.px(1.5); c.strokeStyle = look.edge; c.stroke();
+    c.save(); c.rotate(ang);
+    c.beginPath(); c.moveTo(-R * 0.72, 0); c.lineTo(R * 0.72, 0); c.moveTo(0, -R * 0.3); c.lineTo(0, R * 0.3);
+    c.lineWidth = Vw.px(1.8); c.strokeStyle = look.mark; c.stroke();
+    c.restore();
+    c.beginPath(); c.arc(-R * 0.36, R * 0.36, R * 0.22, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.55)'; c.fill();
+    c.restore();
+  }
+
+  function drawTrail(c, Vw, trail, alpha, idx) {
+    if (!trail || trail.length < 2) return;
+    c.fillStyle = rgba(ballFill(idx), alpha);
+    const r = Vw.px(1.7);
+    for (let i = 0; i < trail.length; i += 2) { c.beginPath(); c.arc(trail[i][0], trail[i][1], r, 0, TAU); c.fill(); }
+  }
+
+  function outline(c, Vw, p, color, alpha, width) {
+    const d = PARTS[p.type];
+    c.beginPath(); c.rect(p.x + 0.04, p.y + 0.04, d.w - 0.08, d.h - 0.08);
+    c.lineWidth = Vw.px(width || 2); c.strokeStyle = rgba(color, alpha); c.stroke();
+  }
+
+
+  // ---------------------------------------------------------------- canlı görünüm
+  // Aynı geometri, gerçek malzemeler: ahşap raf ve rampalar, turuncu boyalı elle kumandalı
+  // cihazlar, çelik yay/kova/boru, kauçuk bant, parlak top. Gölgeler cihaz pikseliyle verilir.
+  const WOOD = { hi: '#f4d9a8', mid: '#e3bd84', lo: '#c29159', edge: '#8a5b2b', grain: 'rgba(120,76,32,0.22)' };
+  const STEEL = { hi: '#f5f8fc', mid: '#bcc7d6', lo: '#6c7a90', edge: '#47546a' };
+  const ORANGE = { hi: '#ffc48f', mid: '#ff9440', lo: '#c4580f', edge: '#8f3d06' };
+  function shadowOn(c, Vw, k) {
+    const d = Vw.dpr * (k == null ? 1 : k);
+    c.shadowColor = 'rgba(3,12,30,0.5)'; c.shadowBlur = 7 * d; c.shadowOffsetX = 3 * d; c.shadowOffsetY = 4 * d;
+  }
+  function shadowOff(c) { c.shadowColor = 'rgba(0,0,0,0)'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0; }
+  function band(c, x0, y0, x1, y1, stops) {
+    const g = c.createLinearGradient(x0, y0, x1, y1);
+    stops.forEach((col, i) => g.addColorStop(i / (stops.length - 1), col));
+    return g;
+  }
+  // Kesitin iki ucu arasında yuvarlak görünen metal/boya geçişi.
+  const tube = (m) => [m.lo, m.mid, m.hi, m.mid, m.lo];
+
+  function drawWallsL(c, Vw, level) {
+    (level.walls || []).forEach((w, wi) => {
+      const b = wallBounds(w), h = Math.max(0.01, b[3] - b[1]);
+      c.save();
+      wallPath(c, w);
+      c.fillStyle = band(c, 0, b[3], 0, b[1], [WOOD.hi, h > 0.5 ? WOOD.mid : WOOD.lo, WOOD.lo]);
+      shadowOn(c, Vw); c.fill(); shadowOff(c);
+      c.clip();
+      let seed = (wi + 1) * 7919;
+      const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+      c.beginPath();
+      for (let y = b[1] + 0.06; y < b[3] - 0.03; y += 0.09 + rnd() * 0.11) {
+        c.moveTo(b[0] - 0.1, y);
+        for (let x = b[0]; x <= b[2] + 0.4; x += 0.4) c.lineTo(x, y + (rnd() - 0.5) * 0.03);
+      }
+      c.lineWidth = Vw.px(1); c.strokeStyle = WOOD.grain; c.stroke();
+      c.restore();
+      wallPath(c, w); c.lineWidth = Vw.px(1.2); c.strokeStyle = WOOD.edge; c.stroke();
+      if (typeof w[0] === 'number') {
+        c.beginPath(); c.moveTo(w[0] + Vw.px(1.5), w[3] - Vw.px(1.5)); c.lineTo(w[2] - Vw.px(1.5), w[3] - Vw.px(1.5));
+        c.lineWidth = Vw.px(1.2); c.strokeStyle = 'rgba(255,247,228,0.8)'; c.stroke();
+      }
+    });
+  }
+
+  function drawCupL(c, Vw, cup) {
+    const rim = KM.CUP.rim, t = KM.CUP.wall;
+    c.fillStyle = band(c, 0, cup.y + rim, 0, cup.y, ['#202a3b', '#3a4860']);
+    c.fillRect(cup.x + t, cup.y + t, cup.w - 2 * t, rim - t);
+    for (const b of KM.cupBoxes(cup)) {
+      const vertical = (b[3] - b[1]) > (b[2] - b[0]);
+      c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      c.fillStyle = vertical ? band(c, b[0], 0, b[2], 0, tube(STEEL)) : band(c, 0, b[3], 0, b[1], [STEEL.hi, STEEL.mid, STEEL.lo]);
+      shadowOn(c, Vw); c.fill(); shadowOff(c);
+      c.lineWidth = Vw.px(1); c.strokeStyle = STEEL.edge; c.stroke();
+    }
+    const left = !(cup.back && cup.back.side === 'l');
+    const px = left ? cup.x + t / 2 : cup.x + cup.w - t / 2, py0 = cup.y + rim, py1 = py0 + 0.9, dir = left ? 1 : -1;
+    c.beginPath(); c.moveTo(px, py0); c.lineTo(px, py1); c.lineWidth = Vw.px(2); c.strokeStyle = STEEL.lo; c.stroke();
+    c.beginPath(); c.moveTo(px, py1); c.lineTo(px + dir * 0.46, py1 - 0.14); c.lineTo(px, py1 - 0.28); c.closePath();
+    shadowOn(c, Vw, 0.6); c.fillStyle = C.ball; c.fill(); shadowOff(c);
+    c.lineWidth = Vw.px(1); c.strokeStyle = '#b58a12'; c.stroke();
+  }
+
+  function drawPipeL(c, Vw, level) {
+    const p = level.pipe; if (!p) return;
+    const st = KM.startsOf(level)[0], r = 0.34;
+    let b, mouth, vertical = p.dir === 'd';
+    if (p.dir === 'r') { b = [-0.4, st.y - r, st.x + 0.02, st.y + r]; mouth = [b[2] - 0.1, b[1] - 0.07, b[2], b[3] + 0.07]; }
+    else if (p.dir === 'l') { b = [st.x - 0.02, st.y - r, W + 0.4, st.y + r]; mouth = [b[0], b[1] - 0.07, b[0] + 0.1, b[3] + 0.07]; }
+    else { b = [st.x - r, st.y - 0.02, st.x + r, Math.min(H + 0.4, p.y + 1.7)]; mouth = [b[0] - 0.07, b[1], b[2] + 0.07, b[1] + 0.1]; }
+    const g = vertical ? band(c, b[0], 0, b[2], 0, tube(STEEL)) : band(c, 0, b[3], 0, b[1], tube(STEEL));
+    c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]); c.fillStyle = g;
+    shadowOn(c, Vw); c.fill(); shadowOff(c);
+    c.lineWidth = Vw.px(1); c.strokeStyle = STEEL.edge; c.stroke();
+    c.beginPath(); c.rect(mouth[0], mouth[1], mouth[2] - mouth[0], mouth[3] - mouth[1]);
+    c.fillStyle = vertical ? band(c, mouth[0], 0, mouth[2], 0, tube(STEEL)) : band(c, 0, mouth[3], 0, mouth[1], tube(STEEL));
+    c.fill(); c.stroke();
+  }
+
+  function screw(c, Vw, x, y, r) {
+    c.beginPath(); c.arc(x, y, r, 0, TAU);
+    const g = c.createRadialGradient(x - r * 0.3, y + r * 0.3, r * 0.1, x, y, r);
+    g.addColorStop(0, STEEL.hi); g.addColorStop(1, STEEL.lo);
+    c.fillStyle = g; c.fill(); c.lineWidth = Vw.px(0.8); c.strokeStyle = STEEL.edge; c.stroke();
+    c.beginPath(); c.moveTo(x - r * 0.6, y - r * 0.6); c.lineTo(x + r * 0.6, y + r * 0.6); c.stroke();
+  }
+
+  function drawRampL(c, Vw, p) {
+    const [a, b] = KM.rampLine(p.o);
+    const ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
+    const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax), t = T.plank;
+    c.save(); c.translate(ax, ay); c.rotate(ang);
+    c.beginPath(); rrect(c, 0, -t / 2, len, t, t * 0.25);
+    c.fillStyle = band(c, 0, t / 2, 0, -t / 2, [WOOD.hi, WOOD.mid, WOOD.lo]);
+    shadowOn(c, Vw); c.fill(); shadowOff(c);
+    c.lineWidth = Vw.px(1); c.strokeStyle = WOOD.edge; c.stroke();
+    c.beginPath(); c.moveTo(0.1, t * 0.05); c.lineTo(len * 0.45, -t * 0.08); c.moveTo(len * 0.55, t * 0.1); c.lineTo(len - 0.1, -t * 0.02);
+    c.lineWidth = Vw.px(0.8); c.strokeStyle = WOOD.grain; c.stroke();
+    screw(c, Vw, 0.09, 0, 0.035); screw(c, Vw, len - 0.09, 0, 0.035);
+    c.restore();
+  }
+
+  function drawSpringL(c, Vw, p, rt) {
+    const k = rt && rt.compress > 0 ? Math.sin((1 - rt.compress / 0.18) * Math.PI) : 0;
+    const top = 0.36 - 0.13 * k, padH = 0.09, x = p.x, y = p.y;
+    c.beginPath(); c.rect(x + 0.1, y, 0.8, 0.07);
+    c.fillStyle = band(c, 0, y + 0.07, 0, y, [STEEL.mid, STEEL.lo]);
+    shadowOn(c, Vw); c.fill(); shadowOff(c);
+    const y0 = y + 0.07, y1 = y + top - padH, n = 6;
+    const coil = () => { c.beginPath(); c.moveTo(x + 0.5, y0); for (let i = 1; i < n; i++) c.lineTo(x + (i % 2 ? 0.25 : 0.75), y0 + (y1 - y0) * (i / n)); c.lineTo(x + 0.5, y1); };
+    coil(); c.lineJoin = 'round'; c.lineWidth = Vw.px(4); c.strokeStyle = STEEL.edge;
+    shadowOn(c, Vw, 0.6); c.stroke(); shadowOff(c);
+    coil(); c.lineWidth = Vw.px(1.6); c.strokeStyle = STEEL.hi; c.stroke();
+    c.beginPath(); rrect(c, x + 0.07, y + top - padH, 0.86, padH, 0.03);
+    c.fillStyle = band(c, 0, y + top, 0, y + top - padH, ['#5a6270', '#2a2f38', '#1b1f26']);
+    shadowOn(c, Vw, 0.8); c.fill(); shadowOff(c);
+    c.beginPath(); c.moveTo(x + 0.1, y + top - Vw.px(1.2)); c.lineTo(x + 0.9, y + top - Vw.px(1.2));
+    c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(255,255,255,0.35)'; c.stroke();
+  }
+
+  function drawBeltL(c, Vw, p, time) {
+    const x = p.x, y = p.y, t = T.plank, dir = p.o === 'r' ? 1 : -1;
+    c.beginPath(); rrect(c, x, y - t / 2, 2, t, t / 2);
+    c.fillStyle = band(c, 0, y + t / 2, 0, y - t / 2, ['#4a515d', '#262b33', '#16191f']);
+    shadowOn(c, Vw); c.fill(); shadowOff(c);
+    const ph = (time * 2.5) % 0.16;
+    c.save(); c.beginPath(); rrect(c, x, y - t / 2, 2, t, t / 2); c.clip();
+    c.beginPath();
+    for (let k = -0.16; k < 2.2; k += 0.16) {
+      const cx = dir > 0 ? x + k + ph : x + 2 - k - ph;
+      c.moveTo(cx, y + t / 2); c.lineTo(cx - 0.04 * dir, y - t / 2);
+    }
+    c.lineWidth = Vw.px(1.1); c.strokeStyle = 'rgba(160,170,185,0.35)'; c.stroke();
+    c.restore();
+    for (const rx of [x + t / 2, x + 2 - t / 2]) {
+      c.beginPath(); c.arc(rx, y, t * 0.36, 0, TAU);
+      const g = c.createRadialGradient(rx - 0.01, y + 0.01, 0, rx, y, t * 0.36);
+      g.addColorStop(0, STEEL.hi); g.addColorStop(1, STEEL.lo);
+      c.fillStyle = g; c.fill();
+    }
+    c.beginPath(); c.moveTo(x + 0.15, y + t / 2 - Vw.px(1)); c.lineTo(x + 1.85, y + t / 2 - Vw.px(1));
+    c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(255,255,255,0.18)'; c.stroke();
+  }
+
+  function drawPistonL(c, Vw, p, rt) {
+    const g = KM.pistonGeom(p.o), d = DIRS[p.o], off = rt ? rt.offset : 0;
+    const bx0 = p.x + g.base[0], by0 = p.y + g.base[1], bx1 = p.x + g.base[2], by1 = p.y + g.base[3];
+    const hx0 = p.x + g.head[0] + d[0] * off, hy0 = p.y + g.head[1] + d[1] * off;
+    const hx1 = p.x + g.head[2] + d[0] * off, hy1 = p.y + g.head[3] + d[1] * off;
+    const vertical = p.o === 'u';
+    let rod;
+    if (p.o === 'u') rod = [p.x + 0.43, by1 - 0.05, p.x + 0.57, hy0];
+    else if (p.o === 'r') rod = [bx1 - 0.05, p.y + 0.43, hx0, p.y + 0.57];
+    else rod = [hx1, p.y + 0.43, bx0 + 0.05, p.y + 0.57];
+    c.beginPath(); c.rect(rod[0], rod[1], rod[2] - rod[0], rod[3] - rod[1]);
+    c.fillStyle = vertical ? band(c, rod[0], 0, rod[2], 0, tube(STEEL)) : band(c, 0, rod[3], 0, rod[1], tube(STEEL));
+    c.fill();
+    c.beginPath(); rrect(c, bx0, by0, bx1 - bx0, by1 - by0, 0.05);
+    c.fillStyle = vertical ? band(c, bx0, 0, bx1, 0, tube(ORANGE)) : band(c, 0, by1, 0, by0, tube(ORANGE));
+    shadowOn(c, Vw); c.fill(); shadowOff(c);
+    c.lineWidth = Vw.px(1); c.strokeStyle = ORANGE.edge; c.stroke();
+    c.beginPath();
+    if (vertical) for (const yy of [by0 + 0.1, by1 - 0.1]) { c.moveTo(bx0, yy); c.lineTo(bx1, yy); }
+    else for (const xx of [bx0 + 0.1, bx1 - 0.1]) { c.moveTo(xx, by0); c.lineTo(xx, by1); }
+    c.lineWidth = Vw.px(1.2); c.strokeStyle = 'rgba(120,45,0,0.45)'; c.stroke();
+    c.beginPath(); rrect(c, hx0, hy0, hx1 - hx0, hy1 - hy0, 0.025);
+    c.fillStyle = vertical ? band(c, 0, hy1, 0, hy0, [STEEL.hi, STEEL.mid, STEEL.lo]) : band(c, hx0, 0, hx1, 0, [STEEL.lo, STEEL.hi, STEEL.mid]);
+    shadowOn(c, Vw, 0.8); c.fill(); shadowOff(c);
+    c.lineWidth = Vw.px(1); c.strokeStyle = STEEL.edge; c.stroke();
+    badge(c, Vw, p.num, (bx0 + bx1) / 2, (by0 + by1) / 2, 0.15);
+  }
+
+  function drawFanZoneL(c, Vw, p, rt, time, build) {
+    const z = KM.fanZone(p), on = !!(rt && rt.on), L = T.fanLen;
+    const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
+    if (!on && !build) return;
+    c.save();
+    c.beginPath(); c.rect(z[0], z[1], z[2] - z[0], z[3] - z[1]);
+    if (!on) {
+      c.setLineDash([Vw.px(3), Vw.px(5)]); c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(230,240,255,0.14)'; c.stroke();
+      c.restore(); return;
+    }
+    c.clip();
+    c.lineCap = 'round';
+    for (let i = 0; i < 14; i++) {
+      const lat = 0.1 + ((i * 0.618) % 1) * 0.7, u = ((time * 2.1 + i * 0.137) % 1) * (L + 0.8) - 0.4;
+      const a = pt(u, lat), b = pt(u + 0.6, lat + Math.sin(time * 6 + i) * 0.03);
+      const g = c.createLinearGradient(a[0], a[1], b[0], b[1]);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,0.55)');
+      c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineWidth = Vw.px(2); c.strokeStyle = g; c.stroke();
+    }
+    c.restore();
+  }
+
+  function drawFanL(c, Vw, p, rt) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, on = !!(rt && rt.on), ang = rt ? rt.blade : 0;
+    c.beginPath(); rrect(c, p.x + 0.13, p.y + 0.13, 0.74, 0.74, 0.12);
+    c.fillStyle = band(c, p.x + 0.13, p.y + 0.87, p.x + 0.87, p.y + 0.13, [ORANGE.hi, ORANGE.mid, ORANGE.lo]);
+    shadowOn(c, Vw); c.fill(); shadowOff(c);
+    c.lineWidth = Vw.px(1); c.strokeStyle = ORANGE.edge; c.stroke();
+    c.beginPath(); c.arc(cx, cy, 0.29, 0, TAU); c.fillStyle = '#18202c'; c.fill();
+    if (on) { c.beginPath(); c.arc(cx, cy, 0.26, 0, TAU); c.fillStyle = 'rgba(214,224,238,0.28)'; c.fill(); }
+    c.save(); c.translate(cx, cy); c.rotate(-ang); c.globalAlpha = on ? 0.6 : 1;
+    for (let i = 0; i < 3; i++) {
+      c.rotate(TAU / 3);
+      c.beginPath(); c.ellipse(0.125, 0, 0.12, 0.05, 0.25, 0, TAU);
+      c.fillStyle = band(c, 0, 0.05, 0, -0.05, [STEEL.hi, STEEL.mid]); c.fill();
+    }
+    c.restore();
+    c.beginPath(); c.arc(cx, cy, 0.05, 0, TAU); c.fillStyle = STEEL.mid; c.fill();
+    const d = DIRS[p.o];
+    c.beginPath();
+    for (let k = -1; k <= 1; k++) {
+      if (d[0]) { const gx = cx + d[0] * 0.27; c.moveTo(gx, cy + k * 0.12 - 0.05); c.lineTo(gx, cy + k * 0.12 + 0.05); }
+      else { const gy = cy + 0.27; c.moveTo(cx + k * 0.12 - 0.05, gy); c.lineTo(cx + k * 0.12 + 0.05, gy); }
+    }
+    c.lineWidth = Vw.px(2); c.strokeStyle = 'rgba(20,26,36,0.9)'; c.stroke();
+    badge(c, Vw, p.num, p.x + 0.19, p.y + 0.81, 0.13);
+  }
+
+  function drawSensorL(c, Vw, p, rt, linked) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
+    c.beginPath();
+    const k = 0.16;
+    for (const [qx, qy, sx, sy] of [[p.x + 0.07, p.y + 0.07, 1, 1], [p.x + 0.93, p.y + 0.07, -1, 1], [p.x + 0.07, p.y + 0.93, 1, -1], [p.x + 0.93, p.y + 0.93, -1, -1]]) {
+      c.moveTo(qx + sx * k, qy); c.lineTo(qx, qy); c.lineTo(qx, qy + sy * k);
+    }
+    c.lineWidth = Vw.px(1.6); c.strokeStyle = rgba(C.eye, 0.8); c.stroke();
+    c.save(); c.setLineDash([Vw.px(2), Vw.px(3)]);
+    c.beginPath(); c.arc(cx, cy, 0.22, 0, TAU); c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.eye, 0.45); c.stroke();
+    c.restore();
+    if (f > 0) {
+      const g = c.createRadialGradient(cx, cy, 0, cx, cy, 0.45);
+      g.addColorStop(0, rgba(C.eye, 0.75 * f)); g.addColorStop(1, rgba(C.eye, 0));
+      c.beginPath(); c.arc(cx, cy, 0.45, 0, TAU); c.fillStyle = g; c.fill();
+    }
+    c.beginPath(); c.arc(cx, cy, 0.11, 0, TAU); c.fillStyle = '#121822';
+    shadowOn(c, Vw, 0.6); c.fill(); shadowOff(c);
+    const lg = c.createRadialGradient(cx - 0.02, cy + 0.02, 0, cx, cy, 0.065);
+    lg.addColorStop(0, '#e9fdff'); lg.addColorStop(0.5, C.eye); lg.addColorStop(1, '#1b6f7a');
+    c.beginPath(); c.arc(cx, cy, 0.065, 0, TAU); c.fillStyle = lg; c.fill();
+    if (!linked) { c.beginPath(); c.arc(p.x + 0.84, p.y + 0.84, 0.075, 0, TAU); c.fillStyle = C.bad; c.fill(); }
+  }
+
+  function drawLinkL(c, Vw, s, t) {
+    const td = PARTS[t.type];
+    const sx = s.x + 0.5, sy = s.y + 0.5, tx = t.x + td.w / 2, ty = t.y + td.h / 2;
+    const dist = Math.hypot(tx - sx, ty - sy);
+    const mx = (sx + tx) / 2 + (sx === tx ? 0.7 : 0), my = Math.min(sy, ty) - 0.25 - dist * 0.12;
+    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(mx, my, tx, ty);
+    c.lineCap = 'round'; c.lineWidth = Vw.px(3); c.strokeStyle = '#13606b';
+    shadowOn(c, Vw, 0.5); c.stroke(); shadowOff(c);
+    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(mx, my, tx, ty);
+    c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(160,245,250,0.8)'; c.stroke();
+    c.beginPath(); c.arc(tx, ty, 0.05, 0, TAU); c.fillStyle = '#13606b'; c.fill();
+  }
+
+  function boltsL(c, Vw, p) {
+    const d = PARTS[p.type];
+    screw(c, Vw, p.x + 0.09, p.y + 0.09, 0.045); screw(c, Vw, p.x + d.w - 0.09, p.y + 0.09, 0.045);
+  }
+
+  function drawPartL(c, Vw, p, rt, time) {
+    if (p.type === 'ramp') drawRampL(c, Vw, p);
+    else if (p.type === 'spring') drawSpringL(c, Vw, p, rt);
+    else if (p.type === 'belt') drawBeltL(c, Vw, p, time);
+    else if (p.type === 'piston') drawPistonL(c, Vw, p, rt);
+    else if (p.type === 'fan') drawFanL(c, Vw, p, rt);
+    else if (p.type === 'sensor') drawSensorL(c, Vw, p, rt, true);
+    if (p.fixed) boltsL(c, Vw, p);
+  }
+
+  function drawBallL(c, Vw, x, y, ang, alpha, idx) {
+    const R = T.R, steel = !!idx;
+    c.save(); c.globalAlpha = alpha; c.translate(x, y);
+    const g = c.createRadialGradient(-R * 0.35, R * 0.38, R * 0.05, 0, 0, R);
+    if (steel) { g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, '#c9d3e1'); g.addColorStop(1, '#56647c'); }
+    else { g.addColorStop(0, '#fff7cf'); g.addColorStop(0.4, '#ffd23e'); g.addColorStop(1, '#bb7f00'); }
+    c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fillStyle = g;
+    shadowOn(c, Vw, 0.9); c.fill(); shadowOff(c);
+    if (!steel) {
+      c.save(); c.rotate(ang);
+      c.beginPath(); c.arc(0, -R * 1.25, R * 1.05, Math.PI * 0.3, Math.PI * 0.7);
+      c.lineWidth = Vw.px(1.4); c.strokeStyle = 'rgba(150,95,0,0.55)'; c.stroke();
+      c.restore();
+    } else {
+      c.beginPath(); c.ellipse(R * 0.1, -R * 0.35, R * 0.55, R * 0.16, -0.3, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.28)'; c.fill();
+    }
+    c.beginPath(); c.ellipse(-R * 0.38, R * 0.42, R * 0.2, R * 0.13, -0.6, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.85)'; c.fill();
+    c.restore();
+  }
+
+  // ---------------------------------------------------------------- yardımcılar (kurulum)
+  const allParts = () => KM.listParts(S.level, S.parts);
+  const devicesAll = () => allParts().filter(p => PARTS[p.type].manual);
+  const trayTotal = () => Object.values(S.level.tray || {}).reduce((a, b) => a + b, 0);
+  const trayLeft = type => ((S.level.tray || {})[type] || 0) - S.parts.filter(p => p.type === type).length;
+  function unlocked(i) {
+    if (i === 0 || ALL_OPEN) return true;
+    const prev = S.progress[LEVELS[i - 1].id];
+    return !!(prev && prev.solved);
+  }
+  function centerOf(p) { const d = PARTS[p.type]; return [p.x + d.w / 2, p.y + d.h / 2]; }
+  function autoLink(sensor) {
+    const [sx, sy] = centerOf(sensor);
+    let best = null, bd = 1e9;
+    for (const d of devicesAll()) {
+      const [dx, dy] = centerOf(d), dist = Math.hypot(dx - sx, dy - sy);
+      if (dist < bd) { bd = dist; best = d; }
+    }
+    sensor.link = best ? best.id : null;
+  }
+  function relinkAfterRemoval(id) {
+    for (const s of S.parts) if (s.type === 'sensor' && s.link === id) autoLink(s);
+  }
+  function cellHit(list, w) {
+    const cx = Math.floor(w.x), cy = Math.floor(w.y);
+    const hits = list.filter(p => KM.cellsOf(p).some(q => q[0] === cx && q[1] === cy));
+    return hits.find(p => p.type === 'sensor') || hits[0] || null;
+  }
+
+  // ---------------------------------------------------------------- tahta çizimi
+  const LOOKS = ['gecis', 'canli', 'cizim'];
+  const LOOK_NAME = { cizim: 'Çizim', gecis: 'Çizim → canlı', canli: 'Canlı' };
+  const buildStyle = () => (S.look === 'canli' ? 'live' : 'bp');
+
+  function drawScene(c, style, items, run, time) {
+    const L = S.level, live = style === 'live';
+    drawGrid(c, V, true, live);
+    for (const it of items) if (it.p.type === 'fan') (live ? drawFanZoneL : drawFanZone)(c, V, it.p, it.rt, time, !run);
+    (live ? drawWallsL : drawWalls)(c, V, L);
+    (run ? S.sim.trails : S.trails || []).forEach((tr, i) => drawTrail(c, V, tr, (run ? 0.75 : 0.42) * (live ? 0.85 : 1), i));
+    for (const cup of KM.cupsOf(L)) (live ? drawCupL : drawCup)(c, V, cup);
+    (live ? drawPipeL : drawPipe)(c, V, L);
+    for (const it of items) if (it.p.type !== 'sensor') (live ? drawPartL : drawPart)(c, V, it.p, it.rt, time);
+    const byId = {};
+    for (const it of items) byId[it.p.id] = it.p;
+    for (const it of items) {
+      if (it.p.type !== 'sensor') continue;
+      const target = run ? (it.rt.link && it.rt.link.p) : byId[it.p.link];
+      if (target) (live ? drawLinkL : drawLink)(c, V, it.p, target);
+    }
+    for (const it of items) {
+      if (it.p.type !== 'sensor') continue;
+      const linked = run ? !!it.rt.link : !!byId[it.p.link];
+      (live ? drawSensorL : drawSensor)(c, V, it.p, it.rt, linked);
+    }
+    const ball = live ? drawBallL : drawBall;
+    if (run) {
+      S.sim.balls.forEach((b, i) => {
+        if (S.sim.bstate[i] === 'out') return;
+        const bp = b.getPosition();
+        ball(c, V, bp.x, bp.y, b.getAngle(), 1, i);
+      });
+    } else {
+      KM.startsOf(L).forEach((st, i) => ball(c, V, st.x, st.y, 0, live ? 0.85 : 0.6, i));
+    }
+  }
+
+  const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+  function render() {
+    if (!V) return;
+    const c = ctx, time = S.time;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    V.tf(c);
+    const run = S.mode === 'run' && S.sim;
+    const items = run ? S.sim.rts.map(rt => ({ p: rt.p, rt })) : allParts().map(p => ({ p, rt: null }));
+    const m = S.look === 'cizim' ? 0 : S.look === 'canli' ? 1 : S.morph;
+    if (m <= 0.001) drawScene(c, 'bp', items, run, time);
+    else if (m >= 0.999) drawScene(c, 'live', items, run, time);
+    else {
+      // Çizim soldan sağa taranarak gerçeğe dönüşür.
+      drawScene(c, 'bp', items, run, time);
+      const sx = -M + (W + 2 * M) * ease(m);
+      c.save();
+      c.beginPath(); c.rect(-M - 1, -M - 1, sx + M + 1, H + 2 * M + 2); c.clip();
+      c.clearRect(-M - 1, -M - 1, sx + M + 1, H + 2 * M + 2);
+      drawScene(c, 'live', items, run, time);
+      c.restore();
+      const g = c.createLinearGradient(sx - 0.6, 0, sx, 0);
+      g.addColorStop(0, rgba(C.eye, 0)); g.addColorStop(1, rgba(C.eye, 0.35));
+      c.fillStyle = g; c.fillRect(sx - 0.6, -M, 0.6, H + 2 * M);
+      c.beginPath(); c.moveTo(sx, -M); c.lineTo(sx, H + M);
+      c.lineWidth = V.px(2); c.strokeStyle = 'rgba(235,252,255,0.95)'; c.stroke();
+    }
+    if (run) {
+      const pulse = 0.25 + 0.2 * Math.sin(time * 5);
+      for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 1.5);
+    }
+    if (S.linkFrom) {
+      const pulse = 0.55 + 0.4 * Math.sin(time * 7);
+      for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 2.5);
+      outline(c, V, S.linkFrom, C.eye, 0.9, 2.5);
+    }
+    const dr = S.drag;
+    if (dr && dr.cand && dr.over) {
+      const live = buildStyle() === 'live';
+      for (const q of KM.cellsOf(dr.cand)) {
+        c.fillStyle = dr.valid ? rgba(C.ink, 0.13) : rgba(C.bad, 0.32);
+        c.fillRect(q[0], q[1], 1, 1);
+      }
+      c.save(); c.globalAlpha = dr.valid ? 0.9 : 0.55;
+      if (dr.cand.type === 'fan') (live ? drawFanZoneL : drawFanZone)(c, V, dr.cand, null, time, true);
+      (live ? drawPartL : drawPart)(c, V, dr.cand, null, time);
+      c.restore();
+    }
+  }
+
+  function drawIcon(canvas, type, o, style) {
+    const r = canvas.getBoundingClientRect();
+    const w = r.width || 52, h = r.height || 30, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    const d = PARTS[type], c = canvas.getContext('2d');
+    const Vi = makeView(w, h, dpr, d.w / 2 - 1.2, d.h / 2 - 0.62, 2.4, 1.24);
+    Vi.tf(c);
+    const p = { type, o: o || DEFAULT_O[type], x: 0, y: 0 };
+    ((style || buildStyle()) === 'live' ? drawPartL : drawPart)(c, Vi, p, null, 0);
+  }
+
+  function drawThumb(canvas, L) {
+    const r = canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
+    const c = canvas.getContext('2d');
+    const Vt = makeView(r.width, r.height, dpr, -0.5, -0.5, W + 1, H + 1);
+    Vt.tf(c);
+    drawGrid(c, Vt, false);
+    const fixed = KM.listParts(L, []);
+    for (const p of fixed) if (p.type === 'fan') drawFanZone(c, Vt, p, null, 0);
+    drawWalls(c, Vt, L); for (const cup of KM.cupsOf(L)) drawCup(c, Vt, cup); drawPipe(c, Vt, L);
+    for (const p of fixed) drawPart(c, Vt, p, null, 0);
+    KM.startsOf(L).forEach((st, i) => drawBall(c, Vt, st.x, st.y, 0, 1, i));
+  }
+
+  // ---------------------------------------------------------------- arayüz
+  let toastTimer = 0;
+  function toast(msg, ms) {
+    const el = $('toast'); el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms || 2800);
+  }
+  function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('show'); }
+
+  const badgeText = b => b.k === 'solve' ? 'Makine çalıştı'
+    : b.k === 'budget' ? `En fazla ${b.n} parça`
+    : b.k === 'presses' ? (b.n === 1 ? 'Tek basış' : `En fazla ${b.n} basış`)
+    : 'Tam otomatik';
+  const badgeOk = (b, used, presses) => b.k === 'solve' || (b.k === 'budget' && used <= b.n)
+    || (b.k === 'presses' && presses <= b.n) || (b.k === 'auto' && presses === 0);
+  const badgeTip = b => b.k === 'budget' ? `Daha az parçayla dene: en fazla ${b.n} parça.`
+    : b.k === 'presses' ? 'Tek basışla dene: doğru anı bekle, bir kez bas.'
+    : b.k === 'auto' ? 'Tam otomatik dene: hiç dokunmadan çalışan bir makine kur. Sensör, top üstünden geçince bağlı cihazı çalıştırır.'
+    : '';
+
+  function setHint() {
+    const L = S.level, h = L.hints || {}, prog = S.progress[L.id];
+    let t;
+    if (S.mode === 'run') t = h.run || 'Makine çalışıyor. Durdur’a basınca kuruluma dönersin.';
+    else if (S.linkFrom) t = 'Sensörü bağlamak için turuncu bir cihaza dokun. Boş bir yere dokunursan vazgeçersin.';
+    else if (prog && prog.solved) {
+      const missing = L.badges.some(b => !prog.badges[b.k]);
+      t = missing ? (h.after || 'Eksik damgaları dene.')
+        : S.li + 1 < LEVELS.length ? 'Bu çizimin bütün damgaları tamam. Sıradaki çizime geç.' : 'Atölye defterindeki bütün çizimler tamam. Yeni çizimler yolda.';
+    } else if (S.lastFail) t = h.fail || 'Noktalı çizgiye bak ve kurulumu değiştir.';
+    else if (!S.parts.length) t = h.place || h.ready;
+    else t = h.ready || 'Hazırsan Çalıştır.';
+    const el = $('hint');
+    if (el.textContent !== t) el.textContent = t;
+  }
+
+  function refreshHeader() {
+    const L = S.level;
+    $('tb-no').textContent = `${pad2(S.li + 1)} / ${pad2(LEVELS.length)}`;
+    $('tb-name').textContent = L.name;
+    $('tb-task').textContent = L.task;
+    document.title = `Küçük Mühendisler · ${L.name}`;
+  }
+
+  function refreshBom() {
+    const ol = $('bom-list'); ol.textContent = '';
+    const types = ORDER.filter(t => ((S.level.tray || {})[t] || 0) > 0);
+    $('bom-foot').hidden = !types.length;
+    if (!types.length) {
+      const li = document.createElement('li'); li.className = 'bom-none';
+      li.textContent = 'Bu çizimde parça yok. Makine kurulu, iş kumandada.';
+      ol.appendChild(li); return;
+    }
+    types.forEach((type, i) => {
+      const left = trayLeft(type);
+      const li = document.createElement('li');
+      li.className = 'bom-row' + (left > 0 ? '' : ' empty');
+      li.innerHTML = `<span class="no">${i + 1}</span><canvas aria-hidden="true"></canvas><span class="nm">${NAMES[type]}</span><span class="qty">×${left}</span>`;
+      li.setAttribute('aria-label', `${NAMES[type]}, ${left} adet`);
+      li.addEventListener('pointerdown', e => startTrayDrag(type, e));
+      ol.appendChild(li);
+      drawIcon(li.querySelector('canvas'), type);
+    });
+  }
+
+  function refreshGoals() {
+    const ul = $('goal-list'); ul.textContent = '';
+    const prog = S.progress[S.level.id];
+    for (const b of S.level.badges) {
+      const got = !!(prog && prog.badges[b.k]);
+      const li = document.createElement('li'); li.className = 'goal' + (got ? ' got' : '');
+      li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(b)}</span>`;
+      ul.appendChild(li);
+    }
+  }
+
+  function refreshSide() {
+    const run = S.mode === 'run';
+    $('bom').hidden = run; $('pult').hidden = !run;
+    const btn = $('run');
+    btn.classList.toggle('stop', run);
+    $('run-label').textContent = run ? 'Durdur' : 'Çalıştır';
+    $('run-ico').innerHTML = run ? '<rect x="4" y="4" width="12" height="12" fill="currentColor"/>' : '<path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/>';
+    if (!run) refreshBom();
+    refreshGoals(); setHint();
+  }
+
+  function buildPult() {
+    const box = $('pult-buttons'); box.textContent = '';
+    const devs = S.sim.devices;
+    $('pult-foot').hidden = !devs.length;
+    if (!devs.length) {
+      const p = document.createElement('p'); p.className = 'pult-none';
+      p.textContent = 'Bu makinede elle kumandalı cihaz yok. Sadece izle.';
+      box.appendChild(p); return;
+    }
+    for (const rt of devs) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'dev';
+      b.innerHTML = `<span class="num">${rt.num}</span><span class="nm">${NAMES[rt.type]}</span><span class="act">${rt.type === 'fan' ? 'Basılı tut' : 'Bas'}</span>`;
+      b.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        try { b.setPointerCapture(e.pointerId); } catch (err) { /* yok say */ }
+        devDown(rt, e.pointerId);
+      });
+      const up = e => devUp(rt, e.pointerId);
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+      b.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); devDown(rt, 'kb'); } });
+      b.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') devUp(rt, 'kb'); });
+      rt.btn = b;
+      box.appendChild(b);
+    }
+  }
+  function updatePult() {
+    if (!S.sim) return;
+    for (const rt of S.sim.devices) {
+      if (!rt.btn) continue;
+      const on = rt.type === 'fan' ? rt.on : rt.state !== 'idle';
+      if (rt.btn.classList.contains('on') !== on) rt.btn.classList.toggle('on', on);
+    }
+    const t = S.sim.balls.length > 1 ? `Elle: ${S.sim.presses} · Kova: ${S.sim.goals}/${S.sim.need}` : `Elle: ${S.sim.presses}`;
+    const el = $('press-count'); if (el.textContent !== t) el.textContent = t;
+  }
+
+  // ---------------------------------------------------------------- bölüm
+  function loadLevel(i) {
+    hideToast();
+    S.li = i; S.level = LEVELS[i]; S.occ = KM.occupancy(S.level);
+    S.mode = 'build'; S.sim = null; S.trails = null; S.lastFail = null; S.drag = null; S.press = null; S.linkFrom = null;
+    S.held.clear();
+    S.parts = []; S.nextId = 1;
+    const setup = S.setups[S.level.id] || [];
+    for (const q of setup) {
+      if (!q || !PARTS[q.type] || typeof q.x !== 'number' || typeof q.y !== 'number') continue;
+      if (!PARTS[q.type].orients.includes(q.o)) continue;
+      const p = { id: typeof q.id === 'number' ? q.id : S.nextId, type: q.type, o: q.o, x: q.x, y: q.y, link: q.link == null ? null : q.link };
+      if (trayLeft(p.type) <= 0 || !KM.canPlace(S.level, S.occ, S.parts, p, null)) continue;
+      S.parts.push(p); S.nextId = Math.max(S.nextId, p.id + 1);
+    }
+    persist();
+    refreshHeader(); refreshSide();
+  }
+
+  function addPlaced(p) {
+    S.parts.push(p);
+    if (p.type === 'sensor' && (p.link == null || !devicesAll().some(d => d.id === p.link))) autoLink(p);
+  }
+
+  // ---------------------------------------------------------------- sürükle-bırak
+  function evWorld(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: V.wx(e.clientX - r.left), y: V.wy(e.clientY - r.top) };
+  }
+  const inBoard = (w, pad) => w.x >= -pad && w.x <= W + pad && w.y >= -pad && w.y <= H + pad;
+
+  function startTrayDrag(type, e) {
+    if (S.mode !== 'build' || trayLeft(type) <= 0 || S.drag) return;
+    e.preventDefault();
+    exitLink(); audio();
+    const d = PARTS[type];
+    S.drag = { type, o: DEFAULT_O[type], fromId: null, link: null, grab: [d.w / 2, d.h / 2], pid: e.pointerId, lift: e.pointerType === 'touch' ? 0.9 : 0, cand: null, valid: false, over: false };
+    updateDrag(e);
+  }
+
+  function updateDrag(e) {
+    const dr = S.drag, w = evWorld(e);
+    w.y += dr.lift;
+    dr.cand = { id: dr.fromId || 0, type: dr.type, o: dr.o, x: Math.round(w.x - dr.grab[0]), y: Math.round(w.y - dr.grab[1]), link: dr.link };
+    dr.over = inBoard(w, 0.25);
+    dr.valid = dr.over && KM.canPlace(S.level, S.occ, S.parts, dr.cand, null);
+    const img = $('dragimg');
+    if (!dr.over) {
+      if (!img.firstChild || img.dataset.type !== dr.type) {
+        img.textContent = '';
+        const c = document.createElement('canvas'); c.style.width = '78px'; c.style.height = '45px';
+        img.appendChild(c); img.style.display = 'block'; img.dataset.type = dr.type;
+        drawIcon(c, dr.type, dr.o);
+      }
+      img.style.display = 'block';
+      img.style.transform = `translate(${e.clientX - 39}px, ${e.clientY - 22 - dr.lift * 40}px)`;
+    } else img.style.display = 'none';
+  }
+
+  function endDrag() {
+    const dr = S.drag; S.drag = null;
+    const img = $('dragimg'); img.style.display = 'none'; img.textContent = ''; delete img.dataset.type;
+    if (dr.valid) {
+      const p = { id: dr.fromId || S.nextId++, type: dr.type, o: dr.o, x: dr.cand.x, y: dr.cand.y, link: dr.link };
+      addPlaced(p); sfx('place');
+    } else if (dr.fromId) {
+      if (!dr.over) { relinkAfterRemoval(dr.fromId); sfx('remove'); }
+      else { S.parts.push(dr.orig); toast('Oraya sığmıyor. Parça eski yerine döndü.', 1800); }
+    } else if (dr.over) {
+      toast('Oraya sığmıyor. Kırmızı hücreler dolu.', 1800);
+    }
+    saveSetup(); refreshBom(); setHint();
+  }
+
+  function rotatePart(p) {
+    const os = PARTS[p.type].orients;
+    if (os.length < 2) return;
+    const i = os.indexOf(p.o);
+    for (let k = 1; k < os.length; k++) {
+      const o = os[(i + k) % os.length], cand = Object.assign({}, p, { o });
+      if (KM.canPlace(S.level, S.occ, S.parts, cand, p.id)) { p.o = o; sfx('tick'); saveSetup(); return; }
+    }
+  }
+
+  function enterLink(sensor) {
+    if (!devicesAll().length) { toast('Bu çizimde bağlanacak elle kumandalı cihaz yok.'); return; }
+    S.linkFrom = sensor; sfx('tick'); setHint();
+  }
+  function exitLink() { if (S.linkFrom) { S.linkFrom = null; setHint(); } }
+
+  function onBoardDown(e) {
+    if (!V || overlayOpen()) return;
+    audio();
+    const w = evWorld(e);
+    if (S.mode === 'run') {
+      if (!S.sim) return;
+      const cx = Math.floor(w.x), cy = Math.floor(w.y);
+      const rt = S.sim.devices.find(d => KM.cellsOf(d).some(q => q[0] === cx && q[1] === cy));
+      if (rt) { e.preventDefault(); devDown(rt, e.pointerId); }
+      return;
+    }
+    if (S.drag) return;
+    if (S.linkFrom) {
+      const t = cellHit(devicesAll(), w);
+      if (t) { S.linkFrom.link = t.id; sfx('link'); saveSetup(); }
+      exitLink();
+      return;
+    }
+    const p = cellHit(S.parts, w);
+    if (!p) return;
+    e.preventDefault();
+    S.press = { pid: e.pointerId, part: p, x0: e.clientX, y0: e.clientY, grab: [w.x - p.x, w.y - p.y] };
+  }
+
+  function onMove(e) {
+    if (S.drag && e.pointerId === S.drag.pid) { updateDrag(e); return; }
+    const pr = S.press;
+    if (pr && e.pointerId === pr.pid && Math.hypot(e.clientX - pr.x0, e.clientY - pr.y0) > 7) {
+      S.press = null;
+      const p = pr.part;
+      S.parts = S.parts.filter(q => q !== p);
+      S.drag = { type: p.type, o: p.o, fromId: p.id, link: p.link, orig: p, grab: pr.grab, pid: pr.pid, lift: 0, cand: null, valid: false, over: true };
+      updateDrag(e);
+    }
+  }
+
+  function onUp(e) {
+    if (S.drag && e.pointerId === S.drag.pid) { endDrag(); return; }
+    const pr = S.press;
+    if (pr && e.pointerId === pr.pid) {
+      S.press = null;
+      if (pr.part.type === 'sensor') enterLink(pr.part); else rotatePart(pr.part);
+      return;
+    }
+    const rt = S.held.get(e.pointerId);
+    if (rt) devUp(rt, e.pointerId);
+  }
+
+  function onCancel(e) {
+    if (S.drag && e.pointerId === S.drag.pid) { S.drag.valid = false; S.drag.over = true; endDrag(); }
+    if (S.press && e.pointerId === S.press.pid) S.press = null;
+    const rt = S.held.get(e.pointerId);
+    if (rt) devUp(rt, e.pointerId);
+  }
+
+  // ---------------------------------------------------------------- çalıştırma
+  function devDown(rt, pid) {
+    if (!S.sim || S.sim.status === 'out') return;
+    if (rt.type === 'fan') { S.held.set(pid, rt); S.sim.hold(rt, true); }
+    else S.sim.press(rt, true);
+    updatePult();
+  }
+  function devUp(rt, pid) {
+    if (!S.held.has(pid)) return;
+    S.held.delete(pid);
+    if (S.sim && rt.type === 'fan' && ![...S.held.values()].includes(rt)) S.sim.hold(rt, false);
+    updatePult();
+  }
+  function releaseAll() {
+    for (const [pid, rt] of [...S.held]) devUp(rt, pid);
+    S.held.clear();
+  }
+
+  function toggleRun() { if (S.mode === 'run') stopRun('user'); else startRun(); }
+
+  function startRun() {
+    if (S.drag || overlayOpen()) return;
+    exitLink(); hideToast(); audio();
+    S.sim = KM.createSim(S.level, S.parts.map(p => Object.assign({}, p)));
+    S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
+    S.held.clear();
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress }));
+    sfx('run');
+    refreshSide(); buildPult(); updatePult();
+  }
+
+  function stopRun(reason) {
+    if (!S.sim) return;
+    releaseAll();
+    S.trails = S.sim.trails.map(t => t.slice());
+    S.sim = null; S.mode = 'build';
+    if (reason !== 'user') S.lastFail = reason;
+    if (reason === 'out') { toast('Top düştü. Noktalı çizgi son yolunu gösteriyor.'); sfx('fail'); }
+    else if (reason === 'timeout') toast('Süre doldu. Makineyi gözden geçir.');
+    else if (reason === 'rest') toast('Top durdu. Kurulumu değiştirip yeniden dene.');
+    refreshSide();
+  }
+
+  function succeed() {
+    const sim = S.sim, L = S.level;
+    const used = S.parts.length, presses = sim.presses, t = sim.goalStep * DT;
+    const prog = S.progress[L.id] || (S.progress[L.id] = { solved: false, badges: {} });
+    const res = L.badges.map(b => ({ b, ok: badgeOk(b, used, presses) }));
+    const fresh = [];
+    for (const r of res) if (r.ok && !prog.badges[r.b.k]) { prog.badges[r.b.k] = true; fresh.push(r.b.k); }
+    prog.solved = true;
+    persist();
+    const got = L.badges.filter(b => prog.badges[b.k]).length;
+    lab.note(`Çizim ${pad2(S.li + 1)} ${L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses} · ${LOOK_NAME[S.look]}`);
+    releaseAll();
+    S.trails = sim.trails.map(t => t.slice()); S.sim = null; S.mode = 'build'; S.lastFail = null;
+    refreshSide();
+    showResult(res, fresh, used, presses, t);
+  }
+
+  function frame(now) {
+    const dt = frame.last ? Math.min(0.05, (now - frame.last) / 1000) : 0;
+    frame.last = now; S.time += dt;
+    const target = S.look === 'gecis' && S.mode === 'run' ? 1 : 0;
+    if (reduceMotion) S.morph = target;
+    else if (S.morph < target) S.morph = Math.min(1, S.morph + dt / 0.6);
+    else if (S.morph > target) S.morph = Math.max(0, S.morph - dt / 0.35);
+    if (S.mode === 'run' && S.sim) {
+      const sim = S.sim;
+      // Çizim → canlı görünümünde makine, tarama bitince çalışmaya başlar.
+      if (!(S.look === 'gecis' && S.morph < 1)) {
+        S.acc += dt;
+        let n = 0;
+        while (S.acc >= DT && n < 12) { sim.step(); S.acc -= DT; n++; }
+        if (n >= 12) S.acc = 0;
+      }
+      sim.rts.forEach((rt, i) => {
+        const s = S.seen[i];
+        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : 'piston');
+        if (rt.compress > s.comp + 0.01) sfx('spring');
+        s.fires = rt.fires; s.comp = rt.compress;
+      });
+      if (sim.status === 'goal') {
+        if (!S.goalPlayed) { S.goalPlayed = true; sfx('goal'); }
+        S.endT += dt; if (S.endT > 0.85) succeed();
+      } else if (sim.status === 'out') {
+        S.endT += dt; if (S.endT > 0.45) stopRun('out');
+      } else if (sim.status === 'timeout') stopRun('timeout');
+      else if (sim.restT > 2.4 && !S.restNoted) {
+        S.restNoted = true;
+        if (sim.devices.length) toast('Top durdu. Elle bir şey yapman gerekiyor olabilir.', 3200);
+        else stopRun('rest');
+      }
+      updatePult();
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------------------------------------------------------- katmanlar
+  const overlayOpen = () => !$('result').hidden || !$('levels').hidden;
+  function openOverlay(id, focusId) { $(id).hidden = false; const f = $(focusId); if (f) f.focus(); }
+  function closeOverlay(id) { $(id).hidden = true; }
+
+  function showResult(res, fresh, used, presses, t) {
+    const L = S.level, prog = S.progress[L.id];
+    $('result-cap').textContent = `Çizim ${pad2(S.li + 1)} · onaylandı`;
+    const ul = $('result-stamps'); ul.textContent = '';
+    for (const r of res) {
+      const got = !!prog.badges[r.b.k];
+      const li = document.createElement('li');
+      li.className = 'goal' + (got ? ' got' : '') + (fresh.includes(r.b.k) ? ' new' : '');
+      li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(r.b)}${got && !r.ok ? ' · önceki denemeden' : ''}</span>`;
+      ul.appendChild(li);
+    }
+    $('st-time').textContent = t.toFixed(1).replace('.', ',') + ' sn';
+    $('st-parts').textContent = String(used);
+    $('st-press').textContent = String(presses);
+    const missing = L.badges.find(b => !prog.badges[b.k]);
+    $('result-tip').textContent = missing ? badgeTip(missing) : (S.li + 1 < LEVELS.length ? 'Bu çizimin bütün damgaları tamam.' : 'Atölye defterindeki bütün çizimler bitti. Yenileri yolda.');
+    const last = S.li + 1 >= LEVELS.length;
+    $('btn-next').textContent = last ? 'Bölümler' : 'Sonraki çizim';
+    openOverlay('result', 'btn-next');
+  }
+
+  function openLevels() {
+    const grid = $('level-grid'); grid.textContent = '';
+    LEVELS.forEach((L, i) => {
+      const prog = S.progress[L.id], open = unlocked(i);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'lvl' + (i === S.li ? ' cur' : ''); b.disabled = !open;
+      const dots = L.badges.map(bd => `<span class="dot${prog && prog.badges[bd.k] ? ' got' : ''}" title="${badgeText(bd)}"></span>`).join('');
+      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Çizim ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${open ? '' : '<span class="lock">Kilitli</span>'}`;
+      b.setAttribute('aria-label', `Çizim ${i + 1}: ${L.name}${open ? '' : ', kilitli'}`);
+      b.addEventListener('click', () => { closeOverlay('levels'); loadLevel(i); });
+      grid.appendChild(b);
+    });
+    openOverlay('levels', 'levels-close');
+    requestAnimationFrame(() => grid.querySelectorAll('canvas').forEach((c, i) => drawThumb(c, LEVELS[i])));
+  }
+
+  function setLook(look, announce) {
+    S.look = look;
+    if (S.mode === 'run' && look === 'gecis') S.morph = 1;
+    persistDevice();
+    $('look-label').textContent = LOOK_NAME[look];
+    $('btn-look').setAttribute('aria-label', `Görünüm: ${LOOK_NAME[look]}. Değiştirmek için dokun.`);
+    if (S.mode === 'build' && S.level) refreshBom();
+    if (announce) toast(`Görünüm: ${LOOK_NAME[look]}`, 1800);
+  }
+
+  function setMuted(m) {
+    S.muted = m; persistDevice();
+    const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Sesi aç' : 'Sesi kapat');
+    $('ico-sound').innerHTML = m
+      ? '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13.5 7.5l5 5M18.5 7.5l-5 5"/>'
+      : '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/>';
+  }
+
+  function makeNoise() {
+    try {
+      const n = document.createElement('canvas'); n.width = n.height = 160;
+      const g = n.getContext('2d'), img = g.createImageData(160, 160);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = 200 + Math.random() * 55;
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = Math.random() * 12;
+      }
+      g.putImageData(img, 0, 0);
+      document.body.style.setProperty('--noise', `url(${n.toDataURL()})`);
+    } catch (e) { /* doku opsiyonel */ }
+  }
+
+  // ---------------------------------------------------------------- olaylar
+  cv.addEventListener('pointerdown', onBoardDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onCancel);
+  window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  $('run').addEventListener('click', toggleRun);
+  $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
+  $('levels-close').addEventListener('click', () => closeOverlay('levels'));
+  $('btn-sound').addEventListener('click', () => setMuted(!S.muted));
+  $('btn-look').addEventListener('click', () => setLook(LOOKS[(LOOKS.indexOf(S.look) + 1) % LOOKS.length], true));
+  $('btn-retry').addEventListener('click', () => { closeOverlay('result'); setHint(); });
+  $('btn-next').addEventListener('click', () => {
+    closeOverlay('result');
+    if (S.li + 1 < LEVELS.length) loadLevel(S.li + 1); else openLevels();
+  });
+  for (const id of ['result', 'levels']) $(id).addEventListener('pointerdown', e => { if (e.target === $(id)) closeOverlay(id); });
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (!$('result').hidden) closeOverlay('result');
+      else if (!$('levels').hidden) closeOverlay('levels');
+      else if (S.linkFrom) exitLink();
+      else if (S.mode === 'run') stopRun('user');
+      return;
+    }
+    if (overlayOpen()) return;
+    if (/^[1-9]$/.test(e.key) && S.mode === 'run' && S.sim) {
+      e.preventDefault();
+      if (e.repeat) return;
+      const rt = S.sim.devices.find(d => d.num === Number(e.key));
+      if (rt) devDown(rt, 'key' + e.key);
+      return;
+    }
+    const a = document.activeElement;
+    if ((e.key === ' ' || e.key === 'Enter') && (!a || a === document.body)) { e.preventDefault(); toggleRun(); }
+  });
+  window.addEventListener('keyup', e => {
+    if (/^[1-9]$/.test(e.key) && S.sim) {
+      const rt = S.sim.devices.find(d => d.num === Number(e.key));
+      if (rt) devUp(rt, 'key' + e.key);
+    }
+  });
+
+  if (window.ResizeObserver) new ResizeObserver(() => layout()).observe($('sheet'));
+  else window.addEventListener('resize', layout);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
+
+  // Test ve geliştirme için küçük bir kapı.
+  window.KM_GAME = { S, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, setLook, view: () => V };
+
+  function boot(data) {
+    if (lab.on) document.documentElement.classList.add('lab');
+    makeNoise();
+    setMuted(S.muted);
+    setLook(S.look, false);
+    layout();
+    let li = typeof data.li === 'number' ? data.li : typeof saved.li === 'number' ? saved.li : 0;
+    if (!(li >= 0 && li < LEVELS.length) || !unlocked(li)) li = 0;
+    if (Array.isArray(data.parts)) S.setups[LEVELS[li].id] = data.parts;
+    loadLevel(li);
+    if (!S.lookTip) {
+      S.lookTip = true; persistDevice();
+      setTimeout(() => toast('Yeni: üstteki Görünüm düğmesiyle çizim ve canlı görünüm arasında geçebilirsin.', 4200), 600);
+    }
+    requestAnimationFrame(frame);
+  }
+  try { if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ li: S.li, parts: S.parts.map(p => ({ id: p.id, type: p.type, o: p.o, x: p.x, y: p.y, link: p.link })) })); } catch (e) { /* yok say */ }
+  const hot = window.claude && window.claude.hot;
+  if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
+}());
+
+</script>
+</body>
+</html>
