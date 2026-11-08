@@ -152,8 +152,86 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ball);
 .result-title { font-size: clamp(40px, 7vw, 60px); line-height: 0.9; margin: 8px 0 14px; }
 #result-stamps { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 4px; }
 #result-stamps .goal { padding-left: 0; font-size: 17px; }
-#result-stamps .goal.new .stamp { animation: stampIn 0.45s cubic-bezier(.2, 1.6, .4, 1) both; }
 @keyframes stampIn { from { transform: scale(1.8) rotate(-24deg); opacity: 0; } to { transform: scale(1) rotate(-8deg); opacity: 1; } }
+
+/* Sonuç kartı: gelir, ONAY damgası basılır, damgalar tek tek düşer, yenilik belirir (.anim: hareket azaltılmamışsa) */
+#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.result-card { position: relative; z-index: 1; }
+.result-main { position: relative; }
+.result-main .result-title { padding-right: 150px; }
+.approved {
+  position: absolute; top: -4px; right: -6px; z-index: 2; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 12px 5px;
+  border: 3px solid var(--ball); outline: 1.5px solid var(--ball); outline-offset: 3px; color: var(--ball);
+  font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  transform: rotate(-11deg); opacity: 0.9;
+}
+.approved span { font-size: 28px; line-height: 0.95; }
+.approved small { font-family: var(--body); font-size: 11px; font-weight: 700; letter-spacing: 0.22em; }
+.anim .approved { opacity: 0; }
+.anim .approved.on { animation: slam 0.3s cubic-bezier(.3, 1.5, .5, 1) both; }
+@keyframes slam { from { opacity: 0; transform: scale(2.7) rotate(-26deg); } 55% { opacity: 1; } to { opacity: 0.9; transform: scale(1) rotate(-11deg); } }
+.result-card.enter { animation: cardIn 0.34s cubic-bezier(.2, .9, .3, 1.1) both; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(28px) rotate(-1.5deg) scale(0.97); } to { opacity: 1; transform: none; } }
+.result-card.shake { animation: shake 0.3s ease-out; }
+@keyframes shake { 25% { transform: translate(-3px, 2px) rotate(-0.4deg); } 50% { transform: translate(3px, -1px) rotate(0.3deg); } 75% { transform: translate(-1px, 1px); } }
+.anim #result-stamps .goal { opacity: 0; transform: translateX(-10px); }
+.anim #result-stamps .goal.in { opacity: 1; transform: none; transition: opacity 0.18s, transform 0.25s cubic-bezier(.2, 1.4, .4, 1); }
+.anim #result-stamps .goal:not(.got).in { opacity: 0.75; }
+#result-stamps .stamp { position: relative; }
+.anim #result-stamps .goal.got.in .stamp { animation: stampIn 0.4s cubic-bezier(.2, 1.6, .4, 1) both; }
+.anim #result-stamps .goal.new.in .stamp::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--ball);
+  animation: ring 0.6s 0.12s ease-out both;
+}
+@keyframes ring { from { transform: scale(0.9); opacity: 0.9; } to { transform: scale(2.3); opacity: 0; } }
+#result-stamps .goal.new .stamp { box-shadow: 0 0 0 3px rgba(255, 213, 74, 0.18); }
+
+/* Yeni parça açıldı */
+.unlock { position: relative; overflow: hidden; margin: 0 0 14px; padding: 12px 14px; border: 1.5px solid var(--ball); background: rgba(255, 213, 74, 0.08); }
+.unlock-book[hidden] { display: none; }
+.unlock-book { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding-bottom: 9px; margin-bottom: 10px; border-bottom: 1px solid rgba(255, 213, 74, 0.4); }
+.unlock-book .cap { color: var(--ball); }
+.unlock-book .bk { font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; }
+.unlock-item { display: grid; grid-template-columns: 132px 1fr; gap: 14px; align-items: center; }
+.unlock-item + .unlock-item { margin-top: 10px; }
+.unlock-art { position: relative; width: 132px; height: 88px; display: grid; place-items: center; }
+.unlock-art::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; margin: -95px 0 0 -95px; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 213, 74, 0.24) 0deg 8deg, rgba(255, 213, 74, 0) 8deg 24deg);
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 100%); mask: radial-gradient(closest-side, #000 30%, transparent 100%);
+  animation: spin 10s linear infinite;
+}
+.unlock-art::after { content: ''; position: absolute; inset: 0 14px; border: 1.5px dashed rgba(255, 213, 74, 0.6); border-radius: 50%; animation: spin 16s linear infinite reverse; }
+.unlock-art canvas { position: relative; z-index: 1; width: 132px; height: 88px; display: block; }
+.unlock-txt .cap { color: var(--ball); font-size: 12.5px; }
+.unlock-name { display: block; font-size: 34px; line-height: 0.95; margin: 5px 0 5px; }
+.unlock-txt p { margin: 0; font-size: 15.5px; line-height: 1.3; font-weight: 600; text-wrap: pretty; }
+.anim .unlock { opacity: 0; transform: scale(0.86); }
+.anim .unlock.in { animation: pop 0.55s cubic-bezier(.2, 1.5, .4, 1) both; }
+.anim .unlock.in .unlock-art canvas { animation: wipe 0.75s 0.15s ease-out both; }
+.anim .unlock.in::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 40%; pointer-events: none;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+  animation: shine 0.9s 0.3s ease-out both;
+}
+@keyframes pop { from { opacity: 0; transform: scale(0.8) rotate(-2deg); } to { opacity: 1; transform: none; } }
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes shine { from { left: -45%; } to { left: 125%; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Bu çizimde yeni olan parça */
+.bom-row.is-new { box-shadow: inset 3px 0 0 var(--ball); animation: newGlow 1.8s ease-in-out infinite; }
+@keyframes newGlow { 50% { background: rgba(255, 213, 74, 0.13); } }
+.tag-new {
+  font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; vertical-align: 3px;
+  background: var(--ball); color: var(--paper-deep); padding: 2px 5px 1px; margin-left: 4px;
+}
+.lvl .new-chip {
+  position: absolute; top: 10px; left: 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--ball); color: var(--paper-deep); padding: 3px 7px;
+}
+.lvl:disabled .new-chip { opacity: 0.8; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 14px; border: 1px solid var(--line-strong); }
 .stats div { padding: 7px 10px; border-right: 1px solid var(--line-strong); }
 .stats div:last-child { border-right: 0; }
@@ -210,6 +288,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   #goals { grid-column: 2; grid-row: 2; overflow: auto; align-self: start; }
   #run { grid-column: 1 / 3; grid-row: 4; height: 56px; }
 }
+@media (max-aspect-ratio: 5/4) and (max-width: 900px) {
+  .titleblock { flex-wrap: wrap; }
+  .tb-name { flex: 1; }
+  .tb-task { order: 9; flex: 1 1 100%; border-right: 0; border-top: 1px solid var(--line-strong); }
+}
 @media (max-width: 700px) {
   .tb-logo, .tb-scale { display: none; }
   .tb { padding: 5px 9px; }
@@ -234,7 +317,38 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   #goals { display: none; }
   #run { height: 50px; font-size: 18px; }
 }
+@media (max-width: 520px) {
+  .sheet-card { padding: 18px 16px 16px; }
+  .result-main .result-title { padding-right: 112px; }
+  .approved { top: -6px; right: -6px; padding: 5px 9px 4px; }
+  .approved span { font-size: 22px; }
+  .unlock { padding: 10px; }
+  .unlock-item { grid-template-columns: 96px 1fr; gap: 10px; }
+  .unlock-art, .unlock-art canvas { width: 96px; height: 64px; }
+  .unlock-art::before { width: 140px; height: 140px; margin: -70px 0 0 -70px; }
+  .unlock-name { font-size: 28px; }
+  .unlock-txt p { font-size: 14.5px; }
+}
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .overlay { padding: 10px; }
+  .result-card { width: min(880px, 100%); display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); column-gap: 22px; align-items: start; padding: 14px 18px; }
+  .result-title { font-size: 40px; margin: 6px 0 10px; }
+  .result-main .result-title { padding-right: 118px; }
+  .approved { padding: 5px 9px 4px; }
+  .approved span { font-size: 22px; }
+  #result-stamps .goal { font-size: 15.5px; }
+  .unlock { margin-bottom: 10px; padding: 9px 10px; }
+  .unlock-item { grid-template-columns: 96px 1fr; gap: 10px; }
+  .unlock-art, .unlock-art canvas { width: 96px; height: 64px; }
+  .unlock-art::before { width: 140px; height: 140px; margin: -70px 0 0 -70px; }
+  .unlock-name { font-size: 26px; }
+  .unlock-txt p { font-size: 14px; }
+  .stats { margin-bottom: 10px; }
+  .stats dd { font-size: 18px; }
+  #result-tip { margin-bottom: 10px; font-size: 14.5px; }
+  .actions .btn { height: 44px; padding: 0 14px; }
+}
 @media (prefers-reduced-motion: reduce) {
   #toast { transition: none; }
-  #result-stamps .goal.new .stamp { animation: none; }
+  .bom-row.is-new, .unlock-art::before, .unlock-art::after { animation: none; }
 }

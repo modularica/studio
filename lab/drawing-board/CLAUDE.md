@@ -9,12 +9,13 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 - `src/` kaynak (siteye çıkmaz, `.vercelignore`):
   - `sim.js` fizik çekirdeği (Planck.js, sabit 1/120 sn adım, DOM yok; Node'da da çalışır): parçalar, sensörler, çoklu top/kova, top çeşitleri, `runHeadless`
   - `levels.js` 20 çizim, iki defter (`book`); her birinde ipuçları, damgalar ve testlerin doğruladığı çözümler (`sol`)
-  - `game.js` arayüz: sürükle-bırak, kumanda, damgalar, bölüm seçimi (defter başlıklarıyla), teknik çizim (bkz. Görünüm), çalışırken efektler, sesler (WebAudio, yer tutucu), Lab bağlantıları
+  - `game.js` arayüz: sürükle-bırak, kumanda, damgalar, bölüm seçimi (defter başlıklarıyla), teknik çizim (bkz. Görünüm), çalışırken efektler, kutlama ve yenilik anları (bkz. Oyun hissi), Lab bağlantıları
+  - `audio.js` müzik ve sesler (`window.KM_AUDIO`, WebAudio sentezi, ses dosyası yok)
   - `index.html` sayfa iskeleti, `style.css` görünüm
   - `build.js` derleme; `test/` bölüm doğrulama ve tarayıcı denemeleri
 - Derleme: `node lab/drawing-board/src/build.js --lab` → `index.html`. Hesap satırları olmayan tek başına kopya: `node lab/drawing-board/src/build.js /tmp/db.html`. İnternetsiz kopya (fontlar ve Planck içinde): önce `cd lab/drawing-board/src && npm install`, sonra `node build.js --local /tmp/km-local.html`.
 - Bölüm testi: `cd lab/drawing-board/src && npm install && node test/design.js` (her bölüm: boş kurulum başarısız, kayıtlı çözümler başarılı). `node test/design.js <bölüm-id> --brute --sweep` tek parçalık bütün yerleşimleri ve elle basma pencerelerini tarar. Fizik ayarı (`sim.js` → `T`) ya da bir bölüm değişirse bunu çalıştır.
-- Tarayıcı denemesi: `--local` derlemesinden sonra `python3 test/browser.py` (20 bölümü oynar) ve `python3 test/shots.py` (masaüstü, telefon, iPad, sürükleme anı, çalışma anı, başarısız deneme izi ve bölüm kartları; `/tmp/km-shots/`).
+- Tarayıcı denemesi: `--local` derlemesinden sonra `python3 test/browser.py` (20 bölümü oynar) ve `python3 test/shots.py` (masaüstü, telefon, iPad, sürükleme anı, çalışma anı, başarısız deneme izi ve bölüm kartları; `/tmp/km-shots/`). `python3 test/juice.py` kutlamayı, sonuç kartını, "unlocked" anlarını ve NEW etiketlerini sıfır ilerlemeyle dener ve görüntüler. `python3 test/music.py` müziği ve sesleri bir dakikalık akışla çevrimdışı çalar: `music.wav`/`music.mp3` ve bölüm bölüm tepe/RMS düzeyi (tepe 0.98'i geçerse hata).
 
 ## Parçalar
 
@@ -25,11 +26,21 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 
 ## Notlar
 
-- Kayıt `drawing-board.v1` (hesaba eşitlenir): çizim başına çözüldü/damgalar, her çizimdeki kurulum, son açılan çizim. Ses tercihi `drawing-board.device` (cihazda kalır). Eski anahtarlardaki (`kucuk-muhendisler.v1`, `kucuk-muhendisler.cihaz`) kayıt açılışta bir kez taşınır.
+- Kayıt `drawing-board.v1` (hesaba eşitlenir): çizim başına çözüldü/damgalar, her çizimdeki kurulum, son açılan çizim. Ses ve müzik tercihi `drawing-board.device` (`muted`, `music`; cihazda kalır, daha önce sesi kapatmış olanda müzik de kapalı başlar). Eski anahtarlardaki (`kucuk-muhendisler.v1`, `kucuk-muhendisler.cihaz`) kayıt açılışta bir kez taşınır.
 - Çizimler sırayla açılır (defterden deftere de); adres sonuna `#hepsi` yazınca hepsi açılır (deneme için). Defter adları `game.js` → `BOOKS`.
 - Lab'da (`window.Hesap` varsa) her çözülen çizimde not yazılır (Türkçe: çizim, damga sayısı, elle basış); sonuç penceresinde ve bölümler sayfasında "Nasıldı?" düğmesi çıkar (Lab'ın düğmesi, Türkçe kalır). Hesap yoksa bunlar görünmez.
 - Görünüm tek: mavi kâğıtta teknik çizim. Gerçek malzemeli "canlı" görünüm denendi, beğenilmedi ve kaldırıldı; geri getirme. Çizim dili `game.js` → "çizim dili": kalın çizgi görünen kenar, ince çizgi ayrıntı, kesik çizgi görünmeyen kenar, çizgi-nokta eksen, çizgi-iki nokta hareketli parçanın öbür konumu, 45° tarama kesit (duvar, kova, boru, piston başlığı, kapı levhası, mıknatıs kutbu). Turuncu sadece elle kumanda edilen cihazlar, camgöbeği sensörler, sarı top ve hedef, gri çelik bilye.
 - Kurarken ölçü ve hareket çizgileri görünür: pistonun basınca varacağı yer, pervanenin erimi ("6 squares"), mıknatısın erimi (yarım daire, "2.5 squares"), yayın fırlatma yönü, kapının aç-kapa oku; sürüklerken parçanın kenarları çerçeveye kadar uzar ve sütun/satır harfleri yanar. Çalışırken bunlar gizlenir; yerine çarpma çizgileri, sensör kablosunda sinyal noktası, mıknatıs alan çizgileri ve kovada hedef halkaları çıkar. Başarısız denemenin izi noktalı yol ve yön oklarıyla kalır, topun son görüldüğü yer kırmızı çarpıdır.
 - Ayrıntı ekrana göre azalır (`makeView` → `lod`): parça listesi ve bölüm kartları sade çizilir.
 - Oyunun içi İngilizce, kod İngilizce, yorumlar Türkçe. Odası yok.
+
+## Oyun hissi (müzik, kutlama, yenilik)
+
+- Müzik (`audio.js`): her çizimin kendi tonu, akor yürüyüşü, marimba ostinatosu ve ezgisi var (çizim kimliğinden tohum; aynı çizim hep aynı şarkı). 84 BPM, hafif swing. Kipler: `build` kurarken sakin (piyano akorları, bas, seyrek marimba, iki turda bir ezgi), `run` makine çalışırken saat tıkırtısı, yumuşak davul, akor vuruşları ve ostinato girer, `menu` pencere açıkken kısık ve boğuk. Katmanlar bir sonraki vuruşta girer; yeni çizimin şarkısı bir sonraki ölçüde başlar. Müzik ilk dokunuşta başlar (tarayıcı kuralı), sekme gizlenince durur. Antetteki nota düğmesi müziği, hoparlör düğmesi sesleri açıp kapatır.
+- Sesler o an çalan akordan nota seçer (yay, sensör, kapı, piston, mıknatıs, kova); topun çarpması yüksekliğine göre pentatonikten nota çalar, merdivenden inen top inen bir ezgi çalar. Kova sesi her topta bir basamak yukarıdan başlar.
+- Son top kovaya girince: an donar (0.09 sn), sonra ağır çekim; tahta bir an aydınlanır, kovadan ışınlar çıkar ve üstünde onay işareti kendini çizer; müzik o anki akorda bir arpejle biter ve sonraki ölçüde baştan başlar. Sonuç 1.05 sn sonra açılır.
+- Sonuç kartı sırayla açılır: kart gelir, sarı APPROVED damgası basılır (kart sarsılır), damgalar tek tek düşer (yenileri halkalı, yükselen notayla), ilk çözümde ve bütün damgalar yeni tamamlandığında konfeti. Başlık: ilk çözüm "It works!" (hepsi birden alındıysa "Perfect!"), yeni damga "New stamp!" / "All stamps!", tekrarlarda değişen kısa başlıklar.
+- Yenilik (`NEWS`, `INTRO`): bir çizim ilk kez çözülünce sonraki çizim yeni bir şey getiriyorsa kartta "New part unlocked!" (parça), "New ball unlocked!" (çelik bilye), "New cup unlocked!" (bayraklı kova) ve defter değişiyorsa "Notebook 2 unlocked" çıkar: dönen ışınlar önünde parçanın çizimi, adı ve tek cümlelik açıklama. Çizimin içinde, çözülene kadar yeni parça listede "New" etiketli; tahtadaki yeni sabit parça ilk çalıştırmaya kadar kesik sarı çerçeveli ve "NEW" etiketli. Bölüm kartlarında da "New: Spring" gibi rozet var (kilitliyken merak uyandırsın diye).
+- Hareket azaltılmışsa (`prefers-reduced-motion`) konfeti, ağır çekim ve kart animasyonları yok; sesler ve yenilik kartı kalır.
+- Yeni bir parça ya da kural eklenince `NEWS`'e bir satır ekle; `INTRO` hangi çizimde ilk görüldüğünü kendisi bulur.
 - Deneme: sayfa içi `window.KM` (fizik), `window.KM_LEVELS`, `window.KM_GAME` (durum, `loadLevel`, `startRun`…).

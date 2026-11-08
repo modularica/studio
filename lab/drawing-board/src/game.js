@@ -53,59 +53,53 @@
     progress: saved.progress && typeof saved.progress === 'object' ? saved.progress : {},
     setups: saved.setups && typeof saved.setups === 'object' ? saved.setups : {},
     muted: !!device.muted,
+    // Müzik tercihi ayrı; daha önce sesi kapatmış olanda müzik de kapalı başlar.
+    music: device.music === undefined ? !device.muted : !!device.music,
+    goalN: 0, goalAt: null, winAt: null, flashT: null, lastHit: [], introNew: null, newSeen: false,
   };
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li })); } catch (e) { /* kayıt yoksa da oynanır */ }
   }
   function persistDevice() {
-    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted })); } catch (e) { /* yok say */ }
+    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, music: S.music })); } catch (e) { /* yok say */ }
   }
+
+  // Her çizimin getirdiği yenilik: ilk kez görülen parça, çelik bilye, bayraklı kova.
+  // Önceki çizim ilk kez çözülünce sonuç penceresinde "New part unlocked!" olarak açılır;
+  // çizimin içinde, çözülene kadar parça listesinde ve tahtada "New" yazar.
+  const NEWS = {
+    spring: ['New part', 'Spring', 'Launches any ball that lands on it.'],
+    piston: ['New part', 'Piston', 'Press it at the right moment and it punches the ball.'],
+    fan: ['New part', 'Fan', 'Hold it and it blows the ball along. It reaches 6 squares.'],
+    sensor: ['New part', 'Sensor', 'When a ball crosses it, the linked device fires by itself.'],
+    belt: ['New part', 'Conveyor', 'Carries the ball the way its arrows point.'],
+    gate: ['New part', 'Gate', 'Press to open, press again to close. Laid flat, it is a trapdoor.'],
+    magnet: ['New part', 'Magnet', 'Hold it to pull a steel ball in. Yellow balls ignore it.'],
+    steel: ['New ball', 'Steel ball', 'A second ball. Both balls have to get in.'],
+    flags: ['New cup', 'Flag cups', 'A flagged cup only takes the ball of its own color.'],
+  };
+  const INTRO = (() => {
+    const seen = new Set();
+    return LEVELS.map(L => {
+      const got = [], types = KM.listParts(L, []).map(p => p.type).concat(Object.keys(L.tray || {}).filter(k => L.tray[k] > 0));
+      for (const k of ORDER) if (types.includes(k) && !seen.has(k)) { seen.add(k); if (NEWS[k]) got.push(k); }
+      if (!seen.has('steel') && KM.ballKinds(L).includes('steel')) { seen.add('steel'); got.push('steel'); }
+      if (!seen.has('flags') && KM.cupsOf(L).some(c => c.kind)) { seen.add('flags'); got.push('flags'); }
+      return got;
+    });
+  })();
   function saveSetup() {
     S.setups[S.level.id] = S.parts.map(p => ({ id: p.id, type: p.type, o: p.o, x: p.x, y: p.y, link: p.link == null ? null : p.link }));
     persist();
   }
 
   // ---------------------------------------------------------------- ses
-  let AC = null;
-  function audio() {
-    if (S.muted) return null;
-    if (AC === null) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = false; } }
-    if (AC && AC.state === 'suspended') AC.resume().catch(() => {});
-    return AC || null;
-  }
-  function tone(f0, dur, type, vol, f1, delay) {
-    const a = audio(); if (!a) return;
-    const t0 = a.currentTime + (delay || 0);
-    const o = a.createOscillator(), g = a.createGain();
-    o.type = type; o.frequency.setValueAtTime(f0, t0);
-    if (f1) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
-    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.02);
-  }
-  function noise(dur, vol, freq) {
-    const a = audio(); if (!a) return;
-    const len = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
-    s.buffer = buf; f.type = 'lowpass'; f.frequency.value = freq; g.gain.value = vol;
-    s.connect(f).connect(g).connect(a.destination); s.start();
-  }
-  const SFX = {
-    place: () => { tone(420, 0.05, 'square', 0.035); tone(210, 0.09, 'triangle', 0.06); },
-    tick: () => tone(950, 0.03, 'square', 0.025),
-    remove: () => tone(320, 0.12, 'triangle', 0.05, 150),
-    link: () => { tone(880, 0.05, 'sine', 0.05); tone(1320, 0.07, 'sine', 0.05, null, 0.05); },
-    run: () => tone(300, 0.14, 'triangle', 0.05, 620),
-    piston: () => { noise(0.07, 0.18, 1100); tone(120, 0.12, 'sine', 0.18, 55); },
-    spring: () => tone(190, 0.28, 'triangle', 0.09, 760),
-    sensor: () => tone(1500, 0.05, 'sine', 0.045),
-    goal: () => { tone(660, 0.14, 'triangle', 0.08); tone(990, 0.3, 'triangle', 0.08, null, 0.12); },
-    fail: () => tone(240, 0.32, 'sawtooth', 0.035, 90),
-    gate: () => { noise(0.12, 0.08, 700); tone(260, 0.12, 'triangle', 0.04, 180); },
-    magnet: () => tone(110, 0.25, 'sawtooth', 0.03, 140),
-  };
-  const sfx = k => { try { SFX[k] && SFX[k](); } catch (e) { /* ses opsiyonel */ } };
+  // Müzik ve sesler audio.js'te (KM_AUDIO): hepsi sentez, o an çalan akora uyar.
+  // Müzik kipi: kurarken 'build', makine çalışırken 'run', pencere açıkken 'menu'.
+  const AU = window.KM_AUDIO;
+  const sfx = (k, o) => { if (!S.muted && AU) AU.play(k, o); };
+  function audio() { try { if (AU) AU.unlock(); } catch (e) { /* ses opsiyonel */ } }
+  function musicMode(m) { try { if (AU) AU.setMode(m); } catch (e) { /* yok say */ } }
 
   // ---------------------------------------------------------------- görünüm
   // cs: bir karenin piksel boyu. lw: çizgi kalınlığı (küçük çizimlerde incelir), lod: ayrıntı düzeyi.
@@ -740,6 +734,18 @@
     c.lineWidth = Vw.px(width || 2); c.strokeStyle = rgba(color, alpha); c.stroke();
   }
 
+  // Bu çizimde ilk kez görülen sabit parça: ilk çalıştırmaya kadar kesik sarı çerçeve ve "NEW" etiketi.
+  function drawNewTag(c, Vw, p, time, label) {
+    const d = KM.sizeOf(p), a = reduceMotion ? 0.8 : 0.55 + 0.35 * Math.sin(time * 4.2);
+    c.beginPath(); c.rect(p.x - 0.1, p.y - 0.1, d.w + 0.2, d.h + 0.2);
+    stroke(c, Vw, rgba(C.ball, a), LW.part, DASH.hidden);
+    if (!label) return;
+    const x = p.x + d.w / 2, y = p.y + d.h + 0.32 > H - 0.15 ? p.y - 0.32 : p.y + d.h + 0.32;
+    const w = Vw.px(40), h = Vw.px(19);
+    c.beginPath(); rrect(c, x - w / 2, y - h / 2, w, h, Vw.px(3)); fill(c, C.ball);
+    textAt(c, Vw, 'NEW', x, y, 12.5, C['paper-deep'], 'center', 700);
+  }
+
   // ---------------------------------------------------------------- yardımcılar (kurulum)
   const allParts = () => KM.listParts(S.level, S.parts);
   const devicesAll = () => allParts().filter(p => PARTS[p.type].manual);
@@ -799,6 +805,10 @@
     if (ann) for (const it of items) {
       if (it.p.type === 'fan') drawFanRange(c, V, it.p);
       else if (it.p.type === 'magnet') drawMagnetRange(c, V, it.p);
+    }
+    if (ann && S.introNew && !S.newSeen) {
+      const tagged = new Set();   // aynı türden birkaç parça varsa etiket ilkinde, çerçeve hepsinde
+      for (const it of items) if (it.p.fixed && S.introNew.has(it.p.type)) { drawNewTag(c, V, it.p, time, !tagged.has(it.p.type)); tagged.add(it.p.type); }
     }
     if (run) {
       S.sim.balls.forEach((b, i) => {
@@ -873,13 +883,37 @@
           if (q > 0) { c.moveTo(f.x + 0.17 + 0.8 * q, f.y); c.arc(f.x, f.y, 0.17 + 0.8 * q, 0, TAU); }
         }
         stroke(c, V, rgba(C.ball, 0.85 * (1 - k)), LW.part);
+      } else if (f.k === 'win') {
+        // Makine çalıştı: kovadan çıkan ışınlar ve kovanın üstünde kendini çizen onay işareti.
+        const k = age / 1.15; if (k >= 1) continue;
+        const e = 1 - Math.pow(1 - Math.min(1, k * 1.7), 3), fade = 1 - Math.max(0, (k - 0.55) / 0.45);
+        c.beginPath();
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * TAU + 0.2, r0 = 0.45 + 1.5 * e, r1 = r0 + 0.25 + 0.35 * (1 - e);
+          c.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); c.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+        }
+        c.lineCap = 'round'; stroke(c, V, rgba(C.ball, 0.9 * fade), LW.edge);
+        c.beginPath(); c.arc(f.x, f.y, 0.3 + 1.9 * e, 0, TAU); stroke(c, V, ink(0.5 * fade), LW.thin, DASH.center);
+        const pts = [[f.x - 0.42, f.y + 1.55], [f.x - 0.12, f.y + 1.25], [f.x + 0.5, f.y + 1.95]];
+        const L1 = Math.hypot(0.3, 0.3), L2 = Math.hypot(0.62, 0.7), q = Math.min(1, k * 2.6) * (L1 + L2);
+        c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+        if (q <= L1) c.lineTo(pts[0][0] + (pts[1][0] - pts[0][0]) * q / L1, pts[0][1] + (pts[1][1] - pts[0][1]) * q / L1);
+        else { c.lineTo(pts[1][0], pts[1][1]); const u = (q - L1) / L2; c.lineTo(pts[1][0] + (pts[2][0] - pts[1][0]) * u, pts[1][1] + (pts[2][1] - pts[1][1]) * u); }
+        c.lineJoin = 'round';
+        stroke(c, V, HALO, LW.edge + 5); stroke(c, V, rgba(C.ball, fade), LW.edge + 2.2);
+        c.lineCap = 'butt'; c.lineJoin = 'miter';
       }
+    }
+    // Son top kovaya girince tahta bir an aydınlanır.
+    if (S.flashT != null && !reduceMotion) {
+      const k = (time - S.flashT) / 0.35;
+      if (k >= 0 && k < 1) { c.save(); V.screen(c); c.fillStyle = ink(0.13 * (1 - k)); c.fillRect(0, 0, cv.width, cv.height); c.restore(); }
     }
   }
 
   function drawIcon(canvas, type, o) {
     const r = canvas.getBoundingClientRect();
-    const w = r.width || 52, h = r.height || 30, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const w = canvas.clientWidth || r.width || 52, h = canvas.clientHeight || r.height || 30, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     const d = KM.sizeOf({ type, o: o || DEFAULT_O[type] }), c = canvas.getContext('2d');
     const vw = Math.max(2.4, d.w + 0.4), vh = Math.max(1.24, d.h + 0.2);
@@ -958,9 +992,10 @@
     types.forEach((type, i) => {
       const left = trayLeft(type);
       const li = document.createElement('li');
-      li.className = 'bom-row' + (left > 0 ? '' : ' empty');
-      li.innerHTML = `<span class="no">${i + 1}</span><canvas aria-hidden="true"></canvas><span class="nm">${NAMES[type]}</span><span class="qty">×${left}</span>`;
-      li.setAttribute('aria-label', `${NAMES[type]}, ${left} left`);
+      const isNew = !!(S.introNew && S.introNew.has(type));
+      li.className = 'bom-row' + (left > 0 ? '' : ' empty') + (isNew ? ' is-new' : '');
+      li.innerHTML = `<span class="no">${i + 1}</span><canvas aria-hidden="true"></canvas><span class="nm">${NAMES[type]}${isNew ? ' <i class="tag-new">New</i>' : ''}</span><span class="qty">×${left}</span>`;
+      li.setAttribute('aria-label', `${NAMES[type]}${isNew ? ', new part' : ''}, ${left} left`);
       li.addEventListener('pointerdown', e => startTrayDrag(type, e));
       ol.appendChild(li);
       drawIcon(li.querySelector('canvas'), type);
@@ -1037,6 +1072,10 @@
     S.mode = 'build'; S.sim = null; S.trails = null; S.trailFail = null; S.lastFail = null; S.drag = null; S.press = null; S.linkFrom = null; S.snap = null;
     S.held.clear();
     S.parts = []; S.nextId = 1;
+    const prog0 = S.progress[S.level.id];
+    S.introNew = INTRO[i].length && !(prog0 && prog0.solved) ? new Set(INTRO[i]) : null; S.newSeen = false;
+    try { if (AU) AU.setLevel(S.level.id); } catch (e) { /* yok say */ }
+    if (!overlayOpen()) musicMode('build');
     const setup = S.setups[S.level.id] || [];
     for (const q of setup) {
       if (!q || !PARTS[q.type] || typeof q.x !== 'number' || typeof q.y !== 'number') continue;
@@ -1202,10 +1241,11 @@
     exitLink(); hideToast(); audio();
     S.sim = KM.createSim(S.level, S.parts.map(p => Object.assign({}, p)));
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
+    S.goalN = 0; S.goalAt = null; S.winAt = null; S.flashT = null; S.lastHit = []; S.newSeen = true;
     S.held.clear();
     S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on }));
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
-    sfx('run');
+    sfx('run'); musicMode('run');
     refreshSide(); buildPult(); updatePult();
   }
 
@@ -1214,8 +1254,10 @@
     releaseAll();
     S.trails = S.sim.trails.map(t => t.slice());
     S.trailFail = reason !== 'user' ? reason : null;
-    S.sim = null; S.mode = 'build';
+    S.sim = null; S.mode = 'build'; S.goalAt = null;
+    musicMode('build');
     if (reason !== 'user') S.lastFail = reason;
+    else sfx('stop');
     if (reason === 'out') { toast('The ball fell off. The dotted line shows its last path.'); sfx('fail'); }
     else if (reason === 'timeout') toast('Time’s up. Take another look at the machine.');
     else if (reason === 'rest') toast('The ball stopped. Change the setup and try again.');
@@ -1226,6 +1268,7 @@
     const sim = S.sim, L = S.level;
     const used = S.parts.length, presses = sim.presses, t = sim.goalStep * DT;
     const prog = S.progress[L.id] || (S.progress[L.id] = { solved: false, badges: {} });
+    const first = !prog.solved;
     const res = L.badges.map(b => ({ b, ok: badgeOk(b, used, presses) }));
     const fresh = [];
     for (const r of res) if (r.ok && !prog.badges[r.b.k]) { prog.badges[r.b.k] = true; fresh.push(r.b.k); }
@@ -1234,20 +1277,25 @@
     const got = L.badges.filter(b => prog.badges[b.k]).length;
     lab.note(`Çizim ${pad2(S.li + 1)} ${L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses}`);
     releaseAll();
-    S.trails = sim.trails.map(t => t.slice()); S.trailFail = null; S.sim = null; S.mode = 'build'; S.lastFail = null;
+    S.trails = sim.trails.map(t => t.slice()); S.trailFail = null; S.sim = null; S.mode = 'build'; S.lastFail = null; S.goalAt = null;
+    if (first) S.introNew = null;
     refreshSide();
-    showResult(res, fresh, used, presses, t);
+    showResult(res, fresh, used, presses, t, first);
   }
 
   // Topların hızındaki ani değişim çarpmadır: temas noktasına kısa çizgiler.
+  // Çarpma sesi topun yüksekliğinden nota seçer: merdivenden inen top inen bir ezgi çalar.
   function watchBalls(sim) {
-    if (reduceMotion) return;
     sim.balls.forEach((b, i) => {
       const st = sim.bstate[i];
       if (st === 'goal' && S.prevState[i] !== 'goal') {
         const bp = b.getPosition();
         const cup = KM.cupsOf(S.level).find(cp => bp.x > cp.x && bp.x < cp.x + cp.w) || KM.cupsOf(S.level)[0];
-        S.fx.push({ k: 'goal', x: cup.x + cup.w / 2, y: cup.y + KM.CUP.wall + 0.29, t: S.time });
+        const fx = { k: 'goal', x: cup.x + cup.w / 2, y: cup.y + KM.CUP.wall + 0.29, t: S.time };
+        if (!reduceMotion) S.fx.push(fx);
+        if (sim.status === 'goal') S.winAt = fx;      // son top: kutlama frame()'de
+        else sfx('goal', { n: S.goalN });
+        S.goalN++;
       }
       S.prevState[i] = st;
       if (st === 'out') return;
@@ -1255,12 +1303,14 @@
       S.prevV[i] = [v.x, v.y];
       if (!pv) return;
       const dx = v.x - pv[0], dy = v.y - pv[1], dv = Math.hypot(dx, dy);
-      if (dv > 4 && !(S.fx.some(f => f.k === 'hit' && f.i === i && S.time - f.t < 0.12))) {
+      if (dv > 4 && S.time - (S.lastHit[i] || -1) > 0.12) {
+        S.lastHit[i] = S.time;
         const bp = b.getPosition();
-        S.fx.push({ k: 'hit', i, x: bp.x - T.R * dx / dv, y: bp.y - T.R * dy / dv, a: Math.atan2(-dy, -dx), t: S.time });
+        if (!reduceMotion) S.fx.push({ k: 'hit', i, x: bp.x - T.R * dx / dv, y: bp.y - T.R * dy / dv, a: Math.atan2(-dy, -dx), t: S.time });
+        if (st !== 'goal') sfx('hit', { h: bp.y / H, v: (dv - 4) / 10, x: bp.x / W * 2 - 1 });
       }
     });
-    if (S.fx.length > 40) S.fx = S.fx.filter(f => S.time - f.t < 1);
+    if (S.fx.length > 40) S.fx = S.fx.filter(f => S.time - f.t < 1.2);
   }
 
   function frame(now) {
@@ -1268,7 +1318,9 @@
     frame.last = now; S.time += dt;
     if (S.mode === 'run' && S.sim) {
       const sim = S.sim;
-      S.acc += dt;
+      // Son top kovaya girince an donar, sonra ağır çekim (yalnızca görüntü; fizik adımı aynı).
+      const g = S.goalAt == null ? -1 : S.time - S.goalAt;
+      S.acc += dt * (g < 0 || reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
       let n = 0;
       while (S.acc >= DT && n < 12) { sim.step(); S.acc -= DT; n++; }
       if (n >= 12) S.acc = 0;
@@ -1281,8 +1333,13 @@
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
       if (sim.status === 'goal') {
-        if (!S.goalPlayed) { S.goalPlayed = true; sfx('goal'); }
-        S.endT += dt; if (S.endT > 0.85) succeed();
+        if (!S.goalPlayed) {
+          S.goalPlayed = true; S.goalAt = S.time; S.flashT = S.time;
+          const w = S.winAt || { x: KM.cupsOf(S.level)[0].x + 1, y: KM.cupsOf(S.level)[0].y + 0.4 };
+          if (!reduceMotion) S.fx.push({ k: 'win', x: w.x, y: w.y, t: S.time });
+          sfx('win');
+        }
+        S.endT += dt; if (S.endT > 1.05) succeed();
       } else if (sim.status === 'out') {
         S.endT += dt; if (S.endT > 0.45) stopRun('out');
       } else if (sim.status === 'timeout') stopRun('timeout');
@@ -1299,12 +1356,29 @@
 
   // ---------------------------------------------------------------- katmanlar
   const overlayOpen = () => !$('result').hidden || !$('levels').hidden;
-  function openOverlay(id, focusId) { $(id).hidden = false; const f = $(focusId); if (f) f.focus(); }
-  function closeOverlay(id) { $(id).hidden = true; }
+  function openOverlay(id, focusId) { $(id).hidden = false; const f = $(focusId); if (f) f.focus(); musicMode('menu'); }
+  function closeOverlay(id) {
+    $(id).hidden = true;
+    if (id === 'result') { clearLater(); stopConfetti(); }
+    if (!overlayOpen()) musicMode(S.mode === 'run' ? 'run' : 'build');
+  }
 
-  function showResult(res, fresh, used, presses, t) {
-    const L = S.level, prog = S.progress[L.id];
-    $('result-cap').textContent = `Drawing ${pad2(S.li + 1)} · approved`;
+  // Sonuç penceresi sırayla açılır: kart gelir, ONAY damgası basılır, damgalar tek tek düşer,
+  // ilk çözümde sonraki çizimin yeniliği ("New part unlocked!") belirir. Kapatınca zamanlayıcılar durur.
+  let timers = [];
+  const later = (ms, fn) => { timers.push(setTimeout(fn, ms)); };
+  function clearLater() { timers.forEach(clearTimeout); timers = []; }
+  const TITLES = ['Nice machine!', 'Smooth run!', 'Spot on!', 'Clockwork!', 'Engineered!'];
+
+  function showResult(res, fresh, used, presses, t, first) {
+    const L = S.level, prog = S.progress[L.id], i = S.li, anim = !reduceMotion;
+    const allNow = res.every(r => r.ok), done = L.badges.every(b => prog.badges[b.k]);
+    clearLater(); stopConfetti();
+    $('result').classList.toggle('anim', anim);
+    $('result-cap').textContent = `Drawing ${pad2(i + 1)} · ${L.name}`;
+    $('approved-no').textContent = `Dwg ${pad2(i + 1)}`;
+    $('result-title').textContent = first ? (allNow && L.badges.length > 1 ? 'Perfect!' : 'It works!')
+      : fresh.length ? (done ? 'All stamps!' : 'New stamp!') : TITLES[Math.floor(Math.random() * TITLES.length)];
     const ul = $('result-stamps'); ul.textContent = '';
     for (const r of res) {
       const got = !!prog.badges[r.b.k];
@@ -1313,14 +1387,117 @@
       li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(r.b)}${got && !r.ok ? ' · from an earlier run' : ''}</span>`;
       ul.appendChild(li);
     }
-    $('st-time').textContent = t.toFixed(1) + ' s';
     $('st-parts').textContent = String(used);
     $('st-press').textContent = String(presses);
     const missing = L.badges.find(b => !prog.badges[b.k]);
-    $('result-tip').textContent = missing ? badgeTip(missing) : (S.li + 1 < LEVELS.length ? 'Every stamp on this drawing is yours.' : 'Every drawing in the notebook is done. New ones are on the way.');
-    const last = S.li + 1 >= LEVELS.length;
+    $('result-tip').textContent = missing ? badgeTip(missing) : (i + 1 < LEVELS.length ? 'Every stamp on this drawing is yours.' : 'Every drawing in the notebook is done. New ones are on the way.');
+    const last = i + 1 >= LEVELS.length;
     $('btn-next').textContent = last ? 'Drawings' : 'Next drawing';
+    // Yenilik: yalnızca ilk çözümde, sonraki çizim yeni bir şey getiriyorsa.
+    const news = first && !last ? INTRO[i + 1] : [];
+    const book = first && !last && LEVELS[i + 1].book !== L.book ? LEVELS[i + 1].book : null;
+    const box = $('result-unlock'), items = $('unlock-items');
+    box.hidden = !news.length && !book; box.classList.remove('in');
+    $('unlock-book').hidden = !book;
+    if (book) $('unlock-book').innerHTML = `<span class="cap">Notebook ${book} unlocked</span><span class="bk">${BOOKS[book] || ''}</span>`;
+    items.textContent = '';
+    for (const k of news) {
+      const [kind, name, desc] = NEWS[k], el = document.createElement('div');
+      el.className = 'unlock-item';
+      el.innerHTML = `<div class="unlock-art"><canvas aria-hidden="true"></canvas></div><div class="unlock-txt"><span class="cap">${kind} unlocked!</span><span class="stencil unlock-name">${name}</span><p>${desc}</p></div>`;
+      items.appendChild(el);
+    }
     openOverlay('result', 'btn-next');
+    items.querySelectorAll('canvas').forEach((cnv, j) => drawNewsIcon(cnv, news[j]));
+    countUp($('st-time'), t, anim ? 550 : 0);
+
+    const card = $('result').querySelector('.sheet-card'), stamp = $('approved');
+    card.classList.remove('enter', 'shake'); stamp.classList.remove('on');
+    ul.querySelectorAll('.goal').forEach(li => li.classList.toggle('in', !anim));
+    if (!anim) { stamp.classList.add('on'); sfx('approved'); if (!box.hidden) { box.classList.add('in'); later(250, () => sfx('unlock')); } return; }
+    void card.offsetWidth;
+    card.classList.add('enter');
+    later(230, () => stamp.classList.add('on'));
+    later(420, () => {
+      sfx('approved'); card.classList.remove('enter'); card.classList.add('shake');
+      if (first || (fresh.length && done)) confetti(first ? 80 : 120);
+    });
+    const lis = [...ul.children];
+    lis.forEach((li, k) => later(640 + k * 300, () => {
+      li.classList.add('in');
+      if (li.classList.contains('got')) sfx('stamp', { n: k, old: !li.classList.contains('new') });
+    }));
+    if (!box.hidden) later(760 + lis.length * 300, () => { box.classList.add('in'); sfx('unlock'); });
+  }
+
+  function countUp(el, v, ms) {
+    if (!ms) { el.textContent = v.toFixed(1) + ' s'; return; }
+    const t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (v * e).toFixed(1) + ' s';
+      if (k < 1 && !$('result').hidden) requestAnimationFrame(step);
+    };
+    el.textContent = '0.0 s'; requestAnimationFrame(step);
+  }
+
+  // Yeniliğin resmi: parçaysa parça listesindeki çizim, değilse iki top ya da iki bayraklı kova.
+  function drawNewsIcon(cnv, k) {
+    const w = cnv.clientWidth || 132, h = cnv.clientHeight || 88, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    cnv.width = Math.round(w * dpr); cnv.height = Math.round(h * dpr);
+    const c = cnv.getContext('2d');
+    if (PARTS[k]) {
+      const o = DEFAULT_O[k], d = KM.sizeOf({ type: k, o });
+      const Vi = makeView(w, h, dpr, -0.35, -0.3, d.w + 0.7, d.h + 0.6); Vi.tf(c);
+      drawPart(c, Vi, { type: k, o, x: 0, y: 0 }, null, 0, false);
+    } else if (k === 'steel') {
+      const Vi = makeView(w, h, dpr, -0.75, -0.5, 1.5, 1); Vi.tf(c);
+      drawBall(c, Vi, -0.3, 0, 0.5, 1, 0); drawBall(c, Vi, 0.3, 0, -0.4, 1, 1);
+    } else if (k === 'flags') {
+      const Vi = makeView(w, h, dpr, -0.15, -0.1, 4.6, 2.05); Vi.tf(c);
+      drawCup(c, Vi, { x: 0, y: 0, w: 2, kind: 'yellow' }, 0); drawCup(c, Vi, { x: 2.3, y: 0, w: 2, kind: 'steel' }, 0);
+    }
+  }
+
+  // Konfeti: sonuç kartının arkasında dökülen kâğıt parçaları.
+  const CONF = { parts: [], raf: 0, last: 0 };
+  function confetti(n) {
+    if (reduceMotion) return;
+    const cnv = $('confetti'), r = cnv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (!r.width) return;
+    cnv.width = Math.round(r.width * dpr); cnv.height = Math.round(r.height * dpr);
+    const cols = [C.ink, C.ball, C.eye, C.hand, C.ball, C.ink];
+    for (let i = 0; i < n; i++) {
+      const side = i % 2 ? 1 : -1;
+      CONF.parts.push({
+        x: r.width / 2 + side * r.width * (0.05 + Math.random() * 0.32), y: r.height * (0.18 + Math.random() * 0.22),
+        vx: side * (0.6 + Math.random() * 4.5), vy: -(4 + Math.random() * 7), a: Math.random() * TAU, va: (Math.random() - 0.5) * 0.35,
+        w: 5 + Math.random() * 5, h: 8 + Math.random() * 7, col: cols[i % cols.length], f: Math.random() * TAU,
+      });
+    }
+    if (!CONF.raf) { CONF.last = 0; CONF.raf = requestAnimationFrame(confettiFrame); }
+  }
+  function confettiFrame(now) {
+    const cnv = $('confetti'), c = cnv.getContext('2d'), cw = cnv.clientWidth || 1, ch = cnv.clientHeight || 1;
+    const dt = CONF.last ? Math.min(2.5, (now - CONF.last) / 16.7) : 1; CONF.last = now;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cnv.width, cnv.height);
+    c.setTransform(cnv.width / cw, 0, 0, cnv.height / ch, 0, 0);
+    CONF.parts = CONF.parts.filter(p => p.y < ch + 30);
+    for (const p of CONF.parts) {
+      p.vy = Math.min(p.vy + 0.2 * dt, 3.4 + Math.sin(p.f));
+      p.vx *= Math.pow(0.985, dt); p.f += 0.11 * dt;
+      p.x += (p.vx + Math.sin(p.f) * 0.9) * dt; p.y += p.vy * dt; p.a += p.va * dt;
+      c.save(); c.translate(p.x, p.y); c.rotate(p.a); c.scale(Math.cos(p.f * 1.6), 1);
+      c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); c.restore();
+    }
+    if (CONF.parts.length) CONF.raf = requestAnimationFrame(confettiFrame);
+    else { CONF.raf = 0; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cnv.width, cnv.height); }
+  }
+  function stopConfetti() {
+    CONF.parts = [];
+    if (CONF.raf) cancelAnimationFrame(CONF.raf);
+    CONF.raf = 0;
+    const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
   const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets' };
@@ -1339,7 +1516,8 @@
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'lvl' + (i === S.li ? ' cur' : ''); b.disabled = !open;
       const dots = L.badges.map(bd => `<span class="dot${prog && prog.badges[bd.k] ? ' got' : ''}" title="${badgeText(bd)}"></span>`).join('');
-      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Drawing ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${open ? '' : '<span class="lock">Locked</span>'}`;
+      const nw = INTRO[i].length ? `<span class="new-chip">New: ${INTRO[i].map(k => NEWS[k][1]).join(', ')}</span>` : '';
+      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Drawing ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${nw}${open ? '' : '<span class="lock">Locked</span>'}`;
       b.setAttribute('aria-label', `Drawing ${i + 1}: ${L.name}${open ? '' : ', locked'}`);
       b.addEventListener('click', () => { closeOverlay('levels'); loadLevel(i); });
       grid.appendChild(b);
@@ -1349,8 +1527,16 @@
     requestAnimationFrame(() => thumbs.forEach(([c, L]) => drawThumb(c, L)));
   }
 
+  function setMusic(on, quiet) {
+    S.music = on; persistDevice();
+    const b = $('btn-music'); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Turn music off' : 'Turn music on');
+    $('ico-music').innerHTML = '<path d="M7.5 15.5V5l9-2.2v10.4"/><circle cx="5.3" cy="15.5" r="2.2"/><circle cx="14.3" cy="13.2" r="2.2"/>'
+      + (on ? '' : '<path d="M2.5 2.5l15 15"/>');
+    if (!quiet) try { if (AU) AU.setMusic(on); } catch (e) { /* yok say */ }
+  }
   function setMuted(m) {
     S.muted = m; persistDevice();
+    try { if (AU) AU.setSfx(!m); } catch (e) { /* yok say */ }
     const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off');
     $('ico-sound').innerHTML = m
       ? '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13.5 7.5l5 5M18.5 7.5l-5 5"/>'
@@ -1376,12 +1562,18 @@
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onCancel);
   window.addEventListener('blur', releaseAll);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseAll();
+    try { if (AU) { if (document.hidden) AU.pause(); else AU.resume(); } } catch (e) { /* yok say */ }
+  });
   document.addEventListener('gesturestart', e => e.preventDefault());
   $('run').addEventListener('click', toggleRun);
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('levels-close').addEventListener('click', () => closeOverlay('levels'));
   $('btn-sound').addEventListener('click', () => setMuted(!S.muted));
+  $('btn-music').addEventListener('click', () => setMusic(!S.music));
+  // Tarayıcı sesi ancak dokununca açar: her dokunuşta bağlamı uyandır (müzik açıksa başlar).
+  for (const ev of ['pointerdown', 'pointerup', 'keydown', 'touchend']) window.addEventListener(ev, audio, { capture: true, passive: true });
   $('btn-retry').addEventListener('click', () => { closeOverlay('result'); setHint(); });
   $('btn-next').addEventListener('click', () => {
     closeOverlay('result');
@@ -1420,12 +1612,13 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
 
   // Test ve geliştirme için küçük bir kapı.
-  window.KM_GAME = { S, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, view: () => V };
+  window.KM_GAME = { S, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
 
   function boot(data) {
     if (lab.on) document.documentElement.classList.add('lab');
     makeNoise();
-    setMuted(S.muted);
+    try { if (AU) AU.prefs(S.music, !S.muted); } catch (e) { /* yok say */ }
+    setMuted(S.muted); setMusic(S.music, true);
     layout();
     let li = typeof data.li === 'number' ? data.li : typeof saved.li === 'number' ? saved.li : 0;
     if (!(li >= 0 && li < LEVELS.length) || !unlocked(li)) li = 0;

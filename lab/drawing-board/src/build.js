@@ -61,6 +61,7 @@ const parts = {
   '<!--LIBS-->': libs,
   '/*SIM*/': read('sim.js'),
   '/*LEVELS*/': read('levels.js'),
+  '/*AUDIO*/': read('audio.js'),
   '/*GAME*/': read('game.js'),
 };
 for (const [k, v] of Object.entries(parts)) {

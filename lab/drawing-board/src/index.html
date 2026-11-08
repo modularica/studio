@@ -22,6 +22,9 @@
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="11.5" y="2.5" width="6" height="6"/><rect x="2.5" y="11.5" width="6" height="6"/><rect x="11.5" y="11.5" width="6" height="6"/></svg>
         <span class="lbl">Drawings</span>
       </button>
+      <button class="tbtn" id="btn-music" type="button" aria-label="Music" aria-pressed="true">
+        <svg id="ico-music" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7.5 15.5V5l9-2.2v10.4"/><circle cx="5.3" cy="15.5" r="2.2"/><circle cx="14.3" cy="13.2" r="2.2"/></svg>
+      </button>
       <button class="tbtn" id="btn-sound" type="button" aria-label="Sound" aria-pressed="true">
         <svg id="ico-sound" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/></svg>
       </button>
@@ -57,20 +60,30 @@
 </div>
 
 <div class="overlay" id="result" hidden>
-  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
-    <span class="cap" id="result-cap">Drawing 01 · approved</span>
-    <h2 class="stencil result-title" id="result-title">It works!</h2>
-    <ul id="result-stamps"></ul>
-    <dl class="stats">
-      <div><dt class="cap">Time</dt><dd id="st-time">0.0 s</dd></div>
-      <div><dt class="cap">Parts</dt><dd id="st-parts">0</dd></div>
-      <div><dt class="cap">Presses</dt><dd id="st-press">0</dd></div>
-    </dl>
-    <p id="result-tip"></p>
-    <div class="actions">
-      <button class="btn lab-only" type="button" data-nasildi="seviye-sonu">Nasıldı?</button>
-      <button class="btn" id="btn-retry" type="button">Keep building</button>
-      <button class="btn primary" id="btn-next" type="button">Next drawing</button>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div class="sheet-card result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <div class="result-main">
+      <div class="approved" id="approved" aria-hidden="true"><span>Approved</span><small id="approved-no">Dwg 01</small></div>
+      <span class="cap" id="result-cap">Drawing 01</span>
+      <h2 class="stencil result-title" id="result-title">It works!</h2>
+      <ul id="result-stamps"></ul>
+    </div>
+    <div class="result-side">
+      <div class="unlock" id="result-unlock" hidden>
+        <div class="unlock-book" id="unlock-book" hidden></div>
+        <div id="unlock-items"></div>
+      </div>
+      <dl class="stats">
+        <div><dt class="cap">Time</dt><dd id="st-time">0.0 s</dd></div>
+        <div><dt class="cap">Parts</dt><dd id="st-parts">0</dd></div>
+        <div><dt class="cap">Presses</dt><dd id="st-press">0</dd></div>
+      </dl>
+      <p id="result-tip"></p>
+      <div class="actions">
+        <button class="btn lab-only" type="button" data-nasildi="seviye-sonu">Nasıldı?</button>
+        <button class="btn" id="btn-retry" type="button">Keep building</button>
+        <button class="btn primary" id="btn-next" type="button">Next drawing</button>
+      </div>
     </div>
   </div>
 </div>
@@ -100,6 +113,9 @@
 </script>
 <script>
 /*LEVELS*/
+</script>
+<script>
+/*AUDIO*/
 </script>
 <script>
 /*GAME*/
