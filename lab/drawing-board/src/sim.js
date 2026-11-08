@@ -1,4 +1,4 @@
-// Küçük Mühendisler — fizik çekirdeği.
+// Drawing Board — fizik çekirdeği.
 // Tarayıcıda window.KM olarak, Node'da require('./sim') ile çalışır.
 // Sabit zaman adımı (1/120 sn) kullanır: aynı kurulum + aynı adımda basılan
 // düğme her seferinde aynı sonucu verir.
@@ -20,6 +20,8 @@
     pistonDist: 1.0, pistonV: 11, pistonHold: 0.12, pistonBackV: 4,
     fanLen: 6, fanForce: 1.2, fanFalloff: 0.1,
     beltV: 7.5,
+    gateV: 7, gateLift: 0.98,
+    magRange: 2.5, magV: 6, magA: 14, magK: 10, magMax: 4,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -31,12 +33,22 @@
     piston: { orients: ['u', 'r', 'l'], w: 1, h: 1, manual: 'press' },
     fan:    { orients: ['r', 'l', 'u'], w: 1, h: 1, manual: 'hold' },
     sensor: { orients: ['-'], w: 1, h: 1, sensor: true },
+    // Kapı: bir kare geçit, yanındaki kare yuva. Basınca levha yuvaya çekilir (açık), bir daha basınca
+    // geri gelir. 'u' dik kapı (yuva üstte, yolu keser); 'r' / 'l' yatay kapak (yuva sağda / solda).
+    gate:   { orients: ['u', 'r', 'l'], w: 1, h: 2, dims: { r: [2, 1], l: [2, 1] }, manual: 'toggle' },
+    // Mıknatıs: yüzü dönük olduğu yöne; basılı tutunca önündeki çelik bilyeleri çeker, sarı topa etkisi yok.
+    magnet: { orients: ['u', 'r', 'l', 'd'], w: 1, h: 1, manual: 'hold' },
   };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
 
+  // Parçanın kapladığı alan (yönüne göre değişebilir).
+  function sizeOf(p) {
+    const d = PARTS[p.type], s = d.dims && d.dims[p.o];
+    return s ? { w: s[0], h: s[1] } : { w: d.w, h: d.h };
+  }
   function cellsOf(p) {
-    const d = PARTS[p.type], out = [];
+    const d = sizeOf(p), out = [];
     for (let i = 0; i < d.w; i++) for (let j = 0; j < d.h; j++) out.push([p.x + i, p.y + j]);
     return out;
   }
@@ -63,6 +75,22 @@
   const CUP = { wall: 0.12, rim: 0.8 };
   const cupsOf = level => level.cups || [level.cup];
   const startsOf = level => level.balls || [level.start];
+  // Top çeşidi: ilk top sarı, diğerleri çelik bilye (bölüm 'kind' ile değiştirebilir). Fizikleri aynı;
+  // yalnızca mıknatıs çelik bilyeyi çeker.
+  const ballKinds = level => startsOf(level).map((st, i) => st.kind || (i ? 'steel' : 'yellow'));
+
+  // Mıknatısın yüzü (ortası) ve yönü.
+  function magnetFace(p) {
+    const d = DIRS[p.o];
+    return { x: p.x + 0.5 + d[0] * 0.35, y: p.y + 0.5 + d[1] * 0.35, d };
+  }
+  // Kapı levhası (kapalıyken), yuvası ve açılış yönü; parçanın sol alt köşesine göre.
+  const GATES = {
+    u: { plate: [0.4, 0.02, 0.6, 1.0], housing: [0.3, 1.0, 0.7, 2.0], dir: [0, 1], pass: [0, 0] },
+    // Yatay kapağın üstü ve yuvası aynı hizada (0.6): zemin gibi üstünden yuvarlanılır.
+    r: { plate: [0.02, 0.4, 1.0, 0.6], housing: [1.0, 0.32, 2.0, 0.6], dir: [1, 0], pass: [0, 0] },
+    l: { plate: [1.0, 0.4, 1.98, 0.6], housing: [0.0, 0.32, 1.0, 0.6], dir: [-1, 0], pass: [1, 0] },
+  };
   function cupBoxes(cup) {
     const { x, y, w } = cup, t = CUP.wall, out = [];
     const back = cup.back || null;
@@ -123,8 +151,8 @@
   }
 
   function canPlace(level, occ, parts, cand, ignoreId) {
-    const d = PARTS[cand.type];
-    if (cand.x < 0 || cand.y < 0 || cand.x + d.w > W || cand.y + d.h > H) return false;
+    const d = PARTS[cand.type], z = sizeOf(cand);
+    if (cand.x < 0 || cand.y < 0 || cand.x + z.w > W || cand.y + z.h > H) return false;
     const mine = cellsOf(cand).map(q => q[0] + ',' + q[1]);
     if (d.sensor) {
       if (mine.some(k => occ.sensor.has(k))) return false;
@@ -155,11 +183,12 @@
     for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
 
     const parts = listParts(level, placed);
-    const rts = [], pistons = [], fans = [], sensors = [], byId = {};
+    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], byId = {};
+    const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
         state: 'idle', offset: 0, timer: 0, held: false, latched: false, on: false, blade: 0,
-        flash: 0, compress: 0, inside: false, link: null, fires: 0 };
+        flash: 0, compress: 0, inside: false, link: null, fires: 0, open: false };
       byId[p.id] = rt;
       rts.push(rt);
       if (p.type === 'ramp') {
@@ -185,6 +214,17 @@
         fans.push(rt);
       } else if (p.type === 'sensor') {
         sensors.push(rt);
+      } else if (p.type === 'gate') {
+        const g = GATES[p.o];
+        box(statics, [p.x + g.housing[0], p.y + g.housing[1], p.x + g.housing[2], p.y + g.housing[3]]);
+        const plate = world.createKinematicBody({ position: pl.Vec2(0, 0) });
+        box(plate, [p.x + g.plate[0], p.y + g.plate[1], p.x + g.plate[2], p.y + g.plate[3]], { friction: 0.3 }, { kind: 'gate', rt });
+        rt.plate = plate;
+        gates.push(rt);
+      } else if (p.type === 'magnet') {
+        box(statics, [p.x + 0.15, p.y + 0.15, p.x + 0.85, p.y + 0.85]);
+        rt.face = magnetFace(p);
+        magnets.push(rt);
       }
     }
     for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
@@ -219,7 +259,7 @@
     });
 
     const sim = {
-      world, ball, balls, rts, pistons, fans, sensors, need,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, need,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -233,16 +273,21 @@
           if (manual) sim.presses++;
           return true;
         }
-        if (rt.type === 'fan') {
-          // Sensör pervaneyi anahtar gibi açar; bir daha tetiklenirse kapatır.
+        if (rt.type === 'fan' || rt.type === 'magnet') {
+          // Sensör pervaneyi ve mıknatısı anahtar gibi açar; bir daha tetiklenirse kapatır.
           rt.latched = !rt.latched;
+          if (manual) sim.presses++;
+          return true;
+        }
+        if (rt.type === 'gate') {
+          rt.open = !rt.open; rt.fires++;
           if (manual) sim.presses++;
           return true;
         }
         return false;
       },
       hold(rt, down) {
-        if (rt.type !== 'fan') return sim.press(rt, true);
+        if (PARTS[rt.type].manual !== 'hold') return sim.press(rt, true);
         if (down && !rt.held) sim.presses++;
         rt.held = !!down;
         return true;
@@ -277,6 +322,50 @@
             const dist = rt.o === 'r' ? bp.x - z[0] : rt.o === 'l' ? z[2] - bp.x : bp.y - z[1];
             const f = T.fanForce * mass * T.G * (1 - T.fanFalloff * Math.max(0, dist) / T.fanLen);
             b.applyForceToCenter(pl.Vec2(d[0] * f, d[1] * f), true);
+          });
+        }
+        for (const rt of gates) {
+          const g = GATES[rt.o], target = rt.open ? T.gateLift : 0, gap = target - rt.offset;
+          let v = 0;
+          if (Math.abs(gap) > 1e-9) {
+            v = Math.sign(gap) * T.gateV;
+            if (Math.abs(gap) < Math.abs(v) * DT) v = gap / DT;
+            // Kapanan levha önündeki topu ezmez: top çekilene kadar bekler.
+            if (v < 0) {
+              const o = rt.offset - 0.03;
+              const x0 = rt.x + g.plate[0] + g.dir[0] * o, y0 = rt.y + g.plate[1] + g.dir[1] * o;
+              const x1 = rt.x + g.plate[2] + g.dir[0] * rt.offset, y1 = rt.y + g.plate[3] + g.dir[1] * rt.offset;
+              const r = [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)];
+              const hit = balls.some((b, i) => {
+                if (sim.bstate[i] === 'out') return false;
+                const bp = b.getPosition();
+                const cx = Math.max(r[0], Math.min(bp.x, r[2])), cy = Math.max(r[1], Math.min(bp.y, r[3]));
+                return Math.hypot(bp.x - cx, bp.y - cy) < T.R + 0.01;
+              });
+              if (hit) v = 0;
+            }
+          }
+          rt.offset += v * DT;
+          rt.plate.setLinearVelocity(pl.Vec2(g.dir[0] * v, g.dir[1] * v));
+        }
+        for (const rt of magnets) {
+          rt.on = rt.held || rt.latched;
+          if (!rt.on) continue;
+          const fc = rt.face, d = fc.d;
+          balls.forEach((b, i) => {
+            if (sim.bstate[i] === 'out' || kinds[i] !== 'steel') return;
+            const bp = b.getPosition(), rx = bp.x - fc.x, ry = bp.y - fc.y;
+            if (rx * d[0] + ry * d[1] < -0.05 || Math.hypot(rx, ry) > T.magRange) return;
+            // Alanın içinde bilye ağırlıksız gibi yüzün önündeki yuvaya yönlendirilir, orada tutulur:
+            // hız, yuvaya kalan yola göre seçilen hıza doğru çekilir (kuvvet sınırlı).
+            const tx = fc.x + d[0] * T.R - bp.x, ty = fc.y + d[1] * T.R - bp.y, tl = Math.hypot(tx, ty);
+            const v = b.getLinearVelocity(), sp = Math.min(T.magV, Math.sqrt(2 * T.magA * tl));
+            const ux = tl > 1e-6 ? tx / tl : 0, uy = tl > 1e-6 ? ty / tl : 0;
+            let fx = mass * T.magK * (ux * sp - v.x), fy = mass * T.magK * (uy * sp - v.y) + mass * T.G;
+            const fl = Math.hypot(fx, fy), cap = T.magMax * mass * T.G;
+            if (fl > cap) { fx *= cap / fl; fy *= cap / fl; }
+            b.applyForceToCenter(pl.Vec2(fx, fy), true);
+            if (tl < 0.3) b.setAngularVelocity(b.getAngularVelocity() * 0.9);
           });
         }
 
@@ -334,7 +423,8 @@
         balls.forEach((b, i) => {
           if (sim.bstate[i] === 'run') {
             const p = b.getPosition();
-            if (cups.some(c => p.x > c.x + CUP.wall && p.x < c.x + c.w - CUP.wall && p.y > c.y && p.y < c.y + CUP.rim)) sim.bstate[i] = 'goal';
+            // Bayraklı kova (kind) yalnızca kendi renginden topu sayar.
+            if (cups.some(c => (!c.kind || c.kind === kinds[i]) && p.x > c.x + CUP.wall && p.x < c.x + c.w - CUP.wall && p.y > c.y && p.y < c.y + CUP.rim)) sim.bstate[i] = 'goal';
             else if (p.y < -1.5 || p.x < -1.5 || p.x > W + 1.5) { sim.bstate[i] = 'out'; b.setActive(false); }
           }
           if (sim.bstate[i] === 'goal') goals++; else if (sim.bstate[i] === 'out') outs++;
@@ -371,5 +461,5 @@
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { W, H, DT, T, PARTS, DIRS, CUP, cupsOf, startsOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, cupBoxes, listParts, createSim, runHeadless };
+  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, cupBoxes, listParts, createSim, runHeadless };
 }));

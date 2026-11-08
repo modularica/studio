@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Küçük Mühendisler</title>
+<title>Drawing Board</title>
 <!--LAB_HEAD-->
 <!--FONTS-->
 <style>
@@ -13,44 +13,44 @@
 <body>
 <div id="app">
   <header class="titleblock">
-    <div class="tb tb-logo"><span class="cap">Uzi Games · Atölye</span><span class="stencil">Küçük<br>Mühendisler</span></div>
-    <div class="tb tb-no"><span class="cap">Çizim no</span><span class="val" id="tb-no">01 / 05</span></div>
-    <div class="tb tb-name"><span class="cap">Bölüm</span><span class="val" id="tb-name">İlk rampa</span></div>
-    <div class="tb tb-task"><span class="cap">Görev</span><span class="val" id="tb-task">Topu kovaya ulaştır.</span></div>
+    <div class="tb tb-logo"><span class="cap">Uzi Games · Workshop</span><span class="stencil">Drawing<br>Board</span></div>
+    <div class="tb tb-no"><span class="cap">Dwg no.</span><span class="val" id="tb-no">01 / 22</span></div>
+    <div class="tb tb-name"><span class="cap">Title</span><span class="val" id="tb-name">First Ramp</span></div>
+    <div class="tb tb-task"><span class="cap">Task</span><span class="val" id="tb-task">Get the ball into the cup.</span></div>
     <div class="tb tb-btns">
-      <button class="tbtn" id="btn-levels" type="button" aria-label="Bölümler">
+      <button class="tbtn" id="btn-levels" type="button" aria-label="Drawings">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="11.5" y="2.5" width="6" height="6"/><rect x="2.5" y="11.5" width="6" height="6"/><rect x="11.5" y="11.5" width="6" height="6"/></svg>
-        <span class="lbl">Bölümler</span>
+        <span class="lbl">Drawings</span>
       </button>
-      <button class="tbtn" id="btn-sound" type="button" aria-label="Ses" aria-pressed="true">
+      <button class="tbtn" id="btn-sound" type="button" aria-label="Sound" aria-pressed="true">
         <svg id="ico-sound" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/></svg>
       </button>
     </div>
   </header>
   <main id="stage">
-    <section id="sheet" aria-label="Çizim tahtası">
+    <section id="sheet" aria-label="Drawing board">
       <canvas id="board"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside id="side">
-      <div class="note"><span class="cap">Not</span><p id="hint"></p></div>
+      <div class="note"><span class="cap">Note</span><p id="hint"></p></div>
       <div class="panel" id="bom">
-        <div class="panel-head"><span class="cap">Parça listesi</span><span class="cap">Adet</span></div>
+        <div class="panel-head"><span class="cap">Parts list</span><span class="cap">Qty</span></div>
         <ol id="bom-list"></ol>
-        <p class="panel-foot" id="bom-foot">Sürükle: yerleştir · Dokun: döndür · Tahtanın dışına at: geri al</p>
+        <p class="panel-foot" id="bom-foot">Drag: place · Tap: turn · Drag off the board: put back</p>
       </div>
       <div class="panel" id="pult" hidden>
-        <div class="panel-head"><span class="cap">Kumanda</span><span class="cap" id="press-count">Elle: 0</span></div>
+        <div class="panel-head"><span class="cap">Controls</span><span class="cap" id="press-count">Presses: 0</span></div>
         <div id="pult-buttons"></div>
-        <p class="panel-foot" id="pult-foot">Turuncu cihazlar senin elinde. Sayı tuşları da çalışır.</p>
+        <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too.</p>
       </div>
       <div class="panel" id="goals">
-        <div class="panel-head"><span class="cap">Onay damgaları</span></div>
+        <div class="panel-head"><span class="cap">Approval stamps</span></div>
         <ul id="goal-list"></ul>
       </div>
       <button id="run" type="button">
         <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
-        <span id="run-label">Çalıştır</span>
+        <span id="run-label">Run</span>
       </button>
     </aside>
   </main>
@@ -58,19 +58,19 @@
 
 <div class="overlay" id="result" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
-    <span class="cap" id="result-cap">Çizim 01 · onaylandı</span>
-    <h2 class="stencil result-title" id="result-title">Makine çalıştı</h2>
+    <span class="cap" id="result-cap">Drawing 01 · approved</span>
+    <h2 class="stencil result-title" id="result-title">It works!</h2>
     <ul id="result-stamps"></ul>
     <dl class="stats">
-      <div><dt class="cap">Süre</dt><dd id="st-time">0,0 sn</dd></div>
-      <div><dt class="cap">Parça</dt><dd id="st-parts">0</dd></div>
-      <div><dt class="cap">Elle müdahale</dt><dd id="st-press">0</dd></div>
+      <div><dt class="cap">Time</dt><dd id="st-time">0.0 s</dd></div>
+      <div><dt class="cap">Parts</dt><dd id="st-parts">0</dd></div>
+      <div><dt class="cap">Presses</dt><dd id="st-press">0</dd></div>
     </dl>
     <p id="result-tip"></p>
     <div class="actions">
       <button class="btn lab-only" type="button" data-nasildi="seviye-sonu">Nasıldı?</button>
-      <button class="btn" id="btn-retry" type="button">Tekrar kur</button>
-      <button class="btn primary" id="btn-next" type="button">Sonraki çizim</button>
+      <button class="btn" id="btn-retry" type="button">Keep building</button>
+      <button class="btn primary" id="btn-next" type="button">Next drawing</button>
     </div>
   </div>
 </div>
@@ -79,13 +79,13 @@
   <div class="sheet-card levels-card" role="dialog" aria-modal="true" aria-labelledby="levels-title">
     <div class="levels-head">
       <div>
-        <span class="cap">Uzi Games · Atölye defteri</span>
-        <h1 class="stencil" id="levels-title">Küçük Mühendisler</h1>
-        <p>Bir çizim seç. Her çizimde topu kovaya ulaştıran makineyi sen kuruyorsun.</p>
+        <span class="cap">Uzi Games · Workshop notebook</span>
+        <h1 class="stencil" id="levels-title">Drawing Board</h1>
+        <p>Pick a drawing. In each one, you build the machine that gets the ball into the cup.</p>
       </div>
       <div class="actions">
         <button class="btn lab-only" type="button" data-nasildi="mola">Nasıldı?</button>
-        <button class="btn" id="levels-close" type="button">Kapat</button>
+        <button class="btn" id="levels-close" type="button">Close</button>
       </div>
     </div>
     <div id="level-grid"></div>

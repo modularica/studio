@@ -1,12 +1,12 @@
-// Küçük Mühendisler — oyun arayüzü ve çizim.
+// Drawing Board — oyun arayüzü ve çizim. Arayüz metinleri İngilizce; Lab'a giden notlar Türkçe.
 (function () {
   'use strict';
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Rampa', spring: 'Yay', belt: 'Konveyör', piston: 'Piston', fan: 'Pervane', sensor: 'Sensör' };
-  const ORDER = ['ramp', 'spring', 'belt', 'piston', 'fan', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet' };
+  const ORDER = ['ramp', 'spring', 'belt', 'gate', 'piston', 'fan', 'magnet', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -24,8 +24,15 @@
 
   // ---------------------------------------------------------------- kayıt
   // İlerleme (damgalar, kurulumlar, son çizim) Lab'da hesaba eşitlenir; ses tercihi cihazda kalır.
-  const KEY = 'kucuk-muhendisler.v1';
-  const DEVICE_KEY = 'kucuk-muhendisler.cihaz';
+  // Oyunun adı Kasım 2026'ya kadar "Küçük Mühendisler"di: eski anahtarlardaki kayıt bir kez taşınır.
+  const KEY = 'drawing-board.v1';
+  const DEVICE_KEY = 'drawing-board.device';
+  try {
+    for (const [now, old] of [[KEY, 'kucuk-muhendisler.v1'], [DEVICE_KEY, 'kucuk-muhendisler.cihaz']]) {
+      const v = localStorage.getItem(old);
+      if (localStorage.getItem(now) === null && v !== null) localStorage.setItem(now, v);
+    }
+  } catch (e) { /* kayıt yoksa da oynanır */ }
   let saved = {}, device = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
   try { device = JSON.parse(localStorage.getItem(DEVICE_KEY) || '{}') || {}; } catch (e) { device = {}; }
@@ -95,6 +102,8 @@
     sensor: () => tone(1500, 0.05, 'sine', 0.045),
     goal: () => { tone(660, 0.14, 'triangle', 0.08); tone(990, 0.3, 'triangle', 0.08, null, 0.12); },
     fail: () => tone(240, 0.32, 'sawtooth', 0.035, 90),
+    gate: () => { noise(0.12, 0.08, 700); tone(260, 0.12, 'triangle', 0.04, 180); },
+    magnet: () => tone(110, 0.25, 'sawtooth', 0.03, 140),
   };
   const sfx = k => { try { SFX[k] && SFX[k](); } catch (e) { /* ses opsiyonel */ } };
 
@@ -277,17 +286,19 @@
   }
 
   // Kova kesitte: taranmış U, içinde hedef, kenarında bayrak.
+  // Bayraklı kova (cup.kind) yalnızca kendi renginden topu sayar: bayrak ve hedef o topun renginde.
   function drawCup(c, Vw, cup, time) {
     const { x, y, w } = cup, rim = KM.CUP.rim, t = KM.CUP.wall, back = cup.back || null;
     const lh = back && back.side === 'l' ? back.h : rim, rh = back && back.side === 'r' ? back.h : rim;
-    c.fillStyle = rgba(C.ball, 0.08); c.fillRect(x + t, y + t, w - 2 * t, rim - t);
+    const look = BALL_LOOK[cup.kind === 'steel' ? 1 : 0], tint = look.fill || C.ball;
+    c.fillStyle = rgba(tint, 0.08); c.fillRect(x + t, y + t, w - 2 * t, rim - t);
     c.beginPath(); c.moveTo(x + t, y + rim); c.lineTo(x + w - t, y + rim);
-    stroke(c, Vw, rgba(C.ball, 0.45), LW.hair, DASH.hidden);
+    stroke(c, Vw, rgba(tint, 0.45), LW.hair, DASH.hidden);
     if (Vw.lod) {
       const tx = x + w / 2, ty = y + t + 0.29;
       c.beginPath(); c.arc(tx, ty, 0.17, 0, TAU); c.moveTo(tx + 0.085, ty); c.arc(tx, ty, 0.085, 0, TAU);
-      stroke(c, Vw, rgba(C.ball, 0.5), LW.thin);
-      c.beginPath(); c.arc(tx, ty, 0.026, 0, TAU); fill(c, rgba(C.ball, 0.7));
+      stroke(c, Vw, rgba(tint, 0.5), LW.thin);
+      c.beginPath(); c.arc(tx, ty, 0.026, 0, TAU); fill(c, rgba(tint, 0.7));
     }
     section(c, Vw, () => {
       c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w, y + rh); c.lineTo(x + w - t, y + rh); c.lineTo(x + w - t, y + t);
@@ -302,7 +313,7 @@
     c.beginPath(); c.moveTo(px, py1);
     c.quadraticCurveTo(px + dir * 0.24, py1 + 0.03 + wv, px + dir * 0.5, py1 - 0.13 + wv * 0.5);
     c.quadraticCurveTo(px + dir * 0.24, py1 - 0.22 - wv, px, py1 - 0.3);
-    c.closePath(); fill(c, C.ball); stroke(c, Vw, GOLD, LW.hair);
+    c.closePath(); fill(c, tint); stroke(c, Vw, look.edge, LW.hair);
   }
 
   // Başlangıç borusu boyuna kesitte: taranmış cidarlar, ağızda flanş, uzak uçta kırık çizgisi.
@@ -470,7 +481,7 @@
     const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
     const q0 = pt(0.06, wd - 0.15), q1 = pt(L - 0.06, wd - 0.15), m = pt(L / 2, wd / 2);
     dimLine(c, Vw, q0[0], q0[1], q1[0], q1[1], null, ink(0.5));
-    textAt(c, Vw, `${L} kare`, m[0], m[1], Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
+    textAt(c, Vw, `${L} squares`, m[0], m[1], Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
   }
 
   // Pervane: önden kanatlar ve göbek, çıkış ağzında panjur.
@@ -505,6 +516,80 @@
     badge(c, Vw, p.num, p.x + 0.18, p.y + 0.82, 0.14);
   }
 
+  // Kapı: geçit karesinde kılavuz rayları arasında kayan taranmış levha, yanındaki karede turuncu yuva.
+  // Açılınca levha yuvaya çekilir. Dik kapıda (u) yuva üstte; yatay kapakta (r / l) yuva yanda,
+  // üstü zeminle aynı hizada. Kurarken geçidin yanında aç-kapa oku görünür.
+  function drawGate(c, Vw, p, rt, ann) {
+    const g = KM.GATES[p.o], off = rt ? rt.offset : 0, lod = Vw.lod, open = !!(rt && rt.open);
+    const vert = p.o === 'u', R = (q, dx, dy) => [p.x + q[0] + dx, p.y + q[1] + dy, p.x + q[2] + dx, p.y + q[3] + dy];
+    const px = p.x + g.pass[0], py = p.y + g.pass[1];
+    if (lod) {
+      c.beginPath();
+      if (vert) for (const gx of [0.35, 0.65]) { c.moveTo(px + gx, py + 0.04); c.lineTo(px + gx, py + 1); }
+      else for (const gy of [0.34, 0.66]) { c.moveTo(px, py + gy); c.lineTo(px + 1, py + gy); }
+      stroke(c, Vw, ink(0.38), LW.hair, DASH.hidden);
+    }
+    const pr = R(g.plate, g.dir[0] * off, g.dir[1] * off);
+    section(c, Vw, () => c.rect(pr[0], pr[1], pr[2] - pr[0], pr[3] - pr[1]), pr);
+    const h = R(g.housing, 0, 0);
+    c.beginPath(); c.rect(h[0], h[1], h[2] - h[0], h[3] - h[1]); fill(c, C.paper); fill(c, hand(open ? 0.3 : 0.18));
+    if (lod) {
+      c.beginPath();
+      if (vert) { c.moveTo(h[0], h[1] + 0.1); c.lineTo(h[2], h[1] + 0.1); c.moveTo(h[0], h[3] - 0.1); c.lineTo(h[2], h[3] - 0.1); }
+      else { c.moveTo(h[0] + 0.1, h[1]); c.lineTo(h[0] + 0.1, h[3]); c.moveTo(h[2] - 0.1, h[1]); c.lineTo(h[2] - 0.1, h[3]); }
+      stroke(c, Vw, hand(0.85), LW.thin);
+    }
+    c.beginPath(); c.rect(h[0], h[1], h[2] - h[0], h[3] - h[1]); stroke(c, Vw, C.hand, LW.edge);
+    if (ann && lod) {
+      const col = hand(0.7);
+      c.beginPath();
+      if (vert) {
+        c.moveTo(px + 0.86, py + 0.28); c.lineTo(px + 0.86, py + 0.72); stroke(c, Vw, hand(0.6), LW.thin);
+        arrow(c, Vw, px + 0.86, py + 0.8, Math.PI / 2, 6, col); arrow(c, Vw, px + 0.86, py + 0.2, -Math.PI / 2, 6, col);
+      } else {
+        c.moveTo(px + 0.28, py + 0.86); c.lineTo(px + 0.72, py + 0.86); stroke(c, Vw, hand(0.6), LW.thin);
+        arrow(c, Vw, px + 0.8, py + 0.86, 0, 6, col); arrow(c, Vw, px + 0.2, py + 0.86, Math.PI, 6, col);
+      }
+    }
+    badge(c, Vw, p.num, (h[0] + h[2]) / 2, vert ? (h[1] + h[3]) / 2 : h[1] - 0.2, 0.14);
+  }
+
+  // Mıknatıs: turuncu gövdede bobin sargıları, yüzünde taranmış kutup parçası. Açıkken önünde alan çizgileri.
+  const MAG_ROT = { r: 0, l: Math.PI, u: Math.PI / 2, d: -Math.PI / 2 };
+  function drawMagnet(c, Vw, p, rt, time) {
+    const on = !!(rt && rt.on), lod = Vw.lod;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5); c.rotate(MAG_ROT[p.o]);
+    if (on) {
+      for (let k = 0; k < 3; k++) {
+        const q = reduceMotion ? k / 3 : (time * 1.4 + k / 3) % 1, r = 0.12 + q * 1.5;
+        c.beginPath(); c.arc(0.35, 0, r, -0.95, 0.95); stroke(c, Vw, ink(0.55 * (1 - q)), LW.thin);
+      }
+    }
+    c.beginPath(); c.rect(-0.35, -0.35, 0.7, 0.7); fill(c, C.paper); fill(c, hand(on ? 0.3 : 0.16));
+    if (lod) {
+      c.beginPath();
+      for (let k = 0; k < 6; k++) { const lx = -0.25 + k * 0.065; c.moveTo(lx, -0.25); c.lineTo(lx + 0.035, 0.25); }
+      stroke(c, Vw, hand(0.8), LW.thin);
+    }
+    c.beginPath(); c.rect(-0.35, -0.35, 0.7, 0.7); stroke(c, Vw, C.hand, LW.edge);
+    section(c, Vw, () => c.rect(0.17, -0.31, 0.18, 0.62), [0.17, -0.31, 0.35, 0.31]);
+    c.restore();
+    const d = DIRS[p.o], perp = d[0] ? [0, 1] : [-1, 0];
+    badge(c, Vw, p.num, p.x + 0.5 - d[0] * 0.32 + perp[0] * 0.32, p.y + 0.5 - d[1] * 0.32 + perp[1] * 0.32, 0.14);
+  }
+  // Mıknatısın erimi: yüzünün önünde yarım daire, yarıçapı yazılı (kurarken).
+  function drawMagnetRange(c, Vw, p) {
+    if (!Vw.lod) return;
+    const fc = KM.magnetFace(p), a = Math.atan2(fc.d[1], fc.d[0]), R = T.magRange;
+    c.beginPath(); c.moveTo(fc.x + R * Math.cos(a - Math.PI / 2), fc.y + R * Math.sin(a - Math.PI / 2));
+    c.arc(fc.x, fc.y, R, a - Math.PI / 2, a + Math.PI / 2);
+    stroke(c, Vw, ink(0.3), LW.hair, DASH.hidden);
+    const ex = fc.x + fc.d[0] * R, ey = fc.y + fc.d[1] * R;
+    dimLine(c, Vw, fc.x + fc.d[0] * 0.08, fc.y + fc.d[1] * 0.08, ex, ey, null, ink(0.45));
+    const lx = fc.x + fc.d[0] * R * 0.55 + (fc.d[0] ? 0 : 0.42), ly = fc.y + fc.d[1] * R * 0.55 + (fc.d[0] ? 0.24 : 0);
+    textAt(c, Vw, `${R} squares`, lx, ly, Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
+  }
+
   // Sensör: hücreyi gözetler (köşe işaretleri, nişangâh). Bağlı değilse kırmızı nokta.
   function drawSensor(c, Vw, p, rt, linked) {
     const x = p.x, y = p.y, cx = x + 0.5, cy = y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
@@ -531,7 +616,7 @@
 
   // Sensör kablosu, şemadaki gibi dik açılı: sensörün kenarından cihazın kenarına.
   function drawLink(c, Vw, s, t, pulse) {
-    const td = PARTS[t.type], sx = s.x + 0.5, sy = s.y + 0.5;
+    const td = KM.sizeOf(t), sx = s.x + 0.5, sy = s.y + 0.5;
     const x0 = t.x, x1 = t.x + td.w, y0 = t.y, y1 = t.y + td.h, tx = (x0 + x1) / 2, ty = (y0 + y1) / 2;
     const inX = sx > x0 && sx < x1, inY = sy > y0 && sy < y1;
     if (inX && inY) return;
@@ -567,7 +652,7 @@
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
-    const d = PARTS[p.type], col = ink(0.92);
+    const d = KM.sizeOf(p), col = ink(0.92);
     let pts;
     if (p.type === 'ramp') {
       const [a, b] = KM.rampLine(p.o), ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
@@ -575,6 +660,11 @@
       pts = [[ax + ux * 0.075, ay + uy * 0.075], [bx - ux * 0.075, by - uy * 0.075]];
     } else if (p.type === 'belt') pts = [[p.x + T.plank / 2, p.y], [p.x + 2 - T.plank / 2, p.y]];
     else if (p.type === 'piston') { const a = PISTON_ROT[p.o]; pts = [toWorld(p, -0.43, -0.42, a), toWorld(p, 0.43, -0.42, a)]; }
+    else if (p.type === 'gate') {
+      const g = KM.GATES[p.o], hx = (g.housing[0] + g.housing[2]) / 2, hy = (g.housing[1] + g.housing[3]) / 2;
+      pts = p.o === 'u' ? [[p.x + 0.2, p.y + 1.9], [p.x + 0.8, p.y + 1.9]] : [[p.x + hx - 0.32, p.y + 0.14], [p.x + hx + 0.32, p.y + 0.14]];
+      void hy;
+    }
     else pts = [[p.x + 0.08, p.y + 0.08], [p.x + d.w - 0.08, p.y + 0.08]];
     for (const q of pts) bolt(c, Vw, q[0], q[1], col);
   }
@@ -585,16 +675,19 @@
     else if (p.type === 'belt') drawBelt(c, Vw, p, time);
     else if (p.type === 'piston') drawPiston(c, Vw, p, rt, ann);
     else if (p.type === 'fan') drawFan(c, Vw, p, rt);
+    else if (p.type === 'gate') drawGate(c, Vw, p, rt, ann);
+    else if (p.type === 'magnet') drawMagnet(c, Vw, p, rt, time);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
 
   // 0 numaralı top sarı; diğerleri çelik bilye (aynı fizik, farklı görünüm).
   const BALL_LOOK = [
-    { edge: GOLD, mark: 'rgba(130,90,10,0.75)' },
-    { edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
+    { fill: null, edge: GOLD, mark: 'rgba(130,90,10,0.75)' },
+    { fill: '#cdd8e8', edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
   ];
-  const ballFill = i => (i ? '#cdd8e8' : C.ball);
+  const ballFill = i => (i ? BALL_LOOK[1].fill : C.ball);
+  const kindIdx = k => (k === 'steel' ? 1 : 0);
   function drawBall(c, Vw, x, y, ang, alpha, idx) {
     const R = T.R, look = BALL_LOOK[idx ? 1 : 0];
     c.save(); c.globalAlpha = alpha; c.translate(x, y);
@@ -642,7 +735,7 @@
   }
 
   function outline(c, Vw, p, color, alpha, width) {
-    const d = PARTS[p.type];
+    const d = KM.sizeOf(p);
     c.beginPath(); c.rect(p.x + 0.04, p.y + 0.04, d.w - 0.08, d.h - 0.08);
     c.lineWidth = Vw.px(width || 2); c.strokeStyle = rgba(color, alpha); c.stroke();
   }
@@ -657,7 +750,7 @@
     const prev = S.progress[LEVELS[i - 1].id];
     return !!(prev && prev.solved);
   }
-  function centerOf(p) { const d = PARTS[p.type]; return [p.x + d.w / 2, p.y + d.h / 2]; }
+  function centerOf(p) { const d = KM.sizeOf(p); return [p.x + d.w / 2, p.y + d.h / 2]; }
   function autoLink(sensor) {
     const [sx, sy] = centerOf(sensor);
     let best = null, bd = 1e9;
@@ -686,7 +779,8 @@
     for (const it of items) if (it.p.type === 'fan') drawFanZone(c, V, it.p, it.rt, time);
     drawWalls(c, V, L);
     const trails = run ? S.sim.trails : S.trails || [];
-    trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, i, !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
+    const kinds = run ? S.sim.kinds : KM.ballKinds(L);
+    trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, kindIdx(kinds[i]), !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
     for (const cup of KM.cupsOf(L)) drawCup(c, V, cup, time);
     drawPipe(c, V, L);
     for (const it of items) if (it.p.type !== 'sensor') drawPart(c, V, it.p, it.rt, time, ann);
@@ -702,15 +796,18 @@
       if (it.p.type !== 'sensor') continue;
       drawSensor(c, V, it.p, it.rt, run ? !!it.rt.link : !!byId[it.p.link]);
     }
-    if (ann) for (const it of items) if (it.p.type === 'fan') drawFanRange(c, V, it.p);
+    if (ann) for (const it of items) {
+      if (it.p.type === 'fan') drawFanRange(c, V, it.p);
+      else if (it.p.type === 'magnet') drawMagnetRange(c, V, it.p);
+    }
     if (run) {
       S.sim.balls.forEach((b, i) => {
         if (S.sim.bstate[i] === 'out') return;
         const bp = b.getPosition();
-        drawBall(c, V, bp.x, bp.y, b.getAngle(), 1, i);
+        drawBall(c, V, bp.x, bp.y, b.getAngle(), 1, kindIdx(kinds[i]));
       });
     } else {
-      KM.startsOf(L).forEach((st, i) => drawBall(c, V, st.x, st.y, 0, 0.6, i));
+      KM.startsOf(L).forEach((st, i) => drawBall(c, V, st.x, st.y, 0, 0.6, kindIdx(kinds[i])));
     }
   }
 
@@ -722,7 +819,8 @@
     const run = S.mode === 'run' && S.sim;
     const items = run ? S.sim.rts.map(rt => ({ p: rt.p, rt })) : allParts().map(p => ({ p, rt: null }));
     const dr = S.drag, cand = dr && dr.cand && dr.over ? dr.cand : null;
-    const hl = cand ? { x0: cand.x, x1: cand.x + PARTS[cand.type].w, y0: cand.y, y1: cand.y + PARTS[cand.type].h, ok: dr.valid } : null;
+    const cz = cand && KM.sizeOf(cand);
+    const hl = cand ? { x0: cand.x, x1: cand.x + cz.w, y0: cand.y, y1: cand.y + cz.h, ok: dr.valid } : null;
     drawScene(c, items, run, time, hl);
     if (run) {
       const pulse = 0.25 + 0.2 * Math.sin(time * 5);
@@ -742,6 +840,7 @@
       if (cand.type === 'fan') drawFanZone(c, V, cand, null, time);
       drawPart(c, V, cand, null, time, true);
       if (cand.type === 'fan') drawFanRange(c, V, cand);
+      if (cand.type === 'magnet') drawMagnetRange(c, V, cand);
       c.restore();
     }
     drawEffects(c, time);
@@ -782,8 +881,9 @@
     const r = canvas.getBoundingClientRect();
     const w = r.width || 52, h = r.height || 30, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-    const d = PARTS[type], c = canvas.getContext('2d');
-    const Vi = makeView(w, h, dpr, d.w / 2 - 1.2, d.h / 2 - 0.62, 2.4, 1.24);
+    const d = KM.sizeOf({ type, o: o || DEFAULT_O[type] }), c = canvas.getContext('2d');
+    const vw = Math.max(2.4, d.w + 0.4), vh = Math.max(1.24, d.h + 0.2);
+    const Vi = makeView(w, h, dpr, d.w / 2 - vw / 2, d.h / 2 - vh / 2, vw, vh);
     Vi.tf(c);
     drawPart(c, Vi, { type, o: o || DEFAULT_O[type], x: 0, y: 0 }, null, 0, false);
   }
@@ -799,7 +899,8 @@
     for (const p of fixed) if (p.type === 'fan') drawFanZone(c, Vt, p, null, 0);
     drawWalls(c, Vt, L); for (const cup of KM.cupsOf(L)) drawCup(c, Vt, cup, 0); drawPipe(c, Vt, L);
     for (const p of fixed) drawPart(c, Vt, p, null, 0, false);
-    KM.startsOf(L).forEach((st, i) => drawBall(c, Vt, st.x, st.y, 0, 1, i));
+    const kinds = KM.ballKinds(L);
+    KM.startsOf(L).forEach((st, i) => drawBall(c, Vt, st.x, st.y, 0, 1, kindIdx(kinds[i])));
   }
 
   // ---------------------------------------------------------------- arayüz
@@ -810,29 +911,29 @@
   }
   function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('show'); }
 
-  const badgeText = b => b.k === 'solve' ? 'Makine çalıştı'
-    : b.k === 'budget' ? `En fazla ${b.n} parça`
-    : b.k === 'presses' ? (b.n === 1 ? 'Tek basış' : `En fazla ${b.n} basış`)
-    : 'Tam otomatik';
+  const badgeText = b => b.k === 'solve' ? 'Machine works'
+    : b.k === 'budget' ? (b.n === 1 ? 'Just one part' : `At most ${b.n} parts`)
+    : b.k === 'presses' ? (b.n === 1 ? 'One press' : `At most ${b.n} presses`)
+    : 'Fully automatic';
   const badgeOk = (b, used, presses) => b.k === 'solve' || (b.k === 'budget' && used <= b.n)
     || (b.k === 'presses' && presses <= b.n) || (b.k === 'auto' && presses === 0);
-  const badgeTip = b => b.k === 'budget' ? `Daha az parçayla dene: en fazla ${b.n} parça.`
-    : b.k === 'presses' ? 'Tek basışla dene: doğru anı bekle, bir kez bas.'
-    : b.k === 'auto' ? 'Tam otomatik dene: hiç dokunmadan çalışan bir makine kur. Sensör, top üstünden geçince bağlı cihazı çalıştırır.'
+  const badgeTip = b => b.k === 'budget' ? (b.n === 1 ? 'Try it with a single part.' : `Try it with fewer parts: ${b.n} at most.`)
+    : b.k === 'presses' ? (b.n === 1 ? 'Try it with one press: wait for the right moment, then press once.' : `Try it with at most ${b.n} presses.`)
+    : b.k === 'auto' ? 'Try it fully automatic: build a machine that runs without a touch. A sensor fires its linked device when a ball crosses it.'
     : '';
 
   function setHint() {
     const L = S.level, h = L.hints || {}, prog = S.progress[L.id];
     let t;
-    if (S.mode === 'run') t = h.run || 'Makine çalışıyor. Durdur’a basınca kuruluma dönersin.';
-    else if (S.linkFrom) t = 'Sensörü bağlamak için turuncu bir cihaza dokun. Boş bir yere dokunursan vazgeçersin.';
+    if (S.mode === 'run') t = h.run || 'The machine is running. Press Stop to go back to building.';
+    else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
-      t = missing ? (h.after || 'Eksik damgaları dene.')
-        : S.li + 1 < LEVELS.length ? 'Bu çizimin bütün damgaları tamam. Sıradaki çizime geç.' : 'Atölye defterindeki bütün çizimler tamam. Yeni çizimler yolda.';
-    } else if (S.lastFail) t = h.fail || 'Noktalı çizgiye bak ve kurulumu değiştir.';
+      t = missing ? (h.after || 'Go for the missing stamps.')
+        : S.li + 1 < LEVELS.length ? 'Every stamp on this drawing is yours. On to the next one.' : 'Every drawing in the notebook is done. New drawings are on the way.';
+    } else if (S.lastFail) t = h.fail || 'Look at the dotted line and change the setup.';
     else if (!S.parts.length) t = h.place || h.ready;
-    else t = h.ready || 'Hazırsan Çalıştır.';
+    else t = h.ready || 'Ready? Press Run.';
     const el = $('hint');
     if (el.textContent !== t) el.textContent = t;
   }
@@ -842,7 +943,7 @@
     $('tb-no').textContent = `${pad2(S.li + 1)} / ${pad2(LEVELS.length)}`;
     $('tb-name').textContent = L.name;
     $('tb-task').textContent = L.task;
-    document.title = `Küçük Mühendisler · ${L.name}`;
+    document.title = `Drawing Board · ${L.name}`;
   }
 
   function refreshBom() {
@@ -851,7 +952,7 @@
     $('bom-foot').hidden = !types.length;
     if (!types.length) {
       const li = document.createElement('li'); li.className = 'bom-none';
-      li.textContent = 'Bu çizimde parça yok. Makine kurulu, iş kumandada.';
+      li.textContent = 'No parts in this drawing. The machine is built; the controls are yours.';
       ol.appendChild(li); return;
     }
     types.forEach((type, i) => {
@@ -859,7 +960,7 @@
       const li = document.createElement('li');
       li.className = 'bom-row' + (left > 0 ? '' : ' empty');
       li.innerHTML = `<span class="no">${i + 1}</span><canvas aria-hidden="true"></canvas><span class="nm">${NAMES[type]}</span><span class="qty">×${left}</span>`;
-      li.setAttribute('aria-label', `${NAMES[type]}, ${left} adet`);
+      li.setAttribute('aria-label', `${NAMES[type]}, ${left} left`);
       li.addEventListener('pointerdown', e => startTrayDrag(type, e));
       ol.appendChild(li);
       drawIcon(li.querySelector('canvas'), type);
@@ -882,7 +983,7 @@
     $('bom').hidden = run; $('pult').hidden = !run;
     const btn = $('run');
     btn.classList.toggle('stop', run);
-    $('run-label').textContent = run ? 'Durdur' : 'Çalıştır';
+    $('run-label').textContent = run ? 'Stop' : 'Run';
     $('run-ico').innerHTML = run ? '<rect x="4" y="4" width="12" height="12" fill="currentColor"/>' : '<path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/>';
     if (!run) refreshBom();
     refreshGoals(); setHint();
@@ -894,13 +995,13 @@
     $('pult-foot').hidden = !devs.length;
     if (!devs.length) {
       const p = document.createElement('p'); p.className = 'pult-none';
-      p.textContent = 'Bu makinede elle kumandalı cihaz yok. Sadece izle.';
+      p.textContent = 'Nothing to work by hand on this machine. Just watch.';
       box.appendChild(p); return;
     }
     for (const rt of devs) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'dev';
-      b.innerHTML = `<span class="num">${rt.num}</span><span class="nm">${NAMES[rt.type]}</span><span class="act">${rt.type === 'fan' ? 'Basılı tut' : 'Bas'}</span>`;
+      b.innerHTML = `<span class="num">${rt.num}</span><span class="nm">${NAMES[rt.type]}</span><span class="act">${actText(rt)}</span>`;
       b.addEventListener('pointerdown', e => {
         e.preventDefault();
         try { b.setPointerCapture(e.pointerId); } catch (err) { /* yok say */ }
@@ -914,14 +1015,18 @@
       box.appendChild(b);
     }
   }
+  const actText = rt => PARTS[rt.type].manual === 'hold' ? 'Hold' : rt.type === 'gate' ? (rt.open ? 'Close' : 'Open') : 'Press';
   function updatePult() {
     if (!S.sim) return;
     for (const rt of S.sim.devices) {
       if (!rt.btn) continue;
-      const on = rt.type === 'fan' ? rt.on : rt.state !== 'idle';
+      const m = PARTS[rt.type].manual;
+      const on = m === 'hold' ? rt.on : rt.type === 'gate' ? rt.open : rt.state !== 'idle';
       if (rt.btn.classList.contains('on') !== on) rt.btn.classList.toggle('on', on);
+      const act = rt.btn.querySelector('.act'), at = actText(rt);
+      if (act && act.textContent !== at) act.textContent = at;
     }
-    const t = S.sim.balls.length > 1 ? `Elle: ${S.sim.presses} · Kova: ${S.sim.goals}/${S.sim.need}` : `Elle: ${S.sim.presses}`;
+    const t = S.sim.balls.length > 1 ? `Presses: ${S.sim.presses} · Cups: ${S.sim.goals}/${S.sim.need}` : `Presses: ${S.sim.presses}`;
     const el = $('press-count'); if (el.textContent !== t) el.textContent = t;
   }
 
@@ -960,7 +1065,7 @@
     if (S.mode !== 'build' || trayLeft(type) <= 0 || S.drag) return;
     e.preventDefault();
     exitLink(); audio();
-    const d = PARTS[type];
+    const d = KM.sizeOf({ type, o: DEFAULT_O[type] });
     S.drag = { type, o: DEFAULT_O[type], fromId: null, link: null, grab: [d.w / 2, d.h / 2], pid: e.pointerId, lift: e.pointerType === 'touch' ? 0.9 : 0, cand: null, valid: false, over: false };
     updateDrag(e);
   }
@@ -992,14 +1097,14 @@
       addPlaced(p); sfx('place'); snapAt(p);
     } else if (dr.fromId) {
       if (!dr.over) { relinkAfterRemoval(dr.fromId); sfx('remove'); }
-      else { S.parts.push(dr.orig); toast('Oraya sığmıyor. Parça eski yerine döndü.', 1800); }
+      else { S.parts.push(dr.orig); toast('It doesn’t fit there. The part went back.', 1800); }
     } else if (dr.over) {
-      toast('Oraya sığmıyor. Kırmızı hücreler dolu.', 1800);
+      toast('It doesn’t fit there. The red squares are taken.', 1800);
     }
     saveSetup(); refreshBom(); setHint();
   }
 
-  function snapAt(p) { const d = PARTS[p.type]; S.snap = { x: p.x, y: p.y, w: d.w, h: d.h, t: S.time }; }
+  function snapAt(p) { const d = KM.sizeOf(p); S.snap = { x: p.x, y: p.y, w: d.w, h: d.h, t: S.time }; }
 
   function rotatePart(p) {
     const os = PARTS[p.type].orients;
@@ -1012,7 +1117,7 @@
   }
 
   function enterLink(sensor) {
-    if (!devicesAll().length) { toast('Bu çizimde bağlanacak elle kumandalı cihaz yok.'); return; }
+    if (!devicesAll().length) { toast('There is no orange device to link in this drawing.'); return; }
     S.linkFrom = sensor; sfx('tick'); setHint();
   }
   function exitLink() { if (S.linkFrom) { S.linkFrom = null; setHint(); } }
@@ -1075,14 +1180,14 @@
   // ---------------------------------------------------------------- çalıştırma
   function devDown(rt, pid) {
     if (!S.sim || S.sim.status === 'out') return;
-    if (rt.type === 'fan') { S.held.set(pid, rt); S.sim.hold(rt, true); }
+    if (PARTS[rt.type].manual === 'hold') { S.held.set(pid, rt); S.sim.hold(rt, true); }
     else S.sim.press(rt, true);
     updatePult();
   }
   function devUp(rt, pid) {
     if (!S.held.has(pid)) return;
     S.held.delete(pid);
-    if (S.sim && rt.type === 'fan' && ![...S.held.values()].includes(rt)) S.sim.hold(rt, false);
+    if (S.sim && PARTS[rt.type].manual === 'hold' && ![...S.held.values()].includes(rt)) S.sim.hold(rt, false);
     updatePult();
   }
   function releaseAll() {
@@ -1098,7 +1203,7 @@
     S.sim = KM.createSim(S.level, S.parts.map(p => Object.assign({}, p)));
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.held.clear();
-    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress }));
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on }));
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run');
     refreshSide(); buildPult(); updatePult();
@@ -1111,9 +1216,9 @@
     S.trailFail = reason !== 'user' ? reason : null;
     S.sim = null; S.mode = 'build';
     if (reason !== 'user') S.lastFail = reason;
-    if (reason === 'out') { toast('Top düştü. Noktalı çizgi son yolunu gösteriyor.'); sfx('fail'); }
-    else if (reason === 'timeout') toast('Süre doldu. Makineyi gözden geçir.');
-    else if (reason === 'rest') toast('Top durdu. Kurulumu değiştirip yeniden dene.');
+    if (reason === 'out') { toast('The ball fell off. The dotted line shows its last path.'); sfx('fail'); }
+    else if (reason === 'timeout') toast('Time’s up. Take another look at the machine.');
+    else if (reason === 'rest') toast('The ball stopped. Change the setup and try again.');
     refreshSide();
   }
 
@@ -1170,9 +1275,10 @@
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : 'piston');
+        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : rt.type === 'gate' ? 'gate' : 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
-        s.fires = rt.fires; s.comp = rt.compress;
+        if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
+        s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
       if (sim.status === 'goal') {
         if (!S.goalPlayed) { S.goalPlayed = true; sfx('goal'); }
@@ -1182,7 +1288,7 @@
       } else if (sim.status === 'timeout') stopRun('timeout');
       else if (sim.restT > 2.4 && !S.restNoted) {
         S.restNoted = true;
-        if (sim.devices.length) toast('Top durdu. Elle bir şey yapman gerekiyor olabilir.', 3200);
+        if (sim.devices.length) toast('The ball stopped. Maybe something needs a hand.', 3200);
         else stopRun('rest');
       }
       updatePult();
@@ -1198,44 +1304,54 @@
 
   function showResult(res, fresh, used, presses, t) {
     const L = S.level, prog = S.progress[L.id];
-    $('result-cap').textContent = `Çizim ${pad2(S.li + 1)} · onaylandı`;
+    $('result-cap').textContent = `Drawing ${pad2(S.li + 1)} · approved`;
     const ul = $('result-stamps'); ul.textContent = '';
     for (const r of res) {
       const got = !!prog.badges[r.b.k];
       const li = document.createElement('li');
       li.className = 'goal' + (got ? ' got' : '') + (fresh.includes(r.b.k) ? ' new' : '');
-      li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(r.b)}${got && !r.ok ? ' · önceki denemeden' : ''}</span>`;
+      li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(r.b)}${got && !r.ok ? ' · from an earlier run' : ''}</span>`;
       ul.appendChild(li);
     }
-    $('st-time').textContent = t.toFixed(1).replace('.', ',') + ' sn';
+    $('st-time').textContent = t.toFixed(1) + ' s';
     $('st-parts').textContent = String(used);
     $('st-press').textContent = String(presses);
     const missing = L.badges.find(b => !prog.badges[b.k]);
-    $('result-tip').textContent = missing ? badgeTip(missing) : (S.li + 1 < LEVELS.length ? 'Bu çizimin bütün damgaları tamam.' : 'Atölye defterindeki bütün çizimler bitti. Yenileri yolda.');
+    $('result-tip').textContent = missing ? badgeTip(missing) : (S.li + 1 < LEVELS.length ? 'Every stamp on this drawing is yours.' : 'Every drawing in the notebook is done. New ones are on the way.');
     const last = S.li + 1 >= LEVELS.length;
-    $('btn-next').textContent = last ? 'Bölümler' : 'Sonraki çizim';
+    $('btn-next').textContent = last ? 'Drawings' : 'Next drawing';
     openOverlay('result', 'btn-next');
   }
 
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets' };
   function openLevels() {
     const grid = $('level-grid'); grid.textContent = '';
+    const thumbs = [];
+    let book = null;
     LEVELS.forEach((L, i) => {
+      if (L.book !== book) {
+        book = L.book;
+        const h = document.createElement('div'); h.className = 'book-head';
+        h.innerHTML = `<span class="cap">Notebook ${book}</span><span class="bk">${BOOKS[book] || ''}</span>`;
+        grid.appendChild(h);
+      }
       const prog = S.progress[L.id], open = unlocked(i);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'lvl' + (i === S.li ? ' cur' : ''); b.disabled = !open;
       const dots = L.badges.map(bd => `<span class="dot${prog && prog.badges[bd.k] ? ' got' : ''}" title="${badgeText(bd)}"></span>`).join('');
-      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Çizim ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${open ? '' : '<span class="lock">Kilitli</span>'}`;
-      b.setAttribute('aria-label', `Çizim ${i + 1}: ${L.name}${open ? '' : ', kilitli'}`);
+      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Drawing ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${open ? '' : '<span class="lock">Locked</span>'}`;
+      b.setAttribute('aria-label', `Drawing ${i + 1}: ${L.name}${open ? '' : ', locked'}`);
       b.addEventListener('click', () => { closeOverlay('levels'); loadLevel(i); });
       grid.appendChild(b);
+      thumbs.push([b.querySelector('canvas'), L]);
     });
     openOverlay('levels', 'levels-close');
-    requestAnimationFrame(() => grid.querySelectorAll('canvas').forEach((c, i) => drawThumb(c, LEVELS[i])));
+    requestAnimationFrame(() => thumbs.forEach(([c, L]) => drawThumb(c, L)));
   }
 
   function setMuted(m) {
     S.muted = m; persistDevice();
-    const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Sesi aç' : 'Sesi kapat');
+    const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off');
     $('ico-sound').innerHTML = m
       ? '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13.5 7.5l5 5M18.5 7.5l-5 5"/>'
       : '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/>';

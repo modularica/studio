@@ -177,6 +177,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 .levels-head h1 { margin: 0; font-size: clamp(38px, 6vw, 64px); line-height: 0.95; }
 .levels-head p { margin: 6px 0 0; font-size: 16px; color: var(--ink-dim); font-weight: 600; }
 #level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.book-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; padding: 4px 0 6px; border-bottom: 1px solid var(--line-strong); }
+.book-head:not(:first-child) { margin-top: 10px; }
+.book-head .bk { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; }
 .lvl {
   display: flex; flex-direction: column; text-align: left; padding: 0; border: 1.5px solid var(--line-strong);
   background: rgba(10, 39, 72, 0.5); cursor: pointer; position: relative;

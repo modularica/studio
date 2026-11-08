@@ -14,7 +14,9 @@
     { "source": "/balon-yarisi/:path*", "destination": "/lab/balon-yarisi/:path*", "permanent": false },
     { "source": "/karinca-yolu/:path*", "destination": "/lab/karinca-yolu/:path*", "permanent": false },
     { "source": "/kis-uykusu-oteli/:path*", "destination": "/lab/kis-uykusu-oteli/:path*", "permanent": false },
-    { "source": "/kucuk-muhendisler/:path*", "destination": "/lab/kucuk-muhendisler/:path*", "permanent": false },
+    { "source": "/drawing-board/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
+    { "source": "/kucuk-muhendisler/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
+    { "source": "/lab/kucuk-muhendisler/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
     { "source": "/oyunlar.json", "destination": "/lab/oyunlar.json", "permanent": false }
   ]
 }

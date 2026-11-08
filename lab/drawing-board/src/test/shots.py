@@ -28,7 +28,7 @@ def open_page(b, w, h, dpr=1):
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
     page = open_page(b, 1366, 1024)
-    for idx, name in [(1, 'yay'), (2, 'piston'), (3, 'pervane'), (7, 'buyuk-makine'), (13, 'tetik')]:
+    for idx, name in [(1, 'yay'), (2, 'piston'), (3, 'pervane'), (7, 'buyuk-makine'), (13, 'tetik'), (14, 'kapi'), (15, 'kapak'), (16, 'miknatis'), (17, 'bayraklar'), (18, 'uc-top'), (19, 'istasyon')]:
         place(page, idx); page.wait_for_timeout(250)
         page.screenshot(path=f'{OUT}/30-{name}.png')
     # Sürükleme anı: listedeki ilk parçayı tahtaya taşı, bırakmadan çek.

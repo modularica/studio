@@ -1,7 +1,7 @@
-// Küçük Mühendisler: kaynakları tek HTML dosyasına derler.
-//   node lab/kucuk-muhendisler/src/build.js --lab           -> lab/kucuk-muhendisler/index.html (site: hesap satırları + paylaşım etiketleri)
-//   node lab/kucuk-muhendisler/src/build.js <çıktı>         -> hesapsız tek başına kopya (Planck jsDelivr'dan, fontlar Google Fonts'tan)
-//   node lab/kucuk-muhendisler/src/build.js --local <çıktı> -> her şey dosyanın içinde, internetsiz (önce: npm install)
+// Drawing Board: kaynakları tek HTML dosyasına derler.
+//   node lab/drawing-board/src/build.js --lab           -> lab/drawing-board/index.html (site: hesap satırları + paylaşım etiketleri)
+//   node lab/drawing-board/src/build.js <çıktı>         -> hesapsız tek başına kopya (Planck jsDelivr'dan, fontlar Google Fonts'tan)
+//   node lab/drawing-board/src/build.js --local <çıktı> -> her şey dosyanın içinde, internetsiz (önce: npm install)
 const fs = require('fs');
 const path = require('path');
 
@@ -16,18 +16,18 @@ if (!out) { console.error('Çıktı yolu ver ya da --lab kullan.'); process.exit
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
 const PLANCK = '1.5.1';
 
-const DESC = 'Rampa, yay, piston ve pervanelerle topu kovaya ulaştıran makineyi kur. Makine çalışırken turuncu cihazlar senin elinde; sensör koyarsan kendi kendine çalışır.';
+const DESC = 'Build the machine that gets the ball into the cup: ramps, springs, belts, pistons, fans, gates and magnets. While it runs, the orange devices are in your hands; add sensors and it runs by itself.';
 const LAB_HEAD = `<meta name="description" content="${DESC}">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Küçük Mühendisler">
+<meta property="og:title" content="Drawing Board">
 <meta property="og:description" content="${DESC}">
-<meta property="og:image" content="https://uzigames.com/lab/kucuk-muhendisler/cover.png">
+<meta property="og:image" content="https://uzigames.com/lab/drawing-board/cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="kucuk-muhendisler" data-kayit="kucuk-muhendisler.v1"></script>`;
+<script src="/hesap/hesap.js" data-oyun="drawing-board" data-kayit="drawing-board.v1"></script>`;
 
 function inlineFonts() {
   const faces = [];

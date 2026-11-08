@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Küçük Mühendisler</title>
-<meta name="description" content="Rampa, yay, piston ve pervanelerle topu kovaya ulaştıran makineyi kur. Makine çalışırken turuncu cihazlar senin elinde; sensör koyarsan kendi kendine çalışır.">
+<title>Drawing Board</title>
+<meta name="description" content="Build the machine that gets the ball into the cup: ramps, springs, belts, pistons, fans, gates and magnets. While it runs, the orange devices are in your hands; add sensors and it runs by itself.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Küçük Mühendisler">
-<meta property="og:description" content="Rampa, yay, piston ve pervanelerle topu kovaya ulaştıran makineyi kur. Makine çalışırken turuncu cihazlar senin elinde; sensör koyarsan kendi kendine çalışır.">
-<meta property="og:image" content="https://uzigames.com/lab/kucuk-muhendisler/cover.png">
+<meta property="og:title" content="Drawing Board">
+<meta property="og:description" content="Build the machine that gets the ball into the cup: ramps, springs, belts, pistons, fans, gates and magnets. While it runs, the orange devices are in your hands; add sensors and it runs by itself.">
+<meta property="og:image" content="https://uzigames.com/lab/drawing-board/cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="kucuk-muhendisler" data-kayit="kucuk-muhendisler.v1"></script>
+<script src="/hesap/hesap.js" data-oyun="drawing-board" data-kayit="drawing-board.v1"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Big+Shoulders+Stencil:wght@800&display=swap">
@@ -198,6 +198,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 .levels-head h1 { margin: 0; font-size: clamp(38px, 6vw, 64px); line-height: 0.95; }
 .levels-head p { margin: 6px 0 0; font-size: 16px; color: var(--ink-dim); font-weight: 600; }
 #level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.book-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; padding: 4px 0 6px; border-bottom: 1px solid var(--line-strong); }
+.book-head:not(:first-child) { margin-top: 10px; }
+.book-head .bk { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; }
 .lvl {
   display: flex; flex-direction: column; text-align: left; padding: 0; border: 1.5px solid var(--line-strong);
   background: rgba(10, 39, 72, 0.5); cursor: pointer; position: relative;
@@ -262,44 +265,44 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 <body>
 <div id="app">
   <header class="titleblock">
-    <div class="tb tb-logo"><span class="cap">Uzi Games · Atölye</span><span class="stencil">Küçük<br>Mühendisler</span></div>
-    <div class="tb tb-no"><span class="cap">Çizim no</span><span class="val" id="tb-no">01 / 05</span></div>
-    <div class="tb tb-name"><span class="cap">Bölüm</span><span class="val" id="tb-name">İlk rampa</span></div>
-    <div class="tb tb-task"><span class="cap">Görev</span><span class="val" id="tb-task">Topu kovaya ulaştır.</span></div>
+    <div class="tb tb-logo"><span class="cap">Uzi Games · Workshop</span><span class="stencil">Drawing<br>Board</span></div>
+    <div class="tb tb-no"><span class="cap">Dwg no.</span><span class="val" id="tb-no">01 / 22</span></div>
+    <div class="tb tb-name"><span class="cap">Title</span><span class="val" id="tb-name">First Ramp</span></div>
+    <div class="tb tb-task"><span class="cap">Task</span><span class="val" id="tb-task">Get the ball into the cup.</span></div>
     <div class="tb tb-btns">
-      <button class="tbtn" id="btn-levels" type="button" aria-label="Bölümler">
+      <button class="tbtn" id="btn-levels" type="button" aria-label="Drawings">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="11.5" y="2.5" width="6" height="6"/><rect x="2.5" y="11.5" width="6" height="6"/><rect x="11.5" y="11.5" width="6" height="6"/></svg>
-        <span class="lbl">Bölümler</span>
+        <span class="lbl">Drawings</span>
       </button>
-      <button class="tbtn" id="btn-sound" type="button" aria-label="Ses" aria-pressed="true">
+      <button class="tbtn" id="btn-sound" type="button" aria-label="Sound" aria-pressed="true">
         <svg id="ico-sound" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/></svg>
       </button>
     </div>
   </header>
   <main id="stage">
-    <section id="sheet" aria-label="Çizim tahtası">
+    <section id="sheet" aria-label="Drawing board">
       <canvas id="board"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside id="side">
-      <div class="note"><span class="cap">Not</span><p id="hint"></p></div>
+      <div class="note"><span class="cap">Note</span><p id="hint"></p></div>
       <div class="panel" id="bom">
-        <div class="panel-head"><span class="cap">Parça listesi</span><span class="cap">Adet</span></div>
+        <div class="panel-head"><span class="cap">Parts list</span><span class="cap">Qty</span></div>
         <ol id="bom-list"></ol>
-        <p class="panel-foot" id="bom-foot">Sürükle: yerleştir · Dokun: döndür · Tahtanın dışına at: geri al</p>
+        <p class="panel-foot" id="bom-foot">Drag: place · Tap: turn · Drag off the board: put back</p>
       </div>
       <div class="panel" id="pult" hidden>
-        <div class="panel-head"><span class="cap">Kumanda</span><span class="cap" id="press-count">Elle: 0</span></div>
+        <div class="panel-head"><span class="cap">Controls</span><span class="cap" id="press-count">Presses: 0</span></div>
         <div id="pult-buttons"></div>
-        <p class="panel-foot" id="pult-foot">Turuncu cihazlar senin elinde. Sayı tuşları da çalışır.</p>
+        <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too.</p>
       </div>
       <div class="panel" id="goals">
-        <div class="panel-head"><span class="cap">Onay damgaları</span></div>
+        <div class="panel-head"><span class="cap">Approval stamps</span></div>
         <ul id="goal-list"></ul>
       </div>
       <button id="run" type="button">
         <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
-        <span id="run-label">Çalıştır</span>
+        <span id="run-label">Run</span>
       </button>
     </aside>
   </main>
@@ -307,19 +310,19 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 
 <div class="overlay" id="result" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
-    <span class="cap" id="result-cap">Çizim 01 · onaylandı</span>
-    <h2 class="stencil result-title" id="result-title">Makine çalıştı</h2>
+    <span class="cap" id="result-cap">Drawing 01 · approved</span>
+    <h2 class="stencil result-title" id="result-title">It works!</h2>
     <ul id="result-stamps"></ul>
     <dl class="stats">
-      <div><dt class="cap">Süre</dt><dd id="st-time">0,0 sn</dd></div>
-      <div><dt class="cap">Parça</dt><dd id="st-parts">0</dd></div>
-      <div><dt class="cap">Elle müdahale</dt><dd id="st-press">0</dd></div>
+      <div><dt class="cap">Time</dt><dd id="st-time">0.0 s</dd></div>
+      <div><dt class="cap">Parts</dt><dd id="st-parts">0</dd></div>
+      <div><dt class="cap">Presses</dt><dd id="st-press">0</dd></div>
     </dl>
     <p id="result-tip"></p>
     <div class="actions">
       <button class="btn lab-only" type="button" data-nasildi="seviye-sonu">Nasıldı?</button>
-      <button class="btn" id="btn-retry" type="button">Tekrar kur</button>
-      <button class="btn primary" id="btn-next" type="button">Sonraki çizim</button>
+      <button class="btn" id="btn-retry" type="button">Keep building</button>
+      <button class="btn primary" id="btn-next" type="button">Next drawing</button>
     </div>
   </div>
 </div>
@@ -328,13 +331,13 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   <div class="sheet-card levels-card" role="dialog" aria-modal="true" aria-labelledby="levels-title">
     <div class="levels-head">
       <div>
-        <span class="cap">Uzi Games · Atölye defteri</span>
-        <h1 class="stencil" id="levels-title">Küçük Mühendisler</h1>
-        <p>Bir çizim seç. Her çizimde topu kovaya ulaştıran makineyi sen kuruyorsun.</p>
+        <span class="cap">Uzi Games · Workshop notebook</span>
+        <h1 class="stencil" id="levels-title">Drawing Board</h1>
+        <p>Pick a drawing. In each one, you build the machine that gets the ball into the cup.</p>
       </div>
       <div class="actions">
         <button class="btn lab-only" type="button" data-nasildi="mola">Nasıldı?</button>
-        <button class="btn" id="levels-close" type="button">Kapat</button>
+        <button class="btn" id="levels-close" type="button">Close</button>
       </div>
     </div>
     <div id="level-grid"></div>
@@ -345,7 +348,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 
 <script src="https://cdn.jsdelivr.net/npm/planck@1.5.1/dist/planck.min.js"></script>
 <script>
-// Küçük Mühendisler — fizik çekirdeği.
+// Drawing Board — fizik çekirdeği.
 // Tarayıcıda window.KM olarak, Node'da require('./sim') ile çalışır.
 // Sabit zaman adımı (1/120 sn) kullanır: aynı kurulum + aynı adımda basılan
 // düğme her seferinde aynı sonucu verir.
@@ -367,6 +370,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     pistonDist: 1.0, pistonV: 11, pistonHold: 0.12, pistonBackV: 4,
     fanLen: 6, fanForce: 1.2, fanFalloff: 0.1,
     beltV: 7.5,
+    gateV: 7, gateLift: 0.98,
+    magRange: 2.5, magV: 6, magA: 14, magK: 10, magMax: 4,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -378,12 +383,22 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     piston: { orients: ['u', 'r', 'l'], w: 1, h: 1, manual: 'press' },
     fan:    { orients: ['r', 'l', 'u'], w: 1, h: 1, manual: 'hold' },
     sensor: { orients: ['-'], w: 1, h: 1, sensor: true },
+    // Kapı: bir kare geçit, yanındaki kare yuva. Basınca levha yuvaya çekilir (açık), bir daha basınca
+    // geri gelir. 'u' dik kapı (yuva üstte, yolu keser); 'r' / 'l' yatay kapak (yuva sağda / solda).
+    gate:   { orients: ['u', 'r', 'l'], w: 1, h: 2, dims: { r: [2, 1], l: [2, 1] }, manual: 'toggle' },
+    // Mıknatıs: yüzü dönük olduğu yöne; basılı tutunca önündeki çelik bilyeleri çeker, sarı topa etkisi yok.
+    magnet: { orients: ['u', 'r', 'l', 'd'], w: 1, h: 1, manual: 'hold' },
   };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
 
+  // Parçanın kapladığı alan (yönüne göre değişebilir).
+  function sizeOf(p) {
+    const d = PARTS[p.type], s = d.dims && d.dims[p.o];
+    return s ? { w: s[0], h: s[1] } : { w: d.w, h: d.h };
+  }
   function cellsOf(p) {
-    const d = PARTS[p.type], out = [];
+    const d = sizeOf(p), out = [];
     for (let i = 0; i < d.w; i++) for (let j = 0; j < d.h; j++) out.push([p.x + i, p.y + j]);
     return out;
   }
@@ -410,6 +425,22 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const CUP = { wall: 0.12, rim: 0.8 };
   const cupsOf = level => level.cups || [level.cup];
   const startsOf = level => level.balls || [level.start];
+  // Top çeşidi: ilk top sarı, diğerleri çelik bilye (bölüm 'kind' ile değiştirebilir). Fizikleri aynı;
+  // yalnızca mıknatıs çelik bilyeyi çeker.
+  const ballKinds = level => startsOf(level).map((st, i) => st.kind || (i ? 'steel' : 'yellow'));
+
+  // Mıknatısın yüzü (ortası) ve yönü.
+  function magnetFace(p) {
+    const d = DIRS[p.o];
+    return { x: p.x + 0.5 + d[0] * 0.35, y: p.y + 0.5 + d[1] * 0.35, d };
+  }
+  // Kapı levhası (kapalıyken), yuvası ve açılış yönü; parçanın sol alt köşesine göre.
+  const GATES = {
+    u: { plate: [0.4, 0.02, 0.6, 1.0], housing: [0.3, 1.0, 0.7, 2.0], dir: [0, 1], pass: [0, 0] },
+    // Yatay kapağın üstü ve yuvası aynı hizada (0.6): zemin gibi üstünden yuvarlanılır.
+    r: { plate: [0.02, 0.4, 1.0, 0.6], housing: [1.0, 0.32, 2.0, 0.6], dir: [1, 0], pass: [0, 0] },
+    l: { plate: [1.0, 0.4, 1.98, 0.6], housing: [0.0, 0.32, 1.0, 0.6], dir: [-1, 0], pass: [1, 0] },
+  };
   function cupBoxes(cup) {
     const { x, y, w } = cup, t = CUP.wall, out = [];
     const back = cup.back || null;
@@ -470,8 +501,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
 
   function canPlace(level, occ, parts, cand, ignoreId) {
-    const d = PARTS[cand.type];
-    if (cand.x < 0 || cand.y < 0 || cand.x + d.w > W || cand.y + d.h > H) return false;
+    const d = PARTS[cand.type], z = sizeOf(cand);
+    if (cand.x < 0 || cand.y < 0 || cand.x + z.w > W || cand.y + z.h > H) return false;
     const mine = cellsOf(cand).map(q => q[0] + ',' + q[1]);
     if (d.sensor) {
       if (mine.some(k => occ.sensor.has(k))) return false;
@@ -502,11 +533,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
 
     const parts = listParts(level, placed);
-    const rts = [], pistons = [], fans = [], sensors = [], byId = {};
+    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], byId = {};
+    const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
         state: 'idle', offset: 0, timer: 0, held: false, latched: false, on: false, blade: 0,
-        flash: 0, compress: 0, inside: false, link: null, fires: 0 };
+        flash: 0, compress: 0, inside: false, link: null, fires: 0, open: false };
       byId[p.id] = rt;
       rts.push(rt);
       if (p.type === 'ramp') {
@@ -532,6 +564,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         fans.push(rt);
       } else if (p.type === 'sensor') {
         sensors.push(rt);
+      } else if (p.type === 'gate') {
+        const g = GATES[p.o];
+        box(statics, [p.x + g.housing[0], p.y + g.housing[1], p.x + g.housing[2], p.y + g.housing[3]]);
+        const plate = world.createKinematicBody({ position: pl.Vec2(0, 0) });
+        box(plate, [p.x + g.plate[0], p.y + g.plate[1], p.x + g.plate[2], p.y + g.plate[3]], { friction: 0.3 }, { kind: 'gate', rt });
+        rt.plate = plate;
+        gates.push(rt);
+      } else if (p.type === 'magnet') {
+        box(statics, [p.x + 0.15, p.y + 0.15, p.x + 0.85, p.y + 0.85]);
+        rt.face = magnetFace(p);
+        magnets.push(rt);
       }
     }
     for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
@@ -566,7 +609,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     });
 
     const sim = {
-      world, ball, balls, rts, pistons, fans, sensors, need,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, need,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -580,16 +623,21 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
           if (manual) sim.presses++;
           return true;
         }
-        if (rt.type === 'fan') {
-          // Sensör pervaneyi anahtar gibi açar; bir daha tetiklenirse kapatır.
+        if (rt.type === 'fan' || rt.type === 'magnet') {
+          // Sensör pervaneyi ve mıknatısı anahtar gibi açar; bir daha tetiklenirse kapatır.
           rt.latched = !rt.latched;
+          if (manual) sim.presses++;
+          return true;
+        }
+        if (rt.type === 'gate') {
+          rt.open = !rt.open; rt.fires++;
           if (manual) sim.presses++;
           return true;
         }
         return false;
       },
       hold(rt, down) {
-        if (rt.type !== 'fan') return sim.press(rt, true);
+        if (PARTS[rt.type].manual !== 'hold') return sim.press(rt, true);
         if (down && !rt.held) sim.presses++;
         rt.held = !!down;
         return true;
@@ -624,6 +672,50 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
             const dist = rt.o === 'r' ? bp.x - z[0] : rt.o === 'l' ? z[2] - bp.x : bp.y - z[1];
             const f = T.fanForce * mass * T.G * (1 - T.fanFalloff * Math.max(0, dist) / T.fanLen);
             b.applyForceToCenter(pl.Vec2(d[0] * f, d[1] * f), true);
+          });
+        }
+        for (const rt of gates) {
+          const g = GATES[rt.o], target = rt.open ? T.gateLift : 0, gap = target - rt.offset;
+          let v = 0;
+          if (Math.abs(gap) > 1e-9) {
+            v = Math.sign(gap) * T.gateV;
+            if (Math.abs(gap) < Math.abs(v) * DT) v = gap / DT;
+            // Kapanan levha önündeki topu ezmez: top çekilene kadar bekler.
+            if (v < 0) {
+              const o = rt.offset - 0.03;
+              const x0 = rt.x + g.plate[0] + g.dir[0] * o, y0 = rt.y + g.plate[1] + g.dir[1] * o;
+              const x1 = rt.x + g.plate[2] + g.dir[0] * rt.offset, y1 = rt.y + g.plate[3] + g.dir[1] * rt.offset;
+              const r = [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)];
+              const hit = balls.some((b, i) => {
+                if (sim.bstate[i] === 'out') return false;
+                const bp = b.getPosition();
+                const cx = Math.max(r[0], Math.min(bp.x, r[2])), cy = Math.max(r[1], Math.min(bp.y, r[3]));
+                return Math.hypot(bp.x - cx, bp.y - cy) < T.R + 0.01;
+              });
+              if (hit) v = 0;
+            }
+          }
+          rt.offset += v * DT;
+          rt.plate.setLinearVelocity(pl.Vec2(g.dir[0] * v, g.dir[1] * v));
+        }
+        for (const rt of magnets) {
+          rt.on = rt.held || rt.latched;
+          if (!rt.on) continue;
+          const fc = rt.face, d = fc.d;
+          balls.forEach((b, i) => {
+            if (sim.bstate[i] === 'out' || kinds[i] !== 'steel') return;
+            const bp = b.getPosition(), rx = bp.x - fc.x, ry = bp.y - fc.y;
+            if (rx * d[0] + ry * d[1] < -0.05 || Math.hypot(rx, ry) > T.magRange) return;
+            // Alanın içinde bilye ağırlıksız gibi yüzün önündeki yuvaya yönlendirilir, orada tutulur:
+            // hız, yuvaya kalan yola göre seçilen hıza doğru çekilir (kuvvet sınırlı).
+            const tx = fc.x + d[0] * T.R - bp.x, ty = fc.y + d[1] * T.R - bp.y, tl = Math.hypot(tx, ty);
+            const v = b.getLinearVelocity(), sp = Math.min(T.magV, Math.sqrt(2 * T.magA * tl));
+            const ux = tl > 1e-6 ? tx / tl : 0, uy = tl > 1e-6 ? ty / tl : 0;
+            let fx = mass * T.magK * (ux * sp - v.x), fy = mass * T.magK * (uy * sp - v.y) + mass * T.G;
+            const fl = Math.hypot(fx, fy), cap = T.magMax * mass * T.G;
+            if (fl > cap) { fx *= cap / fl; fy *= cap / fl; }
+            b.applyForceToCenter(pl.Vec2(fx, fy), true);
+            if (tl < 0.3) b.setAngularVelocity(b.getAngularVelocity() * 0.9);
           });
         }
 
@@ -681,7 +773,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         balls.forEach((b, i) => {
           if (sim.bstate[i] === 'run') {
             const p = b.getPosition();
-            if (cups.some(c => p.x > c.x + CUP.wall && p.x < c.x + c.w - CUP.wall && p.y > c.y && p.y < c.y + CUP.rim)) sim.bstate[i] = 'goal';
+            // Bayraklı kova (kind) yalnızca kendi renginden topu sayar.
+            if (cups.some(c => (!c.kind || c.kind === kinds[i]) && p.x > c.x + CUP.wall && p.x < c.x + c.w - CUP.wall && p.y > c.y && p.y < c.y + CUP.rim)) sim.bstate[i] = 'goal';
             else if (p.y < -1.5 || p.x < -1.5 || p.x > W + 1.5) { sim.bstate[i] = 'out'; b.setActive(false); }
           }
           if (sim.bstate[i] === 'goal') goals++; else if (sim.bstate[i] === 'out') outs++;
@@ -718,12 +811,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { W, H, DT, T, PARTS, DIRS, CUP, cupsOf, startsOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, cupBoxes, listParts, createSim, runHeadless };
+  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, cupBoxes, listParts, createSim, runHeadless };
 }));
 
 </script>
 <script>
-// Küçük Mühendisler — bölümler.
+// Drawing Board — bölümler (metinler İngilizce). book: hangi defterde.
 // Koordinatlar hücre cinsinden: x 0..16 soldan sağa, y 0..10 aşağıdan yukarı.
 // walls: [x0, y0, x1, y1] dikdörtgen ya da [[x, y], ...] dışbükey çokgen.
 // sol: testlerin doğruladığı çözümler (oyunda gösterilmez).
@@ -735,8 +828,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   return [
     {
       id: 'rampa',
-      name: 'İlk rampa',
-      task: 'Topu kovaya ulaştır.',
+      name: 'First Ramp', book: 1,
+      task: 'Get the ball into the cup.',
       start: { x: 0.6, y: 8.28, vx: 2.5 },
       pipe: { x: 0, y: 8, dir: 'r' },
       walls: [[0, 7.7, 6, 8]],
@@ -744,17 +837,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { ramp: 2 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
       hints: {
-        place: 'Parça listesindeki rampayı tutup tahtaya sürükle.',
-        ready: 'Rampaya dokununca döner. Top kovaya doğru yuvarlanmalı. Hazırsan Çalıştır.',
-        fail: 'Noktalı çizgi topun son yolu. Rampayı topun düştüğü yere koy, eğimi kovaya baksın.',
-        after: 'Tek rampa yeter. Daha az parçayla dene.',
+        place: 'Drag the ramp from the parts list onto the board.',
+        ready: 'Tap the ramp to turn it. The ball should roll toward the cup. Ready? Press Run.',
+        fail: 'The dotted line is the ball’s last path. Put the ramp where the ball lands, sloping toward the cup.',
+        after: 'One ramp is enough. Try it with fewer parts.',
       },
       sol: [{ name: 'tek rampa', parts: [{ type: 'ramp', x: 6, y: 5, o: 'dl' }] }],
     },
     {
       id: 'yay',
-      name: 'Zıpla',
-      task: 'Boşluğun üstünden atla, kovaya gir.',
+      name: 'Bounce', book: 1,
+      task: 'Jump the gap and land in the cup.',
       start: { x: 0.6, y: 2.28, vx: 2.6 },
       pipe: { x: 0, y: 2, dir: 'r' },
       walls: [[0, 1.6, 5, 2], [8, 0, 12, 4], [12, 0, 14, 3.2], [14, 0, 16, 4]],
@@ -762,17 +855,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { spring: 1, ramp: 1 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
       hints: {
-        place: 'Yay, üstüne düşen topu yukarı fırlatır. Boşluğa koy.',
-        ready: 'Hazırsan Çalıştır.',
-        fail: 'İze bak: top boşluğun neresine düşüyor? Yayı tam oraya koy.',
-        after: 'Rampasız, tek yayla da olur.',
+        place: 'A spring launches any ball that lands on it. Put it in the gap.',
+        ready: 'Ready? Press Run.',
+        fail: 'Check the path: where does the ball land in the gap? Put the spring right there.',
+        after: 'It works without the ramp, with just the spring.',
       },
       sol: [{ name: 'yay', parts: [{ type: 'spring', x: 5, y: 0, o: 'u' }] }],
     },
     {
       id: 'piston',
-      name: 'Piston',
-      task: 'Top pistona yaslanınca ateşle. Kovaya uçması için atlama rampası kur.',
+      name: 'Piston', book: 1,
+      task: 'Fire the piston when the ball rests against it. Build a jump ramp so it flies into the cup.',
       start: { x: 2.5, y: 5.3, vx: -1.0 },
       pipe: { x: 2, y: 5, dir: 'd' },
       walls: [[0, 3.7, 9, 4], [10.6, 0, 11.4, 4.2]],
@@ -781,18 +874,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { ramp: 2 },
       badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
       hints: {
-        place: 'Bu çizimde piston elle çalışır. Önce rafa bir atlama rampası kur.',
-        ready: 'Çalıştır. Top pistona yaslanınca 1 numaralı düğmeye bas.',
-        run: 'Top pistona yaslanınca 1’e bas. Pistona dokunmak da olur.',
-        fail: 'Rampanın yerini değiştir: top kovanın kenarını aşabilmeli.',
-        after: 'Tek basışla çöz: topun pistona yaslanmasını bekle.',
+        place: 'This piston is worked by hand. First build a jump ramp on the shelf.',
+        ready: 'Press Run. When the ball rests against the piston, press button 1.',
+        run: 'When the ball rests against the piston, press 1. Tapping the piston works too.',
+        fail: 'Move the ramp: the ball has to clear the edge of the cup.',
+        after: 'Solve it with one press: wait for the ball to rest against the piston.',
       },
       sol: [{ name: 'rampa + bas', parts: [{ type: 'ramp', x: 7, y: 4, o: 'dl' }], inputs: [{ t: 3, num: 1, act: 'press' }] }],
     },
     {
       id: 'pervane',
-      name: 'Pervane',
-      task: 'Pervaneyi basılı tut, topu tepeden aşır. Fazla üflersen kovayı geçer.',
+      name: 'Fan', book: 1,
+      task: 'Hold the fan to blow the ball over the hump. Blow too long and it flies past the cup.',
       start: { x: 1.6, y: 2.28 },
       walls: [[0, 1.6, 7, 2], [[7, 1.6], [11, 1.6], [11, 2.5], [10, 2.5], [7, 2]], [11, 0.9, 13, 1.7], [13, 1.6, 13.6, 2.5]],
       fixed: [{ type: 'fan', x: 0, y: 2, o: 'r' }],
@@ -800,18 +893,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: {},
       badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
       hints: {
-        place: 'Bu çizimde parça yok, iş senin elinde. Çalıştır, sonra pervaneyi basılı tut.',
-        ready: 'Çalıştır, sonra pervaneyi basılı tut.',
-        run: 'Basılı tut, sonra bırak. Fazla üflersen top kovayı geçer.',
-        fail: 'Top kovayı geçtiyse daha kısa, tepeye çıkamadıysa daha uzun tut.',
-        after: 'Tek seferde dene: bir kez basılı tut, bir kez bırak.',
+        place: 'No parts in this drawing; it’s all in your hands. Press Run, then hold the fan.',
+        ready: 'Press Run, then hold the fan.',
+        run: 'Hold, then let go. Blow too long and the ball flies past the cup.',
+        fail: 'Flew past the cup? Hold it shorter. Didn’t make it over the hump? Hold it longer.',
+        after: 'Do it in one go: hold once, let go once.',
       },
       sol: [{ name: 'tut-bırak', parts: [], inputs: [{ t: 0.5, num: 1, act: 'down' }, { t: 1.15, num: 1, act: 'up' }] }],
     },
     {
       id: 'sensor',
-      name: 'Sensör',
-      task: 'Topu raftaki kovaya fırlat. Önce elle, sonra sensörle.',
+      name: 'Sensor', book: 1,
+      task: 'Launch the ball into the cup on the shelf. First by hand, then with a sensor.',
       start: { x: 0.6, y: 2.28, vx: 2.6 },
       pipe: { x: 0, y: 2, dir: 'r' },
       walls: [[0, 1.6, 6, 2], [7, 1.6, 7.6, 2], [6, 0, 7, 1], [[8.5, 4.7], [11, 4.7], [11, 5], [8.5, 5.3]], [13, 4.7, 16, 5]],
@@ -820,11 +913,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { sensor: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }],
       hints: {
-        place: 'Önce elle dene: hiçbir şey koymadan çalıştır, top pistonun üstündeyken 1’e bas.',
-        ready: 'Top sensörlü hücrenin ortasına gelince bağlı cihaz kendiliğinden çalışır.',
-        run: 'Top pistonun üstüne gelince 1’e bas.',
-        fail: 'Erken mi ateşlendi, geç mi? Sensörü pistonun tam üstüne koy.',
-        after: 'Elle oldu. Ama sıradaki çizimlerde elin yetmeyecek. Sensörü burada öğren: pistonun üstüne koy ve hiçbir şeye dokunma.',
+        place: 'Try it by hand first: run it with nothing placed and press 1 while the ball is on the piston.',
+        ready: 'When a ball reaches the middle of a sensor’s square, the linked device fires by itself.',
+        run: 'Press 1 when the ball is on top of the piston.',
+        fail: 'Too early or too late? Put the sensor right above the piston.',
+        after: 'That worked by hand. In the next drawings your hands won’t be fast enough, so learn the sensor here: put it above the piston and touch nothing.',
       },
       sol: [
         { name: 'elle', parts: [], inputs: [{ t: 2.65, num: 1, act: 'press' }] },
@@ -833,8 +926,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     },
     {
       id: 'hizli',
-      name: 'Hızlı top',
-      task: 'Düşen topu pistonla deliğe it, kovaya düşür.',
+      name: 'Fast Ball', book: 1,
+      task: 'Push the falling ball through the hole with the piston and drop it into the cup.',
       start: { x: 3.5, y: 9.3 },
       pipe: { x: 3, y: 9, dir: 'd' },
       walls: [[2.7, 0, 3, 3], [2.7, 4, 3, 9], [4, 0, 4.3, 3], [4, 5, 4.3, 9]],
@@ -843,18 +936,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { sensor: 2 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
       hints: {
-        place: 'Bu top çok hızlı düşüyor, elle yakalamak neredeyse imkânsız. Bir sensör koy.',
-        ready: 'Çalıştır ve izle: piston topu deliğe itmeli.',
-        run: 'İstersen 1’e basmayı dene ama top çok hızlı.',
-        fail: 'Piston geç mi kaldı? Top hızlıyken sensörü bir kare yukarı koy: piston çıkana kadar top aşağı iner.',
-        after: 'Tek sensörle çöz: doğru kareyi bul.',
+        place: 'This ball falls too fast to catch by hand. Place a sensor.',
+        ready: 'Press Run and watch: the piston should push the ball through the hole.',
+        run: 'Try pressing 1 if you like, but the ball is very fast.',
+        fail: 'Was the piston late? With a fast ball, put the sensor one square higher: the ball keeps falling while the piston comes out.',
+        after: 'Solve it with a single sensor: find the right square.',
       },
       sol: [{ name: 'sensör bir üstte', parts: [{ type: 'sensor', x: 3, y: 4, o: '-', link: 'f0' }], inputs: [] }],
     },
     {
       id: 'iki-piston',
-      name: 'İki piston',
-      task: 'Topu iki pistonla kat kat yukarı fırlat.',
+      name: 'Two Pistons', book: 1,
+      task: 'Launch the ball up, floor by floor, with two pistons.',
       start: { x: 0.6, y: 2.28, vx: 2.5 },
       pipe: { x: 0, y: 2, dir: 'r' },
       walls: [[0, 1.6, 5, 2], [5, 0, 6, 1], [6, 1.6, 6.6, 2], [[7, 3.6], [11, 3.6], [11, 4], [7, 6]], [11, 3.6, 12, 4], [12, 0, 13, 3], [14.6, 0, 15.4, 4.2]],
@@ -863,11 +956,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { sensor: 2 },
       badges: [{ k: 'solve' }, { k: 'auto' }],
       hints: {
-        place: 'İki piston var. Birincisi yavaş topu, ikincisi yokuştan hızla inen topu fırlatır. Elle de olur ama ikincisi zor.',
-        ready: 'Her sensör en yakın cihaza bağlanır. Başka cihaza bağlamak için sensöre dokun, sonra cihaza dokun.',
-        run: '1 alttaki piston, 2 üstteki. Top üstlerine gelince bas.',
-        fail: 'İze bak: top hangi pistonda kaçtı? O pistonun üstüne sensör koy.',
-        after: 'Tam otomatik: iki sensörle, hiçbir şeye dokunmadan.',
+        place: 'Two pistons. The first launches a slow ball, the second a ball rushing down a slope. By hand works too, but the second one is hard.',
+        ready: 'Each sensor links to the nearest device. To link it to another, tap the sensor, then tap the device.',
+        run: '1 is the lower piston, 2 the upper one. Press when the ball is on top.',
+        fail: 'Check the path: at which piston did the ball get away? Put a sensor above that piston.',
+        after: 'Fully automatic: two sensors and no touching.',
       },
       sol: [
         { name: 'iki sensör', parts: [{ type: 'sensor', x: 5, y: 2, o: '-', link: 'f0' }, { type: 'sensor', x: 12, y: 4, o: '-', link: 'f1' }], inputs: [] },
@@ -876,8 +969,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     },
     {
       id: 'buyuk-makine',
-      name: 'Büyük makine',
-      task: 'Topu banda indir, asansörle kaldır, pistonla kovaya it.',
+      name: 'The Big Machine', book: 1,
+      task: 'Drop the ball onto the belt, lift it with the elevator, push it into the cup.',
       start: { x: 1.5, y: 9.3 },
       pipe: { x: 1, y: 9, dir: 'd' },
       walls: [[3.6, 0, 4, 1], [7.7, 2, 8, 5], [7.7, 6, 8, 8.5], [9, 0, 9.3, 5], [9, 6, 9.3, 8.5], [9.3, 4.7, 13, 5], [13.6, 0, 14.4, 4.2], [8, 0.93, 9, 1.07]],
@@ -889,11 +982,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { ramp: 2, sensor: 3 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 3 }],
       hints: {
-        place: 'Büyük makine. Önce topu banda indirecek rampayı kur.',
-        ready: 'Elle yapmak için iki el gerekir: pervaneyi basılı tutarken pistona basacaksın. Birlikte oynayın ya da sensör kullanın.',
-        run: '1’i basılı tut, asansör kalksın. Top pistonun önüne gelince 2’ye bas.',
-        fail: 'Pervaneye bağlı sensör anahtar gibidir: top geçince açar, bir daha geçerse kapatır.',
-        after: 'Tam otomatik: biri pervaneyi açan, biri pistonu ateşleyen iki sensör.',
+        place: 'The big machine. First build the ramp that drops the ball onto the belt.',
+        ready: 'By hand you need two hands: hold the fan while you press the piston. Play together or use sensors.',
+        run: 'Hold 1 to run the elevator. When the ball is in front of the piston, press 2.',
+        fail: 'A sensor linked to a fan works like a switch: one ball turns it on, the next pass turns it off.',
+        after: 'Fully automatic: one sensor turns on the fan, another fires the piston.',
       },
       sol: [
         { name: 'elle iki el', parts: [{ type: 'ramp', x: 1, y: 3, o: 'dr' }], inputs: [{ t: 2.3, num: 1, act: 'down' }, { t: 4.45, num: 2, act: 'press' }, { t: 6, num: 1, act: 'up' }] },
@@ -902,8 +995,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     },
     {
       id: 'bant',
-      name: 'Bant',
-      task: 'Duran topu bantla kovaya taşı.',
+      name: 'Conveyor', book: 1,
+      task: 'Carry the resting ball to the cup with belts.',
       start: { x: 9.5, y: 6.3 },
       pipe: { x: 9, y: 6, dir: 'd' },
       walls: [[6, 4.6, 12, 5], [3.6, 0, 4.4, 2]],
@@ -911,17 +1004,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { belt: 3 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
       hints: {
-        place: 'Konveyör, üstündeki topu taşır. Top düştüğü yerde duruyor: altına bant koy. Banda dokununca yönü değişir.',
-        ready: 'Hazırsan Çalıştır.',
-        fail: 'Bant bitince top durur. Bandı rafın ucuna kadar uzat.',
-        after: 'İki bant yeter.',
+        place: 'A conveyor carries the ball on top of it. The ball stops where it lands, so put a belt under it. Tap a belt to change its direction.',
+        ready: 'Ready? Press Run.',
+        fail: 'The ball stops where the belt ends. Run the belts all the way to the end of the shelf.',
+        after: 'Two belts are enough.',
       },
       sol: [{ name: 'iki bant', parts: [{ type: 'belt', x: 6, y: 5, o: 'l' }, { type: 'belt', x: 8, y: 5, o: 'l' }], inputs: [] }],
     },
     {
       id: 'yay-merdiveni',
-      name: 'Yay merdiveni',
-      task: 'Topu iki yayla iki kat yukarı çıkar.',
+      name: 'Spring Stairs', book: 1,
+      task: 'Bounce the ball up two floors with two springs.',
       start: { x: 0.6, y: 2.28, vx: 3.0 },
       pipe: { x: 0, y: 2, dir: 'r' },
       walls: [[0, 1.6, 4, 2], [7, 3.6, 10, 4], [12, 5.6, 14, 6], [14.6, 0, 15.4, 5.2]],
@@ -929,17 +1022,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { spring: 2, ramp: 1 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
       hints: {
-        place: 'İki yay, iki kat. İlk yayı topun ilk düştüğü yere koy, sonra izine bak.',
-        ready: 'Çalıştır, top ikinci kez nereye düşüyor bak.',
-        fail: 'İkinci yay havada da durabilir: topun ikinci kez düştüğü yere, biraz yukarıya koy.',
-        after: 'Rampasız, iki yayla çöz.',
+        place: 'Two springs, two floors. Put the first spring where the ball first lands, then check its path.',
+        ready: 'Press Run and see where the ball lands the second time.',
+        fail: 'The second spring can float in the air: put it where the ball lands the second time, a little higher up.',
+        after: 'Solve it with the two springs, no ramp.',
       },
       sol: [{ name: 'iki yay', parts: [{ type: 'spring', x: 5, y: 0, o: 'u' }, { type: 'spring', x: 10, y: 3, o: 'u' }], inputs: [] }],
     },
     {
       id: 'ac-kapa',
-      name: 'Aç-kapa',
-      task: 'Topu rüzgârla boşluktan kovaya uçur.',
+      name: 'On and Off', book: 1,
+      task: 'Blow the ball across the gap into the cup.',
       start: { x: 2.5, y: 7.3 },
       pipe: { x: 2, y: 7, dir: 'd' },
       walls: [[0, 4.6, 7, 5], [10.6, 0, 11.4, 2]],
@@ -948,11 +1041,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { sensor: 3 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 2 }],
       hints: {
-        place: 'Pervaneyi iki sensör yönetebilir: biri açar, öteki kapatır. Top fazla hızlanırsa kovayı geçer.',
-        ready: 'Aynı pervaneye bağlı ikinci sensör, top geçince pervaneyi kapatır.',
-        run: 'Top yere oturunca 1’i basılı tut, yeterince hızlanınca bırak.',
-        fail: 'Top kovayı geçtiyse kapatma sensörünü geri çek; yetişemediyse ileri al.',
-        after: 'Tam otomatik: iki sensörle aç ve kapat.',
+        place: 'Two sensors can run one fan: one turns it on, the other turns it off. Too much speed and the ball flies past the cup.',
+        ready: 'A second sensor linked to the same fan turns it off when the ball passes.',
+        run: 'When the ball settles, hold 1, and let go once it is fast enough.',
+        fail: 'Flew past the cup? Move the off sensor back. Fell short? Move it forward.',
+        after: 'Fully automatic: on and off with two sensors.',
       },
       sol: [
         { name: 'aç + kapa', parts: [{ type: 'sensor', x: 2, y: 5, o: '-', link: 'f0' }, { type: 'sensor', x: 4, y: 5, o: '-', link: 'f0' }], inputs: [] },
@@ -961,8 +1054,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     },
     {
       id: 'domino',
-      name: 'Domino',
-      task: 'Sarı topu çelik bilyeye çarptır; ikisi de kovaya girsin.',
+      name: 'Domino', book: 1,
+      task: 'Knock the yellow ball into the steel ball. Both have to land in the cup.',
       balls: [{ x: 0.6, y: 8.28, vx: 2.5 }, { x: 11.5, y: 5.28 }],
       pipe: { x: 0, y: 8, dir: 'r' },
       walls: [[0, 7.7, 4, 8], [7, 4.6, 12, 5], [12.6, 0, 13.4, 2]],
@@ -970,17 +1063,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { ramp: 2 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
       hints: {
-        place: 'İki top var: çelik bilye rafta bekliyor. Sarı topu ona çarptır, ikisi de kovaya girsin.',
-        ready: 'Hazırsan Çalıştır.',
-        fail: 'Sarı top rafa inmeli. Rampayı topun düştüğü yere koy.',
-        after: 'Tek rampa yeter.',
+        place: 'Two balls: the steel ball waits on the shelf. Knock the yellow ball into it so both land in the cup.',
+        ready: 'Ready? Press Run.',
+        fail: 'The yellow ball has to get down to the shelf. Put the ramp where it lands.',
+        after: 'One ramp is enough.',
       },
       sol: [{ name: 'tek rampa', parts: [{ type: 'ramp', x: 4, y: 6, o: 'dr' }], inputs: [] }],
     },
     {
       id: 'iki-top',
-      name: 'İki top',
-      task: 'İki topu da pistonla raftaki kovaya fırlat.',
+      name: 'Two Balls', book: 1,
+      task: 'Launch both balls into the cup on the shelf with the piston.',
       balls: [{ x: 2.6, y: 2.28, vx: 2.6 }, { x: 0.6, y: 2.28, vx: 2.6 }],
       pipe: { x: 0, y: 2, dir: 'r' },
       walls: [[0, 1.6, 6, 2], [7, 1.6, 7.6, 2], [6, 0, 7, 1], [[8.5, 4.7], [11, 4.7], [11, 5], [8.5, 5.3]], [13, 4.7, 16, 5]],
@@ -989,11 +1082,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { sensor: 2 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
       hints: {
-        place: 'İki top arka arkaya geliyor. Pistona iki kez basman gerekecek, ya da sensöre bırak.',
-        ready: 'Sensör her top geçişinde yeniden çalışır.',
-        run: 'Her top pistonun üstüne gelince 1’e bas.',
-        fail: 'İkisi de kovaya girmeli. Sensör her topta ayrı ayrı tetiklenir.',
-        after: 'Tek sensör iki topa da yeter.',
+        place: 'Two balls in a row. You’ll have to press the piston twice, or leave it to a sensor.',
+        ready: 'A sensor fires again for every ball that crosses it.',
+        run: 'Press 1 each time a ball is on top of the piston.',
+        fail: 'Both have to land in the cup. The sensor fires for each ball on its own.',
+        after: 'One sensor is enough for both balls.',
       },
       sol: [
         { name: 'tek sensör', parts: [{ type: 'sensor', x: 6, y: 2, o: '-', link: 'f0' }], inputs: [] },
@@ -1002,8 +1095,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     },
     {
       id: 'tetik',
-      name: 'Tetik',
-      task: 'Sarı top alt kovaya, çelik bilye asansörle üst kovaya.',
+      name: 'Trigger', book: 1,
+      task: 'Yellow ball into the lower cup, steel ball up the elevator into the upper cup.',
       balls: [{ x: 1.5, y: 9.3 }, { x: 12.5, y: 1.35 }],
       pipe: { x: 1, y: 9, dir: 'd' },
       walls: [[[2, 1.6], [9, 1.6], [9, 2], [2, 3]], [9.6, 0, 10.4, 1.2],
@@ -1014,30 +1107,167 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       tray: { ramp: 2, sensor: 3 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 3 }],
       hints: {
-        place: 'İki top, iki kova. Önce sarı topu alt kovaya indirecek rampayı kur.',
-        ready: 'Çelik bilyeyi asansör kaldırır, piston üst kovaya iter. Elle oynarken iki el gerekir.',
-        run: '1’i basılı tut, bilye pistonun önüne gelince 2’ye bas.',
-        fail: 'Tam otomatik için: sarı topun yoluna pervaneyi açan bir sensör, pistonun önüne de bir sensör koy.',
-        after: 'Sarı topun yoluna konan sensör asansörü çalıştırır. Hiç dokunmadan çöz.',
+        place: 'Two balls, two cups. First build the ramp that sends the yellow ball down to the lower cup.',
+        ready: 'The elevator lifts the steel ball and the piston pushes it into the upper cup. By hand you need two hands.',
+        run: 'Hold 1, and when the steel ball is in front of the piston, press 2.',
+        fail: 'For fully automatic: a sensor in the yellow ball’s path to turn on the fan, and one in front of the piston.',
+        after: 'A sensor in the yellow ball’s path runs the elevator. Solve it without touching anything.',
       },
       sol: [
         { name: 'tam otomatik', parts: [{ type: 'ramp', x: 0, y: 6, o: 'dr' }, { type: 'sensor', x: 5, y: 2, o: '-', link: 'f0' }, { type: 'sensor', x: 12, y: 6, o: '-', link: 'f1' }], inputs: [] },
         { name: 'elle iki el', parts: [{ type: 'ramp', x: 0, y: 6, o: 'dr' }], inputs: [{ t: 0.2, num: 1, act: 'down' }, { t: 2.17, num: 2, act: 'press' }, { t: 8, num: 1, act: 'up' }] },
       ],
     },
+    // ---------------------------------------------------------------- Defter 2: kapılar ve mıknatıslar
+    {
+      id: 'kapi',
+      name: 'Gate', book: 2,
+      task: 'The ball comes down fast and would fly past the cup. Stop it with the gate, then let it roll in.',
+      start: { x: 0.6, y: 8.28, vx: 2.5 },
+      pipe: { x: 0, y: 8, dir: 'r' },
+      walls: [[0, 7.7, 3, 8], [[3, 8], [9, 3.0], [9, 2.6], [3, 7.6]], [[9, 3.0], [11.5, 2.95], [13, 2.7], [13, 2.3], [9, 2.6]], [13.2, 0, 14.8, 1.4]],
+      fixed: [{ type: 'gate', x: 11, y: 3, o: 'u' }],
+      cup: { x: 13, y: 1.4, w: 2 },
+      tray: {},
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
+      hints: {
+        place: 'No parts in this drawing; the gate is yours. It starts closed. Press Run.',
+        ready: 'Press Run. Let the ball hit the gate, then press 1 to open it.',
+        run: 'Wait for the ball to hit the gate, then press 1.',
+        fail: 'Opened too early? A fast ball flies past the cup. Let the gate stop it first.',
+        after: 'One press: wait for the ball to hit the gate.',
+      },
+      sol: [{ name: 'bekle, aç', parts: [], inputs: [{ t: 4, num: 1, act: 'press' }] }],
+    },
+    {
+      id: 'kapak',
+      name: 'Trapdoor', book: 2,
+      task: 'Yellow ball to the yellow flag, steel ball to the steel flag.',
+      balls: [{ x: 2.6, y: 6.88, vx: 2.6, kind: 'yellow' }, { x: 0.6, y: 6.88, vx: 2.6, kind: 'steel' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 6.2, 5, 6.6], [7, 6.2, 12, 6.6], [6.5, 0, 8.5, 1.6]],
+      fixed: [{ type: 'gate', x: 5, y: 6, o: 'r' }],
+      cups: [{ x: 6.5, y: 1.6, w: 2, kind: 'steel', back: { side: 'r', h: 3 } }, { x: 12, y: 5, w: 2, kind: 'yellow' }],
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }, { k: 'auto' }],
+      hints: {
+        place: 'Each cup takes only the ball of its own color. A gate laid flat is a trapdoor: press 1 and the floor opens.',
+        ready: 'The yellow ball goes first. Let it roll over the trapdoor, then open it for the steel ball.',
+        run: 'Yellow ball over the trapdoor? Press 1 to open it for the steel ball.',
+        fail: 'Too early and the yellow ball falls in; too late and the steel ball rolls past. Open it right between them.',
+        after: 'Fully automatic: a sensor that the yellow ball crosses just after the trapdoor can open it in time.',
+      },
+      sol: [
+        { name: 'tek sensör', parts: [{ type: 'sensor', x: 6, y: 6, o: '-', link: 'f0' }], inputs: [] },
+        { name: 'elle', parts: [], inputs: [{ t: 1.5, num: 1, act: 'press' }] },
+      ],
+    },
+    {
+      id: 'miknatis',
+      name: 'Magnet', book: 2,
+      task: 'Pull the steel ball across the gap with the magnet and drop it into the cup.',
+      balls: [{ x: 0.6, y: 5.28, vx: 2.4, kind: 'steel' }],
+      pipe: { x: 0, y: 5, dir: 'r' },
+      walls: [[0, 4.6, 9.5, 5], [11.2, 0, 12.8, 3], [12.35, 5.85, 12.65, 10]],
+      fixed: [{ type: 'magnet', x: 12, y: 5, o: 'l' }],
+      cup: { x: 11, y: 3, w: 2, kind: 'steel' },
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }, { k: 'auto' }],
+      hints: {
+        place: 'A magnet pulls only steel balls, and only while it is on. Hold 1 to switch it on.',
+        ready: 'Press Run. Hold 1 before the ball reaches the gap, and let go when it hangs over the cup.',
+        run: 'Hold 1 to pull the ball across. Let go when it hangs over the cup.',
+        fail: 'The ball has to come inside the dashed half circle for the magnet to reach it. Hold on until it sticks.',
+        after: 'Fully automatic: like a fan, a magnet linked to sensors works like a switch. One sensor turns it on, another turns it off.',
+      },
+      sol: [
+        { name: 'iki sensör', parts: [{ type: 'sensor', x: 3, y: 5, o: '-', link: 'f0' }, { type: 'sensor', x: 11, y: 5, o: '-', link: 'f0' }], inputs: [] },
+        { name: 'elle', parts: [], inputs: [{ t: 0.5, num: 1, act: 'down' }, { t: 6, num: 1, act: 'up' }] },
+      ],
+    },
+    {
+      id: 'bayraklar',
+      name: 'Two Flags', book: 2,
+      task: 'Steel ball to the steel flag on the right, yellow ball down the chute to the yellow flag.',
+      balls: [{ x: 3.5, y: 9.3, kind: 'steel' }, { x: 3.5, y: 10.3, kind: 'yellow' }],
+      pipe: { x: 3, y: 9, dir: 'd' },
+      walls: [[2.7, 2, 3, 9], [4, 2, 4.3, 5], [4, 6.2, 4.3, 9], [[4.3, 4.6], [9, 3.2], [9, 2.9], [4.3, 4.3]], [5.85, 5.3, 6.6, 5.7], [6.4, 5.7, 6.6, 10]],
+      fixed: [{ type: 'magnet', x: 5, y: 5, o: 'l' }],
+      cups: [{ x: 2.5, y: 0.6, w: 2, kind: 'yellow' }, { x: 9, y: 1.5, w: 2, kind: 'steel', back: { side: 'r', h: 2.4 } }],
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'The magnet can pull the steel ball out through the window in the chute. The yellow ball does not feel it.',
+        ready: 'Hold 1 while the balls fall, and let go once the steel ball sticks.',
+        run: 'Hold 1 now. Let go when the steel ball hangs at the magnet.',
+        fail: 'The steel ball fell into the yellow cup. Keep the magnet on while it falls past the window.',
+        after: 'Fully automatic with a single sensor: find the square where the steel ball turns the magnet on and the yellow ball turns it off.',
+      },
+      sol: [
+        { name: 'tek sensör', parts: [{ type: 'sensor', x: 3, y: 6, o: '-', link: 'f0' }], inputs: [] },
+        { name: 'elle', parts: [], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 3, num: 1, act: 'up' }] },
+      ],
+    },
+    {
+      id: 'uc-top',
+      name: 'Three in a Row', book: 2,
+      task: 'Yellow, steel, yellow: send each ball to the flag of its own color.',
+      balls: [{ x: 4.6, y: 6.88, vx: 2.6, kind: 'yellow' }, { x: 2.6, y: 6.88, vx: 2.6, kind: 'steel' }, { x: 0.6, y: 6.88, vx: 2.6, kind: 'yellow' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 6.2, 6, 6.6], [8, 6.2, 13, 6.6], [7.5, 0, 9.5, 1.6]],
+      fixed: [{ type: 'gate', x: 6, y: 6, o: 'r' }],
+      cups: [{ x: 7.5, y: 1.6, w: 2, kind: 'steel', back: { side: 'r', h: 3 } }, { x: 13, y: 5, w: 2, kind: 'yellow', back: { side: 'r', h: 2 } }],
+      tray: { sensor: 2 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 2 }, { k: 'auto' }],
+      hints: {
+        place: 'The same trapdoor, three balls. It has to open for the steel ball and close again before the second yellow ball.',
+        ready: 'Open it after the first yellow ball, close it after the steel ball drops.',
+        run: 'Press 1 when the first yellow ball has crossed, and again once the steel ball drops.',
+        fail: 'Two moments: open between the first two balls, close between the last two.',
+        after: 'Fully automatic: one sensor that only the first yellow ball crosses, and one that only the steel ball crosses.',
+      },
+      sol: [
+        { name: 'iki sensör', parts: [{ type: 'sensor', x: 7, y: 6, o: '-', link: 'f0' }, { type: 'sensor', x: 7, y: 4, o: '-', link: 'f0' }], inputs: [] },
+        { name: 'elle', parts: [], inputs: [{ t: 1.05, num: 1, act: 'press' }, { t: 2.0, num: 1, act: 'press' }] },
+      ],
+    },
+    {
+      id: 'istasyon',
+      name: 'Sorting Station', book: 2,
+      task: 'Steel ball across the gap to its cup, yellow ball down through the trapdoor.',
+      balls: [{ x: 2.6, y: 6.88, vx: 2.6, kind: 'steel' }, { x: 0.6, y: 6.88, vx: 2.6, kind: 'yellow' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 6.2, 4, 6.6], [6, 6.2, 9.5, 6.6], [5.5, 0, 7.5, 1.6], [11.2, 0, 12.8, 4], [12.35, 6.85, 12.65, 10]],
+      fixed: [{ type: 'gate', x: 4, y: 6, o: 'r' }, { type: 'magnet', x: 12, y: 6, o: 'l' }],
+      cups: [{ x: 5.5, y: 1.6, w: 2, kind: 'yellow', back: { side: 'r', h: 3 } }, { x: 11, y: 4, w: 2, kind: 'steel' }],
+      tray: { sensor: 3 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 2 }, { k: 'auto' }],
+      hints: {
+        place: 'The sorting machine: a trapdoor and a magnet. By hand it is easier with two people, one on each.',
+        ready: 'The steel ball goes first, over the trapdoor and across the gap. Then open the trapdoor for the yellow ball.',
+        run: 'Hold 2 for the magnet. Press 1 once the steel ball has crossed the trapdoor. Let go of 2 when the steel ball hangs over its cup.',
+        fail: 'Which ball went wrong? The yellow one needs the trapdoor open, the steel one needs the magnet on.',
+        after: 'Fully automatic: three sensors. One opens the trapdoor, two switch the magnet on and off. Tap a sensor, then a device, to link them.',
+      },
+      sol: [
+        { name: 'üç sensör', parts: [{ type: 'sensor', x: 5, y: 6, o: '-', link: 'f0' }, { type: 'sensor', x: 7, y: 6, o: '-', link: 'f1' }, { type: 'sensor', x: 11, y: 6, o: '-', link: 'f1' }], inputs: [] },
+        { name: 'elle', parts: [], inputs: [{ t: 0, num: 2, act: 'down' }, { t: 1.1, num: 1, act: 'press' }, { t: 5, num: 2, act: 'up' }] },
+      ],
+    },
   ];
 }));
+
 </script>
 <script>
-// Küçük Mühendisler — oyun arayüzü ve çizim.
+// Drawing Board — oyun arayüzü ve çizim. Arayüz metinleri İngilizce; Lab'a giden notlar Türkçe.
 (function () {
   'use strict';
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Rampa', spring: 'Yay', belt: 'Konveyör', piston: 'Piston', fan: 'Pervane', sensor: 'Sensör' };
-  const ORDER = ['ramp', 'spring', 'belt', 'piston', 'fan', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet' };
+  const ORDER = ['ramp', 'spring', 'belt', 'gate', 'piston', 'fan', 'magnet', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -1055,8 +1285,15 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 
   // ---------------------------------------------------------------- kayıt
   // İlerleme (damgalar, kurulumlar, son çizim) Lab'da hesaba eşitlenir; ses tercihi cihazda kalır.
-  const KEY = 'kucuk-muhendisler.v1';
-  const DEVICE_KEY = 'kucuk-muhendisler.cihaz';
+  // Oyunun adı Kasım 2026'ya kadar "Küçük Mühendisler"di: eski anahtarlardaki kayıt bir kez taşınır.
+  const KEY = 'drawing-board.v1';
+  const DEVICE_KEY = 'drawing-board.device';
+  try {
+    for (const [now, old] of [[KEY, 'kucuk-muhendisler.v1'], [DEVICE_KEY, 'kucuk-muhendisler.cihaz']]) {
+      const v = localStorage.getItem(old);
+      if (localStorage.getItem(now) === null && v !== null) localStorage.setItem(now, v);
+    }
+  } catch (e) { /* kayıt yoksa da oynanır */ }
   let saved = {}, device = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
   try { device = JSON.parse(localStorage.getItem(DEVICE_KEY) || '{}') || {}; } catch (e) { device = {}; }
@@ -1126,6 +1363,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     sensor: () => tone(1500, 0.05, 'sine', 0.045),
     goal: () => { tone(660, 0.14, 'triangle', 0.08); tone(990, 0.3, 'triangle', 0.08, null, 0.12); },
     fail: () => tone(240, 0.32, 'sawtooth', 0.035, 90),
+    gate: () => { noise(0.12, 0.08, 700); tone(260, 0.12, 'triangle', 0.04, 180); },
+    magnet: () => tone(110, 0.25, 'sawtooth', 0.03, 140),
   };
   const sfx = k => { try { SFX[k] && SFX[k](); } catch (e) { /* ses opsiyonel */ } };
 
@@ -1308,17 +1547,19 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
 
   // Kova kesitte: taranmış U, içinde hedef, kenarında bayrak.
+  // Bayraklı kova (cup.kind) yalnızca kendi renginden topu sayar: bayrak ve hedef o topun renginde.
   function drawCup(c, Vw, cup, time) {
     const { x, y, w } = cup, rim = KM.CUP.rim, t = KM.CUP.wall, back = cup.back || null;
     const lh = back && back.side === 'l' ? back.h : rim, rh = back && back.side === 'r' ? back.h : rim;
-    c.fillStyle = rgba(C.ball, 0.08); c.fillRect(x + t, y + t, w - 2 * t, rim - t);
+    const look = BALL_LOOK[cup.kind === 'steel' ? 1 : 0], tint = look.fill || C.ball;
+    c.fillStyle = rgba(tint, 0.08); c.fillRect(x + t, y + t, w - 2 * t, rim - t);
     c.beginPath(); c.moveTo(x + t, y + rim); c.lineTo(x + w - t, y + rim);
-    stroke(c, Vw, rgba(C.ball, 0.45), LW.hair, DASH.hidden);
+    stroke(c, Vw, rgba(tint, 0.45), LW.hair, DASH.hidden);
     if (Vw.lod) {
       const tx = x + w / 2, ty = y + t + 0.29;
       c.beginPath(); c.arc(tx, ty, 0.17, 0, TAU); c.moveTo(tx + 0.085, ty); c.arc(tx, ty, 0.085, 0, TAU);
-      stroke(c, Vw, rgba(C.ball, 0.5), LW.thin);
-      c.beginPath(); c.arc(tx, ty, 0.026, 0, TAU); fill(c, rgba(C.ball, 0.7));
+      stroke(c, Vw, rgba(tint, 0.5), LW.thin);
+      c.beginPath(); c.arc(tx, ty, 0.026, 0, TAU); fill(c, rgba(tint, 0.7));
     }
     section(c, Vw, () => {
       c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w, y + rh); c.lineTo(x + w - t, y + rh); c.lineTo(x + w - t, y + t);
@@ -1333,7 +1574,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     c.beginPath(); c.moveTo(px, py1);
     c.quadraticCurveTo(px + dir * 0.24, py1 + 0.03 + wv, px + dir * 0.5, py1 - 0.13 + wv * 0.5);
     c.quadraticCurveTo(px + dir * 0.24, py1 - 0.22 - wv, px, py1 - 0.3);
-    c.closePath(); fill(c, C.ball); stroke(c, Vw, GOLD, LW.hair);
+    c.closePath(); fill(c, tint); stroke(c, Vw, look.edge, LW.hair);
   }
 
   // Başlangıç borusu boyuna kesitte: taranmış cidarlar, ağızda flanş, uzak uçta kırık çizgisi.
@@ -1501,7 +1742,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
     const q0 = pt(0.06, wd - 0.15), q1 = pt(L - 0.06, wd - 0.15), m = pt(L / 2, wd / 2);
     dimLine(c, Vw, q0[0], q0[1], q1[0], q1[1], null, ink(0.5));
-    textAt(c, Vw, `${L} kare`, m[0], m[1], Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
+    textAt(c, Vw, `${L} squares`, m[0], m[1], Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
   }
 
   // Pervane: önden kanatlar ve göbek, çıkış ağzında panjur.
@@ -1536,6 +1777,80 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     badge(c, Vw, p.num, p.x + 0.18, p.y + 0.82, 0.14);
   }
 
+  // Kapı: geçit karesinde kılavuz rayları arasında kayan taranmış levha, yanındaki karede turuncu yuva.
+  // Açılınca levha yuvaya çekilir. Dik kapıda (u) yuva üstte; yatay kapakta (r / l) yuva yanda,
+  // üstü zeminle aynı hizada. Kurarken geçidin yanında aç-kapa oku görünür.
+  function drawGate(c, Vw, p, rt, ann) {
+    const g = KM.GATES[p.o], off = rt ? rt.offset : 0, lod = Vw.lod, open = !!(rt && rt.open);
+    const vert = p.o === 'u', R = (q, dx, dy) => [p.x + q[0] + dx, p.y + q[1] + dy, p.x + q[2] + dx, p.y + q[3] + dy];
+    const px = p.x + g.pass[0], py = p.y + g.pass[1];
+    if (lod) {
+      c.beginPath();
+      if (vert) for (const gx of [0.35, 0.65]) { c.moveTo(px + gx, py + 0.04); c.lineTo(px + gx, py + 1); }
+      else for (const gy of [0.34, 0.66]) { c.moveTo(px, py + gy); c.lineTo(px + 1, py + gy); }
+      stroke(c, Vw, ink(0.38), LW.hair, DASH.hidden);
+    }
+    const pr = R(g.plate, g.dir[0] * off, g.dir[1] * off);
+    section(c, Vw, () => c.rect(pr[0], pr[1], pr[2] - pr[0], pr[3] - pr[1]), pr);
+    const h = R(g.housing, 0, 0);
+    c.beginPath(); c.rect(h[0], h[1], h[2] - h[0], h[3] - h[1]); fill(c, C.paper); fill(c, hand(open ? 0.3 : 0.18));
+    if (lod) {
+      c.beginPath();
+      if (vert) { c.moveTo(h[0], h[1] + 0.1); c.lineTo(h[2], h[1] + 0.1); c.moveTo(h[0], h[3] - 0.1); c.lineTo(h[2], h[3] - 0.1); }
+      else { c.moveTo(h[0] + 0.1, h[1]); c.lineTo(h[0] + 0.1, h[3]); c.moveTo(h[2] - 0.1, h[1]); c.lineTo(h[2] - 0.1, h[3]); }
+      stroke(c, Vw, hand(0.85), LW.thin);
+    }
+    c.beginPath(); c.rect(h[0], h[1], h[2] - h[0], h[3] - h[1]); stroke(c, Vw, C.hand, LW.edge);
+    if (ann && lod) {
+      const col = hand(0.7);
+      c.beginPath();
+      if (vert) {
+        c.moveTo(px + 0.86, py + 0.28); c.lineTo(px + 0.86, py + 0.72); stroke(c, Vw, hand(0.6), LW.thin);
+        arrow(c, Vw, px + 0.86, py + 0.8, Math.PI / 2, 6, col); arrow(c, Vw, px + 0.86, py + 0.2, -Math.PI / 2, 6, col);
+      } else {
+        c.moveTo(px + 0.28, py + 0.86); c.lineTo(px + 0.72, py + 0.86); stroke(c, Vw, hand(0.6), LW.thin);
+        arrow(c, Vw, px + 0.8, py + 0.86, 0, 6, col); arrow(c, Vw, px + 0.2, py + 0.86, Math.PI, 6, col);
+      }
+    }
+    badge(c, Vw, p.num, (h[0] + h[2]) / 2, vert ? (h[1] + h[3]) / 2 : h[1] - 0.2, 0.14);
+  }
+
+  // Mıknatıs: turuncu gövdede bobin sargıları, yüzünde taranmış kutup parçası. Açıkken önünde alan çizgileri.
+  const MAG_ROT = { r: 0, l: Math.PI, u: Math.PI / 2, d: -Math.PI / 2 };
+  function drawMagnet(c, Vw, p, rt, time) {
+    const on = !!(rt && rt.on), lod = Vw.lod;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5); c.rotate(MAG_ROT[p.o]);
+    if (on) {
+      for (let k = 0; k < 3; k++) {
+        const q = reduceMotion ? k / 3 : (time * 1.4 + k / 3) % 1, r = 0.12 + q * 1.5;
+        c.beginPath(); c.arc(0.35, 0, r, -0.95, 0.95); stroke(c, Vw, ink(0.55 * (1 - q)), LW.thin);
+      }
+    }
+    c.beginPath(); c.rect(-0.35, -0.35, 0.7, 0.7); fill(c, C.paper); fill(c, hand(on ? 0.3 : 0.16));
+    if (lod) {
+      c.beginPath();
+      for (let k = 0; k < 6; k++) { const lx = -0.25 + k * 0.065; c.moveTo(lx, -0.25); c.lineTo(lx + 0.035, 0.25); }
+      stroke(c, Vw, hand(0.8), LW.thin);
+    }
+    c.beginPath(); c.rect(-0.35, -0.35, 0.7, 0.7); stroke(c, Vw, C.hand, LW.edge);
+    section(c, Vw, () => c.rect(0.17, -0.31, 0.18, 0.62), [0.17, -0.31, 0.35, 0.31]);
+    c.restore();
+    const d = DIRS[p.o], perp = d[0] ? [0, 1] : [-1, 0];
+    badge(c, Vw, p.num, p.x + 0.5 - d[0] * 0.32 + perp[0] * 0.32, p.y + 0.5 - d[1] * 0.32 + perp[1] * 0.32, 0.14);
+  }
+  // Mıknatısın erimi: yüzünün önünde yarım daire, yarıçapı yazılı (kurarken).
+  function drawMagnetRange(c, Vw, p) {
+    if (!Vw.lod) return;
+    const fc = KM.magnetFace(p), a = Math.atan2(fc.d[1], fc.d[0]), R = T.magRange;
+    c.beginPath(); c.moveTo(fc.x + R * Math.cos(a - Math.PI / 2), fc.y + R * Math.sin(a - Math.PI / 2));
+    c.arc(fc.x, fc.y, R, a - Math.PI / 2, a + Math.PI / 2);
+    stroke(c, Vw, ink(0.3), LW.hair, DASH.hidden);
+    const ex = fc.x + fc.d[0] * R, ey = fc.y + fc.d[1] * R;
+    dimLine(c, Vw, fc.x + fc.d[0] * 0.08, fc.y + fc.d[1] * 0.08, ex, ey, null, ink(0.45));
+    const lx = fc.x + fc.d[0] * R * 0.55 + (fc.d[0] ? 0 : 0.42), ly = fc.y + fc.d[1] * R * 0.55 + (fc.d[0] ? 0.24 : 0);
+    textAt(c, Vw, `${R} squares`, lx, ly, Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
+  }
+
   // Sensör: hücreyi gözetler (köşe işaretleri, nişangâh). Bağlı değilse kırmızı nokta.
   function drawSensor(c, Vw, p, rt, linked) {
     const x = p.x, y = p.y, cx = x + 0.5, cy = y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
@@ -1562,7 +1877,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 
   // Sensör kablosu, şemadaki gibi dik açılı: sensörün kenarından cihazın kenarına.
   function drawLink(c, Vw, s, t, pulse) {
-    const td = PARTS[t.type], sx = s.x + 0.5, sy = s.y + 0.5;
+    const td = KM.sizeOf(t), sx = s.x + 0.5, sy = s.y + 0.5;
     const x0 = t.x, x1 = t.x + td.w, y0 = t.y, y1 = t.y + td.h, tx = (x0 + x1) / 2, ty = (y0 + y1) / 2;
     const inX = sx > x0 && sx < x1, inY = sy > y0 && sy < y1;
     if (inX && inY) return;
@@ -1598,7 +1913,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
-    const d = PARTS[p.type], col = ink(0.92);
+    const d = KM.sizeOf(p), col = ink(0.92);
     let pts;
     if (p.type === 'ramp') {
       const [a, b] = KM.rampLine(p.o), ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
@@ -1606,6 +1921,11 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       pts = [[ax + ux * 0.075, ay + uy * 0.075], [bx - ux * 0.075, by - uy * 0.075]];
     } else if (p.type === 'belt') pts = [[p.x + T.plank / 2, p.y], [p.x + 2 - T.plank / 2, p.y]];
     else if (p.type === 'piston') { const a = PISTON_ROT[p.o]; pts = [toWorld(p, -0.43, -0.42, a), toWorld(p, 0.43, -0.42, a)]; }
+    else if (p.type === 'gate') {
+      const g = KM.GATES[p.o], hx = (g.housing[0] + g.housing[2]) / 2, hy = (g.housing[1] + g.housing[3]) / 2;
+      pts = p.o === 'u' ? [[p.x + 0.2, p.y + 1.9], [p.x + 0.8, p.y + 1.9]] : [[p.x + hx - 0.32, p.y + 0.14], [p.x + hx + 0.32, p.y + 0.14]];
+      void hy;
+    }
     else pts = [[p.x + 0.08, p.y + 0.08], [p.x + d.w - 0.08, p.y + 0.08]];
     for (const q of pts) bolt(c, Vw, q[0], q[1], col);
   }
@@ -1616,16 +1936,19 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     else if (p.type === 'belt') drawBelt(c, Vw, p, time);
     else if (p.type === 'piston') drawPiston(c, Vw, p, rt, ann);
     else if (p.type === 'fan') drawFan(c, Vw, p, rt);
+    else if (p.type === 'gate') drawGate(c, Vw, p, rt, ann);
+    else if (p.type === 'magnet') drawMagnet(c, Vw, p, rt, time);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
 
   // 0 numaralı top sarı; diğerleri çelik bilye (aynı fizik, farklı görünüm).
   const BALL_LOOK = [
-    { edge: GOLD, mark: 'rgba(130,90,10,0.75)' },
-    { edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
+    { fill: null, edge: GOLD, mark: 'rgba(130,90,10,0.75)' },
+    { fill: '#cdd8e8', edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
   ];
-  const ballFill = i => (i ? '#cdd8e8' : C.ball);
+  const ballFill = i => (i ? BALL_LOOK[1].fill : C.ball);
+  const kindIdx = k => (k === 'steel' ? 1 : 0);
   function drawBall(c, Vw, x, y, ang, alpha, idx) {
     const R = T.R, look = BALL_LOOK[idx ? 1 : 0];
     c.save(); c.globalAlpha = alpha; c.translate(x, y);
@@ -1673,7 +1996,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
 
   function outline(c, Vw, p, color, alpha, width) {
-    const d = PARTS[p.type];
+    const d = KM.sizeOf(p);
     c.beginPath(); c.rect(p.x + 0.04, p.y + 0.04, d.w - 0.08, d.h - 0.08);
     c.lineWidth = Vw.px(width || 2); c.strokeStyle = rgba(color, alpha); c.stroke();
   }
@@ -1688,7 +2011,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const prev = S.progress[LEVELS[i - 1].id];
     return !!(prev && prev.solved);
   }
-  function centerOf(p) { const d = PARTS[p.type]; return [p.x + d.w / 2, p.y + d.h / 2]; }
+  function centerOf(p) { const d = KM.sizeOf(p); return [p.x + d.w / 2, p.y + d.h / 2]; }
   function autoLink(sensor) {
     const [sx, sy] = centerOf(sensor);
     let best = null, bd = 1e9;
@@ -1717,7 +2040,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     for (const it of items) if (it.p.type === 'fan') drawFanZone(c, V, it.p, it.rt, time);
     drawWalls(c, V, L);
     const trails = run ? S.sim.trails : S.trails || [];
-    trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, i, !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
+    const kinds = run ? S.sim.kinds : KM.ballKinds(L);
+    trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, kindIdx(kinds[i]), !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
     for (const cup of KM.cupsOf(L)) drawCup(c, V, cup, time);
     drawPipe(c, V, L);
     for (const it of items) if (it.p.type !== 'sensor') drawPart(c, V, it.p, it.rt, time, ann);
@@ -1733,15 +2057,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       if (it.p.type !== 'sensor') continue;
       drawSensor(c, V, it.p, it.rt, run ? !!it.rt.link : !!byId[it.p.link]);
     }
-    if (ann) for (const it of items) if (it.p.type === 'fan') drawFanRange(c, V, it.p);
+    if (ann) for (const it of items) {
+      if (it.p.type === 'fan') drawFanRange(c, V, it.p);
+      else if (it.p.type === 'magnet') drawMagnetRange(c, V, it.p);
+    }
     if (run) {
       S.sim.balls.forEach((b, i) => {
         if (S.sim.bstate[i] === 'out') return;
         const bp = b.getPosition();
-        drawBall(c, V, bp.x, bp.y, b.getAngle(), 1, i);
+        drawBall(c, V, bp.x, bp.y, b.getAngle(), 1, kindIdx(kinds[i]));
       });
     } else {
-      KM.startsOf(L).forEach((st, i) => drawBall(c, V, st.x, st.y, 0, 0.6, i));
+      KM.startsOf(L).forEach((st, i) => drawBall(c, V, st.x, st.y, 0, 0.6, kindIdx(kinds[i])));
     }
   }
 
@@ -1753,7 +2080,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const run = S.mode === 'run' && S.sim;
     const items = run ? S.sim.rts.map(rt => ({ p: rt.p, rt })) : allParts().map(p => ({ p, rt: null }));
     const dr = S.drag, cand = dr && dr.cand && dr.over ? dr.cand : null;
-    const hl = cand ? { x0: cand.x, x1: cand.x + PARTS[cand.type].w, y0: cand.y, y1: cand.y + PARTS[cand.type].h, ok: dr.valid } : null;
+    const cz = cand && KM.sizeOf(cand);
+    const hl = cand ? { x0: cand.x, x1: cand.x + cz.w, y0: cand.y, y1: cand.y + cz.h, ok: dr.valid } : null;
     drawScene(c, items, run, time, hl);
     if (run) {
       const pulse = 0.25 + 0.2 * Math.sin(time * 5);
@@ -1773,6 +2101,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       if (cand.type === 'fan') drawFanZone(c, V, cand, null, time);
       drawPart(c, V, cand, null, time, true);
       if (cand.type === 'fan') drawFanRange(c, V, cand);
+      if (cand.type === 'magnet') drawMagnetRange(c, V, cand);
       c.restore();
     }
     drawEffects(c, time);
@@ -1813,8 +2142,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const r = canvas.getBoundingClientRect();
     const w = r.width || 52, h = r.height || 30, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-    const d = PARTS[type], c = canvas.getContext('2d');
-    const Vi = makeView(w, h, dpr, d.w / 2 - 1.2, d.h / 2 - 0.62, 2.4, 1.24);
+    const d = KM.sizeOf({ type, o: o || DEFAULT_O[type] }), c = canvas.getContext('2d');
+    const vw = Math.max(2.4, d.w + 0.4), vh = Math.max(1.24, d.h + 0.2);
+    const Vi = makeView(w, h, dpr, d.w / 2 - vw / 2, d.h / 2 - vh / 2, vw, vh);
     Vi.tf(c);
     drawPart(c, Vi, { type, o: o || DEFAULT_O[type], x: 0, y: 0 }, null, 0, false);
   }
@@ -1830,7 +2160,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     for (const p of fixed) if (p.type === 'fan') drawFanZone(c, Vt, p, null, 0);
     drawWalls(c, Vt, L); for (const cup of KM.cupsOf(L)) drawCup(c, Vt, cup, 0); drawPipe(c, Vt, L);
     for (const p of fixed) drawPart(c, Vt, p, null, 0, false);
-    KM.startsOf(L).forEach((st, i) => drawBall(c, Vt, st.x, st.y, 0, 1, i));
+    const kinds = KM.ballKinds(L);
+    KM.startsOf(L).forEach((st, i) => drawBall(c, Vt, st.x, st.y, 0, 1, kindIdx(kinds[i])));
   }
 
   // ---------------------------------------------------------------- arayüz
@@ -1841,29 +2172,29 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
   function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('show'); }
 
-  const badgeText = b => b.k === 'solve' ? 'Makine çalıştı'
-    : b.k === 'budget' ? `En fazla ${b.n} parça`
-    : b.k === 'presses' ? (b.n === 1 ? 'Tek basış' : `En fazla ${b.n} basış`)
-    : 'Tam otomatik';
+  const badgeText = b => b.k === 'solve' ? 'Machine works'
+    : b.k === 'budget' ? (b.n === 1 ? 'Just one part' : `At most ${b.n} parts`)
+    : b.k === 'presses' ? (b.n === 1 ? 'One press' : `At most ${b.n} presses`)
+    : 'Fully automatic';
   const badgeOk = (b, used, presses) => b.k === 'solve' || (b.k === 'budget' && used <= b.n)
     || (b.k === 'presses' && presses <= b.n) || (b.k === 'auto' && presses === 0);
-  const badgeTip = b => b.k === 'budget' ? `Daha az parçayla dene: en fazla ${b.n} parça.`
-    : b.k === 'presses' ? 'Tek basışla dene: doğru anı bekle, bir kez bas.'
-    : b.k === 'auto' ? 'Tam otomatik dene: hiç dokunmadan çalışan bir makine kur. Sensör, top üstünden geçince bağlı cihazı çalıştırır.'
+  const badgeTip = b => b.k === 'budget' ? (b.n === 1 ? 'Try it with a single part.' : `Try it with fewer parts: ${b.n} at most.`)
+    : b.k === 'presses' ? (b.n === 1 ? 'Try it with one press: wait for the right moment, then press once.' : `Try it with at most ${b.n} presses.`)
+    : b.k === 'auto' ? 'Try it fully automatic: build a machine that runs without a touch. A sensor fires its linked device when a ball crosses it.'
     : '';
 
   function setHint() {
     const L = S.level, h = L.hints || {}, prog = S.progress[L.id];
     let t;
-    if (S.mode === 'run') t = h.run || 'Makine çalışıyor. Durdur’a basınca kuruluma dönersin.';
-    else if (S.linkFrom) t = 'Sensörü bağlamak için turuncu bir cihaza dokun. Boş bir yere dokunursan vazgeçersin.';
+    if (S.mode === 'run') t = h.run || 'The machine is running. Press Stop to go back to building.';
+    else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
-      t = missing ? (h.after || 'Eksik damgaları dene.')
-        : S.li + 1 < LEVELS.length ? 'Bu çizimin bütün damgaları tamam. Sıradaki çizime geç.' : 'Atölye defterindeki bütün çizimler tamam. Yeni çizimler yolda.';
-    } else if (S.lastFail) t = h.fail || 'Noktalı çizgiye bak ve kurulumu değiştir.';
+      t = missing ? (h.after || 'Go for the missing stamps.')
+        : S.li + 1 < LEVELS.length ? 'Every stamp on this drawing is yours. On to the next one.' : 'Every drawing in the notebook is done. New drawings are on the way.';
+    } else if (S.lastFail) t = h.fail || 'Look at the dotted line and change the setup.';
     else if (!S.parts.length) t = h.place || h.ready;
-    else t = h.ready || 'Hazırsan Çalıştır.';
+    else t = h.ready || 'Ready? Press Run.';
     const el = $('hint');
     if (el.textContent !== t) el.textContent = t;
   }
@@ -1873,7 +2204,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     $('tb-no').textContent = `${pad2(S.li + 1)} / ${pad2(LEVELS.length)}`;
     $('tb-name').textContent = L.name;
     $('tb-task').textContent = L.task;
-    document.title = `Küçük Mühendisler · ${L.name}`;
+    document.title = `Drawing Board · ${L.name}`;
   }
 
   function refreshBom() {
@@ -1882,7 +2213,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     $('bom-foot').hidden = !types.length;
     if (!types.length) {
       const li = document.createElement('li'); li.className = 'bom-none';
-      li.textContent = 'Bu çizimde parça yok. Makine kurulu, iş kumandada.';
+      li.textContent = 'No parts in this drawing. The machine is built; the controls are yours.';
       ol.appendChild(li); return;
     }
     types.forEach((type, i) => {
@@ -1890,7 +2221,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       const li = document.createElement('li');
       li.className = 'bom-row' + (left > 0 ? '' : ' empty');
       li.innerHTML = `<span class="no">${i + 1}</span><canvas aria-hidden="true"></canvas><span class="nm">${NAMES[type]}</span><span class="qty">×${left}</span>`;
-      li.setAttribute('aria-label', `${NAMES[type]}, ${left} adet`);
+      li.setAttribute('aria-label', `${NAMES[type]}, ${left} left`);
       li.addEventListener('pointerdown', e => startTrayDrag(type, e));
       ol.appendChild(li);
       drawIcon(li.querySelector('canvas'), type);
@@ -1913,7 +2244,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     $('bom').hidden = run; $('pult').hidden = !run;
     const btn = $('run');
     btn.classList.toggle('stop', run);
-    $('run-label').textContent = run ? 'Durdur' : 'Çalıştır';
+    $('run-label').textContent = run ? 'Stop' : 'Run';
     $('run-ico').innerHTML = run ? '<rect x="4" y="4" width="12" height="12" fill="currentColor"/>' : '<path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/>';
     if (!run) refreshBom();
     refreshGoals(); setHint();
@@ -1925,13 +2256,13 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     $('pult-foot').hidden = !devs.length;
     if (!devs.length) {
       const p = document.createElement('p'); p.className = 'pult-none';
-      p.textContent = 'Bu makinede elle kumandalı cihaz yok. Sadece izle.';
+      p.textContent = 'Nothing to work by hand on this machine. Just watch.';
       box.appendChild(p); return;
     }
     for (const rt of devs) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'dev';
-      b.innerHTML = `<span class="num">${rt.num}</span><span class="nm">${NAMES[rt.type]}</span><span class="act">${rt.type === 'fan' ? 'Basılı tut' : 'Bas'}</span>`;
+      b.innerHTML = `<span class="num">${rt.num}</span><span class="nm">${NAMES[rt.type]}</span><span class="act">${actText(rt)}</span>`;
       b.addEventListener('pointerdown', e => {
         e.preventDefault();
         try { b.setPointerCapture(e.pointerId); } catch (err) { /* yok say */ }
@@ -1945,14 +2276,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       box.appendChild(b);
     }
   }
+  const actText = rt => PARTS[rt.type].manual === 'hold' ? 'Hold' : rt.type === 'gate' ? (rt.open ? 'Close' : 'Open') : 'Press';
   function updatePult() {
     if (!S.sim) return;
     for (const rt of S.sim.devices) {
       if (!rt.btn) continue;
-      const on = rt.type === 'fan' ? rt.on : rt.state !== 'idle';
+      const m = PARTS[rt.type].manual;
+      const on = m === 'hold' ? rt.on : rt.type === 'gate' ? rt.open : rt.state !== 'idle';
       if (rt.btn.classList.contains('on') !== on) rt.btn.classList.toggle('on', on);
+      const act = rt.btn.querySelector('.act'), at = actText(rt);
+      if (act && act.textContent !== at) act.textContent = at;
     }
-    const t = S.sim.balls.length > 1 ? `Elle: ${S.sim.presses} · Kova: ${S.sim.goals}/${S.sim.need}` : `Elle: ${S.sim.presses}`;
+    const t = S.sim.balls.length > 1 ? `Presses: ${S.sim.presses} · Cups: ${S.sim.goals}/${S.sim.need}` : `Presses: ${S.sim.presses}`;
     const el = $('press-count'); if (el.textContent !== t) el.textContent = t;
   }
 
@@ -1991,7 +2326,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     if (S.mode !== 'build' || trayLeft(type) <= 0 || S.drag) return;
     e.preventDefault();
     exitLink(); audio();
-    const d = PARTS[type];
+    const d = KM.sizeOf({ type, o: DEFAULT_O[type] });
     S.drag = { type, o: DEFAULT_O[type], fromId: null, link: null, grab: [d.w / 2, d.h / 2], pid: e.pointerId, lift: e.pointerType === 'touch' ? 0.9 : 0, cand: null, valid: false, over: false };
     updateDrag(e);
   }
@@ -2023,14 +2358,14 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       addPlaced(p); sfx('place'); snapAt(p);
     } else if (dr.fromId) {
       if (!dr.over) { relinkAfterRemoval(dr.fromId); sfx('remove'); }
-      else { S.parts.push(dr.orig); toast('Oraya sığmıyor. Parça eski yerine döndü.', 1800); }
+      else { S.parts.push(dr.orig); toast('It doesn’t fit there. The part went back.', 1800); }
     } else if (dr.over) {
-      toast('Oraya sığmıyor. Kırmızı hücreler dolu.', 1800);
+      toast('It doesn’t fit there. The red squares are taken.', 1800);
     }
     saveSetup(); refreshBom(); setHint();
   }
 
-  function snapAt(p) { const d = PARTS[p.type]; S.snap = { x: p.x, y: p.y, w: d.w, h: d.h, t: S.time }; }
+  function snapAt(p) { const d = KM.sizeOf(p); S.snap = { x: p.x, y: p.y, w: d.w, h: d.h, t: S.time }; }
 
   function rotatePart(p) {
     const os = PARTS[p.type].orients;
@@ -2043,7 +2378,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
 
   function enterLink(sensor) {
-    if (!devicesAll().length) { toast('Bu çizimde bağlanacak elle kumandalı cihaz yok.'); return; }
+    if (!devicesAll().length) { toast('There is no orange device to link in this drawing.'); return; }
     S.linkFrom = sensor; sfx('tick'); setHint();
   }
   function exitLink() { if (S.linkFrom) { S.linkFrom = null; setHint(); } }
@@ -2106,14 +2441,14 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   // ---------------------------------------------------------------- çalıştırma
   function devDown(rt, pid) {
     if (!S.sim || S.sim.status === 'out') return;
-    if (rt.type === 'fan') { S.held.set(pid, rt); S.sim.hold(rt, true); }
+    if (PARTS[rt.type].manual === 'hold') { S.held.set(pid, rt); S.sim.hold(rt, true); }
     else S.sim.press(rt, true);
     updatePult();
   }
   function devUp(rt, pid) {
     if (!S.held.has(pid)) return;
     S.held.delete(pid);
-    if (S.sim && rt.type === 'fan' && ![...S.held.values()].includes(rt)) S.sim.hold(rt, false);
+    if (S.sim && PARTS[rt.type].manual === 'hold' && ![...S.held.values()].includes(rt)) S.sim.hold(rt, false);
     updatePult();
   }
   function releaseAll() {
@@ -2129,7 +2464,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     S.sim = KM.createSim(S.level, S.parts.map(p => Object.assign({}, p)));
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.held.clear();
-    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress }));
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on }));
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run');
     refreshSide(); buildPult(); updatePult();
@@ -2142,9 +2477,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     S.trailFail = reason !== 'user' ? reason : null;
     S.sim = null; S.mode = 'build';
     if (reason !== 'user') S.lastFail = reason;
-    if (reason === 'out') { toast('Top düştü. Noktalı çizgi son yolunu gösteriyor.'); sfx('fail'); }
-    else if (reason === 'timeout') toast('Süre doldu. Makineyi gözden geçir.');
-    else if (reason === 'rest') toast('Top durdu. Kurulumu değiştirip yeniden dene.');
+    if (reason === 'out') { toast('The ball fell off. The dotted line shows its last path.'); sfx('fail'); }
+    else if (reason === 'timeout') toast('Time’s up. Take another look at the machine.');
+    else if (reason === 'rest') toast('The ball stopped. Change the setup and try again.');
     refreshSide();
   }
 
@@ -2201,9 +2536,10 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : 'piston');
+        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : rt.type === 'gate' ? 'gate' : 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
-        s.fires = rt.fires; s.comp = rt.compress;
+        if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
+        s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
       if (sim.status === 'goal') {
         if (!S.goalPlayed) { S.goalPlayed = true; sfx('goal'); }
@@ -2213,7 +2549,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       } else if (sim.status === 'timeout') stopRun('timeout');
       else if (sim.restT > 2.4 && !S.restNoted) {
         S.restNoted = true;
-        if (sim.devices.length) toast('Top durdu. Elle bir şey yapman gerekiyor olabilir.', 3200);
+        if (sim.devices.length) toast('The ball stopped. Maybe something needs a hand.', 3200);
         else stopRun('rest');
       }
       updatePult();
@@ -2229,44 +2565,54 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 
   function showResult(res, fresh, used, presses, t) {
     const L = S.level, prog = S.progress[L.id];
-    $('result-cap').textContent = `Çizim ${pad2(S.li + 1)} · onaylandı`;
+    $('result-cap').textContent = `Drawing ${pad2(S.li + 1)} · approved`;
     const ul = $('result-stamps'); ul.textContent = '';
     for (const r of res) {
       const got = !!prog.badges[r.b.k];
       const li = document.createElement('li');
       li.className = 'goal' + (got ? ' got' : '') + (fresh.includes(r.b.k) ? ' new' : '');
-      li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(r.b)}${got && !r.ok ? ' · önceki denemeden' : ''}</span>`;
+      li.innerHTML = `<span class="stamp">${CHECK}</span><span>${badgeText(r.b)}${got && !r.ok ? ' · from an earlier run' : ''}</span>`;
       ul.appendChild(li);
     }
-    $('st-time').textContent = t.toFixed(1).replace('.', ',') + ' sn';
+    $('st-time').textContent = t.toFixed(1) + ' s';
     $('st-parts').textContent = String(used);
     $('st-press').textContent = String(presses);
     const missing = L.badges.find(b => !prog.badges[b.k]);
-    $('result-tip').textContent = missing ? badgeTip(missing) : (S.li + 1 < LEVELS.length ? 'Bu çizimin bütün damgaları tamam.' : 'Atölye defterindeki bütün çizimler bitti. Yenileri yolda.');
+    $('result-tip').textContent = missing ? badgeTip(missing) : (S.li + 1 < LEVELS.length ? 'Every stamp on this drawing is yours.' : 'Every drawing in the notebook is done. New ones are on the way.');
     const last = S.li + 1 >= LEVELS.length;
-    $('btn-next').textContent = last ? 'Bölümler' : 'Sonraki çizim';
+    $('btn-next').textContent = last ? 'Drawings' : 'Next drawing';
     openOverlay('result', 'btn-next');
   }
 
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets' };
   function openLevels() {
     const grid = $('level-grid'); grid.textContent = '';
+    const thumbs = [];
+    let book = null;
     LEVELS.forEach((L, i) => {
+      if (L.book !== book) {
+        book = L.book;
+        const h = document.createElement('div'); h.className = 'book-head';
+        h.innerHTML = `<span class="cap">Notebook ${book}</span><span class="bk">${BOOKS[book] || ''}</span>`;
+        grid.appendChild(h);
+      }
       const prog = S.progress[L.id], open = unlocked(i);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'lvl' + (i === S.li ? ' cur' : ''); b.disabled = !open;
       const dots = L.badges.map(bd => `<span class="dot${prog && prog.badges[bd.k] ? ' got' : ''}" title="${badgeText(bd)}"></span>`).join('');
-      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Çizim ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${open ? '' : '<span class="lock">Kilitli</span>'}`;
-      b.setAttribute('aria-label', `Çizim ${i + 1}: ${L.name}${open ? '' : ', kilitli'}`);
+      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Drawing ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${open ? '' : '<span class="lock">Locked</span>'}`;
+      b.setAttribute('aria-label', `Drawing ${i + 1}: ${L.name}${open ? '' : ', locked'}`);
       b.addEventListener('click', () => { closeOverlay('levels'); loadLevel(i); });
       grid.appendChild(b);
+      thumbs.push([b.querySelector('canvas'), L]);
     });
     openOverlay('levels', 'levels-close');
-    requestAnimationFrame(() => grid.querySelectorAll('canvas').forEach((c, i) => drawThumb(c, LEVELS[i])));
+    requestAnimationFrame(() => thumbs.forEach(([c, L]) => drawThumb(c, L)));
   }
 
   function setMuted(m) {
     S.muted = m; persistDevice();
-    const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Sesi aç' : 'Sesi kapat');
+    const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off');
     $('ico-sound').innerHTML = m
       ? '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13.5 7.5l5 5M18.5 7.5l-5 5"/>'
       : '<path d="M3 8v4h3l4 3.5v-11L6 8H3z"/><path d="M13 7c1.2 1.6 1.2 4.4 0 6M15.5 5c2.4 2.8 2.4 7.2 0 10"/>';

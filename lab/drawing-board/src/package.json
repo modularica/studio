@@ -1,5 +1,5 @@
 {
-  "name": "kucuk-muhendisler",
+  "name": "drawing-board",
   "private": true,
   "description": "Küçük Mühendisler kaynakları: derleme ve testler (siteye çıkmaz)",
   "scripts": {

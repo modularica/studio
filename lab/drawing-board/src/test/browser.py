@@ -115,6 +115,20 @@ with sync_playwright() as p:
         page.click('#btn-retry'); page.wait_for_timeout(250)
         if lid in ('domino', 'tetik'):
             page.screenshot(path=f'{OUT}/11-{lid}.png')
+    # Defter 2: kapı ve mıknatıs (15–20)
+    page.evaluate("KM_GAME.loadLevel(14)"); page.wait_for_timeout(150)
+    print('bölüm:', page.evaluate("KM_GAME.S.level.id"))
+    place_and_run([], keys=[(4.0, '1', 0)], label='L15 kapı elle')
+    page.click('#btn-retry'); page.wait_for_timeout(200)
+    page.evaluate("KM_GAME.loadLevel(16)"); page.wait_for_timeout(150)
+    place_and_run([], keys=[(0.5, '1', 5.5)], label='L17 mıknatıs basılı tut')
+    page.click('#btn-retry'); page.wait_for_timeout(200)
+    for i in range(15, 20):
+        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(150)
+        lid = page.evaluate("KM_GAME.S.level.id")
+        parts = page.evaluate("KM_GAME.S.level.sol[0].parts.map(p => ({type: p.type, o: p.o, x: p.x, y: p.y, link: p.link}))")
+        place_and_run(parts, label=f'L{i + 1} {lid}')
+        page.click('#btn-retry'); page.wait_for_timeout(250)
     # çoklu topta çalışırken kova sayacı
     page.evaluate("KM_GAME.loadLevel(12)"); page.wait_for_timeout(150)
     page.click('#run'); page.wait_for_timeout(2600)
