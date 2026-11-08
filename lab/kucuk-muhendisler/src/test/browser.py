@@ -31,7 +31,6 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto(URL)
     page.wait_for_timeout(800)
-    page.evaluate("KM_GAME.setLook('cizim')")
     page.screenshot(path=f'{OUT}/1-build.png')
 
     # 1. bölüm: listeden rampayı sürükle, dokunarak döndür, çalıştır

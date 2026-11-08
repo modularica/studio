@@ -267,10 +267,6 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     <div class="tb tb-name"><span class="cap">Bölüm</span><span class="val" id="tb-name">İlk rampa</span></div>
     <div class="tb tb-task"><span class="cap">Görev</span><span class="val" id="tb-task">Topu kovaya ulaştır.</span></div>
     <div class="tb tb-btns">
-      <button class="tbtn" id="btn-look" type="button" aria-label="Görünüm">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="3" width="15" height="11" rx="1"/><path d="M2.5 11l4-3.5 3 2.5 3-3 4.5 4"/><path d="M7 17h6"/></svg>
-        <span class="lbl" id="look-label">Çizim → canlı</span>
-      </button>
       <button class="tbtn" id="btn-levels" type="button" aria-label="Bölümler">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="11.5" y="2.5" width="6" height="6"/><rect x="2.5" y="11.5" width="6" height="6"/><rect x="11.5" y="11.5" width="6" height="6"/></svg>
         <span class="lbl">Bölümler</span>
@@ -1058,13 +1054,13 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
 
   // ---------------------------------------------------------------- kayıt
-  // İlerleme (damgalar, kurulumlar, son çizim) Lab'da hesaba eşitlenir; ses ve görünüm cihazda kalır.
+  // İlerleme (damgalar, kurulumlar, son çizim) Lab'da hesaba eşitlenir; ses tercihi cihazda kalır.
   const KEY = 'kucuk-muhendisler.v1';
   const DEVICE_KEY = 'kucuk-muhendisler.cihaz';
   let saved = {}, device = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
   try { device = JSON.parse(localStorage.getItem(DEVICE_KEY) || '{}') || {}; } catch (e) { device = {}; }
-  for (const k of ['muted', 'look', 'lookTip']) if (device[k] === undefined && saved[k] !== undefined) device[k] = saved[k];
+  if (device.muted === undefined && saved.muted !== undefined) device.muted = saved.muted;
 
   // Lab (uzigames.com/lab) bağlantıları: hesap.js varsa ilerleme notu ve "Nasıldı?" düğmeleri.
   const lab = {
@@ -1072,22 +1068,21 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     note(t) { try { if (window.Hesap) window.Hesap.not(t); } catch (e) { /* yok say */ } },
   };
 
-  const LOOKS_OK = v => v === 'cizim' || v === 'gecis' || v === 'canli';
   const S = {
     li: 0, level: null, occ: null, parts: [], nextId: 1,
     mode: 'build', sim: null, acc: 0, endT: 0, restNoted: false, goalPlayed: false,
-    trails: null, lastFail: null, drag: null, press: null, linkFrom: null,
+    trails: null, trailFail: null, lastFail: null, drag: null, press: null, linkFrom: null, snap: null,
+    fx: [], prevV: [], prevState: [],
     held: new Map(), seen: null, time: 0,
     progress: saved.progress && typeof saved.progress === 'object' ? saved.progress : {},
     setups: saved.setups && typeof saved.setups === 'object' ? saved.setups : {},
     muted: !!device.muted,
-    look: LOOKS_OK(device.look) ? device.look : 'gecis', morph: 0, lookTip: !!device.lookTip,
   };
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li })); } catch (e) { /* kayıt yoksa da oynanır */ }
   }
   function persistDevice() {
-    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, look: S.look, lookTip: S.lookTip })); } catch (e) { /* yok say */ }
+    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted })); } catch (e) { /* yok say */ }
   }
   function saveSetup() {
     S.setups[S.level.id] = S.parts.map(p => ({ id: p.id, type: p.type, o: p.o, x: p.x, y: p.y, link: p.link == null ? null : p.link }));
@@ -1135,17 +1130,20 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const sfx = k => { try { SFX[k] && SFX[k](); } catch (e) { /* ses opsiyonel */ } };
 
   // ---------------------------------------------------------------- görünüm
+  // cs: bir karenin piksel boyu. lw: çizgi kalınlığı (küçük çizimlerde incelir), lod: ayrıntı düzeyi.
   function makeView(cssW, cssH, dpr, wx0, wy0, ww, wh) {
     const cs = Math.min(cssW / ww, cssH / wh);
     const ox = (cssW - ww * cs) / 2 - wx0 * cs;
     const top = (cssH - wh * cs) / 2 + (wy0 + wh) * cs;
+    const k = Math.max(0.6, Math.min(1.12, cs / 56));
     return {
-      cs, dpr,
+      cs, dpr, lod: cs >= 34 ? 2 : cs >= 18 ? 1 : 0,
       sx: x => ox + x * cs,
       sy: y => top - y * cs,
       wx: sx => (sx - ox) / cs,
       wy: sy => (top - sy) / cs,
       px: n => n / cs,
+      lw: n => n * k / cs,
       tf: c => c.setTransform(dpr * cs, 0, 0, -dpr * cs, dpr * ox, dpr * top),
       screen: c => c.setTransform(dpr, 0, 0, dpr, 0, 0),
     };
@@ -1162,54 +1160,141 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     V = makeView(r.width, r.height, dpr, -M, -M, W + 2 * M, H + 2 * M);
   }
 
-  // ---------------------------------------------------------------- çizim yardımcıları
-  function fillStroke(c, Vw, fill, stroke, width) {
-    if (fill) { c.fillStyle = fill; c.fill(); }
-    if (stroke) { c.lineWidth = Vw.px(width); c.strokeStyle = stroke; c.stroke(); }
+  // ---------------------------------------------------------------- çizim dili
+  // Teknik çizim kuralları: kalın çizgi görünen kenar, ince çizgi ayrıntı, kesik çizgi
+  // görünmeyen kenar, çizgi-nokta eksen, çizgi-iki nokta hareketli parçanın öbür konumu,
+  // 45° tarama kesit. Kalınlıklar ekran pikseli (Vw.lw). Küçük çizimlerde (parça listesi,
+  // bölüm kartları) ayrıntı azalır: Vw.lod 0 küçük, 1 orta, 2 tam.
+  const LW = { edge: 1.9, part: 1.5, thin: 1.05, hair: 0.75 };
+  const DASH = { hidden: [4, 3], center: [12, 3, 2, 3], phantom: [9, 3, 2, 2, 2, 3], dot: [0.01, 4.6], wire: [5, 4] };
+  const ink = a => rgba(C.ink, a), hand = a => rgba(C.hand, a), eye = a => rgba(C.eye, a);
+  const DEEP = 'rgba(10,39,72,0.6)';
+  const HALO = 'rgba(10,39,72,0.9)';
+  const GOLD = '#a77a12';
+
+  function stroke(c, Vw, color, w, dash) {
+    c.lineWidth = Vw.lw(w); c.strokeStyle = color;
+    if (dash) c.setLineDash(dash.map(n => Vw.lw(n)));
+    c.stroke();
+    if (dash) c.setLineDash([]);
   }
+  function fill(c, color) { c.fillStyle = color; c.fill(); }
   function rrect(c, x, y, w, h, r) {
     c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
     c.lineTo(x + w, y + h - r); c.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
     c.lineTo(x + r, y + h); c.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
     c.lineTo(x, y + r); c.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5); c.closePath();
   }
-  function textAt(c, Vw, str, x, y, size, color, align, weight) {
+  function textAt(c, Vw, str, x, y, size, color, align, weight, halo) {
     c.save(); Vw.screen(c);
     c.font = `${weight || 700} ${size}px ${FONT}`;
-    c.fillStyle = color; c.textAlign = align || 'center'; c.textBaseline = 'middle';
-    c.fillText(str, Vw.sx(x), Vw.sy(y));
+    c.textAlign = align || 'center'; c.textBaseline = 'middle';
+    if (halo) { c.lineWidth = 3; c.lineJoin = 'round'; c.strokeStyle = halo; c.strokeText(str, Vw.sx(x), Vw.sy(y)); }
+    c.fillStyle = color; c.fillText(str, Vw.sx(x), Vw.sy(y));
     c.restore();
   }
   function badge(c, Vw, num, x, y, r) {
-    c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = C.hand; c.fill();
+    c.beginPath(); c.arc(x, y, r, 0, TAU); fill(c, C.hand); stroke(c, Vw, C['paper-deep'], LW.thin);
     if (num) textAt(c, Vw, String(num), x, y - r * 0.05, Math.max(8, r * Vw.cs * 1.3), C['paper-deep'], 'center', 700);
   }
-
-  function drawGrid(c, Vw, labels, live) {
-    c.fillStyle = live ? 'rgba(4,16,38,0.22)' : 'rgba(255,255,255,0.025)'; c.fillRect(0, 0, W, H);
+  // 45° tarama; çağıran önce kırpar.
+  function hatch(c, Vw, b, color) {
+    const g = Vw.lw(6), h = b[3] - b[1];
     c.beginPath();
-    for (let x = 0.5; x < W; x += 1) { c.moveTo(x, 0); c.lineTo(x, H); }
-    for (let y = 0.5; y < H; y += 1) { c.moveTo(0, y); c.lineTo(W, y); }
-    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, live ? 0.02 : 0.035); c.stroke();
+    for (let k = b[0] - h; k < b[2]; k += g) { c.moveTo(k, b[1]); c.lineTo(k + h, b[3]); }
+    stroke(c, Vw, color, LW.hair);
+  }
+  // Kesit: koyu zemin, tarama, kalın kenar. path() yolu ekler, b sınır kutusu.
+  function section(c, Vw, path, b, edge, w) {
+    c.beginPath(); path(); fill(c, DEEP);
+    if (Vw.lod) { c.save(); c.clip(); hatch(c, Vw, b, ink(0.3)); c.restore(); }
+    c.beginPath(); path(); stroke(c, Vw, edge || C.ink, w || LW.edge);
+  }
+  function axisLine(c, Vw, x0, y0, x1, y1, color) {
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); stroke(c, Vw, color || ink(0.4), LW.hair, DASH.center);
+  }
+  function bolt(c, Vw, x, y, color) {
+    const r = Vw.lw(3.6);
+    c.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3 + Math.PI / 6, px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+      if (i) c.lineTo(px, py); else c.moveTo(px, py);
+    }
+    c.closePath(); fill(c, C['paper-deep']); stroke(c, Vw, color, LW.thin);
+    c.beginPath(); c.arc(x, y, r * 0.42, 0, TAU); stroke(c, Vw, color, LW.hair);
+  }
+  function arrow(c, Vw, x, y, ang, size, color) {
+    const s = Vw.lw(size), a = 0.36;
+    c.beginPath(); c.moveTo(x, y);
+    c.lineTo(x - s * Math.cos(ang - a), y - s * Math.sin(ang - a));
+    c.lineTo(x - s * Math.cos(ang + a), y - s * Math.sin(ang + a));
+    c.closePath(); fill(c, color);
+  }
+  // Açık ok (yön işareti); çağıran çizer.
+  function chevron(c, Vw, x, y, ang, size) {
+    const s = Vw.lw(size), a = 0.66;
+    c.moveTo(x - s * Math.cos(ang - a), y - s * Math.sin(ang - a)); c.lineTo(x, y);
+    c.lineTo(x - s * Math.cos(ang + a), y - s * Math.sin(ang + a));
+  }
+  // Ölçü çizgisi: iki uçta ok, ortada yazı.
+  function dimLine(c, Vw, x0, y0, x1, y1, label, color) {
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); stroke(c, Vw, color, LW.hair);
+    const ang = Math.atan2(y1 - y0, x1 - x0);
+    arrow(c, Vw, x1, y1, ang, 7, color); arrow(c, Vw, x0, y0, ang + Math.PI, 7, color);
+    if (label) textAt(c, Vw, label, (x0 + x1) / 2, (y0 + y1) / 2, Math.max(9, Math.min(12, Vw.cs * 0.2)), color, 'center', 700, HALO);
+  }
+
+  // Parçanın yerel çerçevesi: hücre ortası, a kadar döndürülmüş.
+  const PISTON_ROT = { u: 0, r: -Math.PI / 2, l: Math.PI / 2 };  // +y itme yönü
+  const FAN_ROT = { r: 0, l: Math.PI, u: Math.PI / 2 };          // +x üfleme yönü
+  function toWorld(p, lx, ly, a) {
+    const cs = Math.cos(a), sn = Math.sin(a);
+    return [p.x + 0.5 + lx * cs - ly * sn, p.y + 0.5 + lx * sn + ly * cs];
+  }
+
+  // ---------------------------------------------------------------- tahta
+  function drawGrid(c, Vw, labels, hl) {
+    c.fillStyle = 'rgba(255,255,255,0.025)'; c.fillRect(0, 0, W, H);
+    if (Vw.lod) {
+      c.beginPath();
+      for (let x = 0.5; x < W; x += 1) { c.moveTo(x, 0); c.lineTo(x, H); }
+      for (let y = 0.5; y < H; y += 1) { c.moveTo(0, y); c.lineTo(W, y); }
+      c.lineWidth = Vw.px(1); c.strokeStyle = ink(0.035); c.stroke();
+    }
     c.beginPath();
     for (let x = 1; x < W; x++) { c.moveTo(x, 0); c.lineTo(x, H); }
     for (let y = 1; y < H; y++) { c.moveTo(0, y); c.lineTo(W, y); }
-    c.strokeStyle = rgba(C.ink, live ? 0.055 : 0.1); c.stroke();
-    c.lineWidth = Vw.px(1.5); c.strokeStyle = rgba(C.ink, 0.85); c.strokeRect(0, 0, W, H);
+    c.lineWidth = Vw.px(1); c.strokeStyle = ink(0.1); c.stroke();
+    const e = M * 0.84;
+    if (hl) {
+      // Yardımcı çizgiler: sürüklenen parçanın kenarları çerçeveye kadar uzar.
+      c.beginPath();
+      for (const x of [hl.x0, hl.x1]) { c.moveTo(x, -e); c.lineTo(x, H + e); }
+      for (const y of [hl.y0, hl.y1]) { c.moveTo(-e, y); c.lineTo(W + e, y); }
+      stroke(c, Vw, hl.ok ? ink(0.42) : rgba(C.bad, 0.55), LW.hair, DASH.hidden);
+    }
+    c.beginPath(); c.rect(0, 0, W, H); stroke(c, Vw, ink(0.85), LW.part);
     if (!labels) return;
-    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.32);
-    c.strokeRect(-M * 0.84, -M * 0.84, W + M * 1.68, H + M * 1.68);
+    c.beginPath(); c.rect(-e, -e, W + 2 * e, H + 2 * e); c.lineWidth = Vw.px(1); c.strokeStyle = ink(0.32); c.stroke();
     const fs = Math.max(9, Math.min(13, Vw.cs * 0.3));
-    for (let i = 0; i < W; i++) textAt(c, Vw, String.fromCharCode(65 + i), i + 0.5, H + M * 0.42, fs, rgba(C.ink, 0.5), 'center', 600);
-    for (let j = 0; j < H; j++) textAt(c, Vw, String(j + 1), -M * 0.42, j + 0.5, fs, rgba(C.ink, 0.5), 'center', 600);
+    const mark = (x, y, w, h) => { c.fillStyle = hl.ok ? ink(0.9) : rgba(C.bad, 0.9); c.fillRect(x - w / 2, y - h / 2, w, h); };
+    for (let i = 0; i < W; i++) {
+      const on = hl && i >= hl.x0 && i < hl.x1, y = H + M * 0.42;
+      if (on) mark(i + 0.5, y, 0.84, M * 0.56);
+      textAt(c, Vw, String.fromCharCode(65 + i), i + 0.5, y, fs, on ? C['paper-deep'] : ink(0.5), 'center', on ? 700 : 600);
+    }
+    for (let j = 0; j < H; j++) {
+      const on = hl && j >= hl.y0 && j < hl.y1, x = -M * 0.42;
+      if (on) mark(x, j + 0.5, M * 0.6, 0.8);
+      textAt(c, Vw, String(j + 1), x, j + 0.5, fs, on ? C['paper-deep'] : ink(0.5), 'center', on ? 700 : 600);
+    }
     c.beginPath();
     for (let i = 0; i <= W; i++) { c.moveTo(i, H); c.lineTo(i, H + 0.12); c.moveTo(i, 0); c.lineTo(i, -0.12); }
     for (let j = 0; j <= H; j++) { c.moveTo(0, j); c.lineTo(-0.12, j); c.moveTo(W, j); c.lineTo(W + 0.12, j); }
-    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.5); c.stroke();
+    c.lineWidth = Vw.px(1); c.strokeStyle = ink(0.5); c.stroke();
   }
 
   function wallPath(c, w) {
-    c.beginPath();
     if (typeof w[0] === 'number') c.rect(w[0], w[1], w[2] - w[0], w[3] - w[1]);
     else { c.moveTo(w[0][0], w[0][1]); for (let i = 1; i < w.length; i++) c.lineTo(w[i][0], w[i][1]); c.closePath(); }
   }
@@ -1219,531 +1304,378 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   }
   function drawWalls(c, Vw, level) {
-    for (const w of level.walls || []) {
-      c.save();
-      wallPath(c, w); c.fillStyle = rgba(C.ink, 0.07); c.fill(); c.clip();
-      const b = wallBounds(w), h = b[3] - b[1];
-      c.beginPath();
-      for (let k = b[0] - h; k < b[2]; k += 0.2) { c.moveTo(k, b[1]); c.lineTo(k + h, b[3]); }
-      c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.3); c.stroke();
-      c.restore();
-      wallPath(c, w); c.lineWidth = Vw.px(1.5); c.strokeStyle = rgba(C.ink, 0.9); c.stroke();
+    for (const w of level.walls || []) section(c, Vw, () => wallPath(c, w), wallBounds(w));
+  }
+
+  // Kova kesitte: taranmış U, içinde hedef, kenarında bayrak.
+  function drawCup(c, Vw, cup, time) {
+    const { x, y, w } = cup, rim = KM.CUP.rim, t = KM.CUP.wall, back = cup.back || null;
+    const lh = back && back.side === 'l' ? back.h : rim, rh = back && back.side === 'r' ? back.h : rim;
+    c.fillStyle = rgba(C.ball, 0.08); c.fillRect(x + t, y + t, w - 2 * t, rim - t);
+    c.beginPath(); c.moveTo(x + t, y + rim); c.lineTo(x + w - t, y + rim);
+    stroke(c, Vw, rgba(C.ball, 0.45), LW.hair, DASH.hidden);
+    if (Vw.lod) {
+      const tx = x + w / 2, ty = y + t + 0.29;
+      c.beginPath(); c.arc(tx, ty, 0.17, 0, TAU); c.moveTo(tx + 0.085, ty); c.arc(tx, ty, 0.085, 0, TAU);
+      stroke(c, Vw, rgba(C.ball, 0.5), LW.thin);
+      c.beginPath(); c.arc(tx, ty, 0.026, 0, TAU); fill(c, rgba(C.ball, 0.7));
     }
+    section(c, Vw, () => {
+      c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w, y + rh); c.lineTo(x + w - t, y + rh); c.lineTo(x + w - t, y + t);
+      c.lineTo(x + t, y + t); c.lineTo(x + t, y + lh); c.lineTo(x, y + lh); c.closePath();
+    }, [x, y, x + w, y + Math.max(lh, rh)]);
+    // Bayrak: arka duvarın olmadığı kenarda.
+    const left = !(back && back.side === 'l');
+    const px = left ? x + t / 2 : x + w - t / 2, py0 = y + rim, py1 = py0 + 0.95, dir = left ? 1 : -1;
+    const wv = reduceMotion ? 0 : Math.sin(time * 2.6) * 0.035;
+    c.beginPath(); c.moveTo(px, py0); c.lineTo(px, py1 + 0.02); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(px, py1 + 0.045, 0.032, 0, TAU); fill(c, C.ink);
+    c.beginPath(); c.moveTo(px, py1);
+    c.quadraticCurveTo(px + dir * 0.24, py1 + 0.03 + wv, px + dir * 0.5, py1 - 0.13 + wv * 0.5);
+    c.quadraticCurveTo(px + dir * 0.24, py1 - 0.22 - wv, px, py1 - 0.3);
+    c.closePath(); fill(c, C.ball); stroke(c, Vw, GOLD, LW.hair);
   }
 
-  function drawCup(c, Vw, cup) {
-    const rim = KM.CUP.rim, t = KM.CUP.wall;
-    c.fillStyle = rgba(C.ball, 0.09); c.fillRect(cup.x + t, cup.y + t, cup.w - 2 * t, rim - t);
-    for (const b of KM.cupBoxes(cup)) { c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]); fillStroke(c, Vw, rgba(C.ink, 0.16), C.ink, 1.5); }
-    const left = !(cup.back && cup.back.side === 'l');
-    const px = left ? cup.x + t / 2 : cup.x + cup.w - t / 2, py0 = cup.y + rim, py1 = py0 + 0.9, dir = left ? 1 : -1;
-    c.beginPath(); c.moveTo(px, py0); c.lineTo(px, py1); c.lineWidth = Vw.px(1.4); c.strokeStyle = C.ink; c.stroke();
-    c.beginPath(); c.moveTo(px, py1); c.lineTo(px + dir * 0.46, py1 - 0.14); c.lineTo(px, py1 - 0.28); c.closePath();
-    c.fillStyle = C.ball; c.fill();
-  }
-
+  // Başlangıç borusu boyuna kesitte: taranmış cidarlar, ağızda flanş, uzak uçta kırık çizgisi.
   function drawPipe(c, Vw, level) {
     const p = level.pipe; if (!p) return;
-    const st = KM.startsOf(level)[0], r = 0.34;
-    let b, mouth;
-    if (p.dir === 'r') { b = [-0.4, st.y - r, st.x + 0.02, st.y + r]; mouth = [b[2] - 0.09, b[1] - 0.07, b[2], b[3] + 0.07]; }
-    else if (p.dir === 'l') { b = [st.x - 0.02, st.y - r, W + 0.4, st.y + r]; mouth = [b[0], b[1] - 0.07, b[0] + 0.09, b[3] + 0.07]; }
-    else { b = [st.x - r, st.y - 0.02, st.x + r, Math.min(H + 0.4, p.y + 1.7)]; mouth = [b[0] - 0.07, b[1], b[2] + 0.07, b[1] + 0.09]; }
-    c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]); fillStroke(c, Vw, C.paper, null, 0);
-    c.fillStyle = rgba(C.ink, 0.1); c.fill(); c.lineWidth = Vw.px(1.5); c.strokeStyle = C.ink; c.stroke();
-    c.beginPath();
-    if (p.dir === 'd') { c.moveTo(b[0] + 0.12, b[1] + 0.3); c.lineTo(b[0] + 0.12, b[3]); } else { c.moveTo(b[0], b[3] - 0.12); c.lineTo(b[2] - 0.3, b[3] - 0.12); }
-    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.45); c.stroke();
-    c.beginPath(); c.rect(mouth[0], mouth[1], mouth[2] - mouth[0], mouth[3] - mouth[1]); fillStroke(c, Vw, C.paper, C.ink, 1.5);
-  }
-
-  function drawRamp(c, Vw, p) {
-    const [a, b] = KM.rampLine(p.o);
-    const ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
-    const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax), t = T.plank;
-    c.save(); c.translate(ax, ay); c.rotate(ang);
-    c.beginPath(); c.rect(0, -t / 2, len, t);
-    c.fillStyle = C.paper; c.fill();
-    fillStroke(c, Vw, rgba(C.ink, 0.15), C.ink, 1.6);
-    const n = Math.max(4, Math.round(len / 0.17));
-    c.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x0 = i * len / n, x1 = (i + 1) * len / n, up = i % 2 === 0;
-      c.moveTo(x0, up ? -t / 2 : t / 2); c.lineTo(x1, up ? t / 2 : -t / 2);
+    const st = KM.startsOf(level)[0], r = 0.34, wt = 0.07;
+    let mx, my, rot, len;
+    if (p.dir === 'r') { mx = st.x + 0.02; my = st.y; rot = 0; len = mx + 0.4; }
+    else if (p.dir === 'l') { mx = st.x - 0.02; my = st.y; rot = Math.PI; len = W + 0.4 - mx; }
+    else { mx = st.x; my = st.y - 0.02; rot = -Math.PI / 2; len = Math.min(H + 0.4, p.y + 1.7) - my; }
+    c.save(); c.translate(mx, my); c.rotate(rot);
+    c.fillStyle = ink(0.04); c.fillRect(-len, -r + wt, len, 2 * (r - wt));
+    if (Vw.lod > 1) axisLine(c, Vw, -len + 0.1, 0, 0.5);
+    c.beginPath(); c.rect(-len, r - wt, len, wt); c.rect(-len, -r, len, wt); fill(c, DEEP);
+    if (Vw.lod) { c.save(); c.clip(); hatch(c, Vw, [-len, -r, 0, r], ink(0.3)); c.restore(); }
+    c.beginPath(); c.moveTo(-len, r); c.lineTo(0, r); c.moveTo(-len, -r); c.lineTo(0, -r); stroke(c, Vw, C.ink, LW.edge);
+    c.beginPath(); c.moveTo(-len, r - wt); c.lineTo(0, r - wt); c.moveTo(-len, -r + wt); c.lineTo(0, -r + wt); stroke(c, Vw, C.ink, LW.thin);
+    if (Vw.lod) {
+      c.beginPath(); c.moveTo(-len, -r - 0.05);
+      c.bezierCurveTo(-len + 0.14, -r * 0.4, -len - 0.14, r * 0.4, -len, r + 0.05);
+      stroke(c, Vw, C.ink, LW.thin);
     }
-    c.lineWidth = Vw.px(0.9); c.strokeStyle = rgba(C.ink, 0.7); c.stroke();
-    for (const x of [0.08, len - 0.08]) {
-      c.beginPath(); c.arc(x, 0, 0.034, 0, TAU); c.fillStyle = C.paper; c.fill();
-      c.lineWidth = Vw.px(1.2); c.strokeStyle = C.ink; c.stroke();
+    for (const s of [1, -1]) {
+      const y0 = s > 0 ? r - wt : -r - 0.08, h = wt + 0.08;
+      section(c, Vw, () => c.rect(-0.13, y0, 0.13, h), [-0.13, y0, 0, y0 + h]);
     }
     c.restore();
   }
 
-  function drawSpring(c, Vw, p, rt) {
-    const k = rt && rt.compress > 0 ? Math.sin((1 - rt.compress / 0.18) * Math.PI) : 0;
-    const top = 0.36 - 0.13 * k, padH = 0.085, x = p.x, y = p.y;
-    c.beginPath(); c.rect(x + 0.12, y, 0.76, 0.07); fillStroke(c, Vw, rgba(C.ink, 0.2), C.ink, 1.3);
-    const y0 = y + 0.07, y1 = y + top - padH, n = 6;
-    c.beginPath(); c.moveTo(x + 0.5, y0);
-    for (let i = 1; i < n; i++) c.lineTo(x + (i % 2 ? 0.26 : 0.74), y0 + (y1 - y0) * (i / n));
-    c.lineTo(x + 0.5, y1);
-    c.lineWidth = Vw.px(1.5); c.strokeStyle = C.ink; c.stroke();
-    c.beginPath(); c.rect(x + 0.08, y + top - padH, 0.84, padH); fillStroke(c, Vw, rgba(C.ink, 0.3), C.ink, 1.5);
+  // Rampa: Warren kafes kiriş, uçlarında pim.
+  function drawRamp(c, Vw, p, ann) {
+    const [a, b] = KM.rampLine(p.o);
+    const ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
+    const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax), t = T.plank, h = t / 2;
+    c.save(); c.translate(ax, ay); c.rotate(ang);
+    if (ann && Vw.lod > 1) { axisLine(c, Vw, -0.24, 0, 0); axisLine(c, Vw, len, 0, len + 0.24); }
+    c.beginPath(); c.rect(0, -h, len, t); fill(c, C.paper); fill(c, ink(0.12));
+    if (Vw.lod) {
+      const n = Math.max(4, Math.round((len - 0.3) / 0.19)), x0 = 0.15, step = (len - 0.3) / n;
+      c.beginPath();
+      for (let i = 0; i < n; i++) {
+        const up = i % 2 === 0;
+        c.moveTo(x0 + i * step, up ? -h : h); c.lineTo(x0 + (i + 1) * step, up ? h : -h);
+      }
+      c.moveTo(x0, -h); c.lineTo(x0, h); c.moveTo(len - x0, -h); c.lineTo(len - x0, h);
+      stroke(c, Vw, ink(0.7), LW.hair);
+    }
+    c.beginPath(); c.rect(0, -h, len, t); stroke(c, Vw, C.ink, LW.part);
+    if (!p.fixed) for (const x of [0.075, len - 0.075]) {
+      c.beginPath(); c.arc(x, 0, 0.036, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    }
+    c.restore();
   }
 
+  // Yay: taranmış taban, helezon (öndeki teller kalın, arkadakiler kesik), baskı plakası.
+  function drawSpring(c, Vw, p, rt, ann) {
+    const k = rt && rt.compress > 0 ? Math.sin((1 - rt.compress / 0.18) * Math.PI) : 0;
+    const x = p.x, y = p.y, top = y + 0.36 - 0.13 * k, padH = 0.08, base = 0.07;
+    const cx = x + 0.5, rx = 0.27, y0 = y + base, y1 = top - padH;
+    if (ann && Vw.lod) {
+      c.beginPath(); c.moveTo(cx, top + 0.1); c.lineTo(cx, y + 0.82); stroke(c, Vw, ink(0.4), LW.hair, DASH.hidden);
+      arrow(c, Vw, cx, y + 0.9, Math.PI / 2, 7, ink(0.5));
+    }
+    section(c, Vw, () => c.rect(x + 0.1, y, 0.8, base), [x + 0.1, y, x + 0.9, y + base], C.ink, LW.part);
+    const n = 3, pitch = (y1 - y0) / n, ry = Math.min(0.06, pitch * 0.8);
+    c.beginPath();
+    for (let i = 0; i < n; i++) { const cy = y0 + (i + 0.5) * pitch; c.moveTo(cx + rx, cy); c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI); }
+    stroke(c, Vw, ink(0.55), LW.hair, Vw.lod ? DASH.hidden : null);
+    c.beginPath();
+    for (let i = 0; i < n; i++) { const cy = y0 + (i + 0.5) * pitch; c.moveTo(cx - rx, cy); c.ellipse(cx, cy, rx, ry, 0, Math.PI, TAU); }
+    stroke(c, Vw, C.ink, LW.part);
+    c.beginPath(); c.rect(x + 0.08, top - padH, 0.84, padH); fill(c, C.paper); fill(c, ink(0.25)); stroke(c, Vw, C.ink, LW.edge);
+    if (k > 0.05) {
+      c.beginPath();
+      for (const dx of [-0.26, 0, 0.26]) { c.moveTo(cx + dx, top + 0.07); c.lineTo(cx + dx, top + 0.07 + 0.26 * k); }
+      stroke(c, Vw, ink(0.7), LW.thin);
+    }
+  }
+
+  // Konveyör: iki kasnak arasında bant, üstünde akış okları.
   function drawBelt(c, Vw, p, time) {
-    const x = p.x, y = p.y, t = T.plank, dir = p.o === 'r' ? 1 : -1;
-    c.beginPath(); rrect(c, x, y - t / 2, 2, t, t / 2); fillStroke(c, Vw, rgba(C.ink, 0.12), C.ink, 1.5);
-    for (const rx of [x + t / 2, x + 2 - t / 2]) { c.beginPath(); c.arc(rx, y, t * 0.3, 0, TAU); c.lineWidth = Vw.px(1.1); c.stroke(); }
-    const ph = (time * 0.9) % 0.25;
+    const x = p.x, y = p.y, t = T.plank, r = t / 2, dir = p.o === 'r' ? 1 : -1;
+    c.beginPath(); rrect(c, x, y - r, 2, t, r); fill(c, C.paper); fill(c, ink(0.1)); stroke(c, Vw, C.ink, LW.part);
+    for (const px of [x + r, x + 2 - r]) {
+      c.beginPath(); c.arc(px, y, r * 0.6, 0, TAU); stroke(c, Vw, C.ink, LW.thin);
+      if (Vw.lod > 1 && !p.fixed) {
+        const a = -dir * time * 5;
+        c.beginPath(); c.moveTo(px + Math.cos(a) * r * 0.6, y + Math.sin(a) * r * 0.6); c.lineTo(px - Math.cos(a) * r * 0.6, y - Math.sin(a) * r * 0.6);
+        stroke(c, Vw, C.ink, LW.hair);
+      }
+    }
+    const ph = ((time * 0.9) % 0.25 + 0.25) % 0.25;
     c.beginPath();
     for (let k = 0.15; k < 2; k += 0.25) {
       const cx = dir > 0 ? x + k + ph : x + 2 - k - ph;
-      if (cx < x + 0.18 || cx > x + 1.82) continue;
-      c.moveTo(cx - 0.035 * dir, y + 0.035); c.lineTo(cx + 0.03 * dir, y); c.lineTo(cx - 0.035 * dir, y - 0.035);
+      if (cx < x + 0.24 || cx > x + 1.76) continue;
+      chevron(c, Vw, cx, y, dir > 0 ? 0 : Math.PI, 4);
     }
-    c.lineWidth = Vw.px(1.2); c.stroke();
+    stroke(c, Vw, ink(0.9), LW.thin);
   }
 
-  function drawPiston(c, Vw, p, rt) {
-    const g = KM.pistonGeom(p.o), d = DIRS[p.o], off = rt ? rt.offset : 0;
-    const bx0 = p.x + g.base[0], by0 = p.y + g.base[1], bx1 = p.x + g.base[2], by1 = p.y + g.base[3];
-    const hx0 = p.x + g.head[0] + d[0] * off, hy0 = p.y + g.head[1] + d[1] * off;
-    const hx1 = p.x + g.head[2] + d[0] * off, hy1 = p.y + g.head[3] + d[1] * off;
-    c.beginPath();
-    if (p.o === 'u') c.rect(p.x + 0.44, by1, 0.12, hy0 - by1);
-    else if (p.o === 'r') c.rect(bx1, p.y + 0.44, hx0 - bx1, 0.12);
-    else c.rect(hx1, p.y + 0.44, bx0 - hx1, 0.12);
-    fillStroke(c, Vw, rgba(C.ink, 0.35), C.ink, 1.1);
-    c.beginPath(); c.rect(bx0, by0, bx1 - bx0, by1 - by0);
-    c.fillStyle = C.paper; c.fill();
-    fillStroke(c, Vw, rgba(C.hand, 0.22), C.hand, 1.8);
-    c.beginPath();
-    if (p.o === 'u') for (const yy of [by0 + 0.12, by1 - 0.12]) { c.moveTo(bx0, yy); c.lineTo(bx1, yy); }
-    else for (const xx of [bx0 + 0.12, bx1 - 0.12]) { c.moveTo(xx, by0); c.lineTo(xx, by1); }
-    c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.hand, 0.7); c.stroke();
-    c.beginPath(); c.rect(hx0, hy0, hx1 - hx0, hy1 - hy0); fillStroke(c, Vw, rgba(C.ink, 0.4), C.ink, 1.5);
-    badge(c, Vw, p.num, (bx0 + bx1) / 2, (by0 + by1) / 2, 0.16);
-  }
-
-  function drawFanZone(c, Vw, p, rt, time) {
-    const z = KM.fanZone(p), on = !!(rt && rt.on), L = T.fanLen;
-    const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
-    const d = DIRS[p.o], width = 0.9;
-    c.save();
-    c.beginPath(); c.rect(z[0], z[1], z[2] - z[0], z[3] - z[1]);
-    c.setLineDash([Vw.px(4), Vw.px(4)]); c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, on ? 0.4 : 0.17); c.stroke();
-    c.setLineDash([]); c.clip();
-    c.beginPath();
-    if (on) {
-      for (let i = 0; i < 12; i++) {
-        const lat = 0.1 + ((i * 0.618) % 1) * (width - 0.2), u = ((time * 1.9 + i * 0.137) % 1) * (L + 0.6) - 0.3;
-        const a = pt(u, lat), b = pt(u + 0.5, lat);
-        c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]);
-      }
-      c.lineWidth = Vw.px(1.3); c.strokeStyle = rgba(C.ink, 0.55);
-    } else {
-      for (let u = 0.8; u < L; u += 1.6) {
-        const tip = pt(u + 0.12, width / 2), l1 = pt(u - 0.06, width / 2 + 0.14), l2 = pt(u - 0.06, width / 2 - 0.14);
-        c.moveTo(l1[0], l1[1]); c.lineTo(tip[0], tip[1]); c.lineTo(l2[0], l2[1]);
-      }
-      c.lineWidth = Vw.px(1.2); c.strokeStyle = rgba(C.ink, 0.22);
+  // Piston: hava silindiri (turuncu: elle kumanda), kol, taranmış itme başlığı.
+  // Kurarken başlığın basınca varacağı yer çizgi-iki nokta ile görünür.
+  function drawPiston(c, Vw, p, rt, ann) {
+    const off = rt ? rt.offset : 0, lod = Vw.lod, a = PISTON_ROT[p.o];
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5); c.rotate(a);
+    if (ann) {
+      const d = T.pistonDist;
+      c.beginPath(); c.rect(-0.46, 0.32 + d, 0.92, 0.18);
+      c.moveTo(-0.055, 0.5); c.lineTo(-0.055, 0.32 + d); c.moveTo(0.055, 0.5); c.lineTo(0.055, 0.32 + d);
+      stroke(c, Vw, hand(0.6), LW.thin, DASH.phantom);
     }
-    c.stroke(); c.restore();
-    void d;
-  }
-
-  function drawFan(c, Vw, p, rt) {
-    const cx = p.x + 0.5, cy = p.y + 0.5, on = !!(rt && rt.on), ang = rt ? rt.blade : 0;
-    c.beginPath(); c.rect(p.x + 0.16, p.y + 0.16, 0.68, 0.68);
-    c.fillStyle = C.paper; c.fill();
-    fillStroke(c, Vw, rgba(C.hand, on ? 0.3 : 0.16), C.hand, 1.8);
-    c.save(); c.translate(cx, cy); c.rotate(-ang);
-    for (let i = 0; i < 3; i++) {
-      c.rotate(TAU / 3);
-      c.beginPath(); c.ellipse(0.135, 0, 0.13, 0.055, 0, 0, TAU);
-      fillStroke(c, Vw, rgba(C.ink, on ? 0.5 : 0.25), C.ink, 1.1);
+    c.beginPath(); c.rect(-0.055, 0.1, 0.11, 0.22 + off); fill(c, C.paper); fill(c, ink(0.3)); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.rect(-0.36, -0.5, 0.72, 0.6); fill(c, C.paper); fill(c, hand(0.2));
+    if (lod) {
+      c.beginPath(); c.moveTo(-0.36, -0.4); c.lineTo(0.36, -0.4); c.moveTo(-0.36, 0); c.lineTo(0.36, 0);
+      stroke(c, Vw, hand(0.85), LW.thin);
+    }
+    if (lod > 1) {
+      c.beginPath(); c.moveTo(-0.27, -0.4); c.lineTo(-0.27, 0); c.moveTo(0.27, -0.4); c.lineTo(0.27, 0);
+      stroke(c, Vw, hand(0.5), LW.hair);
+      c.beginPath(); c.rect(0.36, -0.33, 0.07, 0.1); fill(c, C.paper); stroke(c, Vw, C.hand, LW.thin);
+    }
+    c.beginPath(); c.rect(-0.36, -0.5, 0.72, 0.6); stroke(c, Vw, C.hand, LW.edge);
+    section(c, Vw, () => c.rect(-0.46, 0.32 + off, 0.92, 0.18), [-0.46, 0.32 + off, 0.46, 0.5 + off]);
+    if (rt && rt.state === 'out' && !reduceMotion) {
+      c.beginPath();
+      for (const lx of [-0.4, -0.22, 0.22, 0.4]) { c.moveTo(lx, 0.24 + off); c.lineTo(lx, 0.02 + off); }
+      stroke(c, Vw, ink(0.65), LW.thin);
     }
     c.restore();
-    c.beginPath(); c.arc(cx, cy, 0.045, 0, TAU); c.fillStyle = C.ink; c.fill();
-    const d = DIRS[p.o];
+    const b = toWorld(p, 0, -0.2, a);
+    badge(c, Vw, p.num, b[0], b[1], 0.15);
+  }
+
+  // Pervanenin etki alanı: kesik sınır, kapalıyken yön okları, açıkken akım çizgileri.
+  // Kurarken alanın boyu ölçü çizgisiyle yazılır.
+  function drawFanZone(c, Vw, p, rt, time) {
+    const z = KM.fanZone(p), on = !!(rt && rt.on), L = T.fanLen, wd = 0.9;
+    const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
+    const ang = FAN_ROT[p.o];
+    c.save();
+    c.beginPath(); c.rect(z[0], z[1], z[2] - z[0], z[3] - z[1]);
+    if (on) fill(c, ink(0.04));
+    stroke(c, Vw, ink(on ? 0.42 : 0.2), LW.hair, DASH.hidden);
+    c.clip();
     c.beginPath();
-    for (let k = -1; k <= 1; k++) {
-      if (d[0]) { const gx = p.x + (d[0] > 0 ? 0.92 : 0.08); c.moveTo(gx, cy + k * 0.2 - 0.06); c.lineTo(gx, cy + k * 0.2 + 0.06); }
-      else { const gy = p.y + 0.92; c.moveTo(cx + k * 0.2 - 0.06, gy); c.lineTo(cx + k * 0.2 + 0.06, gy); }
+    if (on) {
+      for (let i = 0; i < 11; i++) {
+        const lat = 0.1 + ((i * 0.618) % 1) * (wd - 0.2), u = ((time * 1.9 + i * 0.137) % 1) * (L + 0.6) - 0.3;
+        const a0 = pt(u, lat), a1 = pt(u + 0.25, lat + 0.03 * Math.sin(time * 9 + i)), a2 = pt(u + 0.5, lat);
+        c.moveTo(a0[0], a0[1]); c.quadraticCurveTo(a1[0], a1[1], a2[0], a2[1]);
+      }
+      stroke(c, Vw, ink(0.6), LW.thin);
+    } else {
+      for (let u = 0.75; u < L; u += 1.5) { const q = pt(u, wd / 2); chevron(c, Vw, q[0], q[1], ang, 6); }
+      stroke(c, Vw, ink(0.26), LW.thin);
     }
-    c.lineWidth = Vw.px(1.8); c.strokeStyle = C.hand; c.stroke();
+    c.restore();
+  }
+  // Pervanenin erimi ölçü çizgisiyle (kurarken, her şeyin üstünde).
+  function drawFanRange(c, Vw, p) {
+    if (!Vw.lod) return;
+    const z = KM.fanZone(p), L = T.fanLen, wd = 0.9;
+    const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
+    const q0 = pt(0.06, wd - 0.15), q1 = pt(L - 0.06, wd - 0.15), m = pt(L / 2, wd / 2);
+    dimLine(c, Vw, q0[0], q0[1], q1[0], q1[1], null, ink(0.5));
+    textAt(c, Vw, `${L} kare`, m[0], m[1], Math.max(9, Math.min(12.5, Vw.cs * 0.21)), ink(0.75), 'center', 700, HALO);
+  }
+
+  // Pervane: önden kanatlar ve göbek, çıkış ağzında panjur.
+  function drawFan(c, Vw, p, rt) {
+    const on = !!(rt && rt.on), spin = rt ? rt.blade : 0, lod = Vw.lod;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5); c.rotate(FAN_ROT[p.o]);
+    c.beginPath(); c.moveTo(0.34, -0.25); c.lineTo(0.45, -0.31); c.lineTo(0.45, 0.31); c.lineTo(0.34, 0.25); c.closePath();
+    fill(c, C.paper); fill(c, hand(on ? 0.3 : 0.14)); stroke(c, Vw, C.hand, LW.part);
+    if (lod) {
+      c.beginPath(); for (const ly of [-0.16, 0, 0.16]) { c.moveTo(0.345, ly); c.lineTo(0.445, ly * 1.2); }
+      stroke(c, Vw, C.hand, LW.thin);
+    }
+    c.beginPath(); c.rect(-0.34, -0.34, 0.68, 0.68); fill(c, C.paper); fill(c, hand(on ? 0.3 : 0.16)); stroke(c, Vw, C.hand, LW.edge);
+    if (lod) { c.beginPath(); c.arc(0, 0, 0.29, 0, TAU); stroke(c, Vw, hand(0.75), LW.thin); }
+    if (lod > 1) {
+      for (const [bx, by] of [[-0.27, -0.27], [0.27, -0.27], [0.27, 0.27], [-0.27, 0.27]]) {
+        c.beginPath(); c.arc(bx, by, 0.026, 0, TAU); stroke(c, Vw, hand(0.85), LW.hair);
+      }
+    }
+    c.save(); c.rotate(-spin);
+    for (let i = 0; i < 5; i++) {
+      c.rotate(TAU / 5);
+      c.beginPath(); c.moveTo(0.05, -0.025);
+      c.quadraticCurveTo(0.15, -0.105, 0.255, -0.05);
+      c.quadraticCurveTo(0.23, 0.035, 0.05, 0.03); c.closePath();
+      fill(c, ink(on ? 0.5 : 0.22)); stroke(c, Vw, C.ink, LW.hair);
+    }
+    c.restore();
+    c.beginPath(); c.arc(0, 0, 0.065, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.022, 0, TAU); fill(c, C.ink);
+    c.restore();
     badge(c, Vw, p.num, p.x + 0.18, p.y + 0.82, 0.14);
   }
 
+  // Sensör: hücreyi gözetler (köşe işaretleri, nişangâh). Bağlı değilse kırmızı nokta.
   function drawSensor(c, Vw, p, rt, linked) {
-    const cx = p.x + 0.5, cy = p.y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
-    if (f > 0) { c.beginPath(); c.arc(cx, cy, 0.18 + 0.32 * (1 - f), 0, TAU); c.fillStyle = rgba(C.eye, 0.4 * f); c.fill(); }
-    c.save(); c.setLineDash([Vw.px(3), Vw.px(3)]);
-    c.beginPath(); c.rect(p.x + 0.06, p.y + 0.06, 0.88, 0.88); c.lineWidth = Vw.px(1.1); c.strokeStyle = rgba(C.eye, 0.8); c.stroke();
-    c.restore();
+    const x = p.x, y = p.y, cx = x + 0.5, cy = y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
+    const act = f > 0 || !!(rt && rt.inside);
+    if (f > 0) { c.beginPath(); c.arc(cx, cy, 0.18 + 0.32 * (1 - f), 0, TAU); fill(c, eye(0.35 * f)); }
+    if (Vw.lod) { c.beginPath(); c.rect(x + 0.06, y + 0.06, 0.88, 0.88); stroke(c, Vw, eye(act ? 0.6 : 0.32), LW.hair, DASH.hidden); }
+    const a = 0.06, b = 0.94, L = 0.2;
     c.beginPath();
-    c.moveTo(cx - 0.26, cy); c.lineTo(cx - 0.11, cy); c.moveTo(cx + 0.11, cy); c.lineTo(cx + 0.26, cy);
-    c.moveTo(cx, cy - 0.26); c.lineTo(cx, cy - 0.11); c.moveTo(cx, cy + 0.11); c.lineTo(cx, cy + 0.26);
-    c.lineWidth = Vw.px(1.4); c.strokeStyle = C.eye; c.stroke();
-    c.beginPath(); c.arc(cx, cy, 0.1, 0, TAU); c.stroke();
-    c.beginPath(); c.arc(cx, cy, 0.035, 0, TAU); c.fillStyle = C.eye; c.fill();
-    if (!linked) { c.beginPath(); c.arc(p.x + 0.84, p.y + 0.84, 0.075, 0, TAU); c.fillStyle = C.bad; c.fill(); }
-  }
-
-  function drawLink(c, Vw, s, t) {
-    const td = PARTS[t.type];
-    const sx = s.x + 0.5, sy = s.y + 0.5, tx = t.x + td.w / 2, ty = t.y + td.h / 2;
-    const mx = (sx + tx) / 2 + (sx === tx ? 0.9 : 0), my = Math.max(sy, ty) + 0.7;
-    c.save(); c.setLineDash([Vw.px(5), Vw.px(4)]);
-    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(mx, my, tx, ty);
-    c.lineWidth = Vw.px(1.7); c.strokeStyle = rgba(C.eye, 0.85); c.stroke();
-    c.restore();
-    c.beginPath(); c.arc(tx, ty, 0.06, 0, TAU); c.fillStyle = C.eye; c.fill();
-  }
-
-  function bolts(c, Vw, p) {
-    const d = PARTS[p.type];
-    for (const [bx, by] of [[p.x + 0.09, p.y + 0.09], [p.x + d.w - 0.09, p.y + 0.09]]) {
-      c.beginPath(); c.arc(bx, by, 0.045, 0, TAU); c.fillStyle = C.paper; c.fill();
-      c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.ink, 0.85); c.stroke();
-      c.beginPath(); c.moveTo(bx - 0.028, by - 0.028); c.lineTo(bx + 0.028, by + 0.028); c.stroke();
+    c.moveTo(x + a, y + a + L); c.lineTo(x + a, y + a); c.lineTo(x + a + L, y + a);
+    c.moveTo(x + b - L, y + a); c.lineTo(x + b, y + a); c.lineTo(x + b, y + a + L);
+    c.moveTo(x + b, y + b - L); c.lineTo(x + b, y + b); c.lineTo(x + b - L, y + b);
+    c.moveTo(x + a + L, y + b); c.lineTo(x + a, y + b); c.lineTo(x + a, y + b - L);
+    stroke(c, Vw, act ? C.eye : eye(0.85), LW.part);
+    c.beginPath();
+    c.moveTo(cx - 0.27, cy); c.lineTo(cx - 0.12, cy); c.moveTo(cx + 0.12, cy); c.lineTo(cx + 0.27, cy);
+    c.moveTo(cx, cy - 0.27); c.lineTo(cx, cy - 0.12); c.moveTo(cx, cy + 0.12); c.lineTo(cx, cy + 0.27);
+    stroke(c, Vw, C.eye, LW.part);
+    c.beginPath(); c.arc(cx, cy, 0.11, 0, TAU); stroke(c, Vw, C.eye, LW.thin);
+    c.beginPath(); c.arc(cx, cy, 0.035, 0, TAU); fill(c, C.eye);
+    if (!linked) {
+      c.beginPath(); c.arc(x + 0.84, y + 0.84, 0.075, 0, TAU); fill(c, C.bad); stroke(c, Vw, C['paper-deep'], LW.thin);
     }
   }
 
-  function drawPart(c, Vw, p, rt, time) {
-    if (p.type === 'ramp') drawRamp(c, Vw, p);
-    else if (p.type === 'spring') drawSpring(c, Vw, p, rt);
+  // Sensör kablosu, şemadaki gibi dik açılı: sensörün kenarından cihazın kenarına.
+  function drawLink(c, Vw, s, t, pulse) {
+    const td = PARTS[t.type], sx = s.x + 0.5, sy = s.y + 0.5;
+    const x0 = t.x, x1 = t.x + td.w, y0 = t.y, y1 = t.y + td.h, tx = (x0 + x1) / 2, ty = (y0 + y1) / 2;
+    const inX = sx > x0 && sx < x1, inY = sy > y0 && sy < y1;
+    if (inX && inY) return;
+    const hx = tx > sx ? 1 : -1, vy = ty > sy ? 1 : -1;
+    let pts;
+    if (inY) pts = [[sx + 0.5 * hx, sy], [hx > 0 ? x0 : x1, sy]];
+    else if (inX) pts = [[sx, sy + 0.5 * vy], [sx, vy > 0 ? y0 : y1]];
+    else pts = [[sx + 0.5 * hx, sy], [tx, sy], [tx, vy > 0 ? y0 : y1]];
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    if (pts.length === 3) {
+      const r = Math.min(0.22, Math.abs(pts[1][0] - pts[0][0]) / 2, Math.abs(pts[2][1] - pts[1][1]) / 2);
+      c.arcTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1], r);
+    }
+    const e = pts[pts.length - 1];
+    c.lineTo(e[0], e[1]);
+    stroke(c, Vw, pulse != null ? C.eye : eye(0.85), LW.part, DASH.wire);
+    c.beginPath(); c.arc(pts[0][0], pts[0][1], 0.04, 0, TAU); fill(c, C.eye);
+    c.beginPath(); c.arc(e[0], e[1], 0.06, 0, TAU); fill(c, C.eye); stroke(c, Vw, C['paper-deep'], LW.hair);
+    if (pulse == null) return;
+    // Sinyal: tetiklenince kablo boyunca cihaza giden nokta.
+    let total = 0;
+    for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    let d = pulse * total, q = pts[0];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (d <= l || i === pts.length - 1) { const k = l ? Math.min(1, d / l) : 1; q = [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]; break; }
+      d -= l;
+    }
+    c.beginPath(); c.arc(q[0], q[1], 0.16, 0, TAU); fill(c, eye(0.25));
+    c.beginPath(); c.arc(q[0], q[1], 0.075, 0, TAU); fill(c, '#eafcff');
+  }
+
+  // Sabit parçalar cıvatalı: taşınamazlar.
+  function fixings(c, Vw, p) {
+    if (!Vw.lod) return;
+    const d = PARTS[p.type], col = ink(0.92);
+    let pts;
+    if (p.type === 'ramp') {
+      const [a, b] = KM.rampLine(p.o), ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
+      const len = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / len, uy = (by - ay) / len;
+      pts = [[ax + ux * 0.075, ay + uy * 0.075], [bx - ux * 0.075, by - uy * 0.075]];
+    } else if (p.type === 'belt') pts = [[p.x + T.plank / 2, p.y], [p.x + 2 - T.plank / 2, p.y]];
+    else if (p.type === 'piston') { const a = PISTON_ROT[p.o]; pts = [toWorld(p, -0.43, -0.42, a), toWorld(p, 0.43, -0.42, a)]; }
+    else pts = [[p.x + 0.08, p.y + 0.08], [p.x + d.w - 0.08, p.y + 0.08]];
+    for (const q of pts) bolt(c, Vw, q[0], q[1], col);
+  }
+
+  function drawPart(c, Vw, p, rt, time, ann) {
+    if (p.type === 'ramp') drawRamp(c, Vw, p, ann);
+    else if (p.type === 'spring') drawSpring(c, Vw, p, rt, ann);
     else if (p.type === 'belt') drawBelt(c, Vw, p, time);
-    else if (p.type === 'piston') drawPiston(c, Vw, p, rt);
+    else if (p.type === 'piston') drawPiston(c, Vw, p, rt, ann);
     else if (p.type === 'fan') drawFan(c, Vw, p, rt);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
-    if (p.fixed) bolts(c, Vw, p);
+    if (p.fixed) fixings(c, Vw, p);
   }
 
   // 0 numaralı top sarı; diğerleri çelik bilye (aynı fizik, farklı görünüm).
   const BALL_LOOK = [
-    { fill: null, edge: '#a77a12', mark: 'rgba(130,90,10,0.75)' },
-    { fill: '#cdd8e8', edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
+    { edge: GOLD, mark: 'rgba(130,90,10,0.75)' },
+    { edge: '#5d6f8c', mark: 'rgba(60,75,100,0.7)' },
   ];
-  const ballFill = i => (i ? BALL_LOOK[1].fill : C.ball);
+  const ballFill = i => (i ? '#cdd8e8' : C.ball);
   function drawBall(c, Vw, x, y, ang, alpha, idx) {
     const R = T.R, look = BALL_LOOK[idx ? 1 : 0];
     c.save(); c.globalAlpha = alpha; c.translate(x, y);
-    c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fillStyle = ballFill(idx); c.fill();
-    c.lineWidth = Vw.px(1.5); c.strokeStyle = look.edge; c.stroke();
+    c.beginPath(); c.arc(0, 0, R, 0, TAU); fill(c, ballFill(idx)); stroke(c, Vw, look.edge, LW.part);
     c.save(); c.rotate(ang);
     c.beginPath(); c.moveTo(-R * 0.72, 0); c.lineTo(R * 0.72, 0); c.moveTo(0, -R * 0.3); c.lineTo(0, R * 0.3);
-    c.lineWidth = Vw.px(1.8); c.strokeStyle = look.mark; c.stroke();
+    stroke(c, Vw, look.mark, 1.8);
     c.restore();
-    c.beginPath(); c.arc(-R * 0.36, R * 0.36, R * 0.22, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.55)'; c.fill();
+    c.beginPath(); c.arc(-R * 0.36, R * 0.36, R * 0.22, 0, TAU); fill(c, 'rgba(255,255,255,0.55)');
     c.restore();
   }
 
-  function drawTrail(c, Vw, trail, alpha, idx) {
+  // Topun yolu: noktalı çizgi, aralıklarla yön oku. Başarısız denemede topun
+  // son görüldüğü yer kırmızı çarpıyla işaretlenir.
+  function drawTrail(c, Vw, trail, alpha, idx, failMark) {
     if (!trail || trail.length < 2) return;
-    c.fillStyle = rgba(ballFill(idx), alpha);
-    const r = Vw.px(1.7);
-    for (let i = 0; i < trail.length; i += 2) { c.beginPath(); c.arc(trail[i][0], trail[i][1], r, 0, TAU); c.fill(); }
+    const col = rgba(ballFill(idx), alpha);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(trail[0][0], trail[0][1]);
+    for (let i = 1; i < trail.length; i++) c.lineTo(trail[i][0], trail[i][1]);
+    stroke(c, Vw, col, 2.3, DASH.dot);
+    if (Vw.lod) {
+      c.beginPath();
+      let acc = 0.7;
+      for (let i = 1; i < trail.length; i++) {
+        const dx = trail[i][0] - trail[i - 1][0], dy = trail[i][1] - trail[i - 1][1], d = Math.hypot(dx, dy);
+        acc += d;
+        if (acc >= 1.4 && d > 1e-4) { acc = 0; chevron(c, Vw, trail[i][0], trail[i][1], Math.atan2(dy, dx), 5.5); }
+      }
+      stroke(c, Vw, col, LW.part);
+    }
+    c.lineCap = 'butt'; c.lineJoin = 'miter';
+    if (!failMark) return;
+    let e = null;
+    for (let i = trail.length - 1; i >= 0 && !e; i--) {
+      const q = trail[i];
+      if (q[0] >= 0 && q[0] <= W && q[1] >= 0 && q[1] <= H) e = q;
+    }
+    if (!e) return;
+    const s = 0.15;
+    c.beginPath(); c.moveTo(e[0] - s, e[1] - s); c.lineTo(e[0] + s, e[1] + s); c.moveTo(e[0] - s, e[1] + s); c.lineTo(e[0] + s, e[1] - s);
+    c.lineCap = 'round';
+    stroke(c, Vw, HALO, LW.edge + 2.4); stroke(c, Vw, C.bad, LW.edge + 0.4);
+    c.lineCap = 'butt';
   }
 
   function outline(c, Vw, p, color, alpha, width) {
     const d = PARTS[p.type];
     c.beginPath(); c.rect(p.x + 0.04, p.y + 0.04, d.w - 0.08, d.h - 0.08);
     c.lineWidth = Vw.px(width || 2); c.strokeStyle = rgba(color, alpha); c.stroke();
-  }
-
-
-  // ---------------------------------------------------------------- canlı görünüm
-  // Aynı geometri, gerçek malzemeler: ahşap raf ve rampalar, turuncu boyalı elle kumandalı
-  // cihazlar, çelik yay/kova/boru, kauçuk bant, parlak top. Gölgeler cihaz pikseliyle verilir.
-  const WOOD = { hi: '#f4d9a8', mid: '#e3bd84', lo: '#c29159', edge: '#8a5b2b', grain: 'rgba(120,76,32,0.22)' };
-  const STEEL = { hi: '#f5f8fc', mid: '#bcc7d6', lo: '#6c7a90', edge: '#47546a' };
-  const ORANGE = { hi: '#ffc48f', mid: '#ff9440', lo: '#c4580f', edge: '#8f3d06' };
-  function shadowOn(c, Vw, k) {
-    const d = Vw.dpr * (k == null ? 1 : k);
-    c.shadowColor = 'rgba(3,12,30,0.5)'; c.shadowBlur = 7 * d; c.shadowOffsetX = 3 * d; c.shadowOffsetY = 4 * d;
-  }
-  function shadowOff(c) { c.shadowColor = 'rgba(0,0,0,0)'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0; }
-  function band(c, x0, y0, x1, y1, stops) {
-    const g = c.createLinearGradient(x0, y0, x1, y1);
-    stops.forEach((col, i) => g.addColorStop(i / (stops.length - 1), col));
-    return g;
-  }
-  // Kesitin iki ucu arasında yuvarlak görünen metal/boya geçişi.
-  const tube = (m) => [m.lo, m.mid, m.hi, m.mid, m.lo];
-
-  function drawWallsL(c, Vw, level) {
-    (level.walls || []).forEach((w, wi) => {
-      const b = wallBounds(w), h = Math.max(0.01, b[3] - b[1]);
-      c.save();
-      wallPath(c, w);
-      c.fillStyle = band(c, 0, b[3], 0, b[1], [WOOD.hi, h > 0.5 ? WOOD.mid : WOOD.lo, WOOD.lo]);
-      shadowOn(c, Vw); c.fill(); shadowOff(c);
-      c.clip();
-      let seed = (wi + 1) * 7919;
-      const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-      c.beginPath();
-      for (let y = b[1] + 0.06; y < b[3] - 0.03; y += 0.09 + rnd() * 0.11) {
-        c.moveTo(b[0] - 0.1, y);
-        for (let x = b[0]; x <= b[2] + 0.4; x += 0.4) c.lineTo(x, y + (rnd() - 0.5) * 0.03);
-      }
-      c.lineWidth = Vw.px(1); c.strokeStyle = WOOD.grain; c.stroke();
-      c.restore();
-      wallPath(c, w); c.lineWidth = Vw.px(1.2); c.strokeStyle = WOOD.edge; c.stroke();
-      if (typeof w[0] === 'number') {
-        c.beginPath(); c.moveTo(w[0] + Vw.px(1.5), w[3] - Vw.px(1.5)); c.lineTo(w[2] - Vw.px(1.5), w[3] - Vw.px(1.5));
-        c.lineWidth = Vw.px(1.2); c.strokeStyle = 'rgba(255,247,228,0.8)'; c.stroke();
-      }
-    });
-  }
-
-  function drawCupL(c, Vw, cup) {
-    const rim = KM.CUP.rim, t = KM.CUP.wall;
-    c.fillStyle = band(c, 0, cup.y + rim, 0, cup.y, ['#202a3b', '#3a4860']);
-    c.fillRect(cup.x + t, cup.y + t, cup.w - 2 * t, rim - t);
-    for (const b of KM.cupBoxes(cup)) {
-      const vertical = (b[3] - b[1]) > (b[2] - b[0]);
-      c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
-      c.fillStyle = vertical ? band(c, b[0], 0, b[2], 0, tube(STEEL)) : band(c, 0, b[3], 0, b[1], [STEEL.hi, STEEL.mid, STEEL.lo]);
-      shadowOn(c, Vw); c.fill(); shadowOff(c);
-      c.lineWidth = Vw.px(1); c.strokeStyle = STEEL.edge; c.stroke();
-    }
-    const left = !(cup.back && cup.back.side === 'l');
-    const px = left ? cup.x + t / 2 : cup.x + cup.w - t / 2, py0 = cup.y + rim, py1 = py0 + 0.9, dir = left ? 1 : -1;
-    c.beginPath(); c.moveTo(px, py0); c.lineTo(px, py1); c.lineWidth = Vw.px(2); c.strokeStyle = STEEL.lo; c.stroke();
-    c.beginPath(); c.moveTo(px, py1); c.lineTo(px + dir * 0.46, py1 - 0.14); c.lineTo(px, py1 - 0.28); c.closePath();
-    shadowOn(c, Vw, 0.6); c.fillStyle = C.ball; c.fill(); shadowOff(c);
-    c.lineWidth = Vw.px(1); c.strokeStyle = '#b58a12'; c.stroke();
-  }
-
-  function drawPipeL(c, Vw, level) {
-    const p = level.pipe; if (!p) return;
-    const st = KM.startsOf(level)[0], r = 0.34;
-    let b, mouth, vertical = p.dir === 'd';
-    if (p.dir === 'r') { b = [-0.4, st.y - r, st.x + 0.02, st.y + r]; mouth = [b[2] - 0.1, b[1] - 0.07, b[2], b[3] + 0.07]; }
-    else if (p.dir === 'l') { b = [st.x - 0.02, st.y - r, W + 0.4, st.y + r]; mouth = [b[0], b[1] - 0.07, b[0] + 0.1, b[3] + 0.07]; }
-    else { b = [st.x - r, st.y - 0.02, st.x + r, Math.min(H + 0.4, p.y + 1.7)]; mouth = [b[0] - 0.07, b[1], b[2] + 0.07, b[1] + 0.1]; }
-    const g = vertical ? band(c, b[0], 0, b[2], 0, tube(STEEL)) : band(c, 0, b[3], 0, b[1], tube(STEEL));
-    c.beginPath(); c.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]); c.fillStyle = g;
-    shadowOn(c, Vw); c.fill(); shadowOff(c);
-    c.lineWidth = Vw.px(1); c.strokeStyle = STEEL.edge; c.stroke();
-    c.beginPath(); c.rect(mouth[0], mouth[1], mouth[2] - mouth[0], mouth[3] - mouth[1]);
-    c.fillStyle = vertical ? band(c, mouth[0], 0, mouth[2], 0, tube(STEEL)) : band(c, 0, mouth[3], 0, mouth[1], tube(STEEL));
-    c.fill(); c.stroke();
-  }
-
-  function screw(c, Vw, x, y, r) {
-    c.beginPath(); c.arc(x, y, r, 0, TAU);
-    const g = c.createRadialGradient(x - r * 0.3, y + r * 0.3, r * 0.1, x, y, r);
-    g.addColorStop(0, STEEL.hi); g.addColorStop(1, STEEL.lo);
-    c.fillStyle = g; c.fill(); c.lineWidth = Vw.px(0.8); c.strokeStyle = STEEL.edge; c.stroke();
-    c.beginPath(); c.moveTo(x - r * 0.6, y - r * 0.6); c.lineTo(x + r * 0.6, y + r * 0.6); c.stroke();
-  }
-
-  function drawRampL(c, Vw, p) {
-    const [a, b] = KM.rampLine(p.o);
-    const ax = p.x + a[0], ay = p.y + a[1], bx = p.x + b[0], by = p.y + b[1];
-    const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax), t = T.plank;
-    c.save(); c.translate(ax, ay); c.rotate(ang);
-    c.beginPath(); rrect(c, 0, -t / 2, len, t, t * 0.25);
-    c.fillStyle = band(c, 0, t / 2, 0, -t / 2, [WOOD.hi, WOOD.mid, WOOD.lo]);
-    shadowOn(c, Vw); c.fill(); shadowOff(c);
-    c.lineWidth = Vw.px(1); c.strokeStyle = WOOD.edge; c.stroke();
-    c.beginPath(); c.moveTo(0.1, t * 0.05); c.lineTo(len * 0.45, -t * 0.08); c.moveTo(len * 0.55, t * 0.1); c.lineTo(len - 0.1, -t * 0.02);
-    c.lineWidth = Vw.px(0.8); c.strokeStyle = WOOD.grain; c.stroke();
-    screw(c, Vw, 0.09, 0, 0.035); screw(c, Vw, len - 0.09, 0, 0.035);
-    c.restore();
-  }
-
-  function drawSpringL(c, Vw, p, rt) {
-    const k = rt && rt.compress > 0 ? Math.sin((1 - rt.compress / 0.18) * Math.PI) : 0;
-    const top = 0.36 - 0.13 * k, padH = 0.09, x = p.x, y = p.y;
-    c.beginPath(); c.rect(x + 0.1, y, 0.8, 0.07);
-    c.fillStyle = band(c, 0, y + 0.07, 0, y, [STEEL.mid, STEEL.lo]);
-    shadowOn(c, Vw); c.fill(); shadowOff(c);
-    const y0 = y + 0.07, y1 = y + top - padH, n = 6;
-    const coil = () => { c.beginPath(); c.moveTo(x + 0.5, y0); for (let i = 1; i < n; i++) c.lineTo(x + (i % 2 ? 0.25 : 0.75), y0 + (y1 - y0) * (i / n)); c.lineTo(x + 0.5, y1); };
-    coil(); c.lineJoin = 'round'; c.lineWidth = Vw.px(4); c.strokeStyle = STEEL.edge;
-    shadowOn(c, Vw, 0.6); c.stroke(); shadowOff(c);
-    coil(); c.lineWidth = Vw.px(1.6); c.strokeStyle = STEEL.hi; c.stroke();
-    c.beginPath(); rrect(c, x + 0.07, y + top - padH, 0.86, padH, 0.03);
-    c.fillStyle = band(c, 0, y + top, 0, y + top - padH, ['#5a6270', '#2a2f38', '#1b1f26']);
-    shadowOn(c, Vw, 0.8); c.fill(); shadowOff(c);
-    c.beginPath(); c.moveTo(x + 0.1, y + top - Vw.px(1.2)); c.lineTo(x + 0.9, y + top - Vw.px(1.2));
-    c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(255,255,255,0.35)'; c.stroke();
-  }
-
-  function drawBeltL(c, Vw, p, time) {
-    const x = p.x, y = p.y, t = T.plank, dir = p.o === 'r' ? 1 : -1;
-    c.beginPath(); rrect(c, x, y - t / 2, 2, t, t / 2);
-    c.fillStyle = band(c, 0, y + t / 2, 0, y - t / 2, ['#4a515d', '#262b33', '#16191f']);
-    shadowOn(c, Vw); c.fill(); shadowOff(c);
-    const ph = (time * 2.5) % 0.16;
-    c.save(); c.beginPath(); rrect(c, x, y - t / 2, 2, t, t / 2); c.clip();
-    c.beginPath();
-    for (let k = -0.16; k < 2.2; k += 0.16) {
-      const cx = dir > 0 ? x + k + ph : x + 2 - k - ph;
-      c.moveTo(cx, y + t / 2); c.lineTo(cx - 0.04 * dir, y - t / 2);
-    }
-    c.lineWidth = Vw.px(1.1); c.strokeStyle = 'rgba(160,170,185,0.35)'; c.stroke();
-    c.restore();
-    for (const rx of [x + t / 2, x + 2 - t / 2]) {
-      c.beginPath(); c.arc(rx, y, t * 0.36, 0, TAU);
-      const g = c.createRadialGradient(rx - 0.01, y + 0.01, 0, rx, y, t * 0.36);
-      g.addColorStop(0, STEEL.hi); g.addColorStop(1, STEEL.lo);
-      c.fillStyle = g; c.fill();
-    }
-    c.beginPath(); c.moveTo(x + 0.15, y + t / 2 - Vw.px(1)); c.lineTo(x + 1.85, y + t / 2 - Vw.px(1));
-    c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(255,255,255,0.18)'; c.stroke();
-  }
-
-  function drawPistonL(c, Vw, p, rt) {
-    const g = KM.pistonGeom(p.o), d = DIRS[p.o], off = rt ? rt.offset : 0;
-    const bx0 = p.x + g.base[0], by0 = p.y + g.base[1], bx1 = p.x + g.base[2], by1 = p.y + g.base[3];
-    const hx0 = p.x + g.head[0] + d[0] * off, hy0 = p.y + g.head[1] + d[1] * off;
-    const hx1 = p.x + g.head[2] + d[0] * off, hy1 = p.y + g.head[3] + d[1] * off;
-    const vertical = p.o === 'u';
-    let rod;
-    if (p.o === 'u') rod = [p.x + 0.43, by1 - 0.05, p.x + 0.57, hy0];
-    else if (p.o === 'r') rod = [bx1 - 0.05, p.y + 0.43, hx0, p.y + 0.57];
-    else rod = [hx1, p.y + 0.43, bx0 + 0.05, p.y + 0.57];
-    c.beginPath(); c.rect(rod[0], rod[1], rod[2] - rod[0], rod[3] - rod[1]);
-    c.fillStyle = vertical ? band(c, rod[0], 0, rod[2], 0, tube(STEEL)) : band(c, 0, rod[3], 0, rod[1], tube(STEEL));
-    c.fill();
-    c.beginPath(); rrect(c, bx0, by0, bx1 - bx0, by1 - by0, 0.05);
-    c.fillStyle = vertical ? band(c, bx0, 0, bx1, 0, tube(ORANGE)) : band(c, 0, by1, 0, by0, tube(ORANGE));
-    shadowOn(c, Vw); c.fill(); shadowOff(c);
-    c.lineWidth = Vw.px(1); c.strokeStyle = ORANGE.edge; c.stroke();
-    c.beginPath();
-    if (vertical) for (const yy of [by0 + 0.1, by1 - 0.1]) { c.moveTo(bx0, yy); c.lineTo(bx1, yy); }
-    else for (const xx of [bx0 + 0.1, bx1 - 0.1]) { c.moveTo(xx, by0); c.lineTo(xx, by1); }
-    c.lineWidth = Vw.px(1.2); c.strokeStyle = 'rgba(120,45,0,0.45)'; c.stroke();
-    c.beginPath(); rrect(c, hx0, hy0, hx1 - hx0, hy1 - hy0, 0.025);
-    c.fillStyle = vertical ? band(c, 0, hy1, 0, hy0, [STEEL.hi, STEEL.mid, STEEL.lo]) : band(c, hx0, 0, hx1, 0, [STEEL.lo, STEEL.hi, STEEL.mid]);
-    shadowOn(c, Vw, 0.8); c.fill(); shadowOff(c);
-    c.lineWidth = Vw.px(1); c.strokeStyle = STEEL.edge; c.stroke();
-    badge(c, Vw, p.num, (bx0 + bx1) / 2, (by0 + by1) / 2, 0.15);
-  }
-
-  function drawFanZoneL(c, Vw, p, rt, time, build) {
-    const z = KM.fanZone(p), on = !!(rt && rt.on), L = T.fanLen;
-    const pt = (along, lat) => p.o === 'r' ? [z[0] + along, z[1] + lat] : p.o === 'l' ? [z[2] - along, z[1] + lat] : [z[0] + lat, z[1] + along];
-    if (!on && !build) return;
-    c.save();
-    c.beginPath(); c.rect(z[0], z[1], z[2] - z[0], z[3] - z[1]);
-    if (!on) {
-      c.setLineDash([Vw.px(3), Vw.px(5)]); c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(230,240,255,0.14)'; c.stroke();
-      c.restore(); return;
-    }
-    c.clip();
-    c.lineCap = 'round';
-    for (let i = 0; i < 14; i++) {
-      const lat = 0.1 + ((i * 0.618) % 1) * 0.7, u = ((time * 2.1 + i * 0.137) % 1) * (L + 0.8) - 0.4;
-      const a = pt(u, lat), b = pt(u + 0.6, lat + Math.sin(time * 6 + i) * 0.03);
-      const g = c.createLinearGradient(a[0], a[1], b[0], b[1]);
-      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,0.55)');
-      c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineWidth = Vw.px(2); c.strokeStyle = g; c.stroke();
-    }
-    c.restore();
-  }
-
-  function drawFanL(c, Vw, p, rt) {
-    const cx = p.x + 0.5, cy = p.y + 0.5, on = !!(rt && rt.on), ang = rt ? rt.blade : 0;
-    c.beginPath(); rrect(c, p.x + 0.13, p.y + 0.13, 0.74, 0.74, 0.12);
-    c.fillStyle = band(c, p.x + 0.13, p.y + 0.87, p.x + 0.87, p.y + 0.13, [ORANGE.hi, ORANGE.mid, ORANGE.lo]);
-    shadowOn(c, Vw); c.fill(); shadowOff(c);
-    c.lineWidth = Vw.px(1); c.strokeStyle = ORANGE.edge; c.stroke();
-    c.beginPath(); c.arc(cx, cy, 0.29, 0, TAU); c.fillStyle = '#18202c'; c.fill();
-    if (on) { c.beginPath(); c.arc(cx, cy, 0.26, 0, TAU); c.fillStyle = 'rgba(214,224,238,0.28)'; c.fill(); }
-    c.save(); c.translate(cx, cy); c.rotate(-ang); c.globalAlpha = on ? 0.6 : 1;
-    for (let i = 0; i < 3; i++) {
-      c.rotate(TAU / 3);
-      c.beginPath(); c.ellipse(0.125, 0, 0.12, 0.05, 0.25, 0, TAU);
-      c.fillStyle = band(c, 0, 0.05, 0, -0.05, [STEEL.hi, STEEL.mid]); c.fill();
-    }
-    c.restore();
-    c.beginPath(); c.arc(cx, cy, 0.05, 0, TAU); c.fillStyle = STEEL.mid; c.fill();
-    const d = DIRS[p.o];
-    c.beginPath();
-    for (let k = -1; k <= 1; k++) {
-      if (d[0]) { const gx = cx + d[0] * 0.27; c.moveTo(gx, cy + k * 0.12 - 0.05); c.lineTo(gx, cy + k * 0.12 + 0.05); }
-      else { const gy = cy + 0.27; c.moveTo(cx + k * 0.12 - 0.05, gy); c.lineTo(cx + k * 0.12 + 0.05, gy); }
-    }
-    c.lineWidth = Vw.px(2); c.strokeStyle = 'rgba(20,26,36,0.9)'; c.stroke();
-    badge(c, Vw, p.num, p.x + 0.19, p.y + 0.81, 0.13);
-  }
-
-  function drawSensorL(c, Vw, p, rt, linked) {
-    const cx = p.x + 0.5, cy = p.y + 0.5, f = rt ? Math.max(0, rt.flash / 0.4) : 0;
-    c.beginPath();
-    const k = 0.16;
-    for (const [qx, qy, sx, sy] of [[p.x + 0.07, p.y + 0.07, 1, 1], [p.x + 0.93, p.y + 0.07, -1, 1], [p.x + 0.07, p.y + 0.93, 1, -1], [p.x + 0.93, p.y + 0.93, -1, -1]]) {
-      c.moveTo(qx + sx * k, qy); c.lineTo(qx, qy); c.lineTo(qx, qy + sy * k);
-    }
-    c.lineWidth = Vw.px(1.6); c.strokeStyle = rgba(C.eye, 0.8); c.stroke();
-    c.save(); c.setLineDash([Vw.px(2), Vw.px(3)]);
-    c.beginPath(); c.arc(cx, cy, 0.22, 0, TAU); c.lineWidth = Vw.px(1); c.strokeStyle = rgba(C.eye, 0.45); c.stroke();
-    c.restore();
-    if (f > 0) {
-      const g = c.createRadialGradient(cx, cy, 0, cx, cy, 0.45);
-      g.addColorStop(0, rgba(C.eye, 0.75 * f)); g.addColorStop(1, rgba(C.eye, 0));
-      c.beginPath(); c.arc(cx, cy, 0.45, 0, TAU); c.fillStyle = g; c.fill();
-    }
-    c.beginPath(); c.arc(cx, cy, 0.11, 0, TAU); c.fillStyle = '#121822';
-    shadowOn(c, Vw, 0.6); c.fill(); shadowOff(c);
-    const lg = c.createRadialGradient(cx - 0.02, cy + 0.02, 0, cx, cy, 0.065);
-    lg.addColorStop(0, '#e9fdff'); lg.addColorStop(0.5, C.eye); lg.addColorStop(1, '#1b6f7a');
-    c.beginPath(); c.arc(cx, cy, 0.065, 0, TAU); c.fillStyle = lg; c.fill();
-    if (!linked) { c.beginPath(); c.arc(p.x + 0.84, p.y + 0.84, 0.075, 0, TAU); c.fillStyle = C.bad; c.fill(); }
-  }
-
-  function drawLinkL(c, Vw, s, t) {
-    const td = PARTS[t.type];
-    const sx = s.x + 0.5, sy = s.y + 0.5, tx = t.x + td.w / 2, ty = t.y + td.h / 2;
-    const dist = Math.hypot(tx - sx, ty - sy);
-    const mx = (sx + tx) / 2 + (sx === tx ? 0.7 : 0), my = Math.min(sy, ty) - 0.25 - dist * 0.12;
-    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(mx, my, tx, ty);
-    c.lineCap = 'round'; c.lineWidth = Vw.px(3); c.strokeStyle = '#13606b';
-    shadowOn(c, Vw, 0.5); c.stroke(); shadowOff(c);
-    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(mx, my, tx, ty);
-    c.lineWidth = Vw.px(1); c.strokeStyle = 'rgba(160,245,250,0.8)'; c.stroke();
-    c.beginPath(); c.arc(tx, ty, 0.05, 0, TAU); c.fillStyle = '#13606b'; c.fill();
-  }
-
-  function boltsL(c, Vw, p) {
-    const d = PARTS[p.type];
-    screw(c, Vw, p.x + 0.09, p.y + 0.09, 0.045); screw(c, Vw, p.x + d.w - 0.09, p.y + 0.09, 0.045);
-  }
-
-  function drawPartL(c, Vw, p, rt, time) {
-    if (p.type === 'ramp') drawRampL(c, Vw, p);
-    else if (p.type === 'spring') drawSpringL(c, Vw, p, rt);
-    else if (p.type === 'belt') drawBeltL(c, Vw, p, time);
-    else if (p.type === 'piston') drawPistonL(c, Vw, p, rt);
-    else if (p.type === 'fan') drawFanL(c, Vw, p, rt);
-    else if (p.type === 'sensor') drawSensorL(c, Vw, p, rt, true);
-    if (p.fixed) boltsL(c, Vw, p);
-  }
-
-  function drawBallL(c, Vw, x, y, ang, alpha, idx) {
-    const R = T.R, steel = !!idx;
-    c.save(); c.globalAlpha = alpha; c.translate(x, y);
-    const g = c.createRadialGradient(-R * 0.35, R * 0.38, R * 0.05, 0, 0, R);
-    if (steel) { g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, '#c9d3e1'); g.addColorStop(1, '#56647c'); }
-    else { g.addColorStop(0, '#fff7cf'); g.addColorStop(0.4, '#ffd23e'); g.addColorStop(1, '#bb7f00'); }
-    c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fillStyle = g;
-    shadowOn(c, Vw, 0.9); c.fill(); shadowOff(c);
-    if (!steel) {
-      c.save(); c.rotate(ang);
-      c.beginPath(); c.arc(0, -R * 1.25, R * 1.05, Math.PI * 0.3, Math.PI * 0.7);
-      c.lineWidth = Vw.px(1.4); c.strokeStyle = 'rgba(150,95,0,0.55)'; c.stroke();
-      c.restore();
-    } else {
-      c.beginPath(); c.ellipse(R * 0.1, -R * 0.35, R * 0.55, R * 0.16, -0.3, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.28)'; c.fill();
-    }
-    c.beginPath(); c.ellipse(-R * 0.38, R * 0.42, R * 0.2, R * 0.13, -0.6, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.85)'; c.fill();
-    c.restore();
   }
 
   // ---------------------------------------------------------------- yardımcılar (kurulum)
@@ -1776,44 +1708,42 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   }
 
   // ---------------------------------------------------------------- tahta çizimi
-  const LOOKS = ['gecis', 'canli', 'cizim'];
-  const LOOK_NAME = { cizim: 'Çizim', gecis: 'Çizim → canlı', canli: 'Canlı' };
-  const buildStyle = () => (S.look === 'canli' ? 'live' : 'bp');
+  const inCup = q => KM.cupsOf(S.level).some(cp => q[0] > cp.x && q[0] < cp.x + cp.w && q[1] > cp.y && q[1] < cp.y + KM.CUP.rim + 0.3);
 
-  function drawScene(c, style, items, run, time) {
-    const L = S.level, live = style === 'live';
-    drawGrid(c, V, true, live);
-    for (const it of items) if (it.p.type === 'fan') (live ? drawFanZoneL : drawFanZone)(c, V, it.p, it.rt, time, !run);
-    (live ? drawWallsL : drawWalls)(c, V, L);
-    (run ? S.sim.trails : S.trails || []).forEach((tr, i) => drawTrail(c, V, tr, (run ? 0.75 : 0.42) * (live ? 0.85 : 1), i));
-    for (const cup of KM.cupsOf(L)) (live ? drawCupL : drawCup)(c, V, cup);
-    (live ? drawPipeL : drawPipe)(c, V, L);
-    for (const it of items) if (it.p.type !== 'sensor') (live ? drawPartL : drawPart)(c, V, it.p, it.rt, time);
+  // ann: kurarken görünen ölçü ve hareket çizgileri (pistonun varacağı yer, pervanenin erimi, yayın yönü).
+  function drawScene(c, items, run, time, hl) {
+    const L = S.level, ann = !run;
+    drawGrid(c, V, true, hl);
+    for (const it of items) if (it.p.type === 'fan') drawFanZone(c, V, it.p, it.rt, time);
+    drawWalls(c, V, L);
+    const trails = run ? S.sim.trails : S.trails || [];
+    trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, i, !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
+    for (const cup of KM.cupsOf(L)) drawCup(c, V, cup, time);
+    drawPipe(c, V, L);
+    for (const it of items) if (it.p.type !== 'sensor') drawPart(c, V, it.p, it.rt, time, ann);
     const byId = {};
     for (const it of items) byId[it.p.id] = it.p;
     for (const it of items) {
       if (it.p.type !== 'sensor') continue;
       const target = run ? (it.rt.link && it.rt.link.p) : byId[it.p.link];
-      if (target) (live ? drawLinkL : drawLink)(c, V, it.p, target);
+      const age = run && it.rt.flash > 0 ? 0.4 - it.rt.flash : -1;
+      if (target) drawLink(c, V, it.p, target, age >= 0 && age < 0.24 && !reduceMotion ? age / 0.24 : null);
     }
     for (const it of items) {
       if (it.p.type !== 'sensor') continue;
-      const linked = run ? !!it.rt.link : !!byId[it.p.link];
-      (live ? drawSensorL : drawSensor)(c, V, it.p, it.rt, linked);
+      drawSensor(c, V, it.p, it.rt, run ? !!it.rt.link : !!byId[it.p.link]);
     }
-    const ball = live ? drawBallL : drawBall;
+    if (ann) for (const it of items) if (it.p.type === 'fan') drawFanRange(c, V, it.p);
     if (run) {
       S.sim.balls.forEach((b, i) => {
         if (S.sim.bstate[i] === 'out') return;
         const bp = b.getPosition();
-        ball(c, V, bp.x, bp.y, b.getAngle(), 1, i);
+        drawBall(c, V, bp.x, bp.y, b.getAngle(), 1, i);
       });
     } else {
-      KM.startsOf(L).forEach((st, i) => ball(c, V, st.x, st.y, 0, live ? 0.85 : 0.6, i));
+      KM.startsOf(L).forEach((st, i) => drawBall(c, V, st.x, st.y, 0, 0.6, i));
     }
   }
-
-  const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
   function render() {
     if (!V) return;
@@ -1822,24 +1752,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     V.tf(c);
     const run = S.mode === 'run' && S.sim;
     const items = run ? S.sim.rts.map(rt => ({ p: rt.p, rt })) : allParts().map(p => ({ p, rt: null }));
-    const m = S.look === 'cizim' ? 0 : S.look === 'canli' ? 1 : S.morph;
-    if (m <= 0.001) drawScene(c, 'bp', items, run, time);
-    else if (m >= 0.999) drawScene(c, 'live', items, run, time);
-    else {
-      // Çizim soldan sağa taranarak gerçeğe dönüşür.
-      drawScene(c, 'bp', items, run, time);
-      const sx = -M + (W + 2 * M) * ease(m);
-      c.save();
-      c.beginPath(); c.rect(-M - 1, -M - 1, sx + M + 1, H + 2 * M + 2); c.clip();
-      c.clearRect(-M - 1, -M - 1, sx + M + 1, H + 2 * M + 2);
-      drawScene(c, 'live', items, run, time);
-      c.restore();
-      const g = c.createLinearGradient(sx - 0.6, 0, sx, 0);
-      g.addColorStop(0, rgba(C.eye, 0)); g.addColorStop(1, rgba(C.eye, 0.35));
-      c.fillStyle = g; c.fillRect(sx - 0.6, -M, 0.6, H + 2 * M);
-      c.beginPath(); c.moveTo(sx, -M); c.lineTo(sx, H + M);
-      c.lineWidth = V.px(2); c.strokeStyle = 'rgba(235,252,255,0.95)'; c.stroke();
-    }
+    const dr = S.drag, cand = dr && dr.cand && dr.over ? dr.cand : null;
+    const hl = cand ? { x0: cand.x, x1: cand.x + PARTS[cand.type].w, y0: cand.y, y1: cand.y + PARTS[cand.type].h, ok: dr.valid } : null;
+    drawScene(c, items, run, time, hl);
     if (run) {
       const pulse = 0.25 + 0.2 * Math.sin(time * 5);
       for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 1.5);
@@ -1849,29 +1764,59 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 2.5);
       outline(c, V, S.linkFrom, C.eye, 0.9, 2.5);
     }
-    const dr = S.drag;
-    if (dr && dr.cand && dr.over) {
-      const live = buildStyle() === 'live';
-      for (const q of KM.cellsOf(dr.cand)) {
+    if (cand) {
+      for (const q of KM.cellsOf(cand)) {
         c.fillStyle = dr.valid ? rgba(C.ink, 0.13) : rgba(C.bad, 0.32);
         c.fillRect(q[0], q[1], 1, 1);
       }
       c.save(); c.globalAlpha = dr.valid ? 0.9 : 0.55;
-      if (dr.cand.type === 'fan') (live ? drawFanZoneL : drawFanZone)(c, V, dr.cand, null, time, true);
-      (live ? drawPartL : drawPart)(c, V, dr.cand, null, time);
+      if (cand.type === 'fan') drawFanZone(c, V, cand, null, time);
+      drawPart(c, V, cand, null, time, true);
+      if (cand.type === 'fan') drawFanRange(c, V, cand);
       c.restore();
+    }
+    drawEffects(c, time);
+    // Yerleşince kısa bir oturma çizgisi.
+    const sn = S.snap;
+    if (sn && !reduceMotion && time - sn.t < 0.3) {
+      const k = (time - sn.t) / 0.3, g = 0.2 * (1 - k);
+      c.beginPath(); c.rect(sn.x - g, sn.y - g, sn.w + 2 * g, sn.h + 2 * g);
+      c.lineWidth = V.px(1.5); c.strokeStyle = rgba(C.ink, 0.85 * (1 - k)); c.stroke();
     }
   }
 
-  function drawIcon(canvas, type, o, style) {
+  // Çalışırken kısa izler: çarpma çizgileri, kovaya giren topun hedef halkaları.
+  function drawEffects(c, time) {
+    for (const f of S.fx) {
+      const age = time - f.t;
+      if (f.k === 'hit') {
+        const k = age / 0.28; if (k >= 1) continue;
+        c.beginPath();
+        for (const da of [-1.15, -0.5, 0.5, 1.15]) {
+          const a = f.a + da, r0 = 0.05 + 0.06 * k, r1 = r0 + 0.13 * (1 - k * 0.5);
+          c.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); c.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+        }
+        c.lineCap = 'round'; stroke(c, V, ink(0.9 * (1 - k)), LW.part); c.lineCap = 'butt';
+      } else if (f.k === 'goal') {
+        const k = age / 0.8; if (k >= 1) continue;
+        c.beginPath();
+        for (const lag of [0, 0.22]) {
+          const q = Math.max(0, k - lag) / (1 - lag);
+          if (q > 0) { c.moveTo(f.x + 0.17 + 0.8 * q, f.y); c.arc(f.x, f.y, 0.17 + 0.8 * q, 0, TAU); }
+        }
+        stroke(c, V, rgba(C.ball, 0.85 * (1 - k)), LW.part);
+      }
+    }
+  }
+
+  function drawIcon(canvas, type, o) {
     const r = canvas.getBoundingClientRect();
     const w = r.width || 52, h = r.height || 30, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     const d = PARTS[type], c = canvas.getContext('2d');
     const Vi = makeView(w, h, dpr, d.w / 2 - 1.2, d.h / 2 - 0.62, 2.4, 1.24);
     Vi.tf(c);
-    const p = { type, o: o || DEFAULT_O[type], x: 0, y: 0 };
-    ((style || buildStyle()) === 'live' ? drawPartL : drawPart)(c, Vi, p, null, 0);
+    drawPart(c, Vi, { type, o: o || DEFAULT_O[type], x: 0, y: 0 }, null, 0, false);
   }
 
   function drawThumb(canvas, L) {
@@ -1883,8 +1828,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     drawGrid(c, Vt, false);
     const fixed = KM.listParts(L, []);
     for (const p of fixed) if (p.type === 'fan') drawFanZone(c, Vt, p, null, 0);
-    drawWalls(c, Vt, L); for (const cup of KM.cupsOf(L)) drawCup(c, Vt, cup); drawPipe(c, Vt, L);
-    for (const p of fixed) drawPart(c, Vt, p, null, 0);
+    drawWalls(c, Vt, L); for (const cup of KM.cupsOf(L)) drawCup(c, Vt, cup, 0); drawPipe(c, Vt, L);
+    for (const p of fixed) drawPart(c, Vt, p, null, 0, false);
     KM.startsOf(L).forEach((st, i) => drawBall(c, Vt, st.x, st.y, 0, 1, i));
   }
 
@@ -2015,7 +1960,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   function loadLevel(i) {
     hideToast();
     S.li = i; S.level = LEVELS[i]; S.occ = KM.occupancy(S.level);
-    S.mode = 'build'; S.sim = null; S.trails = null; S.lastFail = null; S.drag = null; S.press = null; S.linkFrom = null;
+    S.mode = 'build'; S.sim = null; S.trails = null; S.trailFail = null; S.lastFail = null; S.drag = null; S.press = null; S.linkFrom = null; S.snap = null;
     S.held.clear();
     S.parts = []; S.nextId = 1;
     const setup = S.setups[S.level.id] || [];
@@ -2075,7 +2020,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const img = $('dragimg'); img.style.display = 'none'; img.textContent = ''; delete img.dataset.type;
     if (dr.valid) {
       const p = { id: dr.fromId || S.nextId++, type: dr.type, o: dr.o, x: dr.cand.x, y: dr.cand.y, link: dr.link };
-      addPlaced(p); sfx('place');
+      addPlaced(p); sfx('place'); snapAt(p);
     } else if (dr.fromId) {
       if (!dr.over) { relinkAfterRemoval(dr.fromId); sfx('remove'); }
       else { S.parts.push(dr.orig); toast('Oraya sığmıyor. Parça eski yerine döndü.', 1800); }
@@ -2085,13 +2030,15 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     saveSetup(); refreshBom(); setHint();
   }
 
+  function snapAt(p) { const d = PARTS[p.type]; S.snap = { x: p.x, y: p.y, w: d.w, h: d.h, t: S.time }; }
+
   function rotatePart(p) {
     const os = PARTS[p.type].orients;
     if (os.length < 2) return;
     const i = os.indexOf(p.o);
     for (let k = 1; k < os.length; k++) {
       const o = os[(i + k) % os.length], cand = Object.assign({}, p, { o });
-      if (KM.canPlace(S.level, S.occ, S.parts, cand, p.id)) { p.o = o; sfx('tick'); saveSetup(); return; }
+      if (KM.canPlace(S.level, S.occ, S.parts, cand, p.id)) { p.o = o; sfx('tick'); snapAt(p); saveSetup(); return; }
     }
   }
 
@@ -2183,6 +2130,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.held.clear();
     S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress }));
+    S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run');
     refreshSide(); buildPult(); updatePult();
   }
@@ -2191,6 +2139,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     if (!S.sim) return;
     releaseAll();
     S.trails = S.sim.trails.map(t => t.slice());
+    S.trailFail = reason !== 'user' ? reason : null;
     S.sim = null; S.mode = 'build';
     if (reason !== 'user') S.lastFail = reason;
     if (reason === 'out') { toast('Top düştü. Noktalı çizgi son yolunu gösteriyor.'); sfx('fail'); }
@@ -2209,29 +2158,47 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     prog.solved = true;
     persist();
     const got = L.badges.filter(b => prog.badges[b.k]).length;
-    lab.note(`Çizim ${pad2(S.li + 1)} ${L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses} · ${LOOK_NAME[S.look]}`);
+    lab.note(`Çizim ${pad2(S.li + 1)} ${L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses}`);
     releaseAll();
-    S.trails = sim.trails.map(t => t.slice()); S.sim = null; S.mode = 'build'; S.lastFail = null;
+    S.trails = sim.trails.map(t => t.slice()); S.trailFail = null; S.sim = null; S.mode = 'build'; S.lastFail = null;
     refreshSide();
     showResult(res, fresh, used, presses, t);
+  }
+
+  // Topların hızındaki ani değişim çarpmadır: temas noktasına kısa çizgiler.
+  function watchBalls(sim) {
+    if (reduceMotion) return;
+    sim.balls.forEach((b, i) => {
+      const st = sim.bstate[i];
+      if (st === 'goal' && S.prevState[i] !== 'goal') {
+        const bp = b.getPosition();
+        const cup = KM.cupsOf(S.level).find(cp => bp.x > cp.x && bp.x < cp.x + cp.w) || KM.cupsOf(S.level)[0];
+        S.fx.push({ k: 'goal', x: cup.x + cup.w / 2, y: cup.y + KM.CUP.wall + 0.29, t: S.time });
+      }
+      S.prevState[i] = st;
+      if (st === 'out') return;
+      const v = b.getLinearVelocity(), pv = S.prevV[i];
+      S.prevV[i] = [v.x, v.y];
+      if (!pv) return;
+      const dx = v.x - pv[0], dy = v.y - pv[1], dv = Math.hypot(dx, dy);
+      if (dv > 4 && !(S.fx.some(f => f.k === 'hit' && f.i === i && S.time - f.t < 0.12))) {
+        const bp = b.getPosition();
+        S.fx.push({ k: 'hit', i, x: bp.x - T.R * dx / dv, y: bp.y - T.R * dy / dv, a: Math.atan2(-dy, -dx), t: S.time });
+      }
+    });
+    if (S.fx.length > 40) S.fx = S.fx.filter(f => S.time - f.t < 1);
   }
 
   function frame(now) {
     const dt = frame.last ? Math.min(0.05, (now - frame.last) / 1000) : 0;
     frame.last = now; S.time += dt;
-    const target = S.look === 'gecis' && S.mode === 'run' ? 1 : 0;
-    if (reduceMotion) S.morph = target;
-    else if (S.morph < target) S.morph = Math.min(1, S.morph + dt / 0.6);
-    else if (S.morph > target) S.morph = Math.max(0, S.morph - dt / 0.35);
     if (S.mode === 'run' && S.sim) {
       const sim = S.sim;
-      // Çizim → canlı görünümünde makine, tarama bitince çalışmaya başlar.
-      if (!(S.look === 'gecis' && S.morph < 1)) {
-        S.acc += dt;
-        let n = 0;
-        while (S.acc >= DT && n < 12) { sim.step(); S.acc -= DT; n++; }
-        if (n >= 12) S.acc = 0;
-      }
+      S.acc += dt;
+      let n = 0;
+      while (S.acc >= DT && n < 12) { sim.step(); S.acc -= DT; n++; }
+      if (n >= 12) S.acc = 0;
+      watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
         if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : 'piston');
@@ -2297,16 +2264,6 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     requestAnimationFrame(() => grid.querySelectorAll('canvas').forEach((c, i) => drawThumb(c, LEVELS[i])));
   }
 
-  function setLook(look, announce) {
-    S.look = look;
-    if (S.mode === 'run' && look === 'gecis') S.morph = 1;
-    persistDevice();
-    $('look-label').textContent = LOOK_NAME[look];
-    $('btn-look').setAttribute('aria-label', `Görünüm: ${LOOK_NAME[look]}. Değiştirmek için dokun.`);
-    if (S.mode === 'build' && S.level) refreshBom();
-    if (announce) toast(`Görünüm: ${LOOK_NAME[look]}`, 1800);
-  }
-
   function setMuted(m) {
     S.muted = m; persistDevice();
     const b = $('btn-sound'); b.setAttribute('aria-pressed', String(!m)); b.setAttribute('aria-label', m ? 'Sesi aç' : 'Sesi kapat');
@@ -2340,7 +2297,6 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('levels-close').addEventListener('click', () => closeOverlay('levels'));
   $('btn-sound').addEventListener('click', () => setMuted(!S.muted));
-  $('btn-look').addEventListener('click', () => setLook(LOOKS[(LOOKS.indexOf(S.look) + 1) % LOOKS.length], true));
   $('btn-retry').addEventListener('click', () => { closeOverlay('result'); setHint(); });
   $('btn-next').addEventListener('click', () => {
     closeOverlay('result');
@@ -2379,22 +2335,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
 
   // Test ve geliştirme için küçük bir kapı.
-  window.KM_GAME = { S, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, setLook, view: () => V };
+  window.KM_GAME = { S, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, view: () => V };
 
   function boot(data) {
     if (lab.on) document.documentElement.classList.add('lab');
     makeNoise();
     setMuted(S.muted);
-    setLook(S.look, false);
     layout();
     let li = typeof data.li === 'number' ? data.li : typeof saved.li === 'number' ? saved.li : 0;
     if (!(li >= 0 && li < LEVELS.length) || !unlocked(li)) li = 0;
     if (Array.isArray(data.parts)) S.setups[LEVELS[li].id] = data.parts;
     loadLevel(li);
-    if (!S.lookTip) {
-      S.lookTip = true; persistDevice();
-      setTimeout(() => toast('Yeni: üstteki Görünüm düğmesiyle çizim ve canlı görünüm arasında geçebilirsin.', 4200), 600);
-    }
     requestAnimationFrame(frame);
   }
   try { if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ li: S.li, parts: S.parts.map(p => ({ id: p.id, type: p.type, o: p.o, x: p.x, y: p.y, link: p.link })) })); } catch (e) { /* yok say */ }
