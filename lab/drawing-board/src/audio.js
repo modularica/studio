@@ -110,7 +110,7 @@
       if (send) { const s = ac.createGain(); s.gain.value = send; g.connect(s); s.connect(wet); }
       return g;
     };
-    G.keys = bus(0.35, G.musicIn, G.musicWet); G.bass = bus(0.03, G.musicIn, G.musicWet);
+    G.keys = bus(0.35, G.musicIn, G.musicWet); G.bass = bus(0.03, G.musicIn, G.musicWet); G.bass.gain.value = 1.15;
     G.mallet = bus(0.4, G.musicIn, G.musicWet); G.bell = bus(0.55, G.musicIn, G.musicWet);
     G.drums = bus(0.08, G.musicIn, G.musicWet);
     G.sfxVol = ac.createGain(); G.sfxVol.gain.value = SFX_VOL; G.sfxVol.connect(G.comp);
@@ -166,10 +166,11 @@
   }
   function bassNote(m, t, v, d, dest) {
     const f = mtof(m), lp = X.ac.createBiquadFilter();
-    lp.type = 'lowpass'; lp.frequency.value = 950; lp.connect(dest || X.bass);
-    const g = gain(lp), g2 = gain(lp);
-    env(g, t, 0.012, v, d); env(g2, t, 0.01, v * 0.5, d * 0.6);
-    osc('sine', f, t, d, g); osc('triangle', f * 2, t, d * 0.6, g2);
+    lp.type = 'lowpass'; lp.frequency.value = 1200; lp.connect(dest || X.bass);
+    const g = gain(lp), g2 = gain(lp), g3 = gain(lp);
+    // Kök sinüs (kulaklıkta derin bas) + oktav üçgen ve 3. harmonik (telefon hoparlöründe de duyulsun)
+    env(g, t, 0.012, v, d); env(g2, t, 0.01, v * 0.55, d * 0.7); env(g3, t, 0.008, v * 0.22, Math.min(0.35, d * 0.4));
+    osc('sine', f, t, d, g); osc('triangle', f * 2, t, d * 0.7, g2); osc('sine', f * 3, t, Math.min(0.4, d * 0.4), g3);
   }
   function thump(t, v, f0, f1, d, dest) {   // davul ve damga gümlemesi
     const g = gain(dest || X.drums), o = X.ac.createOscillator(); o.type = 'sine';
@@ -229,9 +230,11 @@
     }
     // bas
     const root = tone(song, c, 0, 36, 48);
-    if (s === 0) bassNote(root, t, M.drums ? 0.12 : 0.1, M.drums ? 0.55 : 1.9);
-    else if (M.drums && s === 10) bassNote(tone(song, c, 2, 36, 50), t, 0.08, 0.3);
-    else if (M.drums && s === 14 && r() < 0.5) bassNote(tone(song, nc, 0, 36, 48) + (r() < 0.5 ? -1 : 2), t, 0.06, 0.2);
+    if (s === 0) bassNote(root, t, M.drums ? 0.22 : 0.19, M.drums ? 0.55 : 1.2);
+    else if (!M.drums && s === 8) bassNote(tone(song, c, 2, 36, 50), t, 0.13, 0.9);   // kurarken de ikinci vuruş
+    else if (M.drums && s === 6) bassNote(root, t, 0.12, 0.2);
+    else if (M.drums && s === 10) bassNote(tone(song, c, 2, 36, 50), t, 0.16, 0.3);
+    else if (M.drums && s === 14 && r() < 0.6) bassNote(tone(song, nc, 0, 36, 48) + (r() < 0.5 ? -1 : 2), t, 0.12, 0.2);
     // marimba
     const o = song.ost[s];
     if (o >= 0 && (M.ost >= 1 || (s % 4 === 0 && r() < M.ost))) {
@@ -249,7 +252,7 @@
     }
     // davul (makine çalışırken)
     if (M.drums) {
-      if (s === 0 || s === 10 || (s === 7 && r() < 0.25)) thump(t, s === 0 ? 0.17 : 0.12, 125, 46, 0.26);
+      if (s === 0 || s === 10 || (s === 7 && r() < 0.25)) thump(t, s === 0 ? 0.26 : 0.19, 125, 46, 0.28);
       if (s === 4 || s === 12) wood(t, 0.06, 1150);
       if (s % 2 === 0) hiss(t, s % 4 === 0 ? 0.034 : 0.021, 0.022, 'highpass', 7500);
       else hiss(t, 0.015 + r() * 0.007, 0.05, 'bandpass', 6200, 0.9);
