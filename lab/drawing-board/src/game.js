@@ -4,9 +4,9 @@
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet' };
-  const ORDER = ['ramp', 'spring', 'belt', 'gate', 'piston', 'fan', 'magnet', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -75,6 +75,8 @@
     belt: ['New part', 'Conveyor', 'Carries the ball the way its arrows point.'],
     gate: ['New part', 'Gate', 'Press to open, press again to close. Laid flat, it is a trapdoor.'],
     magnet: ['New part', 'Magnet', 'Hold it to pull a steel ball in. Yellow balls ignore it.'],
+    bumper: ['New part', 'Bumper', 'Bounces the ball off like a mirror, fast. Tap it to flip the slant.'],
+    flipper: ['New part', 'Flipper', 'Press it and it swings up and hits the ball. A resting ball flies straight up.'],
     steel: ['New ball', 'Steel ball', 'A second ball. Both balls have to get in.'],
     flags: ['New cup', 'Flag cups', 'A flagged cup only takes the ball of its own color.'],
   };
@@ -643,6 +645,54 @@
     c.beginPath(); c.arc(q[0], q[1], 0.075, 0, TAU); fill(c, '#eafcff');
   }
 
+  // Flipper: turuncu kol (elle kumanda), menteşe pimi, taranmış ayak. Kurarken kalkık konumu çizgi-iki nokta ve salınım oku.
+  function drawFlipper(c, Vw, p, rt, ann) {
+    const g = KM.flipperGeom(p), s = g.s, L = T.flipLen, a = rt ? rt.angle : T.flipDown;
+    section(c, Vw, () => c.rect(g.px - 0.09, p.y + 0.06, 0.18, g.py - 0.14 - p.y - 0.06), [g.px - 0.09, p.y + 0.06, g.px + 0.09, g.py - 0.14]);
+    const paddle = () => { c.beginPath(); c.moveTo(-0.13, -0.13); c.lineTo(L, -0.055); c.lineTo(L, 0.055); c.lineTo(-0.13, 0.13); c.closePath(); };
+    c.save(); c.translate(g.px, g.py); c.scale(s, 1);
+    if (ann) {
+      c.save(); c.rotate(T.flipUp); paddle(); stroke(c, Vw, hand(0.55), LW.thin, DASH.phantom); c.restore();
+      if (Vw.lod) {
+        c.beginPath(); c.arc(0, 0, L + 0.18, T.flipDown + 0.08, T.flipUp - 0.06); stroke(c, Vw, ink(0.45), LW.hair);
+        const e = T.flipUp - 0.06;
+        arrow(c, Vw, Math.cos(e) * (L + 0.18), Math.sin(e) * (L + 0.18), e + Math.PI / 2, 6, ink(0.55));
+      }
+    }
+    c.save(); c.rotate(a); paddle(); fill(c, C.paper); fill(c, hand(rt && rt.on ? 0.32 : 0.18));
+    if (Vw.lod) { c.beginPath(); c.moveTo(0.25, 0); c.lineTo(L - 0.12, 0); stroke(c, Vw, hand(0.6), LW.hair, DASH.center); }
+    paddle(); stroke(c, Vw, C.hand, LW.edge); c.restore();
+    c.beginPath(); c.arc(0, 0, 0.1, 0, TAU); fill(c, C.paper); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.035, 0, TAU); fill(c, C.ink);
+    c.restore();
+    badge(c, Vw, p.num, g.px + s * 0.05, p.y + 0.22, 0.15);
+  }
+
+  // Tampon: köşegende taranmış levha, arkasında iki yaprak yay. Kurarken düşen topun nereye seksiyeceği oklarla.
+  function drawBumper(c, Vw, p, rt, ann) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, ang = p.o === 'r' ? -Math.PI / 4 : Math.PI / 4, len = Math.SQRT2 * 1.12, k = rt && rt.flash > 0 ? rt.flash / 0.25 : 0;
+    if (ann && Vw.lod) {
+      const out = p.o === 'r' ? 1 : -1;
+      c.beginPath(); c.moveTo(cx, p.y + 1.35); c.lineTo(cx, cy + 0.2); c.moveTo(cx + out * 0.2, cy); c.lineTo(cx + out * 0.95, cy);
+      stroke(c, Vw, ink(0.45), LW.hair, DASH.hidden);
+      arrow(c, Vw, cx, cy + 0.24, -Math.PI / 2, 5, ink(0.5)); arrow(c, Vw, cx + out * 1.0, cy, out > 0 ? 0 : Math.PI, 6, ink(0.6));
+    }
+    c.save(); c.translate(cx, cy); c.rotate(ang);
+    // Arkadaki yaylar (levhanın alt yüzünde) ve taban
+    if (Vw.lod) {
+      c.beginPath();
+      for (const sx of [-0.3, 0.3]) { c.moveTo(sx, -0.07); c.lineTo(sx - 0.06, -0.14); c.lineTo(sx + 0.06, -0.2); c.lineTo(sx - 0.06, -0.26); c.lineTo(sx, -0.31); }
+      c.moveTo(-0.42, -0.31); c.lineTo(0.42, -0.31);
+      stroke(c, Vw, ink(0.7), LW.thin);
+    }
+    section(c, Vw, () => c.rect(-len / 2, -0.07, len, 0.14), [-len / 2, -0.07, len / 2, 0.07], C.ink, LW.part);
+    if (k > 0 && !reduceMotion) {
+      c.beginPath(); for (const sx of [-0.35, 0, 0.35]) { c.moveTo(sx, 0.14); c.lineTo(sx, 0.14 + 0.28 * k); }
+      stroke(c, Vw, rgba(C.ball, 0.9 * k), LW.thin);
+    }
+    c.restore();
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -671,6 +721,8 @@
     else if (p.type === 'fan') drawFan(c, Vw, p, rt);
     else if (p.type === 'gate') drawGate(c, Vw, p, rt, ann);
     else if (p.type === 'magnet') drawMagnet(c, Vw, p, rt, time);
+    else if (p.type === 'flipper') drawFlipper(c, Vw, p, rt, ann);
+    else if (p.type === 'bumper') drawBumper(c, Vw, p, rt, ann);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
@@ -1327,7 +1379,7 @@
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : rt.type === 'gate' ? 'gate' : 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
@@ -1500,7 +1552,7 @@
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers' };
   function openLevels() {
     const grid = $('level-grid'); grid.textContent = '';
     const thumbs = [];

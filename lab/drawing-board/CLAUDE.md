@@ -1,6 +1,6 @@
 # Drawing Board
 
-The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Küçük Mühendisler"; büyükler de oynadığı için İngilizce ad aldı). Her çizimde parça listesindeki parçaları tahtaya koyup topu kovaya ulaştıran makineyi kurarsın. TIM'den farkı: makine çalışırken turuncu cihazlar (piston, pervane, kapı, mıknatıs) oyuncunun elinde; sensör koyup cihaza bağlarsan makine dokunmadan çalışır ("Fully automatic" damgası). Tasarım notları, bölüm tablosu, doğru çözüm yerleri ve zamanlama pencereleri claude.ai'daki uzigames projesinde (`drawing-board.md`).
+The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Küçük Mühendisler"; büyükler de oynadığı için İngilizce ad aldı). Her çizimde parça listesindeki parçaları tahtaya koyup topu kovaya ulaştıran makineyi kurarsın. TIM'den farkı: makine çalışırken turuncu cihazlar (piston, pervane, kapı, mıknatıs, flipper) oyuncunun elinde; sensör koyup cihaza bağlarsan makine dokunmadan çalışır ("Fully automatic" damgası). Tasarım notları, bölüm tablosu, doğru çözüm yerleri ve zamanlama pencereleri claude.ai'daki uzigames projesinde (`drawing-board.md`).
 
 ## Dosyalar
 
@@ -8,20 +8,22 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 - `cover.png` paylaşım görseli (8. çizim tam otomatik çalışırken: sensör pistonu tetiklemiş, piston topu itiyor).
 - `src/` kaynak (siteye çıkmaz, `.vercelignore`):
   - `sim.js` fizik çekirdeği (Planck.js, sabit 1/120 sn adım, DOM yok; Node'da da çalışır): parçalar, sensörler, çoklu top/kova, top çeşitleri, `runHeadless`
-  - `levels.js` 20 çizim, iki defter (`book`); her birinde ipuçları, damgalar ve testlerin doğruladığı çözümler (`sol`)
+  - `levels.js` 25 çizim, üç defter (`book`); her birinde ipuçları, damgalar ve testlerin doğruladığı çözümler (`sol`)
   - `game.js` arayüz: sürükle-bırak, kumanda, damgalar, bölüm seçimi (defter başlıklarıyla), teknik çizim (bkz. Görünüm), çalışırken efektler, kutlama ve yenilik anları (bkz. Oyun hissi), Lab bağlantıları
   - `audio.js` müzik ve sesler (`window.KM_AUDIO`, WebAudio sentezi, ses dosyası yok)
   - `index.html` sayfa iskeleti, `style.css` görünüm
   - `build.js` derleme; `test/` bölüm doğrulama ve tarayıcı denemeleri
 - Derleme: `node lab/drawing-board/src/build.js --lab` → `index.html`. Hesap satırları olmayan tek başına kopya: `node lab/drawing-board/src/build.js /tmp/db.html`. İnternetsiz kopya (fontlar ve Planck içinde): önce `cd lab/drawing-board/src && npm install`, sonra `node build.js --local /tmp/km-local.html`.
 - Bölüm testi: `cd lab/drawing-board/src && npm install && node test/design.js` (her bölüm: boş kurulum başarısız, kayıtlı çözümler başarılı). `node test/design.js <bölüm-id> --brute --sweep` tek parçalık bütün yerleşimleri ve elle basma pencerelerini tarar. Fizik ayarı (`sim.js` → `T`) ya da bir bölüm değişirse bunu çalıştır.
-- Tarayıcı denemesi: `--local` derlemesinden sonra `python3 test/browser.py` (20 bölümü oynar) ve `python3 test/shots.py` (masaüstü, telefon, iPad, sürükleme anı, çalışma anı, başarısız deneme izi ve bölüm kartları; `/tmp/km-shots/`). `python3 test/juice.py` kutlamayı, sonuç kartını, "unlocked" anlarını ve NEW etiketlerini sıfır ilerlemeyle dener ve görüntüler. `python3 test/music.py` müziği ve sesleri bir dakikalık akışla çevrimdışı çalar: `music.wav`/`music.mp3` ve bölüm bölüm tepe/RMS düzeyi (tepe 0.98'i geçerse hata).
+- Tarayıcı denemesi: `--local` derlemesinden sonra `python3 test/browser.py` (25 bölümü oynar) ve `python3 test/shots.py` (masaüstü, telefon, iPad, sürükleme anı, çalışma anı, başarısız deneme izi ve bölüm kartları; `/tmp/km-shots/`). `python3 test/juice.py` kutlamayı, sonuç kartını, "unlocked" anlarını ve NEW etiketlerini sıfır ilerlemeyle dener ve görüntüler. `python3 test/music.py` müziği ve sesleri bir dakikalık akışla çevrimdışı çalar: `music.wav`/`music.mp3` ve bölüm bölüm tepe/RMS düzeyi (tepe 0.98'i geçerse hata).
 
 ## Parçalar
 
-- Rampa, yay, konveyör, piston (bas), pervane (basılı tut), sensör, kapı, mıknatıs. Turuncu olanlar elle kumandalı; sensöre bağlanabilirler. Pervaneye ve mıknatısa bağlı sensör anahtar gibidir (açar, bir daha tetiklenirse kapatır); kapıya bağlı sensör kapıyı açar ya da kapatır.
+- Rampa, yay, konveyör, tampon, piston (bas), pervane (basılı tut), flipper (bas / basılı tut), sensör, kapı, mıknatıs. Turuncu olanlar elle kumandalı; sensöre bağlanabilirler. Pervaneye ve mıknatısa bağlı sensör anahtar gibidir (açar, bir daha tetiklenirse kapatır); kapıya bağlı sensör kapıyı açar ya da kapatır.
 - Kapı (`gate`): bir kare geçit, yanındaki kare yuva. Basınca levha yuvaya çekilir (açık), bir daha basınca geri gelir. `u` dik kapı (yuva üstte, yerde yuvarlanan topu durdurur; geçidin zemini karenin alt kenarında olmalı), `r` / `l` yatay kapak (yuva sağda / solda; üstü ve yuvası karenin 0.6 yüksekliğinde, zeminle aynı hizada olmalı). Kapanan levha önündeki topu ezmez, top çekilene kadar bekler. Yönüne göre alanı değişir: `KM.sizeOf(p)`.
 - Mıknatıs (`magnet`): basılı tutunca yüzünün önündeki yarım dairede (`T.magRange`, 2.5 kare) çelik bilyeyi yüzün önündeki yuvaya çeker ve orada tutar; sarı topa etkisi yok. Çekiş fizik değil yönlendirme: alan içindeki bilye ağırlıksız gibi yuvaya doğru hızlanır, kuvvet sınırlı (`magV`, `magA`, `magK`, `magMax`). Bırakınca bilye düşer.
+- Tampon (`bumper`, Defter 3): hücrenin köşegeninde sekitici levha, sürtünmesiz, top en az `T.bumpMin` (9) hızla geri seker. `r` \ biçiminde (düşen topu sağa atar, sağa giden topu aşağı çevirir), `l` / biçiminde (düşen topu sola, sağa yuvarlanan topu yukarı). Levha köşeden köşeye biraz taşar ki yerde yuvarlanan top ucuna değil yüzüne çarpsın; yukarı çıkan top sütun sınırında (x + 0.03) yükselir, ikinci tampon bir sütun solda iki satır yukarıda olur (Periscope).
+- Flipper (`flipper`, Defter 3): 2×1, menteşe bir uçta (`l`: menteşe sağda, kol sola uzanır; `r` tersi), kinematik kol `T.flipDown` (-0.3) ile `T.flipUp` (0.45) arasında `flipW` hızla kalkar. Basılı tutunca kalkık kalır; kısa dokunuş ya da sensör en az `flipPulse` (0.25 sn) tam vuruş yapar. Kolun ucunda bir dikmeye dayanıp duran top dik yukarı uçar (her basışta aynı, bölümler buna dayanıyor); yuvarlanırken vurulan top yukarı ve uca doğru, zamanlamaya göre çok farklı yerlere gider. Sensörlü çözümde flipper top gelirken vurduğu için yol elle çözümden farklıdır (Bank Shot, Pinball).
 - Top çeşitleri: `balls[i].kind` (`yellow` / `steel`); yazılmazsa ilk top sarı, diğerleri çelik. Yeni bölümlerde her topa `kind` yaz. Kovaya `kind` yazılırsa (bayraklı kova) yalnızca o renkten topu sayar; bayrak ve hedef o topun renginde çizilir.
 
 ## Notlar

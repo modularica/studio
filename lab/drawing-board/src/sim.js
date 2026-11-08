@@ -22,6 +22,8 @@
     beltV: 7.5,
     gateV: 7, gateLift: 0.98,
     magRange: 2.5, magV: 6, magA: 14, magK: 10, magMax: 4,
+    flipLen: 1.6, flipDown: -0.3, flipUp: 0.45, flipW: 9, flipBackW: 5, flipPulse: 0.25,
+    bumpMin: 9,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -38,6 +40,12 @@
     gate:   { orients: ['u', 'r', 'l'], w: 1, h: 2, dims: { r: [2, 1], l: [2, 1] }, manual: 'toggle' },
     // Mıknatıs: yüzü dönük olduğu yöne; basılı tutunca önündeki çelik bilyeleri çeker, sarı topa etkisi yok.
     magnet: { orients: ['u', 'r', 'l', 'd'], w: 1, h: 1, manual: 'hold' },
+    // Flipper (langırt kolu): menteşe bir uçta; basılı tutunca kalkar, bırakınca iner. 'r' kol sağa, 'l' sola uzanır.
+    // Sensöre bağlıysa bir kez vurur (kalkar, kısa bekler, iner).
+    flipper: { orients: ['r', 'l'], w: 2, h: 1, manual: 'hold' },
+    // Tampon: hücrenin köşegeninde sekitici levha. 'r' \ biçiminde (düşen topu sağa atar), 'l' / biçiminde.
+    // Çarpan top en az T.bumpMin hızla geri sekiyor.
+    bumper: { orients: ['r', 'l'], w: 1, h: 1 },
   };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
@@ -63,6 +71,17 @@
     if (o === 'u') return { base: [0.14, 0, 0.86, 0.6], head: [0.04, 0.82, 0.96, 1.0] };
     if (o === 'r') return { base: [0, 0.14, 0.6, 0.86], head: [0.82, 0.04, 1.0, 0.96] };
     return { base: [0.4, 0.14, 1, 0.86], head: [0, 0.04, 0.18, 0.96] };
+  }
+
+  // Flipper: menteşe noktası ve yön (s = 1 kol sağa, -1 sola). Açı 0 yatay; T.flipDown aşağıda, T.flipUp yukarıda.
+  function flipperGeom(p) {
+    const s = p.o === 'r' ? 1 : -1;
+    return { px: p.x + (s > 0 ? 0.25 : 1.75), py: p.y + 0.55, s };
+  }
+  function bumperLine(p) {
+    // Köşeden köşeye (biraz taşarak): yerde yuvarlanan top da yüzüne çarpsın, ucuna değil.
+    const e = 0.06;
+    return p.o === 'r' ? [[p.x - e, p.y + 1 + e], [p.x + 1 + e, p.y - e]] : [[p.x - e, p.y - e], [p.x + 1 + e, p.y + 1 + e]];
   }
 
   function fanZone(p) {
@@ -183,7 +202,7 @@
     for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
 
     const parts = listParts(level, placed);
-    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], byId = {};
+    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], byId = {};
     const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
@@ -225,6 +244,18 @@
         box(statics, [p.x + 0.15, p.y + 0.15, p.x + 0.85, p.y + 0.85]);
         rt.face = magnetFace(p);
         magnets.push(rt);
+      } else if (p.type === 'flipper') {
+        const g = flipperGeom(p), s = g.s, L = T.flipLen;
+        const body = world.createKinematicBody({ position: pl.Vec2(g.px, g.py), angle: s * T.flipDown });
+        const pts = [[-0.13, -0.13], [L, -0.055], [L, 0.055], [-0.13, 0.13]].map(q => pl.Vec2(s * q[0], q[1]));
+        body.createFixture(pl.Polygon(s > 0 ? pts : pts.reverse()), { friction: 0.5 }).setUserData({ kind: 'flipper', rt });
+        box(statics, [g.px - 0.08, p.y + 0.1, g.px + 0.08, g.py - 0.14]);   // menteşe ayağı
+        rt.body = body; rt.angle = T.flipDown; rt.pulse = 0; rt.s = s;
+        flippers.push(rt);
+      } else if (p.type === 'bumper') {
+        const [a, b] = bumperLine(p);
+        statics.createFixture(pl.Box(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2, 0.07, pl.Vec2((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.atan2(b[1] - a[1], b[0] - a[0])),
+          { friction: 0, restitution: 0.9 }).setUserData({ kind: 'bumper', rt });
       }
     }
     for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
@@ -242,9 +273,12 @@
     const mass = ball.getMass();
     const need = Math.min(level.need || balls.length, balls.length);
 
-    const launches = [];
+    const launches = [], bounces = [];
     world.on('begin-contact', c => {
       const fa = c.getFixtureA(), fb = c.getFixtureB(), ua = fa.getUserData(), ub = fb.getUserData();
+      const bu = ua && ua.kind === 'bumper' ? ua.rt : ub && ub.kind === 'bumper' ? ub.rt : null;
+      const bb = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
+      if (bu && bb) bounces.push([bu, bb.getBody()]);
       const s = ua && ua.kind === 'spring' ? ua.rt : ub && ub.kind === 'spring' ? ub.rt : null;
       const bf = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
       if (!s || !bf) return;
@@ -259,7 +293,7 @@
     });
 
     const sim = {
-      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, need,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -284,11 +318,18 @@
           if (manual) sim.presses++;
           return true;
         }
+        if (rt.type === 'flipper') {
+          rt.pulse = T.flipPulse;
+          if (manual) sim.presses++;
+          return true;
+        }
         return false;
       },
       hold(rt, down) {
         if (PARTS[rt.type].manual !== 'hold') return sim.press(rt, true);
         if (down && !rt.held) sim.presses++;
+        // Flipper'a kısa dokunuş da tam vuruş olsun: en az T.flipPulse kalkık kalır.
+        if (rt.type === 'flipper' && down && !rt.held) rt.pulse = T.flipPulse;
         rt.held = !!down;
         return true;
       },
@@ -369,8 +410,36 @@
           });
         }
 
+        for (const rt of flippers) {
+          if (rt.pulse > 0) rt.pulse -= DT;
+          const was = rt.on;
+          rt.on = rt.held || rt.pulse > 0;
+          if (rt.on && !was) rt.fires++;
+          const gap = (rt.on ? T.flipUp : T.flipDown) - rt.angle;
+          let w = 0;
+          if (Math.abs(gap) > 1e-9) {
+            w = gap > 0 ? T.flipW : -T.flipBackW;
+            if (Math.abs(gap) < Math.abs(w) * DT) w = gap / DT;
+          }
+          rt.angle += w * DT;
+          rt.body.setAngularVelocity(rt.s * w);
+        }
+
         world.step(DT, 8, 3);
         sim.steps++;
+
+        if (bounces.length) {
+          // Tampon topu en az T.bumpMin hızla geri atar (langırttaki gibi canlı).
+          const done = new Set();
+          for (const [bu, body] of bounces) {
+            bu.flash = 0.25;
+            if (done.has(body)) continue;
+            done.add(body); bu.fires++;
+            const v = body.getLinearVelocity(), sp = Math.hypot(v.x, v.y);
+            if (sp > 0.05 && sp < T.bumpMin) body.setLinearVelocity(pl.Vec2(v.x * T.bumpMin / sp, v.y * T.bumpMin / sp));
+          }
+          bounces.length = 0;
+        }
 
         if (launches.length) {
           const done = new Set();
@@ -461,5 +530,5 @@
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, cupBoxes, listParts, createSim, runHeadless };
+  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
 }));

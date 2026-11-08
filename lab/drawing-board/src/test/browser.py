@@ -129,6 +129,14 @@ with sync_playwright() as p:
         parts = page.evaluate("KM_GAME.S.level.sol[0].parts.map(p => ({type: p.type, o: p.o, x: p.x, y: p.y, link: p.link}))")
         place_and_run(parts, label=f'L{i + 1} {lid}')
         page.click('#btn-retry'); page.wait_for_timeout(250)
+    # Defter 3: tampon ve flipper (elle dokunuş tam vuruş olmalı; sensörlü çözümler)
+    def sol_parts(k):
+        return page.evaluate(f"KM_GAME.S.level.sol[{k}].parts.map(p => ({{type: p.type, o: p.o, x: p.x, y: p.y, link: p.link}}))")
+    for i, keys, k in [(20, None, 0), (21, None, 0), (22, [(4.5, '1', 0)], 0), (23, [(4.5, '1', 0)], 0), (23, None, 1), (24, [(5.0, '1', 0)], 0), (24, None, 1)]:
+        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(150)
+        lid = page.evaluate("KM_GAME.S.level.id")
+        place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
+        page.click('#btn-retry'); page.wait_for_timeout(250)
     # çoklu topta çalışırken kova sayacı
     page.evaluate("KM_GAME.loadLevel(12)"); page.wait_for_timeout(150)
     page.click('#run'); page.wait_for_timeout(2600)

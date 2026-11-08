@@ -499,6 +499,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     beltV: 7.5,
     gateV: 7, gateLift: 0.98,
     magRange: 2.5, magV: 6, magA: 14, magK: 10, magMax: 4,
+    flipLen: 1.6, flipDown: -0.3, flipUp: 0.45, flipW: 9, flipBackW: 5, flipPulse: 0.25,
+    bumpMin: 9,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -515,6 +517,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     gate:   { orients: ['u', 'r', 'l'], w: 1, h: 2, dims: { r: [2, 1], l: [2, 1] }, manual: 'toggle' },
     // Mıknatıs: yüzü dönük olduğu yöne; basılı tutunca önündeki çelik bilyeleri çeker, sarı topa etkisi yok.
     magnet: { orients: ['u', 'r', 'l', 'd'], w: 1, h: 1, manual: 'hold' },
+    // Flipper (langırt kolu): menteşe bir uçta; basılı tutunca kalkar, bırakınca iner. 'r' kol sağa, 'l' sola uzanır.
+    // Sensöre bağlıysa bir kez vurur (kalkar, kısa bekler, iner).
+    flipper: { orients: ['r', 'l'], w: 2, h: 1, manual: 'hold' },
+    // Tampon: hücrenin köşegeninde sekitici levha. 'r' \ biçiminde (düşen topu sağa atar), 'l' / biçiminde.
+    // Çarpan top en az T.bumpMin hızla geri sekiyor.
+    bumper: { orients: ['r', 'l'], w: 1, h: 1 },
   };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
@@ -540,6 +548,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     if (o === 'u') return { base: [0.14, 0, 0.86, 0.6], head: [0.04, 0.82, 0.96, 1.0] };
     if (o === 'r') return { base: [0, 0.14, 0.6, 0.86], head: [0.82, 0.04, 1.0, 0.96] };
     return { base: [0.4, 0.14, 1, 0.86], head: [0, 0.04, 0.18, 0.96] };
+  }
+
+  // Flipper: menteşe noktası ve yön (s = 1 kol sağa, -1 sola). Açı 0 yatay; T.flipDown aşağıda, T.flipUp yukarıda.
+  function flipperGeom(p) {
+    const s = p.o === 'r' ? 1 : -1;
+    return { px: p.x + (s > 0 ? 0.25 : 1.75), py: p.y + 0.55, s };
+  }
+  function bumperLine(p) {
+    // Köşeden köşeye (biraz taşarak): yerde yuvarlanan top da yüzüne çarpsın, ucuna değil.
+    const e = 0.06;
+    return p.o === 'r' ? [[p.x - e, p.y + 1 + e], [p.x + 1 + e, p.y - e]] : [[p.x - e, p.y - e], [p.x + 1 + e, p.y + 1 + e]];
   }
 
   function fanZone(p) {
@@ -660,7 +679,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
 
     const parts = listParts(level, placed);
-    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], byId = {};
+    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], byId = {};
     const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
@@ -702,6 +721,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         box(statics, [p.x + 0.15, p.y + 0.15, p.x + 0.85, p.y + 0.85]);
         rt.face = magnetFace(p);
         magnets.push(rt);
+      } else if (p.type === 'flipper') {
+        const g = flipperGeom(p), s = g.s, L = T.flipLen;
+        const body = world.createKinematicBody({ position: pl.Vec2(g.px, g.py), angle: s * T.flipDown });
+        const pts = [[-0.13, -0.13], [L, -0.055], [L, 0.055], [-0.13, 0.13]].map(q => pl.Vec2(s * q[0], q[1]));
+        body.createFixture(pl.Polygon(s > 0 ? pts : pts.reverse()), { friction: 0.5 }).setUserData({ kind: 'flipper', rt });
+        box(statics, [g.px - 0.08, p.y + 0.1, g.px + 0.08, g.py - 0.14]);   // menteşe ayağı
+        rt.body = body; rt.angle = T.flipDown; rt.pulse = 0; rt.s = s;
+        flippers.push(rt);
+      } else if (p.type === 'bumper') {
+        const [a, b] = bumperLine(p);
+        statics.createFixture(pl.Box(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2, 0.07, pl.Vec2((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.atan2(b[1] - a[1], b[0] - a[0])),
+          { friction: 0, restitution: 0.9 }).setUserData({ kind: 'bumper', rt });
       }
     }
     for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
@@ -719,9 +750,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const mass = ball.getMass();
     const need = Math.min(level.need || balls.length, balls.length);
 
-    const launches = [];
+    const launches = [], bounces = [];
     world.on('begin-contact', c => {
       const fa = c.getFixtureA(), fb = c.getFixtureB(), ua = fa.getUserData(), ub = fb.getUserData();
+      const bu = ua && ua.kind === 'bumper' ? ua.rt : ub && ub.kind === 'bumper' ? ub.rt : null;
+      const bb = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
+      if (bu && bb) bounces.push([bu, bb.getBody()]);
       const s = ua && ua.kind === 'spring' ? ua.rt : ub && ub.kind === 'spring' ? ub.rt : null;
       const bf = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
       if (!s || !bf) return;
@@ -736,7 +770,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     });
 
     const sim = {
-      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, need,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -761,11 +795,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
           if (manual) sim.presses++;
           return true;
         }
+        if (rt.type === 'flipper') {
+          rt.pulse = T.flipPulse;
+          if (manual) sim.presses++;
+          return true;
+        }
         return false;
       },
       hold(rt, down) {
         if (PARTS[rt.type].manual !== 'hold') return sim.press(rt, true);
         if (down && !rt.held) sim.presses++;
+        // Flipper'a kısa dokunuş da tam vuruş olsun: en az T.flipPulse kalkık kalır.
+        if (rt.type === 'flipper' && down && !rt.held) rt.pulse = T.flipPulse;
         rt.held = !!down;
         return true;
       },
@@ -846,8 +887,36 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
           });
         }
 
+        for (const rt of flippers) {
+          if (rt.pulse > 0) rt.pulse -= DT;
+          const was = rt.on;
+          rt.on = rt.held || rt.pulse > 0;
+          if (rt.on && !was) rt.fires++;
+          const gap = (rt.on ? T.flipUp : T.flipDown) - rt.angle;
+          let w = 0;
+          if (Math.abs(gap) > 1e-9) {
+            w = gap > 0 ? T.flipW : -T.flipBackW;
+            if (Math.abs(gap) < Math.abs(w) * DT) w = gap / DT;
+          }
+          rt.angle += w * DT;
+          rt.body.setAngularVelocity(rt.s * w);
+        }
+
         world.step(DT, 8, 3);
         sim.steps++;
+
+        if (bounces.length) {
+          // Tampon topu en az T.bumpMin hızla geri atar (langırttaki gibi canlı).
+          const done = new Set();
+          for (const [bu, body] of bounces) {
+            bu.flash = 0.25;
+            if (done.has(body)) continue;
+            done.add(body); bu.fires++;
+            const v = body.getLinearVelocity(), sp = Math.hypot(v.x, v.y);
+            if (sp > 0.05 && sp < T.bumpMin) body.setLinearVelocity(pl.Vec2(v.x * T.bumpMin / sp, v.y * T.bumpMin / sp));
+          }
+          bounces.length = 0;
+        }
 
         if (launches.length) {
           const done = new Set();
@@ -938,7 +1007,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, cupBoxes, listParts, createSim, runHeadless };
+  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
 }));
 
 </script>
@@ -1381,6 +1450,114 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         { name: 'elle', parts: [], inputs: [{ t: 0, num: 2, act: 'down' }, { t: 1.1, num: 1, act: 'press' }, { t: 5, num: 2, act: 'up' }] },
       ],
     },
+
+    // ---------------------------------------------------------- Defter 3 · Flippers and Bumpers
+    // Tampon (bumper): köşegen sekitici, topu en az T.bumpMin hızla geri atar. Düşen topu \ sağa, / sola;
+    // yatay gelen topu / yukarı çevirir. Flipper: menteşe bir uçta, bas/basılı tut: kalkıp topa vurur.
+    {
+      id: 'tampon',
+      name: 'Bumper', book: 3,
+      task: 'The ball drops straight down. Bounce it across to the cup.',
+      start: { x: 2.5, y: 9.3 },
+      pipe: { x: 2, y: 9, dir: 'd' },
+      walls: [[5, 0, 16, 0.4], [7.6, 0.4, 10.4, 2]],
+      cup: { x: 8, y: 2, w: 2, back: { side: 'r', h: 2 } },
+      tray: { bumper: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 1 }],
+      hints: {
+        place: 'A bumper bounces the ball off like a mirror, and fast. Put it under the falling ball.',
+        ready: 'The slant decides the way: tap the bumper to flip it. Then press Run.',
+        run: 'Watch where it bounces.',
+        fail: 'Wrong way? Tap the bumper to flip its slant. Too short or too long? Move it up or down.',
+        after: 'One bumper, one bounce.',
+      },
+      sol: [{ name: 'tampon', parts: [{ type: 'bumper', x: 2, y: 6, o: 'r' }], inputs: [] }],
+    },
+    {
+      id: 'periskop',
+      name: 'Periscope', book: 3,
+      task: 'A wall is in the way. Send the ball up and over it.',
+      start: { x: 0.6, y: 1.28, vx: 3 },
+      pipe: { x: 0, y: 1, dir: 'r' },
+      walls: [[0, 0, 16, 1], [10, 1, 10.5, 2.4]],
+      cup: { x: 12, y: 1, w: 2, back: { side: 'r', h: 2 } },
+      tray: { bumper: 2 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
+      hints: {
+        place: 'A rolling ball that hits a / bumper goes straight up. A second bumper up there can send it right.',
+        ready: 'Press Run and watch where the ball goes up.',
+        run: 'Up, then over.',
+        fail: 'The ball goes up next to the first bumper, a little to its left. The second one must sit right in its way.',
+        after: 'Two bumpers, one periscope.',
+      },
+      sol: [{ name: 'periskop', parts: [{ type: 'bumper', x: 8, y: 1, o: 'l' }, { type: 'bumper', x: 7, y: 3, o: 'l' }], inputs: [] }],
+    },
+    {
+      id: 'flipper',
+      name: 'Flipper', book: 3,
+      task: 'The ball stops on the flipper. Flip it up, the bumper does the rest.',
+      start: { x: 12.4, y: 2.6, vx: -2.2 },
+      pipe: { x: 13, y: 2, dir: 'l' },
+      walls: [[8, 1.6, 13, 2.3], [5.6, 0.9, 5.9, 1.9], [0, 0, 16, 0.9]],
+      fixed: [{ type: 'flipper', x: 6, y: 1, o: 'l' }, { type: 'bumper', x: 6, y: 6, o: 'l' }],
+      cup: { x: 13.6, y: 0.9, w: 2.4, back: { side: 'r', h: 3 } },
+      tray: {},
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
+      hints: {
+        place: 'No parts in this drawing; the flipper is yours. Press Run.',
+        ready: 'Press Run. When the ball stops at the end of the flipper, press 1.',
+        run: 'Wait for the ball to stop, then press 1.',
+        fail: 'Pressed too early? Let the ball stop against the post first.',
+        after: 'A resting ball flies straight up.',
+      },
+      sol: [{ name: 'dur, bas', parts: [], inputs: [{ t: 4.5, num: 1, act: 'press' }] }],
+    },
+    {
+      id: 'bank',
+      name: 'Bank Shot', book: 3,
+      task: 'Flip the ball up and bank it off a bumper into the cup on the left.',
+      start: { x: 12.4, y: 2.6, vx: -2.2 },
+      pipe: { x: 13, y: 2, dir: 'l' },
+      walls: [[8, 1.6, 13, 2.3], [5.6, 0.9, 5.9, 1.9], [0, 0, 16, 0.9], [0.4, 0.9, 2.6, 3.4], [2.6, 0.9, 2.9, 5.2]],
+      fixed: [{ type: 'flipper', x: 6, y: 1, o: 'l' }],
+      cup: { x: 0.5, y: 3.4, w: 2, back: { side: 'l', h: 3 } },
+      tray: { bumper: 1, sensor: 1 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }, { k: 'auto' }],
+      hints: {
+        place: 'Put the bumper where the flipped ball will hit it.',
+        ready: 'Press Run, let the ball stop, then press 1.',
+        run: 'Up, bank, in.',
+        fail: 'A resting ball flies straight up. A \\ bumper above it sends it left.',
+        after: 'Fully automatic: a sensor fires the flipper as the ball rolls on, so it flies a different way. Move the bumper to catch it.',
+      },
+      sol: [
+        { name: 'elle', parts: [{ type: 'bumper', x: 6, y: 7, o: 'r' }], inputs: [{ t: 4.5, num: 1, act: 'press' }] },
+        { name: 'sensör', parts: [{ type: 'bumper', x: 5, y: 6, o: 'r' }, { type: 'sensor', x: 6, y: 1, o: '-', link: 'f0' }], inputs: [] },
+      ],
+    },
+    {
+      id: 'pinball',
+      name: 'Pinball', book: 3,
+      task: 'Flip the ball over the top and drop it down the chimney.',
+      start: { x: 12.4, y: 2.6, vx: -2.2 },
+      pipe: { x: 13, y: 2, dir: 'l' },
+      walls: [[8, 1.6, 13, 2.3], [5.6, 0.9, 5.9, 1.9], [0, 0, 16, 0.9], [0.6, 0.9, 1, 7], [3, 0.9, 3.4, 7]],
+      fixed: [{ type: 'flipper', x: 6, y: 1, o: 'l' }],
+      cup: { x: 1, y: 0.9, w: 2 },
+      tray: { bumper: 2, sensor: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'Two bumpers: one sends the ball left, one sends it down into the chimney.',
+        ready: 'Press Run, let the ball stop, then press 1.',
+        run: 'Up, left, down.',
+        fail: 'A ball going left that hits a / bumper turns down. It has to come down inside the chimney.',
+        after: 'Fully automatic: with a sensor the ball takes a different path. Find bumper spots that catch that one.',
+      },
+      sol: [
+        { name: 'elle', parts: [{ type: 'bumper', x: 6, y: 8, o: 'r' }, { type: 'bumper', x: 2, y: 7, o: 'l' }], inputs: [{ t: 5, num: 1, act: 'press' }] },
+        { name: 'sensör', parts: [{ type: 'bumper', x: 2, y: 9, o: 'r' }, { type: 'bumper', x: 3, y: 7, o: 'l' }, { type: 'sensor', x: 6, y: 1, o: '-', link: 'f0' }], inputs: [] },
+      ],
+    },
   ];
 }));
 
@@ -1723,6 +1900,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       mallet(tone(h.song, h.c, 0, 48, 60) + 24, t + 0.15, 0.08, 0, X.sfx);
     },
     sensor(t, h) { bell(tone(h.song, h.c, 2, 84, 96), t, 0.07, X.sfx, 0.45); },
+    flipper(t, h) { thump(t, 0.22, 220, 90, 0.12, X.sfx); hiss(t, 0.1, 0.05, 'bandpass', 1800, 1, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.13, 0, X.sfx); },
+    bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
     gate(t, h) { hiss(t, 0.12, 0.14, 'bandpass', 900, 1.2, X.sfx, 600); mallet(tone(h.song, h.c, 0, 48, 60), t, 0.16, 0, X.sfx); },
     magnet(t, h) {
       const f = mtof(tone(h.song, h.c, 0, 36, 48)) * 2, lp = X.ac.createBiquadFilter();
@@ -1855,9 +2034,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet' };
-  const ORDER = ['ramp', 'spring', 'belt', 'gate', 'piston', 'fan', 'magnet', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -1926,6 +2105,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     belt: ['New part', 'Conveyor', 'Carries the ball the way its arrows point.'],
     gate: ['New part', 'Gate', 'Press to open, press again to close. Laid flat, it is a trapdoor.'],
     magnet: ['New part', 'Magnet', 'Hold it to pull a steel ball in. Yellow balls ignore it.'],
+    bumper: ['New part', 'Bumper', 'Bounces the ball off like a mirror, fast. Tap it to flip the slant.'],
+    flipper: ['New part', 'Flipper', 'Press it and it swings up and hits the ball. A resting ball flies straight up.'],
     steel: ['New ball', 'Steel ball', 'A second ball. Both balls have to get in.'],
     flags: ['New cup', 'Flag cups', 'A flagged cup only takes the ball of its own color.'],
   };
@@ -2494,6 +2675,54 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     c.beginPath(); c.arc(q[0], q[1], 0.075, 0, TAU); fill(c, '#eafcff');
   }
 
+  // Flipper: turuncu kol (elle kumanda), menteşe pimi, taranmış ayak. Kurarken kalkık konumu çizgi-iki nokta ve salınım oku.
+  function drawFlipper(c, Vw, p, rt, ann) {
+    const g = KM.flipperGeom(p), s = g.s, L = T.flipLen, a = rt ? rt.angle : T.flipDown;
+    section(c, Vw, () => c.rect(g.px - 0.09, p.y + 0.06, 0.18, g.py - 0.14 - p.y - 0.06), [g.px - 0.09, p.y + 0.06, g.px + 0.09, g.py - 0.14]);
+    const paddle = () => { c.beginPath(); c.moveTo(-0.13, -0.13); c.lineTo(L, -0.055); c.lineTo(L, 0.055); c.lineTo(-0.13, 0.13); c.closePath(); };
+    c.save(); c.translate(g.px, g.py); c.scale(s, 1);
+    if (ann) {
+      c.save(); c.rotate(T.flipUp); paddle(); stroke(c, Vw, hand(0.55), LW.thin, DASH.phantom); c.restore();
+      if (Vw.lod) {
+        c.beginPath(); c.arc(0, 0, L + 0.18, T.flipDown + 0.08, T.flipUp - 0.06); stroke(c, Vw, ink(0.45), LW.hair);
+        const e = T.flipUp - 0.06;
+        arrow(c, Vw, Math.cos(e) * (L + 0.18), Math.sin(e) * (L + 0.18), e + Math.PI / 2, 6, ink(0.55));
+      }
+    }
+    c.save(); c.rotate(a); paddle(); fill(c, C.paper); fill(c, hand(rt && rt.on ? 0.32 : 0.18));
+    if (Vw.lod) { c.beginPath(); c.moveTo(0.25, 0); c.lineTo(L - 0.12, 0); stroke(c, Vw, hand(0.6), LW.hair, DASH.center); }
+    paddle(); stroke(c, Vw, C.hand, LW.edge); c.restore();
+    c.beginPath(); c.arc(0, 0, 0.1, 0, TAU); fill(c, C.paper); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.035, 0, TAU); fill(c, C.ink);
+    c.restore();
+    badge(c, Vw, p.num, g.px + s * 0.05, p.y + 0.22, 0.15);
+  }
+
+  // Tampon: köşegende taranmış levha, arkasında iki yaprak yay. Kurarken düşen topun nereye seksiyeceği oklarla.
+  function drawBumper(c, Vw, p, rt, ann) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, ang = p.o === 'r' ? -Math.PI / 4 : Math.PI / 4, len = Math.SQRT2 * 1.12, k = rt && rt.flash > 0 ? rt.flash / 0.25 : 0;
+    if (ann && Vw.lod) {
+      const out = p.o === 'r' ? 1 : -1;
+      c.beginPath(); c.moveTo(cx, p.y + 1.35); c.lineTo(cx, cy + 0.2); c.moveTo(cx + out * 0.2, cy); c.lineTo(cx + out * 0.95, cy);
+      stroke(c, Vw, ink(0.45), LW.hair, DASH.hidden);
+      arrow(c, Vw, cx, cy + 0.24, -Math.PI / 2, 5, ink(0.5)); arrow(c, Vw, cx + out * 1.0, cy, out > 0 ? 0 : Math.PI, 6, ink(0.6));
+    }
+    c.save(); c.translate(cx, cy); c.rotate(ang);
+    // Arkadaki yaylar (levhanın alt yüzünde) ve taban
+    if (Vw.lod) {
+      c.beginPath();
+      for (const sx of [-0.3, 0.3]) { c.moveTo(sx, -0.07); c.lineTo(sx - 0.06, -0.14); c.lineTo(sx + 0.06, -0.2); c.lineTo(sx - 0.06, -0.26); c.lineTo(sx, -0.31); }
+      c.moveTo(-0.42, -0.31); c.lineTo(0.42, -0.31);
+      stroke(c, Vw, ink(0.7), LW.thin);
+    }
+    section(c, Vw, () => c.rect(-len / 2, -0.07, len, 0.14), [-len / 2, -0.07, len / 2, 0.07], C.ink, LW.part);
+    if (k > 0 && !reduceMotion) {
+      c.beginPath(); for (const sx of [-0.35, 0, 0.35]) { c.moveTo(sx, 0.14); c.lineTo(sx, 0.14 + 0.28 * k); }
+      stroke(c, Vw, rgba(C.ball, 0.9 * k), LW.thin);
+    }
+    c.restore();
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -2522,6 +2751,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     else if (p.type === 'fan') drawFan(c, Vw, p, rt);
     else if (p.type === 'gate') drawGate(c, Vw, p, rt, ann);
     else if (p.type === 'magnet') drawMagnet(c, Vw, p, rt, time);
+    else if (p.type === 'flipper') drawFlipper(c, Vw, p, rt, ann);
+    else if (p.type === 'bumper') drawBumper(c, Vw, p, rt, ann);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
@@ -3178,7 +3409,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx(rt.type === 'sensor' ? 'sensor' : rt.type === 'gate' ? 'gate' : 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
@@ -3351,7 +3582,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers' };
   function openLevels() {
     const grid = $('level-grid'); grid.textContent = '';
     const thumbs = [];

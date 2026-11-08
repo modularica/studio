@@ -335,6 +335,8 @@
       mallet(tone(h.song, h.c, 0, 48, 60) + 24, t + 0.15, 0.08, 0, X.sfx);
     },
     sensor(t, h) { bell(tone(h.song, h.c, 2, 84, 96), t, 0.07, X.sfx, 0.45); },
+    flipper(t, h) { thump(t, 0.22, 220, 90, 0.12, X.sfx); hiss(t, 0.1, 0.05, 'bandpass', 1800, 1, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.13, 0, X.sfx); },
+    bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
     gate(t, h) { hiss(t, 0.12, 0.14, 'bandpass', 900, 1.2, X.sfx, 600); mallet(tone(h.song, h.c, 0, 48, 60), t, 0.16, 0, X.sfx); },
     magnet(t, h) {
       const f = mtof(tone(h.song, h.c, 0, 36, 48)) * 2, lp = X.ac.createBiquadFilter();
