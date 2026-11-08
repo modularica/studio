@@ -41,11 +41,25 @@
         <div class="panel-head"><span class="cap">Parts list</span><span class="cap">Qty</span></div>
         <ol id="bom-list"></ol>
         <p class="panel-foot" id="bom-foot">Drag: place · Tap: turn · Drag off the board: put back</p>
+        <button class="btn ed-open" id="btn-edit" type="button" hidden>Edit this drawing</button>
       </div>
       <div class="panel" id="pult" hidden>
         <div class="panel-head"><span class="cap">Controls</span><span class="cap" id="press-count">Presses: 0</span></div>
         <div id="pult-buttons"></div>
         <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too.</p>
+      </div>
+      <div class="panel" id="editor" hidden>
+        <div class="panel-head"><span class="cap">Workshop</span><span class="cap" id="ed-status"></span></div>
+        <label class="ed-name"><span class="cap">Name</span><input id="ed-name" maxlength="24" autocomplete="off" spellcheck="false"></label>
+        <div class="ed-tools" id="ed-tools" role="toolbar" aria-label="Tools"></div>
+        <div class="ed-parts" id="ed-parts" hidden></div>
+        <div class="panel-head"><span class="cap">Parts list for players</span></div>
+        <ol id="ed-tray"></ol>
+        <div class="ed-actions">
+          <button class="btn" id="ed-delete" type="button">Delete</button>
+          <button class="btn" id="ed-share" type="button">Share link</button>
+          <button class="btn primary" id="ed-test" type="button">Test it</button>
+        </div>
       </div>
       <div class="panel" id="goals">
         <div class="panel-head"><span class="cap">Approval stamps</span></div>
@@ -98,6 +112,7 @@
       </div>
       <div class="actions">
         <button class="btn lab-only" type="button" data-nasildi="mola">Nasıldı?</button>
+        <button class="btn" id="btn-new-drawing" type="button">+ New drawing</button>
         <button class="btn" id="levels-close" type="button">Close</button>
       </div>
     </div>

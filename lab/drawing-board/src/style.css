@@ -352,3 +352,30 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   #toast { transition: none; }
   .bom-row.is-new, .unlock-art::before, .unlock-art::after { animation: none; }
 }
+
+/* Atölye: kendi çizimini yap */
+#editor { display: flex; flex-direction: column; }
+#editor[hidden] { display: none; }
+.ed-name { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.ed-name input { flex: 1; min-width: 0; background: transparent; border: 1px solid var(--line-strong); color: var(--ink); font: 700 17px var(--display); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; }
+.ed-tools { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 10px 12px; }
+.ed-tools button, .ed-parts button { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); font: 700 12.5px var(--body); letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 2px; cursor: pointer; }
+.ed-tools button[aria-pressed="true"], .ed-parts button[aria-pressed="true"] { background: var(--ink); color: var(--paper-deep); }
+.ed-parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 12px 10px; }
+.ed-parts button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; }
+.ed-parts canvas { width: 52px; height: 30px; display: block; }
+.ed-parts button[aria-pressed="true"] canvas { filter: invert(1) hue-rotate(180deg); }
+#ed-tray { list-style: none; margin: 0; padding: 4px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+#ed-tray li { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 700; font-size: 14.5px; padding: 3px 0; }
+#ed-tray li.on { color: var(--ball); }
+#ed-tray button { width: 28px; height: 28px; background: transparent; color: var(--ink); border: 1px solid var(--line-strong); font: 700 16px var(--body); cursor: pointer; padding: 0; }
+#ed-tray .n { min-width: 16px; text-align: center; }
+.ed-actions { display: flex; gap: 8px; padding: 10px 12px 12px; flex-wrap: wrap; justify-content: flex-end; }
+.ed-actions .btn { height: 42px; padding: 0 14px; }
+.ed-open { margin: 0 12px 12px; height: 38px; }
+.ed-open[hidden] { display: none; }
+#run[hidden] { display: none; }
+#editor { grid-column: 1 / -1; grid-row: 2 / 4; overflow: auto; min-height: 0; flex: 0 1 auto; }
+#ed-tray li > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ed-tray li > span:last-child { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+#ed-tray button { width: 26px; height: 26px; }

@@ -27,7 +27,7 @@ const LAB_HEAD = `<meta name="description" content="${DESC}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="drawing-board" data-kayit="drawing-board.v1"></script>`;
+<script src="/hesap/hesap.js" data-oyun="drawing-board" data-kayit="drawing-board.v1 drawing-board.workshop"></script>`;
 
 function inlineFonts() {
   const faces = [];

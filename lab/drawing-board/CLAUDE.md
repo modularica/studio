@@ -36,6 +36,14 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 - Ayrıntı ekrana göre azalır (`makeView` → `lod`): parça listesi ve bölüm kartları sade çizilir.
 - Oyunun içi İngilizce, kod İngilizce, yorumlar Türkçe. Odası yok.
 
+## Atölye (kendi çizimin)
+
+- Bölümler sayfasında "+ New drawing", Atölye çiziminde "Edit this drawing". Düzenlerken (`S.mode === 'edit'`) yan panelde araçlar: Wall (dokun/sürükle; duvardan başlarsan siler), Ball (boru; aynı yere dokununca yön r → l → d), Cup (2 kare), Part (sabit parça; dokununca döner), Erase; oyuncunun parça listesi (− / +), ad. "Test it" kaydeder ve oynatır, "Share link" adresi kopyalar (telefonda paylaş penceresi).
+- Çizim sıkışık tutulur (`cleanDoc`: id `ws-…`, ad, boru, kova, duvar hücreleri, sabit parçalar, tray); `wsLevel()` oynanır bölüme çevirir (yan yana duvar hücreleri tek blok, damgalar: Machine works, elle kumandalı sabit cihaz + sensör varsa Fully automatic). `syncWS()` Atölye çizimlerini `LEVELS`'in sonuna `book: 'W'` olarak ekler; hep açıktır, antette "Workshop" yazar.
+- Kayıt `drawing-board.workshop` (hesaba eşitlenir). Değişen çizimin damgaları ve kurulumu silinir.
+- Paylaşım: `#cizim=<base64url JSON>`; açılışta `importFromHash()` çizimi süzüp (bilinen alanlar, tahtanın içi, ad yalnız harf/rakam/basit noktalama) Atölye defterine ekler ve açar. Ad sayfaya yazılırken de süzülür (`cleanName`).
+- Sensör sabit parça olarak konamaz (yalnız oyuncunun listesinde). Çizimin çözülebilir olduğunu bot denetlemiyor; yapan kişi "Test it" ile kendisi dener.
+
 ## Oyun hissi (müzik, kutlama, yenilik)
 
 - Müzik (`audio.js`): her çizimin kendi tonu, akor yürüyüşü, marimba ostinatosu ve ezgisi var (çizim kimliğinden tohum; aynı çizim hep aynı şarkı). 84 BPM, hafif swing. Kipler: `build` kurarken sakin (piyano akorları, bas, seyrek marimba, iki turda bir ezgi), `run` makine çalışırken saat tıkırtısı, yumuşak davul, akor vuruşları ve ostinato girer, `menu` pencere açıkken kısık ve boğuk. Katmanlar bir sonraki vuruşta girer; yeni çizimin şarkısı bir sonraki ölçüde başlar. Müzik ilk dokunuşta başlar (tarayıcı kuralı), sekme gizlenince durur. Antetteki nota düğmesi müziği, hoparlör düğmesi sesleri açıp kapatır.

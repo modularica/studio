@@ -804,7 +804,7 @@
   const trayTotal = () => Object.values(S.level.tray || {}).reduce((a, b) => a + b, 0);
   const trayLeft = type => ((S.level.tray || {})[type] || 0) - S.parts.filter(p => p.type === type).length;
   function unlocked(i) {
-    if (i === 0 || ALL_OPEN) return true;
+    if (i === 0 || ALL_OPEN || LEVELS[i].book === 'W') return true;
     const prev = S.progress[LEVELS[i - 1].id];
     return !!(prev && prev.solved);
   }
@@ -1011,7 +1011,8 @@
   function setHint() {
     const L = S.level, h = L.hints || {}, prog = S.progress[L.id];
     let t;
-    if (S.mode === 'run') t = h.run || 'The machine is running. Press Stop to go back to building.';
+    if (S.mode === 'edit') t = TOOL_HINT[S.edit.tool];
+    else if (S.mode === 'run') t = h.run || 'The machine is running. Press Stop to go back to building.';
     else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
@@ -1026,9 +1027,10 @@
 
   function refreshHeader() {
     const L = S.level;
-    $('tb-no').textContent = `${pad2(S.li + 1)} / ${pad2(LEVELS.length)}`;
-    $('tb-name').textContent = L.name;
-    $('tb-task').textContent = L.task;
+    const edit = S.mode === 'edit';
+    $('tb-no').textContent = edit ? 'Edit' : L.book === 'W' ? 'Workshop' : `${pad2(S.li + 1)} / ${pad2(OFFICIAL)}`;
+    $('tb-name').textContent = cleanName(L.name);
+    $('tb-task').textContent = edit ? 'Draw your own machine puzzle. Test it, then share it.' : L.task;
     document.title = `Drawing Board · ${L.name}`;
   }
 
@@ -1066,7 +1068,10 @@
   }
 
   function refreshSide() {
-    const run = S.mode === 'run';
+    const run = S.mode === 'run', edit = S.mode === 'edit';
+    $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit;
+    $('btn-edit').hidden = edit || run || S.level.book !== 'W';
+    if (edit) { $('bom').hidden = true; $('pult').hidden = true; setHint(); return; }
     $('bom').hidden = run; $('pult').hidden = !run;
     const btn = $('run');
     btn.classList.toggle('stop', run);
@@ -1216,6 +1221,7 @@
   function onBoardDown(e) {
     if (!V || overlayOpen()) return;
     audio();
+    if (S.mode === 'edit') { edDown(e); return; }
     const w = evWorld(e);
     if (S.mode === 'run') {
       if (!S.sim) return;
@@ -1238,6 +1244,7 @@
   }
 
   function onMove(e) {
+    if (S.mode === 'edit') { edMove(e); return; }
     if (S.drag && e.pointerId === S.drag.pid) { updateDrag(e); return; }
     const pr = S.press;
     if (pr && e.pointerId === pr.pid && Math.hypot(e.clientX - pr.x0, e.clientY - pr.y0) > 7) {
@@ -1250,6 +1257,7 @@
   }
 
   function onUp(e) {
+    if (S.edit && S.edit.down === e.pointerId) { S.edit.down = null; return; }
     if (S.drag && e.pointerId === S.drag.pid) { endDrag(); return; }
     const pr = S.press;
     if (pr && e.pointerId === pr.pid) {
@@ -1286,7 +1294,7 @@
     S.held.clear();
   }
 
-  function toggleRun() { if (S.mode === 'run') stopRun('user'); else startRun(); }
+  function toggleRun() { if (S.mode === 'edit') return; if (S.mode === 'run') stopRun('user'); else startRun(); }
 
   function startRun() {
     if (S.drag || overlayOpen()) return;
@@ -1327,7 +1335,7 @@
     prog.solved = true;
     persist();
     const got = L.badges.filter(b => prog.badges[b.k]).length;
-    lab.note(`Çizim ${pad2(S.li + 1)} ${L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses}`);
+    lab.note(`${L.book === 'W' ? 'Atölye: ' + cleanName(L.name) : 'Çizim ' + pad2(S.li + 1) + ' ' + L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses}`);
     releaseAll();
     S.trails = sim.trails.map(t => t.slice()); S.trailFail = null; S.sim = null; S.mode = 'build'; S.lastFail = null; S.goalAt = null;
     if (first) S.introNew = null;
@@ -1553,7 +1561,230 @@
   }
 
   const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers' };
+
+  // ---------------------------------------------------------------- Atölye: kendi çizimin
+  // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.
+  // wsLevel() onu oynanır bölüme çevirir; Atölye çizimleri LEVELS'in sonuna 'W' defteri olarak eklenir,
+  // hep açıktır. Kayıt drawing-board.workshop (hesaba eşitlenir). Paylaşım: adres sonunda #cizim=<base64>.
+  const WS_KEY = 'drawing-board.workshop';
+  const ED_TYPES = ['ramp', 'spring', 'belt', 'bumper', 'gate', 'piston', 'fan', 'flipper', 'magnet'];
+  const TRAY_TYPES = ['ramp', 'spring', 'belt', 'bumper', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'sensor'];
+  const TOOLS = [['wall', 'Wall'], ['ball', 'Ball'], ['cup', 'Cup'], ['part', 'Part'], ['erase', 'Erase']];
+  const TOOL_HINT = {
+    wall: 'Tap or drag on the board to draw walls. Start on a wall to erase.',
+    ball: 'Tap where the ball comes in. Tap the pipe again to change its direction.',
+    cup: 'Tap where the cup goes. It is two squares wide.',
+    part: 'Pick a part, then tap the board. Tap a fixed part to turn it.',
+    erase: 'Tap or drag to erase walls and parts.',
+  };
+  const WS_HINTS = {
+    place: 'A drawing from the workshop. Drag parts from the list onto the board.',
+    ready: 'Ready? Press Run.', run: 'Will it work?',
+    fail: 'Look at the dotted line and change the setup.', after: 'Go for the missing stamps.',
+  };
+  const isNum = (v, lo, hi) => typeof v === 'number' && isFinite(v) && v >= lo && v <= hi;
+  const cleanName = s => String(s || '').replace(/[^\p{L}\p{N} .,!?'-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24) || 'My drawing';
+  const newId = () => 'ws-' + Math.random().toString(36).slice(2, 10);
+  // Dışarıdan (kayıt, paylaşılan link) gelen çizimi süz: yalnız bilinen alanlar, tahtanın içi.
+  function cleanDoc(q) {
+    if (!q || typeof q !== 'object' || !q.pipe || !q.cup) return null;
+    const p = q.pipe, c = q.cup;
+    if (!isNum(p.x, 0, 15) || !isNum(p.y, 0, 9) || !['r', 'l', 'd'].includes(p.dir) || !isNum(c.x, 0, 14) || !isNum(c.y, 0, 9)) return null;
+    const d = { id: /^ws-[a-z0-9]{4,12}$/.test(q.id) ? q.id : newId(), name: cleanName(q.name),
+      pipe: { x: Math.round(p.x), y: Math.round(p.y), dir: p.dir }, cup: { x: Math.round(c.x), y: Math.round(c.y) } };
+    d.walls = (Array.isArray(q.walls) ? q.walls : []).slice(0, 160)
+      .filter(w => Array.isArray(w) && isNum(w[0], 0, 15) && isNum(w[1], 0, 9)).map(w => [Math.round(w[0]), Math.round(w[1])]);
+    d.fixed = (Array.isArray(q.fixed) ? q.fixed : []).slice(0, 30)
+      .filter(f => f && ED_TYPES.includes(f.type) && PARTS[f.type].orients.includes(f.o) && isNum(f.x, 0, 15) && isNum(f.y, 0, 9))
+      .map(f => ({ type: f.type, o: f.o, x: Math.round(f.x), y: Math.round(f.y) }));
+    d.tray = {};
+    for (const k of TRAY_TYPES) { const n = q.tray && q.tray[k]; if (isNum(n, 1, 9)) d.tray[k] = Math.round(n); }
+    return d;
+  }
+  // Yan yana duvar hücreleri tek blok olur (çizimde ve fizikte).
+  function mergeWalls(cells) {
+    const set = new Set(cells.map(w => w[0] + ',' + w[1])), out = [];
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 16; x++) {
+      if (!set.has(x + ',' + y) || set.has((x - 1) + ',' + y)) continue;
+      let e = x; while (set.has((e + 1) + ',' + y)) e++;
+      out.push([x, y, e + 1, y + 1]);
+    }
+    return out;
+  }
+  function wsLevel(d) {
+    const { x, y, dir } = d.pipe;
+    const start = dir === 'r' ? { x: x + 0.6, y: y + 0.28, vx: 2.5 } : dir === 'l' ? { x: x + 0.4, y: y + 0.28, vx: -2.5 } : { x: x + 0.5, y: y + 0.3 };
+    const auto = d.tray.sensor && d.fixed.some(f => PARTS[f.type].manual);
+    return {
+      id: d.id, name: d.name, book: 'W', ws: d, task: 'Get the ball into the cup.', start, pipe: { x, y, dir },
+      walls: mergeWalls(d.walls), cup: { x: d.cup.x, y: d.cup.y, w: 2 },
+      fixed: d.fixed.map(f => Object.assign({}, f)), tray: Object.assign({}, d.tray),
+      badges: auto ? [{ k: 'solve' }, { k: 'auto' }] : [{ k: 'solve' }], hints: WS_HINTS,
+    };
+  }
+  function starterDoc() {
+    const walls = [];
+    for (let x = 0; x < 16; x++) walls.push([x, 0]);
+    walls.push([0, 6], [1, 6], [2, 6]);
+    return { id: newId(), name: 'My drawing', pipe: { x: 0, y: 7, dir: 'r' }, cup: { x: 12, y: 1 }, walls, fixed: [], tray: { ramp: 2 } };
+  }
+  const OFFICIAL = LEVELS.filter(L => L.book !== 'W').length;
+  S.ws = (() => { try { const a = JSON.parse(localStorage.getItem(WS_KEY) || '[]'); return Array.isArray(a) ? a.map(cleanDoc).filter(Boolean).slice(0, 40) : []; } catch (e) { return []; } })();
+  function persistWS() { try { localStorage.setItem(WS_KEY, JSON.stringify(S.ws)); } catch (e) { /* yok say */ } }
+  function syncWS() {
+    LEVELS.length = OFFICIAL; INTRO.length = OFFICIAL;
+    for (const d of S.ws) { LEVELS.push(wsLevel(d)); INTRO.push([]); }
+  }
+  syncWS();
+  const wsIndex = id => LEVELS.findIndex(L => L.id === id);
+
+  function openEditor(doc) {
+    if (S.mode === 'run') stopRun('user');
+    hideToast(); exitLink();
+    S.edit = { doc: JSON.parse(JSON.stringify(doc)), tool: 'wall', part: 'ramp', down: null, last: null, paint: true };
+    S.mode = 'edit'; S.sim = null; S.parts = []; S.trails = null; S.introNew = null;
+    edChanged(true);
+    $('ed-name').value = S.edit.doc.name;
+    buildEditor();
+    musicMode('build');
+  }
+  function edChanged(quiet) {
+    const L = wsLevel(S.edit.doc);
+    S.level = L; S.occ = KM.occupancy(L);
+    if (!quiet) S.edit.dirty = true;
+    refreshHeader(); refreshSide();
+  }
+  function buildEditor() {
+    const tools = $('ed-tools'); tools.textContent = '';
+    for (const [k, label] of TOOLS) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(S.edit.tool === k));
+      b.addEventListener('click', () => { S.edit.tool = k; buildEditor(); setHint(); });
+      tools.appendChild(b);
+    }
+    const parts = $('ed-parts'); parts.textContent = ''; parts.hidden = S.edit.tool !== 'part';
+    if (!parts.hidden) {
+      for (const k of ED_TYPES) {
+        const b = document.createElement('button'); b.type = 'button';
+        b.setAttribute('aria-pressed', String(S.edit.part === k)); b.setAttribute('aria-label', NAMES[k]);
+        b.innerHTML = `<canvas aria-hidden="true"></canvas><span>${NAMES[k]}</span>`;
+        b.addEventListener('click', () => { S.edit.part = k; buildEditor(); });
+        parts.appendChild(b);
+      }
+      requestAnimationFrame(() => parts.querySelectorAll('canvas').forEach((c, i) => drawIcon(c, ED_TYPES[i])));
+    }
+    const tray = $('ed-tray'); tray.textContent = '';
+    for (const k of TRAY_TYPES) {
+      const n = S.edit.doc.tray[k] || 0, li = document.createElement('li');
+      li.className = n ? 'on' : '';
+      li.innerHTML = `<span>${NAMES[k]}</span><span><button type="button" aria-label="Fewer ${NAMES[k]}">−</button> <span class="n">${n}</span> <button type="button" aria-label="More ${NAMES[k]}">+</button></span>`;
+      const [minus, plus] = li.querySelectorAll('button');
+      const set = v => { if (v > 0) S.edit.doc.tray[k] = v; else delete S.edit.doc.tray[k]; sfx('tick'); edChanged(); buildEditor(); };
+      minus.addEventListener('click', () => set(Math.max(0, n - 1)));
+      plus.addEventListener('click', () => set(Math.min(9, n + 1)));
+      tray.appendChild(li);
+    }
+    $('ed-delete').hidden = wsIndex(S.edit.doc.id) < 0;
+    setHint();
+  }
+
+  // Tahtaya dokununca seçili araç. first: dokunuşun ilk hücresi (sürüklerken false).
+  function editAt(x, y, first) {
+    const d = S.edit.doc, t = S.edit.tool;
+    if (x < 0 || y < 0 || x > 15 || y > 9) return;
+    const inCup = (cx, cy) => cy === d.cup.y && (cx === d.cup.x || cx === d.cup.x + 1);
+    const atPipe = (cx, cy) => cx === d.pipe.x && cy === d.pipe.y;
+    const fixedAt = (cx, cy) => d.fixed.find(f => KM.cellsOf(f).some(q => q[0] === cx && q[1] === cy));
+    const clearCell = (cx, cy) => {
+      d.walls = d.walls.filter(w => !(w[0] === cx && w[1] === cy));
+      d.fixed = d.fixed.filter(f => !KM.cellsOf(f).some(q => q[0] === cx && q[1] === cy));
+    };
+    const fits = (f, self) => KM.cellsOf(f).every(([cx, cy]) => cx >= 0 && cy >= 0 && cx < 16 && cy < 10 && !inCup(cx, cy) && !atPipe(cx, cy)
+      && !d.walls.some(w => w[0] === cx && w[1] === cy) && !d.fixed.some(o => o !== self && KM.cellsOf(o).some(q => q[0] === cx && q[1] === cy)));
+    const wi = d.walls.findIndex(w => w[0] === x && w[1] === y);
+    if (t === 'wall') {
+      if (first) S.edit.paint = wi < 0;
+      if (S.edit.paint) { if (wi >= 0 || inCup(x, y) || atPipe(x, y) || fixedAt(x, y)) return; d.walls.push([x, y]); sfx('place'); }
+      else { if (wi < 0) return; d.walls.splice(wi, 1); sfx('remove'); }
+    } else if (t === 'erase') {
+      if (wi < 0 && !fixedAt(x, y)) return;
+      clearCell(x, y); sfx('remove');
+    } else if (!first) return;
+    else if (t === 'ball') {
+      if (atPipe(x, y)) d.pipe.dir = { r: 'l', l: 'd', d: 'r' }[d.pipe.dir];
+      else { if (inCup(x, y)) return; clearCell(x, y); d.pipe = { x, y, dir: d.pipe.dir }; }
+      sfx('tick');
+    } else if (t === 'cup') {
+      const cx = Math.min(x, 14);
+      if (atPipe(cx, y) || atPipe(cx + 1, y)) return;
+      clearCell(cx, y); clearCell(cx + 1, y); d.cup = { x: cx, y }; sfx('place');
+    } else if (t === 'part') {
+      const f = fixedAt(x, y);
+      if (f) {
+        const os = PARTS[f.type].orients, o0 = f.o;
+        for (let k = 1; k <= os.length; k++) { f.o = os[(os.indexOf(o0) + k) % os.length]; if (fits(f, f)) break; }
+        sfx('tick');
+      } else {
+        const nf = { type: S.edit.part, o: DEFAULT_O[S.edit.part], x, y };
+        if (!fits(nf, null)) { toast("It doesn't fit there."); return; }
+        d.fixed.push(nf); sfx('place');
+      }
+    }
+    edChanged();
+  }
+  function edDown(e) {
+    const w = evWorld(e), x = Math.floor(w.x), y = Math.floor(w.y);
+    e.preventDefault();
+    S.edit.down = e.pointerId; S.edit.last = x + ',' + y;
+    editAt(x, y, true);
+  }
+  function edMove(e) {
+    if (!S.edit || S.edit.down !== e.pointerId) return false;
+    const w = evWorld(e), x = Math.floor(w.x), y = Math.floor(w.y), k = x + ',' + y;
+    if (k !== S.edit.last) { S.edit.last = k; editAt(x, y, false); }
+    return true;
+  }
+  // Kaydet: çizim Atölye defterine girer (değiştiyse eski damgaları silinir).
+  function saveDoc() {
+    const d = S.edit.doc;
+    d.name = cleanName($('ed-name').value);
+    const i = S.ws.findIndex(q => q.id === d.id);
+    if (i >= 0) S.ws[i] = JSON.parse(JSON.stringify(d)); else S.ws.push(JSON.parse(JSON.stringify(d)));
+    if (S.edit.dirty) { delete S.progress[d.id]; delete S.setups[d.id]; }
+    persistWS(); syncWS(); persist();
+    return wsIndex(d.id);
+  }
+  function closeEditor(play) {
+    if (!S.edit) return;
+    const i = saveDoc();
+    S.edit = null; S.mode = 'build';
+    if (play) { loadLevel(i); toast('Now solve your own drawing!'); }
+  }
+  function shareDoc(d) {
+    const json = JSON.stringify({ id: d.id, name: d.name, pipe: d.pipe, cup: d.cup, walls: d.walls, fixed: d.fixed, tray: d.tray });
+    const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const url = location.origin + location.pathname + '#cizim=' + b64;
+    const done = () => toast('Link copied. Send it to a friend in the Lab.');
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) navigator.share({ title: `Drawing Board · ${d.name}`, url }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => window.prompt('Copy this link:', url));
+    else window.prompt('Copy this link:', url);
+  }
+  // Paylaşılan link: çizimi Atölye defterine ekle ve aç.
+  function importFromHash() {
+    const m = /^#cizim=([A-Za-z0-9_-]+)$/.exec(location.hash);
+    if (!m) return -1;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* yok say */ }
+    try {
+      const b = m[1].replace(/-/g, '+').replace(/_/g, '/');
+      const d = cleanDoc(JSON.parse(decodeURIComponent(escape(atob(b + '==='.slice((b.length + 3) % 4))))));
+      if (!d) return -1;
+      if (!S.ws.some(q => q.id === d.id)) { S.ws.push(d); persistWS(); syncWS(); }
+      return wsIndex(d.id);
+    } catch (e) { return -1; }
+  }
+
   function openLevels() {
+    if (S.mode === 'edit') closeEditor(false);
     const grid = $('level-grid'); grid.textContent = '';
     const thumbs = [];
     let book = null;
@@ -1561,7 +1792,8 @@
       if (L.book !== book) {
         book = L.book;
         const h = document.createElement('div'); h.className = 'book-head';
-        h.innerHTML = `<span class="cap">Notebook ${book}</span><span class="bk">${BOOKS[book] || ''}</span>`;
+        h.innerHTML = book === 'W' ? '<span class="cap">Workshop</span><span class="bk">Your drawings</span>'
+          : `<span class="cap">Notebook ${book}</span><span class="bk">${BOOKS[book] || ''}</span>`;
         grid.appendChild(h);
       }
       const prog = S.progress[L.id], open = unlocked(i);
@@ -1569,7 +1801,7 @@
       b.type = 'button'; b.className = 'lvl' + (i === S.li ? ' cur' : ''); b.disabled = !open;
       const dots = L.badges.map(bd => `<span class="dot${prog && prog.badges[bd.k] ? ' got' : ''}" title="${badgeText(bd)}"></span>`).join('');
       const nw = INTRO[i].length ? `<span class="new-chip">New: ${INTRO[i].map(k => NEWS[k][1]).join(', ')}</span>` : '';
-      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">Drawing ${pad2(i + 1)}</span><div class="nm">${L.name}</div></div><div class="dots">${dots}</div></div>${nw}${open ? '' : '<span class="lock">Locked</span>'}`;
+      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">${L.book === 'W' ? 'Workshop' : 'Drawing ' + pad2(i + 1)}</span><div class="nm">${cleanName(L.name)}</div></div><div class="dots">${dots}</div></div>${nw}${open ? '' : '<span class="lock">Locked</span>'}`;
       b.setAttribute('aria-label', `Drawing ${i + 1}: ${L.name}${open ? '' : ', locked'}`);
       b.addEventListener('click', () => { closeOverlay('levels'); loadLevel(i); });
       grid.appendChild(b);
@@ -1621,6 +1853,16 @@
   document.addEventListener('gesturestart', e => e.preventDefault());
   $('run').addEventListener('click', toggleRun);
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
+  $('btn-new-drawing').addEventListener('click', () => { closeOverlay('levels'); openEditor(starterDoc()); });
+  $('btn-edit').addEventListener('click', () => { if (S.level.ws) openEditor(S.level.ws); });
+  $('ed-test').addEventListener('click', () => closeEditor(true));
+  $('ed-share').addEventListener('click', () => { S.edit.doc.name = cleanName($('ed-name').value); saveDoc(); shareDoc(S.edit.doc); });
+  $('ed-name').addEventListener('change', () => { S.edit.doc.name = cleanName($('ed-name').value); edChanged(); });
+  $('ed-delete').addEventListener('click', () => {
+    if (!window.confirm(`Delete "${S.edit.doc.name}"?`)) return;
+    S.ws = S.ws.filter(q => q.id !== S.edit.doc.id); persistWS(); syncWS();
+    S.edit = null; S.mode = 'build'; loadLevel(Math.min(S.li, OFFICIAL - 1) >= 0 ? Math.min(S.li, OFFICIAL - 1) : 0);
+  });
   $('levels-close').addEventListener('click', () => closeOverlay('levels'));
   $('btn-sound').addEventListener('click', () => setMuted(!S.muted));
   $('btn-music').addEventListener('click', () => setMusic(!S.music));
@@ -1664,7 +1906,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
 
   // Test ve geliştirme için küçük bir kapı.
-  window.KM_GAME = { S, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
+  window.KM_GAME = { S, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
 
   function boot(data) {
     if (lab.on) document.documentElement.classList.add('lab');
@@ -1674,6 +1916,8 @@
     layout();
     let li = typeof data.li === 'number' ? data.li : typeof saved.li === 'number' ? saved.li : 0;
     if (!(li >= 0 && li < LEVELS.length) || !unlocked(li)) li = 0;
+    const shared = importFromHash();
+    if (shared >= 0) li = shared;
     if (Array.isArray(data.parts)) S.setups[LEVELS[li].id] = data.parts;
     loadLevel(li);
     requestAnimationFrame(frame);
