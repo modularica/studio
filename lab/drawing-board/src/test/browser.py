@@ -138,13 +138,13 @@ with sync_playwright() as p:
         place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
         page.click('#btn-retry'); page.wait_for_timeout(250)
     # Defter 4: balon, ip, makas, iğne
-    for i, keys, k in [(25, [(0.6, '1', 0)], 0), (26, [(0.2, '1', 10)], 0), (27, [(0.1, '1', 1.1)], 1), (28, None, 1), (29, [(0.1, '1', 4)], 0)]:
+    for i, keys, k in [(25, [(0.6, '1', 0)], 0), (26, [(0.2, '1', 10)], 0), (27, [(0.1, '1', 1.1)], 1), (28, None, 1), (29, [(0.1, '1', 4)], 0), (30, None, 1), (31, [(0.2, '1', 2.8)], 1), (32, None, 1), (30, [(2.5, '1', 4)], 0)]:
         page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(250)
         lid = page.evaluate("KM_GAME.S.level.id")
-        page.screenshot(path=f'{OUT}/d4-{lid}-bos.png')
+        page.screenshot(path=f'{OUT}/d{4 if i < 30 else 5}-{lid}-bos.png')
         page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(k))
         page.wait_for_timeout(150)
-        page.screenshot(path=f'{OUT}/d4-{lid}-kurulu.png')
+        page.screenshot(path=f'{OUT}/d{4 if i < 30 else 5}-{lid}-kurulu.png')
         place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
         page.click('#btn-retry'); page.wait_for_timeout(250)
     # çalışırken balon ve kesilen ip
@@ -154,6 +154,12 @@ with sync_playwright() as p:
     page.screenshot(path=f'{OUT}/d4-tele-run.png')
     page.wait_for_timeout(5800)
     page.screenshot(path=f'{OUT}/d4-tele-run2.png')
+    page.click('#run'); page.wait_for_timeout(200)
+    # çalışırken dişliler ve asansör
+    page.evaluate("KM_GAME.loadLevel(32)"); page.wait_for_timeout(200)
+    page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(1))
+    page.click('#run'); page.wait_for_timeout(4200)
+    page.screenshot(path=f'{OUT}/d5-degirmen-run.png')
     page.click('#run'); page.wait_for_timeout(200)
     # çoklu topta çalışırken kova sayacı
     page.evaluate("KM_GAME.loadLevel(12)"); page.wait_for_timeout(150)

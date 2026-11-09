@@ -544,6 +544,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     flipLen: 1.6, flipDown: -0.3, flipUp: 0.45, flipW: 9, flipBackW: 5, flipPulse: 0.25,
     bumpMin: 9,
     balR: 0.42, balRise: 1.4, balK: 6, balMaxF: 3, balFanV: 2.6, balTop: 10.5, hookR: 0.08,
+    gearW: 2.4, gearR: 0.42, liftV: 1.6, liftMax: 3, liftTilt: 0.06,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -570,7 +571,17 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     cutter: { orients: ['-'], w: 1, h: 1, manual: 'press' },
     // İğne: balon değince patlar. Ucu o yöne bakar.
     pin: { orients: ['u', 'r', 'd', 'l'], w: 1, h: 1 },
+    // Kol: basılı tutunca döner ('cw' saat yönünde, 'ccw' tersine) ve yanındaki dişliyi çevirir. Sensörle aç/kapat.
+    crank: { orients: ['cw', 'ccw'], w: 1, h: 1, manual: 'hold' },
+    // Dişli: yan yana (kenarı bitişik) dişliler birbirini ters yönde çevirir. Dönen dişliye değen top da sürüklenir.
+    gear: { orients: ['-'], w: 1, h: 1 },
+    // Asansör (dişli kremayer): 2 kare genişliğinde, 'r' sağa, 'l' sola hafif eğik levha. Yanındaki dişli saat yönünün tersine dönerse
+    // yukarı (en çok T.liftMax), saat yönünde dönerse aşağı iner; dişli durunca olduğu yerde kalır.
+    lift: { orients: ['r', 'l'], w: 2, h: 1 },
+    // Rüzgâr türbini: açık bir pervanenin kuşağındayken kendi kendine döner ('cw' / 'ccw'), yanındaki dişliyi çevirir.
+    turbine: { orients: ['cw', 'ccw'], w: 1, h: 1 },
   };
+  const DRIVE = { crank: 1, gear: 1, lift: 1, turbine: 1 };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
 
@@ -744,7 +755,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
 
     const parts = listParts(level, placed);
-    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], byId = {};
+    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], drives = [], byId = {};
     const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
@@ -796,6 +807,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         flippers.push(rt);
       } else if (p.type === 'cutter') {
         rt.cuts = 0;
+      } else if (DRIVE[p.type]) {
+        const body = world.createKinematicBody({ position: pl.Vec2(p.x + (p.type === 'lift' ? 1 : 0.5), p.y + 0.5) });
+        if (p.type === 'lift') body.createFixture(pl.Box(1, 0.07, pl.Vec2(0, -0.57), p.o === 'r' ? -T.liftTilt : T.liftTilt), { friction: 0.8 }).setUserData({ kind: 'lift', rt });
+        else body.createFixture(pl.Circle(p.type === 'gear' ? T.gearR : 0.34), { friction: 0.9 }).setUserData({ kind: 'gear', rt });
+        rt.body = body; rt.spin = 0; rt.jam = false; rt.offset = 0;
+        drives.push(rt);
       } else if (p.type === 'pin') {
         statics.createFixture(pl.Polygon(pinTri(p).map(q => pl.Vec2(q[0], q[1]))), { friction: 0.2 }).setUserData({ kind: 'pin', rt });
       } else if (p.type === 'bumper') {
@@ -805,6 +822,20 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       }
     }
     for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
+    // Dişli ağları: kenarı bitişik dönen parçalar birbirine geçer.
+    const touch = (a, b) => cellsOf(a.p).some(([x, y]) => cellsOf(b.p).some(([u, v]) => Math.abs(x - u) + Math.abs(y - v) === 1));
+    // Asansör yalnız yanındaki (solundaki / sağındaki) dişliden güç alır, gücü başkasına geçirmez.
+    const lifts = drives.filter(d => d.type === 'lift');
+    for (const a of drives) a.nb = a.type === 'lift' ? [] : drives.filter(b => b !== a && b.type !== 'lift' && touch(a, b));
+    for (const L of lifts) L.pinions = drives.filter(g => g.type !== 'lift' && g.p.y === L.p.y && (g.p.x === L.p.x - 1 || g.p.x === L.p.x + 2))
+      .map(g => ({ g, side: g.p.x < L.p.x ? 1 : -1 }));
+    const nets = [], seenNet = new Set();
+    for (const a of drives.filter(d => d.type !== 'lift')) {
+      if (seenNet.has(a)) continue;
+      const net = [], q = [a]; seenNet.add(a);
+      while (q.length) { const n = q.shift(); net.push(n); for (const m of n.nb) if (!seenNet.has(m)) { seenNet.add(m); q.push(m); } }
+      nets.push(net);
+    }
 
     const balls = startsOf(level).map((st, i) => {
       const b = world.createDynamicBody({ position: pl.Vec2(st.x, st.y), bullet: true,
@@ -863,7 +894,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     });
 
     const sim = {
-      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need, ropes, balloons, pops: 0,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, drives, nets, lifts, need, ropes, balloons, pops: 0,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -877,7 +908,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
           if (manual) sim.presses++;
           return true;
         }
-        if (rt.type === 'fan' || rt.type === 'magnet') {
+        if (rt.type === 'fan' || rt.type === 'magnet' || rt.type === 'crank') {
           // Sensör pervaneyi ve mıknatısı anahtar gibi açar; bir daha tetiklenirse kapatır.
           rt.latched = !rt.latched;
           if (manual) sim.presses++;
@@ -946,6 +977,44 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
             const f = T.fanForce * mass * T.G * (1 - T.fanFalloff * Math.max(0, dist) / T.fanLen);
             b.applyForceToCenter(pl.Vec2(d[0] * f, d[1] * f), true);
           });
+        }
+        // Dişliler: açık kol ağını çevirir; bitişik olanlar ters yöne döner. İki kol ters dönmeye
+        // zorlarsa ya da dişliler halka kurarsa ağ kilitlenir (jam).
+        for (const net of nets) {
+          for (const n of net) if (n.type === 'turbine') {
+            const cx = n.x + 0.5, cy = n.y + 0.5;
+            n.on = fans.some(f => f.on && cx >= f.zone[0] - 0.3 && cx <= f.zone[2] + 0.3 && cy >= f.zone[1] - 0.3 && cy <= f.zone[3] + 0.3);
+          }
+          const src = net.filter(n => (n.type === 'crank' && (n.held || n.latched)) || (n.type === 'turbine' && n.on));
+          const sg = new Map(); let jam = false;
+          for (const s0 of src) {
+            const want = s0.o === 'ccw' ? 1 : -1;
+            if (sg.has(s0)) { if (sg.get(s0) !== want) jam = true; continue; }
+            sg.set(s0, want); const q = [s0];
+            while (q.length) {
+              const n = q.shift();
+              for (const m of n.nb) {
+                if (!sg.has(m)) { sg.set(m, -sg.get(n)); q.push(m); }
+                else if (sg.get(m) === sg.get(n)) jam = true;
+              }
+            }
+          }
+          for (const n of net) {
+            if (n.type === 'crank') n.on = n.held || n.latched;
+            n.jam = jam && src.length > 0;
+            n.spin = src.length && !jam ? sg.get(n) * T.gearW : 0;
+            n.body.setAngularVelocity(n.spin);
+          }
+        }
+        // Asansör: solundaki dişli saat yönünün tersine (sağındaki saat yönünde) dönerse yükselir.
+        for (const L of lifts) {
+          const dirs = L.pinions.filter(q => q.g.spin).map(q => Math.sign(q.g.spin) * q.side);
+          L.jam = dirs.some(d => d !== dirs[0]);
+          L.spin = dirs.length && !L.jam ? dirs[0] : 0;
+          let v = L.spin * T.liftV;
+          if (L.offset + v * DT > T.liftMax) v = (T.liftMax - L.offset) / DT;
+          if (L.offset + v * DT < 0) v = -L.offset / DT;
+          L.offset += v * DT; L.body.setLinearVelocity(pl.Vec2(0, v));
         }
         for (const rt of gates) {
           const g = GATES[rt.o], target = rt.open ? T.gateLift : 0, gap = target - rt.offset;
@@ -1783,18 +1852,89 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       task: 'Get the ball out, up and over, into the cup under the roof.',
       start: { x: 1.5, y: 0.68 },
       balloons: [{ ball: 0, len: 1.1 }],
-      walls: [[0, 0, 5.4, 0.4], [0, 2.6, 4, 2.9], [5.4, 0, 5.8, 5], [[4, 8], [16, 9.6], [16, 9.9], [4, 8.3]], [11.6, 0, 16, 3.6], [11.6, 5.8, 16, 6.1], [15.6, 3.6, 16, 5.8]],
+      walls: [[0, 0, 5.4, 0.4], [0, 2.6, 4, 2.9], [5.4, 0, 5.8, 5], [[4, 8], [16, 9.6], [16, 9.9], [4, 8.3]], [11.6, 0, 16, 3.6], [11.6, 5.8, 16, 6.1], [15.6, 3.6, 16, 5.8],
+        [[6, 4.6], [7.3, 3.2], [7.3, 3], [6, 4.4]], [[9.6, 4.6], [8, 3.2], [8, 3], [9.6, 4.4]]],
       cup: { x: 12.6, y: 3.6, w: 2, back: { side: 'r', h: 1.2 } },
       tray: { fan: 1, pin: 1, spring: 1, ramp: 1, sensor: 1, cutter: 1 },
-      badges: [{ k: 'solve' }, { k: 'budget', n: 3 }],
+      badges: [{ k: 'solve' }, { k: 'budget', n: 4 }],
       hints: {
         place: 'Not every part is needed. The cup is under a roof: the ball has to come in from the side.',
         ready: 'Press Run and hold the fan.',
         run: 'Hold the fan until the balloon is out from under the shelf.',
-        fail: 'Pop the balloon over the gap, then throw the falling ball sideways under the roof.',
-        after: 'Three parts are enough: a fan, a pin and a spring.',
+        fail: 'Pop the balloon over the funnel. The funnel drops the ball in the same spot every time: turn that drop into a sideways throw.',
+        after: 'Four parts are enough: a fan, a pin, a ramp and a spring.',
       },
-      sol: [{ name: 'üç parça', parts: [{ type: 'fan', x: 0, y: 1, o: 'r' }, { type: 'pin', x: 7, y: 7, o: 'u' }, { type: 'spring', x: 7, y: 0, o: 'u' }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 4, num: 1, act: 'up' }] }],
+      sol: [{ name: 'dört parça', parts: [{ type: 'fan', x: 0, y: 1, o: 'r' }, { type: 'pin', x: 7, y: 7, o: 'u' }, { type: 'ramp', x: 7, y: 1, o: 'dr' }, { type: 'spring', x: 9, y: 0, o: 'u' }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 4, num: 1, act: 'up' }] }],
+    },
+    // ------------------------------------------------ Defter 5: dişliler ve rüzgâr
+    {
+      id: 'asansor',
+      name: 'Elevator', book: 5,
+      task: 'Lift the ball up to the high shelf with gears.',
+      start: { x: 0.6, y: 1.28, vx: 2.4 },
+      pipe: { x: 0, y: 1, dir: 'r' },
+      walls: [[0, 0, 5, 1], [7, 2, 7.15, 3.5], [[7, 3.5], [11, 3.1], [11, 3.5], [7, 3.9]], [7.15, 0, 11, 0.4], [11, 0, 16, 0.4]],
+      fixed: [{ type: 'crank', x: 10, y: 1, o: 'ccw' }],
+      cup: { x: 11.1, y: 0.4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { lift: 1, gear: 3, sensor: 1, ramp: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'Put the lift in the gap. Gears side by side turn each other: build a gear train from the crank to the side of the lift.',
+        ready: 'Press Run. Hold 1 when the ball is on the lift.',
+        run: 'Hold 1 to turn the crank.',
+        fail: 'Each gear turns the other way from its neighbour. A gear on the right of the lift must turn clockwise to lift it.',
+        after: 'Fully automatic: a sensor on the lift can switch the crank on.',
+      },
+      sol: [
+        { name: 'elle', parts: [{ type: 'lift', x: 5, y: 1, o: 'r' }, { type: 'gear', x: 7, y: 1, o: '-' }, { type: 'gear', x: 8, y: 1, o: '-' }, { type: 'gear', x: 9, y: 1, o: '-' }], inputs: [{ t: 2.5, num: 1, act: 'down' }, { t: 6.5, num: 1, act: 'up' }] },
+        { name: 'sensör', parts: [{ type: 'lift', x: 5, y: 1, o: 'r' }, { type: 'gear', x: 7, y: 1, o: '-' }, { type: 'gear', x: 8, y: 1, o: '-' }, { type: 'gear', x: 9, y: 1, o: '-' }, { type: 'sensor', x: 5, y: 1, o: '-', link: 'f0' }], inputs: [] },
+      ],
+    },
+    {
+      id: 'kanca',
+      name: 'Crane', book: 5,
+      task: 'Get the hanging ball out of the pit and into the cup.',
+      start: { x: 4, y: 2 },
+      hangs: [{ ball: 0, x: 4, y: 8.6 }],
+      walls: [[3.4, 8.6, 4.6, 8.9], [0, 2.6, 2.9, 3], [2.9, 0, 3, 3], [5, 1, 5.1, 2.5], [[5, 2.5], [11, 2.1], [11, 2.5], [5, 2.9]], [10, 0, 16, 0.4]],
+      fixed: [{ type: 'crank', x: 9, y: 0, o: 'cw' }],
+      cup: { x: 11.1, y: 0.4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { lift: 1, gear: 4, cutter: 1, sensor: 1, ramp: 1 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
+      hints: {
+        place: 'The pit has no floor. Catch the ball with a lift, power it from the crank, and cut the rope.',
+        ready: 'Press Run. Turn the crank and cut the rope.',
+        run: 'Hold 1 until the lift is at the top. Cut the rope before it pulls the ball back.',
+        fail: 'The rope swings the ball back over the pit. Cut it early, or put the scissors where the rope is when the ball rolls away.',
+        after: 'A sensor can cut the rope for you, so you only touch the crank.',
+      },
+      sol: [
+        { name: 'elle', parts: [{ type: 'lift', x: 3, y: 0, o: 'r' }, { type: 'gear', x: 5, y: 0, o: '-' }, { type: 'gear', x: 6, y: 0, o: '-' }, { type: 'gear', x: 7, y: 0, o: '-' }, { type: 'gear', x: 8, y: 0, o: '-' }, { type: 'cutter', x: 4, y: 6, o: '-' }], inputs: [{ t: 0.2, num: 1, act: 'down' }, { t: 3, num: 1, act: 'up' }, { t: 1.8, num: 2, act: 'press' }] },
+        { name: 'sensör', parts: [{ type: 'lift', x: 3, y: 0, o: 'r' }, { type: 'gear', x: 5, y: 0, o: '-' }, { type: 'gear', x: 6, y: 0, o: '-' }, { type: 'gear', x: 7, y: 0, o: '-' }, { type: 'gear', x: 8, y: 0, o: '-' }, { type: 'cutter', x: 4, y: 6, o: '-' }, { type: 'sensor', x: 4, y: 3, o: '-', link: 6 }], inputs: [{ t: 0.2, num: 1, act: 'down' }, { t: 3, num: 1, act: 'up' }] },
+      ],
+    },
+    {
+      id: 'degirmen',
+      name: 'Windmill', book: 5,
+      task: 'Let the wind lift the ball out of the well.',
+      start: { x: 0.6, y: 1.28, vx: 1.6 },
+      pipe: { x: 0, y: 1, dir: 'r' },
+      walls: [[0, 0.6, 2, 1], [1.9, 1.7, 2, 4.6], [4, 0, 4.1, 3.5], [[4.1, 3.5], [9, 3.2], [9, 3.6], [4.1, 3.9]], [4.1, 0, 16, 0.4]],
+      fixed: [{ type: 'fan', x: 13, y: 1, o: 'l' }],
+      cup: { x: 9, y: 0.4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { turbine: 1, gear: 4, lift: 1, sensor: 1, ramp: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'A turbine in the wind of the fan turns by itself. Connect it to the lift with gears.',
+        ready: 'Press Run and hold the fan when the ball is in the well.',
+        run: 'Hold 1: the wind turns the turbine.',
+        fail: 'Check which way each gear turns. Tap the turbine to change its direction.',
+        after: 'Fully automatic: a sensor where the ball stops can switch the fan on.',
+      },
+      sol: [
+        { name: 'elle', parts: [{ type: 'lift', x: 2, y: 1, o: 'r' }, { type: 'gear', x: 4, y: 1, o: '-' }, { type: 'gear', x: 5, y: 1, o: '-' }, { type: 'gear', x: 6, y: 1, o: '-' }, { type: 'turbine', x: 7, y: 1, o: 'ccw' }], inputs: [{ t: 2.5, num: 1, act: 'down' }, { t: 7, num: 1, act: 'up' }] },
+        { name: 'sensör', parts: [{ type: 'lift', x: 2, y: 1, o: 'r' }, { type: 'gear', x: 4, y: 1, o: '-' }, { type: 'gear', x: 5, y: 1, o: '-' }, { type: 'gear', x: 6, y: 1, o: '-' }, { type: 'turbine', x: 7, y: 1, o: 'ccw' }, { type: 'sensor', x: 3, y: 1, o: '-', link: 'f0' }], inputs: [] },
+      ],
     },
   ];
 }));
@@ -2144,6 +2284,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     flipper(t, h) { thump(t, 0.22, 220, 90, 0.12, X.sfx); hiss(t, 0.1, 0.05, 'bandpass', 1800, 1, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.13, 0, X.sfx); },
     bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
     cutter(t, h) { hiss(t, 0.16, 0.035, 'highpass', 5200, 0, X.sfx); wood(t + 0.01, 0.06, 2600, X.sfx); hiss(t + 0.05, 0.1, 0.03, 'highpass', 6500, 0, X.sfx); mallet(tone(h.song, h.c, 1, 72, 84), t + 0.05, 0.07, 0, X.sfx); },
+    crank(t, h) { for (let i = 0; i < 4; i++) wood(t + i * 0.07, 0.05 - i * 0.008, 2400 + i * 200, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.1, 0, X.sfx); },
     pop(t, h, o) {
       const x = clamp((o && o.x) || 0, -0.7, 0.7);
       hiss(t, 0.34, 0.07, 'bandpass', 1400, 0.7, X.sfx); thump(t, 0.2, 180, 60, 0.08, X.sfx);
@@ -2281,9 +2422,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin' };
-  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin', crank: 'Crank', gear: 'Gear', lift: 'Lift', turbine: 'Turbine' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gear', 'lift', 'turbine', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'crank', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u', crank: 'cw', gear: '-', lift: 'r', turbine: 'cw' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -2359,6 +2500,10 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     cutter: ['New part', 'Scissors', 'Press it and it cuts any rope in its square.'],
     balloon: ['New thing', 'Balloon', 'It lifts its ball up. Wind from a fan pushes it along.'],
     pin: ['New part', 'Pin', 'Pops a balloon that touches it. The ball drops.'],
+    crank: ['New part', 'Crank', 'Hold it and it turns the gear next to it.'],
+    gear: ['New part', 'Gear', 'Gears side by side turn each other, each the other way round.'],
+    turbine: ['New part', 'Turbine', 'Wind from a fan spins it, and it turns the gear next to it.'],
+    lift: ['New part', 'Lift', 'A gear at its side moves it up or down. When the gear stops, it stays.'],
   };
   const INTRO = (() => {
     const seen = new Set();
@@ -3058,6 +3203,100 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     }
   }
 
+  // Dişli: dişli çark, göbek ve eksen. Komşu dişlilerin dişleri birbirine otursun diye
+  // kareler satranç tahtası gibi yarım diş kaydırılır. Kilitlenen ağda kırmızı çarpı.
+  function gearPath(c, r, n, ang) {
+    const ri = r - 0.08;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a0 = ang + i * TAU / n, w = TAU / n;
+      const pts = [[ri, a0], [r, a0 + w * 0.18], [r, a0 + w * 0.48], [ri, a0 + w * 0.66]];
+      for (const [rr, a] of pts) { const x = Math.cos(a) * rr, y = Math.sin(a) * rr; if (i === 0 && rr === ri && a === a0) c.moveTo(x, y); else c.lineTo(x, y); }
+    }
+    c.closePath();
+  }
+  function jamMark(c, Vw, x, y) {
+    c.beginPath(); c.moveTo(x - 0.16, y - 0.16); c.lineTo(x + 0.16, y + 0.16); c.moveTo(x + 0.16, y - 0.16); c.lineTo(x - 0.16, y + 0.16);
+    c.lineCap = 'round'; stroke(c, Vw, C.bad, LW.edge + 1); c.lineCap = 'butt';
+  }
+  function drawGear(c, Vw, p, rt) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), turning = !!(rt && rt.spin);
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, T.gearR + 0.04, 10, ang); fill(c, C.paper); fill(c, ink(turning ? 0.22 : 0.12)); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) {
+      c.beginPath(); c.arc(0, 0, 0.24, 0, TAU); stroke(c, Vw, ink(0.6), LW.hair);
+      for (let i = 0; i < 4; i++) { const a = ang + i * Math.PI / 2; c.beginPath(); c.arc(Math.cos(a) * 0.17, Math.sin(a) * 0.17, 0.045, 0, TAU); stroke(c, Vw, ink(0.6), LW.hair); }
+      axisLine(c, Vw, -0.5, 0, 0.5, 0, ink(0.3)); axisLine(c, Vw, 0, -0.5, 0, 0.5, ink(0.3));
+    }
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+  }
+  // Kol: turuncu el çarkı (dişli kenar, tutamaklı kol). Kurarken döneceği yön ok ile.
+  function drawCrank(c, Vw, p, rt, ann) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), on = !!(rt && rt.on), dir = p.o === 'ccw' ? 1 : -1;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, 0.38, 10, ang); fill(c, C.paper); fill(c, hand(on ? 0.34 : 0.18)); stroke(c, Vw, C.hand, LW.part);
+    c.save(); c.rotate(ang);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(0.24, 0); stroke(c, Vw, C.hand, LW.edge + 0.6);
+    c.beginPath(); c.arc(0.24, 0, 0.075, 0, TAU); fill(c, C.hand); stroke(c, Vw, C['paper-deep'], LW.thin);
+    c.restore();
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.hand, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.5, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.5, Math.sin(a1) * 0.5, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+    badge(c, Vw, p.num, p.x + 0.13, p.y + 0.87, 0.13);
+  }
+  // Türbin: üç kanatlı rotor, dişli göbek. Pervanenin rüzgârı gelince kendi döner.
+  function drawTurbine(c, Vw, p, rt, ann) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), on = !!(rt && rt.spin), dir = p.o === 'ccw' ? 1 : -1;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, 0.26, 8, ang); fill(c, C.paper); fill(c, ink(0.14)); stroke(c, Vw, C.ink, LW.thin);
+    c.save(); c.rotate(ang);
+    for (let i = 0; i < 3; i++) {
+      c.rotate(TAU / 3);
+      c.beginPath(); c.moveTo(0.06, 0); c.quadraticCurveTo(0.2, 0.16 * dir, 0.44, 0.06 * dir); c.lineTo(0.44, -0.03 * dir); c.quadraticCurveTo(0.25, -0.03 * dir, 0.06, -0.05 * dir); c.closePath();
+      fill(c, C.paper); fill(c, ink(on ? 0.45 : 0.22)); stroke(c, Vw, C.ink, LW.thin);
+    }
+    c.restore();
+    c.beginPath(); c.arc(0, 0, 0.06, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.5, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.5, Math.sin(a1) * 0.5, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+  }
+  // Asansör: eğik levha (taranmış kesit), iki yanında kremayer. Kurarken gideceği yol çizgi-iki noktayla.
+  function drawLift(c, Vw, p, rt, ann) {
+    const off = rt ? rt.offset : 0, tilt = p.o === 'r' ? -T.liftTilt : T.liftTilt, y = p.y - 0.07 + off;
+    if (ann && Vw.lod) {
+      c.beginPath(); c.rect(p.x, p.y - 0.14, 2, T.liftMax + 0.14); stroke(c, Vw, ink(0.35), LW.hair, DASH.phantom);
+      c.save(); c.translate(p.x + 1, y + T.liftMax); c.rotate(tilt); c.beginPath(); c.rect(-1, -0.07, 2, 0.14); stroke(c, Vw, ink(0.5), LW.thin, DASH.phantom); c.restore();
+      arrow(c, Vw, p.x + 1, p.y + 0.85, Math.PI / 2, 7, ink(0.55));
+      c.beginPath(); c.moveTo(p.x + 1, p.y + 0.15); c.lineTo(p.x + 1, p.y + 0.8); stroke(c, Vw, ink(0.45), LW.hair, DASH.hidden);
+    }
+    // kremayer: levha yükseldikçe iki ucunda dişli çubuk görünür
+    if (Vw.lod && off > 0.02) {
+      c.beginPath();
+      for (const sx of [p.x + 0.04, p.x + 1.96]) {
+        c.moveTo(sx, y); c.lineTo(sx, p.y - 0.07);
+        const out = sx < p.x + 1 ? -0.07 : 0.07;
+        for (let k = y - 0.12; k > p.y - 0.07; k -= 0.15) { c.moveTo(sx, k); c.lineTo(sx + out, k - 0.05); }
+      }
+      stroke(c, Vw, ink(0.75), LW.thin);
+    }
+    c.save(); c.translate(p.x + 1, y); c.rotate(tilt);
+    section(c, Vw, () => c.rect(-1, -0.07, 2, 0.14), [-1, -0.07, 1, 0.07], C.ink, LW.part);
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 1, y + 0.3);
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -3090,6 +3329,10 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     else if (p.type === 'bumper') drawBumper(c, Vw, p, rt, ann);
     else if (p.type === 'cutter') drawCutter(c, Vw, p, rt, ann);
     else if (p.type === 'pin') drawPin(c, Vw, p);
+    else if (p.type === 'gear') drawGear(c, Vw, p, rt);
+    else if (p.type === 'crank') drawCrank(c, Vw, p, rt, ann);
+    else if (p.type === 'lift') drawLift(c, Vw, p, rt, ann);
+    else if (p.type === 'turbine') drawTurbine(c, Vw, p, rt, ann);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
@@ -3768,9 +4011,10 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter' }[rt.type] || 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter', crank: 'tick' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
+        if (rt.type === 'crank' && rt.on && !s.on) sfx('crank');
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
       if (sim.pops > S.popsSeen) {
@@ -3953,7 +4197,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors', 5: 'Gears and Wind' };
 
   // ---------------------------------------------------------------- Atölye: kendi çizimin
   // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.

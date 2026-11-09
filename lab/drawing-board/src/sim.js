@@ -25,6 +25,7 @@
     flipLen: 1.6, flipDown: -0.3, flipUp: 0.45, flipW: 9, flipBackW: 5, flipPulse: 0.25,
     bumpMin: 9,
     balR: 0.42, balRise: 1.4, balK: 6, balMaxF: 3, balFanV: 2.6, balTop: 10.5, hookR: 0.08,
+    gearW: 2.4, gearR: 0.42, liftV: 1.6, liftMax: 3, liftTilt: 0.06,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -51,7 +52,17 @@
     cutter: { orients: ['-'], w: 1, h: 1, manual: 'press' },
     // İğne: balon değince patlar. Ucu o yöne bakar.
     pin: { orients: ['u', 'r', 'd', 'l'], w: 1, h: 1 },
+    // Kol: basılı tutunca döner ('cw' saat yönünde, 'ccw' tersine) ve yanındaki dişliyi çevirir. Sensörle aç/kapat.
+    crank: { orients: ['cw', 'ccw'], w: 1, h: 1, manual: 'hold' },
+    // Dişli: yan yana (kenarı bitişik) dişliler birbirini ters yönde çevirir. Dönen dişliye değen top da sürüklenir.
+    gear: { orients: ['-'], w: 1, h: 1 },
+    // Asansör (dişli kremayer): 2 kare genişliğinde, 'r' sağa, 'l' sola hafif eğik levha. Yanındaki dişli saat yönünün tersine dönerse
+    // yukarı (en çok T.liftMax), saat yönünde dönerse aşağı iner; dişli durunca olduğu yerde kalır.
+    lift: { orients: ['r', 'l'], w: 2, h: 1 },
+    // Rüzgâr türbini: açık bir pervanenin kuşağındayken kendi kendine döner ('cw' / 'ccw'), yanındaki dişliyi çevirir.
+    turbine: { orients: ['cw', 'ccw'], w: 1, h: 1 },
   };
+  const DRIVE = { crank: 1, gear: 1, lift: 1, turbine: 1 };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
 
@@ -225,7 +236,7 @@
     for (const c of cups) for (const r of cupBoxes(c)) box(statics, r);
 
     const parts = listParts(level, placed);
-    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], byId = {};
+    const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], drives = [], byId = {};
     const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
@@ -277,6 +288,12 @@
         flippers.push(rt);
       } else if (p.type === 'cutter') {
         rt.cuts = 0;
+      } else if (DRIVE[p.type]) {
+        const body = world.createKinematicBody({ position: pl.Vec2(p.x + (p.type === 'lift' ? 1 : 0.5), p.y + 0.5) });
+        if (p.type === 'lift') body.createFixture(pl.Box(1, 0.07, pl.Vec2(0, -0.57), p.o === 'r' ? -T.liftTilt : T.liftTilt), { friction: 0.8 }).setUserData({ kind: 'lift', rt });
+        else body.createFixture(pl.Circle(p.type === 'gear' ? T.gearR : 0.34), { friction: 0.9 }).setUserData({ kind: 'gear', rt });
+        rt.body = body; rt.spin = 0; rt.jam = false; rt.offset = 0;
+        drives.push(rt);
       } else if (p.type === 'pin') {
         statics.createFixture(pl.Polygon(pinTri(p).map(q => pl.Vec2(q[0], q[1]))), { friction: 0.2 }).setUserData({ kind: 'pin', rt });
       } else if (p.type === 'bumper') {
@@ -286,6 +303,20 @@
       }
     }
     for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
+    // Dişli ağları: kenarı bitişik dönen parçalar birbirine geçer.
+    const touch = (a, b) => cellsOf(a.p).some(([x, y]) => cellsOf(b.p).some(([u, v]) => Math.abs(x - u) + Math.abs(y - v) === 1));
+    // Asansör yalnız yanındaki (solundaki / sağındaki) dişliden güç alır, gücü başkasına geçirmez.
+    const lifts = drives.filter(d => d.type === 'lift');
+    for (const a of drives) a.nb = a.type === 'lift' ? [] : drives.filter(b => b !== a && b.type !== 'lift' && touch(a, b));
+    for (const L of lifts) L.pinions = drives.filter(g => g.type !== 'lift' && g.p.y === L.p.y && (g.p.x === L.p.x - 1 || g.p.x === L.p.x + 2))
+      .map(g => ({ g, side: g.p.x < L.p.x ? 1 : -1 }));
+    const nets = [], seenNet = new Set();
+    for (const a of drives.filter(d => d.type !== 'lift')) {
+      if (seenNet.has(a)) continue;
+      const net = [], q = [a]; seenNet.add(a);
+      while (q.length) { const n = q.shift(); net.push(n); for (const m of n.nb) if (!seenNet.has(m)) { seenNet.add(m); q.push(m); } }
+      nets.push(net);
+    }
 
     const balls = startsOf(level).map((st, i) => {
       const b = world.createDynamicBody({ position: pl.Vec2(st.x, st.y), bullet: true,
@@ -344,7 +375,7 @@
     });
 
     const sim = {
-      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need, ropes, balloons, pops: 0,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, drives, nets, lifts, need, ropes, balloons, pops: 0,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -358,7 +389,7 @@
           if (manual) sim.presses++;
           return true;
         }
-        if (rt.type === 'fan' || rt.type === 'magnet') {
+        if (rt.type === 'fan' || rt.type === 'magnet' || rt.type === 'crank') {
           // Sensör pervaneyi ve mıknatısı anahtar gibi açar; bir daha tetiklenirse kapatır.
           rt.latched = !rt.latched;
           if (manual) sim.presses++;
@@ -427,6 +458,44 @@
             const f = T.fanForce * mass * T.G * (1 - T.fanFalloff * Math.max(0, dist) / T.fanLen);
             b.applyForceToCenter(pl.Vec2(d[0] * f, d[1] * f), true);
           });
+        }
+        // Dişliler: açık kol ağını çevirir; bitişik olanlar ters yöne döner. İki kol ters dönmeye
+        // zorlarsa ya da dişliler halka kurarsa ağ kilitlenir (jam).
+        for (const net of nets) {
+          for (const n of net) if (n.type === 'turbine') {
+            const cx = n.x + 0.5, cy = n.y + 0.5;
+            n.on = fans.some(f => f.on && cx >= f.zone[0] - 0.3 && cx <= f.zone[2] + 0.3 && cy >= f.zone[1] - 0.3 && cy <= f.zone[3] + 0.3);
+          }
+          const src = net.filter(n => (n.type === 'crank' && (n.held || n.latched)) || (n.type === 'turbine' && n.on));
+          const sg = new Map(); let jam = false;
+          for (const s0 of src) {
+            const want = s0.o === 'ccw' ? 1 : -1;
+            if (sg.has(s0)) { if (sg.get(s0) !== want) jam = true; continue; }
+            sg.set(s0, want); const q = [s0];
+            while (q.length) {
+              const n = q.shift();
+              for (const m of n.nb) {
+                if (!sg.has(m)) { sg.set(m, -sg.get(n)); q.push(m); }
+                else if (sg.get(m) === sg.get(n)) jam = true;
+              }
+            }
+          }
+          for (const n of net) {
+            if (n.type === 'crank') n.on = n.held || n.latched;
+            n.jam = jam && src.length > 0;
+            n.spin = src.length && !jam ? sg.get(n) * T.gearW : 0;
+            n.body.setAngularVelocity(n.spin);
+          }
+        }
+        // Asansör: solundaki dişli saat yönünün tersine (sağındaki saat yönünde) dönerse yükselir.
+        for (const L of lifts) {
+          const dirs = L.pinions.filter(q => q.g.spin).map(q => Math.sign(q.g.spin) * q.side);
+          L.jam = dirs.some(d => d !== dirs[0]);
+          L.spin = dirs.length && !L.jam ? dirs[0] : 0;
+          let v = L.spin * T.liftV;
+          if (L.offset + v * DT > T.liftMax) v = (T.liftMax - L.offset) / DT;
+          if (L.offset + v * DT < 0) v = -L.offset / DT;
+          L.offset += v * DT; L.body.setLinearVelocity(pl.Vec2(0, v));
         }
         for (const rt of gates) {
           const g = GATES[rt.o], target = rt.open ? T.gateLift : 0, gap = target - rt.offset;

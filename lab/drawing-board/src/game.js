@@ -4,9 +4,9 @@
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin' };
-  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin', crank: 'Crank', gear: 'Gear', lift: 'Lift', turbine: 'Turbine' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gear', 'lift', 'turbine', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'crank', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u', crank: 'cw', gear: '-', lift: 'r', turbine: 'cw' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -82,6 +82,10 @@
     cutter: ['New part', 'Scissors', 'Press it and it cuts any rope in its square.'],
     balloon: ['New thing', 'Balloon', 'It lifts its ball up. Wind from a fan pushes it along.'],
     pin: ['New part', 'Pin', 'Pops a balloon that touches it. The ball drops.'],
+    crank: ['New part', 'Crank', 'Hold it and it turns the gear next to it.'],
+    gear: ['New part', 'Gear', 'Gears side by side turn each other, each the other way round.'],
+    turbine: ['New part', 'Turbine', 'Wind from a fan spins it, and it turns the gear next to it.'],
+    lift: ['New part', 'Lift', 'A gear at its side moves it up or down. When the gear stops, it stays.'],
   };
   const INTRO = (() => {
     const seen = new Set();
@@ -781,6 +785,100 @@
     }
   }
 
+  // Dişli: dişli çark, göbek ve eksen. Komşu dişlilerin dişleri birbirine otursun diye
+  // kareler satranç tahtası gibi yarım diş kaydırılır. Kilitlenen ağda kırmızı çarpı.
+  function gearPath(c, r, n, ang) {
+    const ri = r - 0.08;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a0 = ang + i * TAU / n, w = TAU / n;
+      const pts = [[ri, a0], [r, a0 + w * 0.18], [r, a0 + w * 0.48], [ri, a0 + w * 0.66]];
+      for (const [rr, a] of pts) { const x = Math.cos(a) * rr, y = Math.sin(a) * rr; if (i === 0 && rr === ri && a === a0) c.moveTo(x, y); else c.lineTo(x, y); }
+    }
+    c.closePath();
+  }
+  function jamMark(c, Vw, x, y) {
+    c.beginPath(); c.moveTo(x - 0.16, y - 0.16); c.lineTo(x + 0.16, y + 0.16); c.moveTo(x + 0.16, y - 0.16); c.lineTo(x - 0.16, y + 0.16);
+    c.lineCap = 'round'; stroke(c, Vw, C.bad, LW.edge + 1); c.lineCap = 'butt';
+  }
+  function drawGear(c, Vw, p, rt) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), turning = !!(rt && rt.spin);
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, T.gearR + 0.04, 10, ang); fill(c, C.paper); fill(c, ink(turning ? 0.22 : 0.12)); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) {
+      c.beginPath(); c.arc(0, 0, 0.24, 0, TAU); stroke(c, Vw, ink(0.6), LW.hair);
+      for (let i = 0; i < 4; i++) { const a = ang + i * Math.PI / 2; c.beginPath(); c.arc(Math.cos(a) * 0.17, Math.sin(a) * 0.17, 0.045, 0, TAU); stroke(c, Vw, ink(0.6), LW.hair); }
+      axisLine(c, Vw, -0.5, 0, 0.5, 0, ink(0.3)); axisLine(c, Vw, 0, -0.5, 0, 0.5, ink(0.3));
+    }
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+  }
+  // Kol: turuncu el çarkı (dişli kenar, tutamaklı kol). Kurarken döneceği yön ok ile.
+  function drawCrank(c, Vw, p, rt, ann) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), on = !!(rt && rt.on), dir = p.o === 'ccw' ? 1 : -1;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, 0.38, 10, ang); fill(c, C.paper); fill(c, hand(on ? 0.34 : 0.18)); stroke(c, Vw, C.hand, LW.part);
+    c.save(); c.rotate(ang);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(0.24, 0); stroke(c, Vw, C.hand, LW.edge + 0.6);
+    c.beginPath(); c.arc(0.24, 0, 0.075, 0, TAU); fill(c, C.hand); stroke(c, Vw, C['paper-deep'], LW.thin);
+    c.restore();
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.hand, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.5, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.5, Math.sin(a1) * 0.5, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+    badge(c, Vw, p.num, p.x + 0.13, p.y + 0.87, 0.13);
+  }
+  // Türbin: üç kanatlı rotor, dişli göbek. Pervanenin rüzgârı gelince kendi döner.
+  function drawTurbine(c, Vw, p, rt, ann) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), on = !!(rt && rt.spin), dir = p.o === 'ccw' ? 1 : -1;
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, 0.26, 8, ang); fill(c, C.paper); fill(c, ink(0.14)); stroke(c, Vw, C.ink, LW.thin);
+    c.save(); c.rotate(ang);
+    for (let i = 0; i < 3; i++) {
+      c.rotate(TAU / 3);
+      c.beginPath(); c.moveTo(0.06, 0); c.quadraticCurveTo(0.2, 0.16 * dir, 0.44, 0.06 * dir); c.lineTo(0.44, -0.03 * dir); c.quadraticCurveTo(0.25, -0.03 * dir, 0.06, -0.05 * dir); c.closePath();
+      fill(c, C.paper); fill(c, ink(on ? 0.45 : 0.22)); stroke(c, Vw, C.ink, LW.thin);
+    }
+    c.restore();
+    c.beginPath(); c.arc(0, 0, 0.06, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.5, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.5, Math.sin(a1) * 0.5, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+  }
+  // Asansör: eğik levha (taranmış kesit), iki yanında kremayer. Kurarken gideceği yol çizgi-iki noktayla.
+  function drawLift(c, Vw, p, rt, ann) {
+    const off = rt ? rt.offset : 0, tilt = p.o === 'r' ? -T.liftTilt : T.liftTilt, y = p.y - 0.07 + off;
+    if (ann && Vw.lod) {
+      c.beginPath(); c.rect(p.x, p.y - 0.14, 2, T.liftMax + 0.14); stroke(c, Vw, ink(0.35), LW.hair, DASH.phantom);
+      c.save(); c.translate(p.x + 1, y + T.liftMax); c.rotate(tilt); c.beginPath(); c.rect(-1, -0.07, 2, 0.14); stroke(c, Vw, ink(0.5), LW.thin, DASH.phantom); c.restore();
+      arrow(c, Vw, p.x + 1, p.y + 0.85, Math.PI / 2, 7, ink(0.55));
+      c.beginPath(); c.moveTo(p.x + 1, p.y + 0.15); c.lineTo(p.x + 1, p.y + 0.8); stroke(c, Vw, ink(0.45), LW.hair, DASH.hidden);
+    }
+    // kremayer: levha yükseldikçe iki ucunda dişli çubuk görünür
+    if (Vw.lod && off > 0.02) {
+      c.beginPath();
+      for (const sx of [p.x + 0.04, p.x + 1.96]) {
+        c.moveTo(sx, y); c.lineTo(sx, p.y - 0.07);
+        const out = sx < p.x + 1 ? -0.07 : 0.07;
+        for (let k = y - 0.12; k > p.y - 0.07; k -= 0.15) { c.moveTo(sx, k); c.lineTo(sx + out, k - 0.05); }
+      }
+      stroke(c, Vw, ink(0.75), LW.thin);
+    }
+    c.save(); c.translate(p.x + 1, y); c.rotate(tilt);
+    section(c, Vw, () => c.rect(-1, -0.07, 2, 0.14), [-1, -0.07, 1, 0.07], C.ink, LW.part);
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 1, y + 0.3);
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -813,6 +911,10 @@
     else if (p.type === 'bumper') drawBumper(c, Vw, p, rt, ann);
     else if (p.type === 'cutter') drawCutter(c, Vw, p, rt, ann);
     else if (p.type === 'pin') drawPin(c, Vw, p);
+    else if (p.type === 'gear') drawGear(c, Vw, p, rt);
+    else if (p.type === 'crank') drawCrank(c, Vw, p, rt, ann);
+    else if (p.type === 'lift') drawLift(c, Vw, p, rt, ann);
+    else if (p.type === 'turbine') drawTurbine(c, Vw, p, rt, ann);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
@@ -1491,9 +1593,10 @@
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter' }[rt.type] || 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter', crank: 'tick' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
+        if (rt.type === 'crank' && rt.on && !s.on) sfx('crank');
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
       if (sim.pops > S.popsSeen) {
@@ -1676,7 +1779,7 @@
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors', 5: 'Gears and Wind' };
 
   // ---------------------------------------------------------------- Atölye: kendi çizimin
   // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.

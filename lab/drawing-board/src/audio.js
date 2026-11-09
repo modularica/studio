@@ -341,6 +341,7 @@
     flipper(t, h) { thump(t, 0.22, 220, 90, 0.12, X.sfx); hiss(t, 0.1, 0.05, 'bandpass', 1800, 1, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.13, 0, X.sfx); },
     bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
     cutter(t, h) { hiss(t, 0.16, 0.035, 'highpass', 5200, 0, X.sfx); wood(t + 0.01, 0.06, 2600, X.sfx); hiss(t + 0.05, 0.1, 0.03, 'highpass', 6500, 0, X.sfx); mallet(tone(h.song, h.c, 1, 72, 84), t + 0.05, 0.07, 0, X.sfx); },
+    crank(t, h) { for (let i = 0; i < 4; i++) wood(t + i * 0.07, 0.05 - i * 0.008, 2400 + i * 200, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.1, 0, X.sfx); },
     pop(t, h, o) {
       const x = clamp((o && o.x) || 0, -0.7, 0.7);
       hiss(t, 0.34, 0.07, 'bandpass', 1400, 0.7, X.sfx); thump(t, 0.2, 180, 60, 0.08, X.sfx);
