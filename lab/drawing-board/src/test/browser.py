@@ -2,6 +2,7 @@
 # Önce: node build.js --local /tmp/km-local.html  (ekran görüntüleri /tmp/km-shots/)
 import json, sys, time
 from playwright.sync_api import sync_playwright
+OLD_IDS = ["rampa", "yay", "piston", "pervane", "sensor", "hizli", "iki-piston", "buyuk-makine", "bant", "yay-merdiveni", "ac-kapa", "domino", "iki-top", "tetik", "kapi", "kapak", "miknatis", "bayraklar", "uc-top", "istasyon", "tampon", "periskop", "flipper", "bank", "pinball", "makas", "balon", "salincak", "teleferik", "posta", "asansor", "kanca", "degirmen"]
 
 URL = 'file:///tmp/km-local.html'
 OUT = '/tmp/km-shots'
@@ -31,6 +32,8 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto(URL)
     page.wait_for_timeout(800)
+    NEW_IDS = page.evaluate('KM_LEVELS.map(l => l.id)')
+    ix = lambda i: NEW_IDS.index(OLD_IDS[i])   # testler eski sıra numaralarıyla yazıldı
     page.screenshot(path=f'{OUT}/1-build.png')
 
     # 1. bölüm: listeden rampayı sürükle, dokunarak döndür, çalıştır
@@ -87,14 +90,14 @@ with sync_playwright() as p:
     place_and_run([{'type': 'sensor', 'o': '-', 'x': 6, 'y': 2}], label='L5 sensör')
     page.click('#btn-retry'); page.wait_for_timeout(300)
     page.screenshot(path=f'{OUT}/5-sensor-build.png')
-    page.evaluate("KM_GAME.loadLevel(5)"); page.wait_for_timeout(200)
+    page.evaluate(f"KM_GAME.loadLevel({ix(5)})"); page.wait_for_timeout(200)
     print('bölüm:', page.evaluate("KM_GAME.S.level.id"))
     place_and_run([{'type': 'sensor', 'o': '-', 'x': 3, 'y': 4}], label='L6 sensör')
     page.click('#btn-retry'); page.wait_for_timeout(300)
     page.screenshot(path=f'{OUT}/9-hizli.png')
     page.click('#run'); page.wait_for_timeout(100)
     page.click('#btn-next') if page.evaluate("!document.getElementById('result').hidden") else None
-    page.evaluate("KM_GAME.loadLevel(6)"); page.wait_for_timeout(200)
+    page.evaluate(f"KM_GAME.loadLevel({ix(6)})"); page.wait_for_timeout(200)
     print('bölüm:', page.evaluate("KM_GAME.S.level.id"))
     place_and_run([{'type': 'sensor', 'o': '-', 'x': 12, 'y': 4}], keys=[(2.1, '1', 0)], label='L7 elle+sensör')
     page.click('#btn-retry'); page.wait_for_timeout(200)
@@ -108,7 +111,7 @@ with sync_playwright() as p:
     page.screenshot(path=f'{OUT}/10-buyuk.png')
     # 9–14: kayıtlı ilk çözüm (girdisiz) ile
     for i in range(8, 14):
-        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(150)
+        page.evaluate(f"KM_GAME.loadLevel({ix(i)})"); page.wait_for_timeout(150)
         lid = page.evaluate("KM_GAME.S.level.id")
         parts = page.evaluate("KM_GAME.S.level.sol[0].parts.map(p => ({type: p.type, o: p.o, x: p.x, y: p.y}))")
         place_and_run(parts, label=f'L{i + 1} {lid}')
@@ -116,15 +119,15 @@ with sync_playwright() as p:
         if lid in ('domino', 'tetik'):
             page.screenshot(path=f'{OUT}/11-{lid}.png')
     # Defter 2: kapı ve mıknatıs (15–20)
-    page.evaluate("KM_GAME.loadLevel(14)"); page.wait_for_timeout(150)
+    page.evaluate(f"KM_GAME.loadLevel({ix(14)})"); page.wait_for_timeout(150)
     print('bölüm:', page.evaluate("KM_GAME.S.level.id"))
     place_and_run([], keys=[(4.0, '1', 0)], label='L15 kapı elle')
     page.click('#btn-retry'); page.wait_for_timeout(200)
-    page.evaluate("KM_GAME.loadLevel(16)"); page.wait_for_timeout(150)
+    page.evaluate(f"KM_GAME.loadLevel({ix(16)})"); page.wait_for_timeout(150)
     place_and_run([], keys=[(0.5, '1', 5.5)], label='L17 mıknatıs basılı tut')
     page.click('#btn-retry'); page.wait_for_timeout(200)
     for i in range(15, 20):
-        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(150)
+        page.evaluate(f"KM_GAME.loadLevel({ix(i)})"); page.wait_for_timeout(150)
         lid = page.evaluate("KM_GAME.S.level.id")
         parts = page.evaluate("KM_GAME.S.level.sol[0].parts.map(p => ({type: p.type, o: p.o, x: p.x, y: p.y, link: p.link}))")
         place_and_run(parts, label=f'L{i + 1} {lid}')
@@ -133,13 +136,20 @@ with sync_playwright() as p:
     def sol_parts(k):
         return page.evaluate(f"KM_GAME.S.level.sol[{k}].parts.map(p => ({{type: p.type, o: p.o, x: p.x, y: p.y, link: p.link}}))")
     for i, keys, k in [(20, None, 0), (21, None, 0), (22, [(4.5, '1', 0)], 0), (23, [(4.5, '1', 0)], 0), (23, None, 1), (24, [(5.0, '1', 0)], 0), (24, None, 1)]:
-        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(150)
+        page.evaluate(f"KM_GAME.loadLevel({ix(i)})"); page.wait_for_timeout(150)
         lid = page.evaluate("KM_GAME.S.level.id")
         place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
         page.click('#btn-retry'); page.wait_for_timeout(250)
+    # Zor çizimler (Defter 1–3 sonları)
+    for lid, keys, k in [('kule', None, 0), ('hava-akimi', None, 1), ('kendi-istasyon', None, 0), ('sollama', None, 0), ('rikoset', None, 0), ('baca', [(5.0, '1', 0)], 0)]:
+        page.evaluate(f"KM_GAME.loadLevel({NEW_IDS.index(lid)})"); page.wait_for_timeout(250)
+        page.screenshot(path=f'{OUT}/zor-{lid}-bos.png')
+        place_and_run(sol_parts(k), keys=keys, label=f'zor {lid} çözüm {k}')
+        page.screenshot(path=f'{OUT}/zor-{lid}-sonuc.png')
+        page.click('#btn-retry'); page.wait_for_timeout(250)
     # Defter 4: balon, ip, makas, iğne
     for i, keys, k in [(25, [(0.6, '1', 0)], 0), (26, [(0.2, '1', 10)], 0), (27, [(0.1, '1', 1.1)], 1), (28, None, 1), (29, [(0.1, '1', 4)], 0), (30, None, 1), (31, [(0.2, '1', 2.8)], 1), (32, None, 1), (30, [(2.5, '1', 4)], 0)]:
-        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(250)
+        page.evaluate(f"KM_GAME.loadLevel({ix(i)})"); page.wait_for_timeout(250)
         lid = page.evaluate("KM_GAME.S.level.id")
         page.screenshot(path=f'{OUT}/d{4 if i < 30 else 5}-{lid}-bos.png')
         page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(k))
@@ -148,7 +158,7 @@ with sync_playwright() as p:
         place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
         page.click('#btn-retry'); page.wait_for_timeout(250)
     # çalışırken balon ve kesilen ip
-    page.evaluate("KM_GAME.loadLevel(27)"); page.wait_for_timeout(200)
+    page.evaluate(f"KM_GAME.loadLevel({ix(27)})"); page.wait_for_timeout(200)
     page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(1))
     page.click('#run'); page.wait_for_timeout(1500)
     page.screenshot(path=f'{OUT}/d4-tele-run.png')
@@ -156,13 +166,13 @@ with sync_playwright() as p:
     page.screenshot(path=f'{OUT}/d4-tele-run2.png')
     page.click('#run'); page.wait_for_timeout(200)
     # çalışırken dişliler ve asansör
-    page.evaluate("KM_GAME.loadLevel(32)"); page.wait_for_timeout(200)
+    page.evaluate(f"KM_GAME.loadLevel({ix(32)})"); page.wait_for_timeout(200)
     page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(1))
     page.click('#run'); page.wait_for_timeout(4200)
     page.screenshot(path=f'{OUT}/d5-degirmen-run.png')
     page.click('#run'); page.wait_for_timeout(200)
     # çoklu topta çalışırken kova sayacı
-    page.evaluate("KM_GAME.loadLevel(12)"); page.wait_for_timeout(150)
+    page.evaluate(f"KM_GAME.loadLevel({ix(12)})"); page.wait_for_timeout(150)
     page.click('#run'); page.wait_for_timeout(2600)
     print('çalışırken sayaç:', page.evaluate("document.getElementById('press-count').textContent"))
     page.screenshot(path=f'{OUT}/12-iki-top-run.png')

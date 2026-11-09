@@ -8,14 +8,14 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 - `cover.png` paylaşım görseli (8. çizim tam otomatik çalışırken: sensör pistonu tetiklemiş, piston topu itiyor).
 - `src/` kaynak (siteye çıkmaz, `.vercelignore`):
   - `sim.js` fizik çekirdeği (Planck.js, sabit 1/120 sn adım, DOM yok; Node'da da çalışır): parçalar, sensörler, çoklu top/kova, top çeşitleri, `runHeadless`
-  - `levels.js` 33 çizim, beş defter (`book`); her birinde ipuçları, damgalar ve testlerin doğruladığı çözümler (`sol`)
+  - `levels.js` 39 çizim, beş defter (`book`); her birinde ipuçları, damgalar ve testlerin doğruladığı çözümler (`sol`)
   - `game.js` arayüz: sürükle-bırak, kumanda, damgalar, bölüm seçimi (defter başlıklarıyla), teknik çizim (bkz. Görünüm), çalışırken efektler, kutlama ve yenilik anları (bkz. Oyun hissi), Lab bağlantıları
   - `audio.js` müzik ve sesler (`window.KM_AUDIO`, WebAudio sentezi, ses dosyası yok)
   - `index.html` sayfa iskeleti, `style.css` görünüm
   - `build.js` derleme; `test/` bölüm doğrulama ve tarayıcı denemeleri
 - Derleme: `node lab/drawing-board/src/build.js --lab` → `index.html`. Hesap satırları olmayan tek başına kopya: `node lab/drawing-board/src/build.js /tmp/db.html`. İnternetsiz kopya (fontlar ve Planck içinde): önce `cd lab/drawing-board/src && npm install`, sonra `node build.js --local /tmp/km-local.html`.
 - Bölüm testi: `cd lab/drawing-board/src && npm install && node test/design.js` (her bölüm: boş kurulum başarısız, kayıtlı çözümler başarılı). `node test/design.js <bölüm-id> --brute --sweep` tek parçalık bütün yerleşimleri ve elle basma pencerelerini tarar. Fizik ayarı (`sim.js` → `T`) ya da bir bölüm değişirse bunu çalıştır.
-- Tarayıcı denemesi: `--local` derlemesinden sonra `python3 test/browser.py` (33 bölümü oynar) ve `python3 test/shots.py` (masaüstü, telefon, iPad, sürükleme anı, çalışma anı, başarısız deneme izi ve bölüm kartları; `/tmp/km-shots/`). `python3 test/juice.py` kutlamayı, sonuç kartını, "unlocked" anlarını ve NEW etiketlerini sıfır ilerlemeyle dener ve görüntüler. `python3 test/music.py` müziği ve sesleri bir dakikalık akışla çevrimdışı çalar: `music.wav`/`music.mp3` ve bölüm bölüm tepe/RMS düzeyi (tepe 0.98'i geçerse hata).
+- Tarayıcı denemesi: `--local` derlemesinden sonra `python3 test/browser.py` (39 bölümü oynar; çizimleri kimlikle bulur, eski sıra numaraları `OLD_IDS` ile çevrilir) ve `python3 test/shots.py` (masaüstü, telefon, iPad, sürükleme anı, çalışma anı, başarısız deneme izi ve bölüm kartları; `/tmp/km-shots/`). `python3 test/juice.py` kutlamayı, sonuç kartını, "unlocked" anlarını ve NEW etiketlerini sıfır ilerlemeyle dener ve görüntüler. `python3 test/music.py` müziği ve sesleri bir dakikalık akışla çevrimdışı çalar: `music.wav`/`music.mp3` ve bölüm bölüm tepe/RMS düzeyi (tepe 0.98'i geçerse hata).
 
 ## Parçalar
 
@@ -30,6 +30,9 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 - Asansör (`lift`, 2×1, `r`/`l` hafif eğik levha): yalnız solundaki ya da sağındaki dişliden güç alır (gücü başkasına geçirmez). Soldaki dişli saat yönünün tersine, sağdaki saat yönünde dönünce `T.liftV` ile yükselir (en çok `T.liftMax` = 3), ters dönünce iner, dişli durunca olduğu yerde kalır. Levhanın üstü hücrenin tabanıyla aynı hizada; eğik olduğu için üstteki rafın üstü levhanın alçak ucundan biraz aşağıda olmalı (yoksa top köşeye sıkışır).
 - Balonlu Air Mail kaotikti (tutma süresine göre top yayın kenarına düşüyordu); düşüş yerini sabitlemek için huni eklendi. Yeni balon bölümlerinde de çözümün tutma/basma zamanına göre ne kadar sağlam olduğunu tara.
 - Zorluk: oyuncular (Kasım 2026) ilk 25 çizimi çok kolay buldu (çoğu 1–2 parça, tepside fazla parça yok). Defter 4'ten itibaren her çizim 3+ parçalık zincir ister, tepside şaşırtma parçaları vardır. Kestirme arama: tek parça ve iki parça (yörüngeye değmeyen parçalar budanarak) denenir; kestirme çıkarsa tasarım değişir.
+- Eski defterler (9 Kasım 2026): öğretici çizimler (1–8, Gate, Magnet, Bumper, Flipper) ve Domino olduğu gibi; diğerlerinin tepsisine bu çizime kadar tanıtılmış parçalardan şaşırtma eklendi (yeni parça eklenirse "New" tanıtımı kayar, ekleme). Her şaşırtma tek parçalık kestirme açmıyor diye denendi (elle kumandalı şaşırtmalar çeşitli anlarda basılarak). Domino'da hangi parça eklense onu tek başına çözüyordu, eklenmedi.
+- Defter 1–3'ün sonunda ikişer zor çizim (`hard: true`, bölümler sayfasında "Challenge" rozeti): Tower (yay-bant-yay, tavan büyük sıçramayı keser), Updraft (dik pervane bacadan kaldırır, ikincisi yana üfler), Your Own Station (kapıyı ve mıknatısı oyuncu koyar), Overtake (tek sensör kapağı sarı topla açıp çelik topla kapar; elle pencere 0,1 sn), Ricochet (üç tampon), Chimney Sweep (flipper + üç tampon, çatıyı zikzakla geç). Hiçbirinde iki parçalık çözüm yok (Chimney Sweep'te 65 binde bir gizli çift var).
+- Son açılan çizim kimliğiyle (`lid`) saklanır; araya çizim girince eski kayıt yine doğru çizimi açar.
 - Top çeşitleri: `balls[i].kind` (`yellow` / `steel`); yazılmazsa ilk top sarı, diğerleri çelik. Yeni bölümlerde her topa `kind` yaz. Kovaya `kind` yazılırsa (bayraklı kova) yalnızca o renkten topu sayar; bayrak ve hedef o topun renginde çizilir.
 
 ## Notlar

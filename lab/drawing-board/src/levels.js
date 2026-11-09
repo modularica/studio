@@ -183,7 +183,7 @@
       pipe: { x: 9, y: 6, dir: 'd' },
       walls: [[6, 4.6, 12, 5], [3.6, 0, 4.4, 2]],
       cup: { x: 3, y: 2, w: 2, back: { side: 'l', h: 2.4 } },
-      tray: { belt: 3 },
+      tray: { belt: 3, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
       hints: {
         place: 'A conveyor carries the ball on top of it. The ball stops where it lands, so put a belt under it. Tap a belt to change its direction.',
@@ -201,7 +201,7 @@
       pipe: { x: 0, y: 2, dir: 'r' },
       walls: [[0, 1.6, 4, 2], [7, 3.6, 10, 4], [12, 5.6, 14, 6], [14.6, 0, 15.4, 5.2]],
       cup: { x: 14, y: 5.2, w: 2, back: { side: 'r', h: 2.2 } },
-      tray: { spring: 2, ramp: 1 },
+      tray: { spring: 2, ramp: 2, belt: 1 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
       hints: {
         place: 'Two springs, two floors. Put the first spring where the ball first lands, then check its path.',
@@ -220,7 +220,7 @@
       walls: [[0, 4.6, 7, 5], [10.6, 0, 11.4, 2]],
       fixed: [{ type: 'fan', x: 0, y: 5, o: 'r' }],
       cup: { x: 10, y: 2, w: 2 },
-      tray: { sensor: 3 },
+      tray: { sensor: 3, ramp: 1, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 2 }],
       hints: {
         place: 'Two sensors can run one fan: one turns it on, the other turns it off. Too much speed and the ball flies past the cup.',
@@ -261,7 +261,7 @@
       walls: [[0, 1.6, 6, 2], [7, 1.6, 7.6, 2], [6, 0, 7, 1], [[8.5, 4.7], [11, 4.7], [11, 5], [8.5, 5.3]], [13, 4.7, 16, 5]],
       fixed: [{ type: 'piston', x: 6, y: 1, o: 'u' }],
       cup: { x: 11, y: 4.2, w: 2 },
-      tray: { sensor: 2 },
+      tray: { sensor: 2, ramp: 1, belt: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
       hints: {
         place: 'Two balls in a row. You’ll have to press the piston twice, or leave it to a sensor.',
@@ -286,7 +286,7 @@
         [7, 5.6, 11.7, 6]],
       fixed: [{ type: 'fan', x: 12, y: 0, o: 'u' }, { type: 'piston', x: 13, y: 6, o: 'l' }],
       cups: [{ x: 9, y: 1.2, w: 2, back: { side: 'r', h: 1.6 } }, { x: 5, y: 5.2, w: 2, back: { side: 'l', h: 2.2 } }],
-      tray: { ramp: 2, sensor: 3 },
+      tray: { ramp: 2, sensor: 3, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 3 }],
       hints: {
         place: 'Two balls, two cups. First build the ramp that sends the yellow ball down to the lower cup.',
@@ -298,6 +298,48 @@
       sol: [
         { name: 'tam otomatik', parts: [{ type: 'ramp', x: 0, y: 6, o: 'dr' }, { type: 'sensor', x: 5, y: 2, o: '-', link: 'f0' }, { type: 'sensor', x: 12, y: 6, o: '-', link: 'f1' }], inputs: [] },
         { name: 'elle iki el', parts: [{ type: 'ramp', x: 0, y: 6, o: 'dr' }], inputs: [{ t: 0.2, num: 1, act: 'down' }, { t: 2.17, num: 2, act: 'press' }, { t: 8, num: 1, act: 'up' }] },
+      ],
+    },
+    // Defter 1'in zor çizimleri (9 Kasım 2026): 3+ parçalık zincir, tepside şaşırtma parçaları.
+    {
+      id: 'kule', hard: true,
+      name: 'Tower', book: 1,
+      task: 'Get the ball up onto the tower and into the cup.',
+      start: { x: 0.6, y: 5.88, vx: 2.6 },
+      pipe: { x: 0, y: 5.6, dir: 'r' },
+      walls: [[0, 5.2, 3, 5.6], [3, 0, 12, 0.4], [7, 2.6, 9, 3], [12, 0, 16, 5.6], [0, 9.6, 16, 10]],
+      cup: { x: 13, y: 5.6, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { spring: 2, belt: 2, ramp: 2 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'The tower is too high for one jump, and the roof is too low for a big one. Build the climb in steps.',
+        ready: 'Press Run.',
+        run: 'Watch where the ball comes down after each jump.',
+        fail: 'A spring only throws the ball up. Something has to carry it sideways between the jumps.',
+        after: 'Three parts: spring, conveyor, spring.',
+      },
+      sol: [{ name: 'yay-bant-yay', parts: [{ type: 'spring', x: 4, y: 2, o: 'u' }, { type: 'belt', x: 6, y: 6, o: 'r' }, { type: 'spring', x: 10, y: 3, o: 'u' }], inputs: [] }],
+    },
+    {
+      id: 'hava-akimi', hard: true,
+      name: 'Updraft', book: 1,
+      task: 'Blow the ball up the chimney and across into the cup.',
+      start: { x: 0.6, y: 1.28, vx: 2 },
+      pipe: { x: 0, y: 1, dir: 'r' },
+      walls: [[0, 0, 5, 1], [4.8, 1.6, 5, 7], [6, 0, 6.2, 7], [6.2, 6.6, 9, 7], [9, 0, 16, 4], [11.4, 4, 11.8, 9]],
+      cup: { x: 9.3, y: 4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { fan: 2, sensor: 2, ramp: 1, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'A fan can blow upwards too. One fan lifts the ball up the chimney, another blows it across at the top.',
+        ready: 'Press Run and hold both fans.',
+        run: 'Hold 1 to lift the ball and 2 to blow it across.',
+        fail: 'The lifting fan has to sit at the very bottom of the chimney, under the ball.',
+        after: 'Fully automatic: one sensor for each fan, where the ball passes.',
+      },
+      sol: [
+        { name: 'iki pervane', parts: [{ type: 'fan', x: 5, y: 0, o: 'u' }, { type: 'fan', x: 4, y: 7, o: 'r' }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 0, num: 2, act: 'down' }, { t: 12, num: 1, act: 'up' }, { t: 12, num: 2, act: 'up' }] },
+        { name: 'tam otomatik', parts: [{ type: 'fan', x: 5, y: 0, o: 'u' }, { type: 'fan', x: 4, y: 7, o: 'r' }, { type: 'sensor', x: 5, y: 1, o: '-', link: 1 }, { type: 'sensor', x: 5, y: 6, o: '-', link: 2 }], inputs: [] },
       ],
     },
     // ---------------------------------------------------------------- Defter 2: kapılar ve mıknatıslar
@@ -330,7 +372,7 @@
       walls: [[0, 6.2, 5, 6.6], [7, 6.2, 12, 6.6], [6.5, 0, 8.5, 1.6]],
       fixed: [{ type: 'gate', x: 5, y: 6, o: 'r' }],
       cups: [{ x: 6.5, y: 1.6, w: 2, kind: 'steel', back: { side: 'r', h: 3 } }, { x: 12, y: 5, w: 2, kind: 'yellow' }],
-      tray: { sensor: 2 },
+      tray: { sensor: 2, ramp: 1, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'presses', n: 1 }, { k: 'auto' }],
       hints: {
         place: 'Each cup takes only the ball of its own color. A gate laid flat is a trapdoor: press 1 and the floor opens.',
@@ -376,7 +418,7 @@
       walls: [[2.7, 2, 3, 9], [4, 2, 4.3, 5], [4, 6.2, 4.3, 9], [[4.3, 4.6], [9, 3.2], [9, 2.9], [4.3, 4.3]], [5.85, 5.3, 6.6, 5.7], [6.4, 5.7, 6.6, 10]],
       fixed: [{ type: 'magnet', x: 5, y: 5, o: 'l' }],
       cups: [{ x: 2.5, y: 0.6, w: 2, kind: 'yellow' }, { x: 9, y: 1.5, w: 2, kind: 'steel', back: { side: 'r', h: 2.4 } }],
-      tray: { sensor: 2 },
+      tray: { sensor: 2, ramp: 1, belt: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }, { k: 'budget', n: 1 }],
       hints: {
         place: 'The magnet can pull the steel ball out through the window in the chute. The yellow ball does not feel it.',
@@ -399,7 +441,7 @@
       walls: [[0, 6.2, 6, 6.6], [8, 6.2, 13, 6.6], [7.5, 0, 9.5, 1.6]],
       fixed: [{ type: 'gate', x: 6, y: 6, o: 'r' }],
       cups: [{ x: 7.5, y: 1.6, w: 2, kind: 'steel', back: { side: 'r', h: 3 } }, { x: 13, y: 5, w: 2, kind: 'yellow', back: { side: 'r', h: 2 } }],
-      tray: { sensor: 2 },
+      tray: { sensor: 2, ramp: 1, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'presses', n: 2 }, { k: 'auto' }],
       hints: {
         place: 'The same trapdoor, three balls. It has to open for the steel ball and close again before the second yellow ball.',
@@ -422,7 +464,7 @@
       walls: [[0, 6.2, 4, 6.6], [6, 6.2, 9.5, 6.6], [5.5, 0, 7.5, 1.6], [11.2, 0, 12.8, 4], [12.35, 6.85, 12.65, 10]],
       fixed: [{ type: 'gate', x: 4, y: 6, o: 'r' }, { type: 'magnet', x: 12, y: 6, o: 'l' }],
       cups: [{ x: 5.5, y: 1.6, w: 2, kind: 'yellow', back: { side: 'r', h: 3 } }, { x: 11, y: 4, w: 2, kind: 'steel' }],
-      tray: { sensor: 3 },
+      tray: { sensor: 3, ramp: 1, belt: 1 },
       badges: [{ k: 'solve' }, { k: 'presses', n: 2 }, { k: 'auto' }],
       hints: {
         place: 'The sorting machine: a trapdoor and a magnet. By hand it is easier with two people, one on each.',
@@ -434,6 +476,48 @@
       sol: [
         { name: 'üç sensör', parts: [{ type: 'sensor', x: 5, y: 6, o: '-', link: 'f0' }, { type: 'sensor', x: 7, y: 6, o: '-', link: 'f1' }, { type: 'sensor', x: 11, y: 6, o: '-', link: 'f1' }], inputs: [] },
         { name: 'elle', parts: [], inputs: [{ t: 0, num: 2, act: 'down' }, { t: 1.1, num: 1, act: 'press' }, { t: 5, num: 2, act: 'up' }] },
+      ],
+    },
+    // Defter 2'nin zor çizimleri: kapıyı ve mıknatısı oyuncu kendisi koyar.
+    {
+      id: 'kendi-istasyon', hard: true,
+      name: 'Your Own Station', book: 2,
+      task: 'Steel ball across the gap, yellow ball down the trapdoor. This time you place the gate and the magnet.',
+      balls: [{ x: 2.6, y: 6.88, vx: 2.6, kind: 'steel' }, { x: 0.6, y: 6.88, vx: 2.6, kind: 'yellow' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 6.2, 4, 6.6], [6, 6.2, 9.5, 6.6], [5.5, 0, 7.5, 1.6], [11.2, 0, 12.8, 4]],
+      cups: [{ x: 5.5, y: 1.6, w: 2, kind: 'yellow', back: { side: 'r', h: 3 } }, { x: 11, y: 4, w: 2, kind: 'steel' }],
+      tray: { gate: 1, magnet: 1, sensor: 3, ramp: 1, belt: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'Lay the gate flat over the first gap as a trapdoor. Put the magnet where it can pull the steel ball over the second gap.',
+        ready: 'Press Run.',
+        run: 'Keep the trapdoor shut for the steel ball, open it for the yellow one. Hold the magnet for the steel ball.',
+        fail: 'The steel ball comes first. It has to roll over the trapdoor while it is still closed.',
+        after: 'Fully automatic with three sensors.',
+      },
+      sol: [{ name: 'üç sensör', parts: [{ type: 'gate', x: 4, y: 6, o: 'r' }, { type: 'magnet', x: 12, y: 6, o: 'l' }, { type: 'sensor', x: 5, y: 6, o: '-', link: 1 }, { type: 'sensor', x: 7, y: 6, o: '-', link: 2 }, { type: 'sensor', x: 11, y: 6, o: '-', link: 2 }], inputs: [] }],
+    },
+    {
+      id: 'sollama', hard: true,
+      name: 'Overtake', book: 2,
+      task: 'The yellow ball is in front, but its cup is behind. Let it drop out of the way and send it back.',
+      balls: [{ x: 2.6, y: 6.88, vx: 2.6, kind: 'yellow' }, { x: 0.6, y: 6.88, vx: 2.6, kind: 'steel' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 6.2, 6, 6.6], [8, 6.2, 13, 6.6], [5, 2.6, 10, 3], [9.6, 3, 10, 4.4], [0, 0, 16, 0.4]],
+      cups: [{ x: 13.2, y: 0.4, w: 2, kind: 'steel', back: { side: 'r', h: 2 } }, { x: 2.6, y: 0.4, w: 2, kind: 'yellow' }],
+      tray: { gate: 1, belt: 2, sensor: 2, ramp: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'Lay the gate flat over the gap. Underneath, something has to carry the yellow ball back to the left.',
+        ready: 'Press Run. Open the trapdoor for the yellow ball, close it before the steel ball.',
+        run: 'Open, then close quickly.',
+        fail: 'By hand it is very tight. One sensor is enough: the yellow ball opens the trapdoor and the steel ball closes it. But where?',
+        after: 'A single sensor does both jobs.',
+      },
+      sol: [
+        { name: 'tek sensör', parts: [{ type: 'gate', x: 6, y: 6, o: 'r' }, { type: 'belt', x: 5, y: 3, o: 'l' }, { type: 'sensor', x: 4, y: 6, o: '-', link: 1 }], inputs: [] },
+        { name: 'elle', parts: [{ type: 'gate', x: 6, y: 6, o: 'r' }, { type: 'belt', x: 5, y: 3, o: 'l' }], inputs: [{ t: 1.5, num: 1, act: 'press' }, { t: 1.9, num: 1, act: 'press' }] },
       ],
     },
 
@@ -467,7 +551,7 @@
       pipe: { x: 0, y: 1, dir: 'r' },
       walls: [[0, 0, 16, 1], [10, 1, 10.5, 2.4]],
       cup: { x: 12, y: 1, w: 2, back: { side: 'r', h: 2 } },
-      tray: { bumper: 2 },
+      tray: { bumper: 2, ramp: 1, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
       hints: {
         place: 'A rolling ball that hits a / bumper goes straight up. A second bumper up there can send it right.',
@@ -507,7 +591,7 @@
       walls: [[8, 1.6, 13, 2.3], [5.6, 0.9, 5.9, 1.9], [0, 0, 16, 0.9], [0.4, 0.9, 2.6, 3.4], [2.6, 0.9, 2.9, 5.2]],
       fixed: [{ type: 'flipper', x: 6, y: 1, o: 'l' }],
       cup: { x: 0.5, y: 3.4, w: 2, back: { side: 'l', h: 3 } },
-      tray: { bumper: 1, sensor: 1 },
+      tray: { bumper: 1, sensor: 1, ramp: 1, spring: 1 },
       badges: [{ k: 'solve' }, { k: 'presses', n: 1 }, { k: 'auto' }],
       hints: {
         place: 'Put the bumper where the flipped ball will hit it.',
@@ -530,7 +614,7 @@
       walls: [[8, 1.6, 13, 2.3], [5.6, 0.9, 5.9, 1.9], [0, 0, 16, 0.9], [0.6, 0.9, 1, 7], [3, 0.9, 3.4, 7]],
       fixed: [{ type: 'flipper', x: 6, y: 1, o: 'l' }],
       cup: { x: 1, y: 0.9, w: 2 },
-      tray: { bumper: 2, sensor: 1 },
+      tray: { bumper: 2, sensor: 1, ramp: 1, belt: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }],
       hints: {
         place: 'Two bumpers: one sends the ball left, one sends it down into the chimney.',
@@ -543,6 +627,46 @@
         { name: 'elle', parts: [{ type: 'bumper', x: 6, y: 8, o: 'r' }, { type: 'bumper', x: 2, y: 7, o: 'l' }], inputs: [{ t: 5, num: 1, act: 'press' }] },
         { name: 'sensör', parts: [{ type: 'bumper', x: 2, y: 9, o: 'r' }, { type: 'bumper', x: 3, y: 7, o: 'l' }, { type: 'sensor', x: 6, y: 1, o: '-', link: 'f0' }], inputs: [] },
       ],
+    },
+    // Defter 3'ün zor çizimleri: üç tampon.
+    {
+      id: 'rikoset', hard: true,
+      name: 'Ricochet', book: 3,
+      task: 'Bounce the falling ball along, up and over the wall into the cup.',
+      start: { x: 0.5, y: 9.3 },
+      pipe: { x: 0, y: 9, dir: 'd' },
+      walls: [[0, 0, 16, 1], [12, 1, 12.4, 2.6], [15.6, 1, 16, 6], [1.4, 2.4, 1.8, 10]],
+      cup: { x: 13.2, y: 1, w: 2, back: { side: 'r', h: 2 } },
+      tray: { bumper: 3, ramp: 2 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'Three bumpers: one turns the fall into a roll, one sends the ball up, one throws it over the wall.',
+        ready: 'Press Run.',
+        run: 'Watch where the ball slows down.',
+        fail: 'A bumper throws the ball about two and a half squares. Turn it up close to the wall, not far away.',
+        after: 'Three bumpers and nothing else.',
+      },
+      sol: [{ name: 'üç tampon', parts: [{ type: 'bumper', x: 0, y: 1, o: 'r' }, { type: 'bumper', x: 9, y: 1, o: 'l' }, { type: 'bumper', x: 8, y: 3, o: 'l' }], inputs: [] }],
+    },
+    {
+      id: 'baca', hard: true,
+      name: 'Chimney Sweep', book: 3,
+      task: 'Flip the ball past the roof and drop it down the tall chimney.',
+      start: { x: 12.4, y: 2.6, vx: -2.2 },
+      pipe: { x: 13, y: 2, dir: 'l' },
+      walls: [[8, 1.6, 13, 2.3], [5.6, 0.9, 5.9, 1.9], [0, 0, 16, 0.9], [0.6, 0.9, 1, 9.2], [3, 0.9, 3.4, 9.2], [5.7, 8, 8, 8.4]],
+      fixed: [{ type: 'flipper', x: 6, y: 1, o: 'l' }],
+      cup: { x: 1, y: 0.9, w: 2 },
+      tray: { bumper: 4, ramp: 1, belt: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'The roof stops the ball going straight up. Zig-zag past it, then over the top of the chimney.',
+        ready: 'Press Run, let the ball stop, then press 1.',
+        run: 'Up, left, up, then over.',
+        fail: 'Every bumper throws the ball about two and a half squares high. Climb in steps.',
+        after: 'Three bumpers are enough.',
+      },
+      sol: [{ name: 'üç tampon', parts: [{ type: 'bumper', x: 6, y: 7, o: 'r' }, { type: 'bumper', x: 4, y: 7, o: 'r' }, { type: 'bumper', x: 6, y: 9, o: 'r' }], inputs: [{ t: 5, num: 1, act: 'press' }] }],
     },
     // ------------------------------------------------ Defter 4: balonlar ve makaslar
     {

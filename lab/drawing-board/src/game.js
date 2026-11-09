@@ -57,7 +57,7 @@
     goalN: 0, goalAt: null, winAt: null, flashT: null, lastHit: [], introNew: null, newSeen: false,
   };
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li })); } catch (e) { /* kayıt yoksa da oynanır */ }
+    try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li, lid: S.level && S.level.id })); } catch (e) { /* kayıt yoksa da oynanır */ }
   }
   function persistDevice() {
     try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, music: S.music })); } catch (e) { /* yok say */ }
@@ -2016,7 +2016,8 @@
       b.type = 'button'; b.className = 'lvl' + (i === S.li ? ' cur' : ''); b.disabled = !open;
       const dots = L.badges.map(bd => `<span class="dot${prog && prog.badges[bd.k] ? ' got' : ''}" title="${badgeText(bd)}"></span>`).join('');
       const nw = INTRO[i].length ? `<span class="new-chip">New: ${INTRO[i].map(k => NEWS[k][1]).join(', ')}</span>` : '';
-      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">${L.book === 'W' ? 'Workshop' : 'Drawing ' + pad2(i + 1)}</span><div class="nm">${cleanName(L.name)}</div></div><div class="dots">${dots}</div></div>${nw}${open ? '' : '<span class="lock">Locked</span>'}`;
+      const hard = L.hard ? '<span class="hard-chip">Challenge</span>' : '';
+      b.innerHTML = `<canvas aria-hidden="true"></canvas><div class="meta"><div><span class="cap">${L.book === 'W' ? 'Workshop' : 'Drawing ' + pad2(i + 1)}</span><div class="nm">${cleanName(L.name)}</div></div><div class="dots">${dots}</div></div>${nw}${hard}${open ? '' : '<span class="lock">Locked</span>'}`;
       b.setAttribute('aria-label', `Drawing ${i + 1}: ${L.name}${open ? '' : ', locked'}`);
       b.addEventListener('click', () => { closeOverlay('levels'); loadLevel(i); });
       grid.appendChild(b);
@@ -2129,7 +2130,9 @@
     try { if (AU) AU.prefs(S.music, !S.muted); } catch (e) { /* yok say */ }
     setMuted(S.muted); setMusic(S.music, true);
     layout();
-    let li = typeof data.li === 'number' ? data.li : typeof saved.li === 'number' ? saved.li : 0;
+    // Son açılan çizim kimliğiyle bulunur (yeni çizimler araya girince sıra numarası kayar).
+    const byId = saved.lid ? LEVELS.findIndex(L => L.id === saved.lid) : -1;
+    let li = typeof data.li === 'number' ? data.li : byId >= 0 ? byId : typeof saved.li === 'number' ? saved.li : 0;
     if (!(li >= 0 && li < LEVELS.length) || !unlocked(li)) li = 0;
     const shared = importFromHash();
     if (shared >= 0) li = shared;
