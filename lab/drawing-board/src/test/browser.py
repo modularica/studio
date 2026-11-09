@@ -59,7 +59,7 @@ with sync_playwright() as p:
 
     # 2. bölüm: yay (API ile)
     def place_and_run(parts, keys=None, label=''):
-        page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; for (const p of parts) G.addPlaced(Object.assign({ id: G.S.nextId++ }, p)); G.saveSetup(); G.refreshSide(); }""", parts)
+        page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.saveSetup(); G.refreshSide(); }""", parts)
         page.click('#run')
         for (t, k, hold) in (keys or []):
             page.wait_for_timeout(int(t * 1000))
@@ -137,6 +137,24 @@ with sync_playwright() as p:
         lid = page.evaluate("KM_GAME.S.level.id")
         place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
         page.click('#btn-retry'); page.wait_for_timeout(250)
+    # Defter 4: balon, ip, makas, iğne
+    for i, keys, k in [(25, [(0.6, '1', 0)], 0), (26, [(0.2, '1', 10)], 0), (27, [(0.1, '1', 1.1)], 1), (28, None, 1), (29, [(0.1, '1', 4)], 0)]:
+        page.evaluate(f"KM_GAME.loadLevel({i})"); page.wait_for_timeout(250)
+        lid = page.evaluate("KM_GAME.S.level.id")
+        page.screenshot(path=f'{OUT}/d4-{lid}-bos.png')
+        page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(k))
+        page.wait_for_timeout(150)
+        page.screenshot(path=f'{OUT}/d4-{lid}-kurulu.png')
+        place_and_run(sol_parts(k), keys=keys, label=f'L{i + 1} {lid} çözüm {k}')
+        page.click('#btn-retry'); page.wait_for_timeout(250)
+    # çalışırken balon ve kesilen ip
+    page.evaluate("KM_GAME.loadLevel(27)"); page.wait_for_timeout(200)
+    page.evaluate("""(parts) => { const G = KM_GAME; G.S.parts = []; const base = G.S.nextId - 1; G.S.nextId += parts.length; parts.forEach((p, i) => G.addPlaced(Object.assign({}, p, { id: base + i + 1, link: typeof p.link === 'number' ? base + p.link : p.link }))); G.refreshSide(); }""", sol_parts(1))
+    page.click('#run'); page.wait_for_timeout(1500)
+    page.screenshot(path=f'{OUT}/d4-tele-run.png')
+    page.wait_for_timeout(5800)
+    page.screenshot(path=f'{OUT}/d4-tele-run2.png')
+    page.click('#run'); page.wait_for_timeout(200)
     # çoklu topta çalışırken kova sayacı
     page.evaluate("KM_GAME.loadLevel(12)"); page.wait_for_timeout(150)
     page.click('#run'); page.wait_for_timeout(2600)

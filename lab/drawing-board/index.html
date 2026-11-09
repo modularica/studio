@@ -543,6 +543,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     magRange: 2.5, magV: 6, magA: 14, magK: 10, magMax: 4,
     flipLen: 1.6, flipDown: -0.3, flipUp: 0.45, flipW: 9, flipBackW: 5, flipPulse: 0.25,
     bumpMin: 9,
+    balR: 0.42, balRise: 1.4, balK: 6, balMaxF: 3, balFanV: 2.6, balTop: 10.5, hookR: 0.08,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -565,6 +566,10 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     // Tampon: hücrenin köşegeninde sekitici levha. 'r' \ biçiminde (düşen topu sağa atar), 'l' / biçiminde.
     // Çarpan top en az T.bumpMin hızla geri sekiyor.
     bumper: { orients: ['r', 'l'], w: 1, h: 1 },
+    // Makas: basınca hücresinden geçen ipleri keser (balon ipi ya da kancaya asılı top). Sensöre de bağlanır.
+    cutter: { orients: ['-'], w: 1, h: 1, manual: 'press' },
+    // İğne: balon değince patlar. Ucu o yöne bakar.
+    pin: { orients: ['u', 'r', 'd', 'l'], w: 1, h: 1 },
   };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
@@ -601,6 +606,24 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     // Köşeden köşeye (biraz taşarak): yerde yuvarlanan top da yüzüne çarpsın, ucuna değil.
     const e = 0.06;
     return p.o === 'r' ? [[p.x - e, p.y + 1 + e], [p.x + 1 + e, p.y - e]] : [[p.x - e, p.y - e], [p.x + 1 + e, p.y + 1 + e]];
+  }
+
+  // İğne: hücrenin tabanından o yöne uzanan sivri üçgen (dünya köşeleri).
+  function pinTri(p) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, d = DIRS[p.o], n = [-d[1], d[0]];
+    const base = [cx - d[0] * 0.45, cy - d[1] * 0.45], tip = [cx + d[0] * 0.42, cy + d[1] * 0.42];
+    return [[base[0] + n[0] * 0.13, base[1] + n[1] * 0.13], tip, [base[0] - n[0] * 0.13, base[1] - n[1] * 0.13]];
+  }
+  // Doğru parçası dikdörtgeni kesiyor mu (makas için)
+  function segHitsRect(a, b, r) {
+    let t0 = 0, t1 = 1;
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    for (const [pp, q] of [[-dx, a[0] - r[0]], [dx, r[2] - a[0]], [-dy, a[1] - r[1]], [dy, r[3] - a[1]]]) {
+      if (pp === 0) { if (q < 0) return false; continue; }
+      const t = q / pp;
+      if (pp < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+    }
+    return true;
   }
 
   function fanZone(p) {
@@ -771,6 +794,10 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         box(statics, [g.px - 0.08, p.y + 0.1, g.px + 0.08, g.py - 0.14]);   // menteşe ayağı
         rt.body = body; rt.angle = T.flipDown; rt.pulse = 0; rt.s = s;
         flippers.push(rt);
+      } else if (p.type === 'cutter') {
+        rt.cuts = 0;
+      } else if (p.type === 'pin') {
+        statics.createFixture(pl.Polygon(pinTri(p).map(q => pl.Vec2(q[0], q[1]))), { friction: 0.2 }).setUserData({ kind: 'pin', rt });
       } else if (p.type === 'bumper') {
         const [a, b] = bumperLine(p);
         statics.createFixture(pl.Box(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2, 0.07, pl.Vec2((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.atan2(b[1] - a[1], b[0] - a[0])),
@@ -790,11 +817,35 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     });
     const ball = balls[0];
     const mass = ball.getMass();
+
+    // İpler ve balonlar (bölümün kendisinde): hangs = kancaya asılı top, balloons = topu taşıyan balon.
+    const ropes = [], balloons = [];
+    const tie = (bodyA, pa, bodyB, pb, len, extra) => {
+      const j = world.createJoint(pl.RopeJoint({ maxLength: len, localAnchorA: bodyA.getLocalPoint(pa), localAnchorB: bodyB.getLocalPoint(pb) }, bodyA, bodyB));
+      const r = Object.assign({ joint: j, bodyA, bodyB, la: bodyA.getLocalPoint(pa), lb: bodyB.getLocalPoint(pb), cut: false }, extra);
+      ropes.push(r); return r;
+    };
+    (level.hangs || []).forEach(h => {
+      const b = balls[h.ball || 0], bp = b.getPosition();
+      statics.createFixture(pl.Circle(pl.Vec2(h.x, h.y), T.hookR), { isSensor: true });
+      tie(statics, pl.Vec2(h.x, h.y), b, pl.Vec2(bp.x, bp.y + T.R), Math.max(0.1, h.y - bp.y - T.R), { kind: 'hang', hook: [h.x, h.y] });
+    });
+    (level.balloons || []).forEach((q, k) => {
+      const b = balls[q.ball || 0], bp = b.getPosition(), len = q.len || 1.1;
+      const body = world.createDynamicBody({ position: pl.Vec2(bp.x, bp.y + T.R + len + T.balR), fixedRotation: true, linearDamping: 0.4 });
+      body.createFixture(pl.Circle(T.balR), { density: 0.05, friction: 0, restitution: 0.3 }).setUserData({ kind: 'balloon', k });
+      const bl = { body, alive: true, popT: -1, k, x: bp.x, y: bp.y + T.R + len + T.balR };
+      bl.rope = tie(body, pl.Vec2(bp.x, bp.y + T.R + len), b, pl.Vec2(bp.x, bp.y + T.R), len, { kind: 'balloon', balloon: bl, ballIdx: q.ball || 0 });
+      balloons.push(bl);
+    });
+    const popQueue = [];
     const need = Math.min(level.need || balls.length, balls.length);
 
     const launches = [], bounces = [];
     world.on('begin-contact', c => {
       const fa = c.getFixtureA(), fb = c.getFixtureB(), ua = fa.getUserData(), ub = fb.getUserData();
+      const bal = ua && ua.kind === 'balloon' ? ua : ub && ub.kind === 'balloon' ? ub : null;
+      if (bal && ((ua && ua.kind === 'pin') || (ub && ub.kind === 'pin'))) popQueue.push(bal.k);
       const bu = ua && ua.kind === 'bumper' ? ua.rt : ub && ub.kind === 'bumper' ? ub.rt : null;
       const bb = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
       if (bu && bb) bounces.push([bu, bb.getBody()]);
@@ -812,7 +863,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     });
 
     const sim = {
-      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need, ropes, balloons, pops: 0,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -834,6 +885,18 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         }
         if (rt.type === 'gate') {
           rt.open = !rt.open; rt.fires++;
+          if (manual) sim.presses++;
+          return true;
+        }
+        if (rt.type === 'cutter') {
+          // Hücresinden geçen bütün ipler kesilir.
+          const r0 = [rt.x, rt.y, rt.x + 1, rt.y + 1];
+          for (const r of ropes) {
+            if (r.cut) continue;
+            const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb);
+            if (segHitsRect([a.x, a.y], [b.x, b.y], r0)) { world.destroyJoint(r.joint); r.cut = true; rt.cuts++; }
+          }
+          rt.fires++; rt.snipT = 0.3;
           if (manual) sim.presses++;
           return true;
         }
@@ -944,8 +1007,38 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
           rt.body.setAngularVelocity(rt.s * w);
         }
 
+        // Balon: ağırlıksız gibi yükselir (ipindeki topu da taşır), açık pervanenin kuşağında rüzgârla sürüklenir.
+        for (const bl of balloons) {
+          if (!bl.alive) continue;
+          const body = bl.body, v = body.getLinearVelocity(), bp = body.getPosition();
+          const m = body.getMass() + (bl.rope.cut ? 0 : balls[bl.rope.ballIdx].getMass());
+          let tx = 0, ty = T.balRise, wind = false;
+          for (const rt of fans) {
+            if (!rt.on) continue;
+            const z = rt.zone;
+            if (bp.x < z[0] - 0.3 || bp.x > z[2] + 0.3 || bp.y < z[1] - 0.3 || bp.y > z[3] + 0.3) continue;
+            const d = DIRS[rt.o]; tx += d[0] * T.balFanV; ty += d[1] * T.balFanV; wind = true;
+          }
+          const cap = m * T.G * T.balMaxF;
+          // Rüzgâr yokken yatayda yalnız hafif hava sürtünmesi: eğik tavana değen balon kayarak ilerler.
+          const fx = Math.max(-cap, Math.min(cap, wind ? m * T.balK * (tx - v.x) : -m * 0.8 * v.x));
+          const fy = Math.max(0, Math.min(cap, m * T.G + m * T.balK * (ty - v.y)));
+          body.applyForceToCenter(pl.Vec2(fx, fy), true);
+          if (bp.y > T.balTop) popQueue.push(bl.k);
+        }
+        for (const rt of rts) if (rt.snipT > 0) rt.snipT -= DT;
+
         world.step(DT, 8, 3);
         sim.steps++;
+
+        while (popQueue.length) {
+          const bl = balloons[popQueue.pop()];
+          if (!bl || !bl.alive) continue;
+          bl.alive = false; bl.popT = sim.steps; sim.pops++;
+          const p = bl.body.getPosition(); bl.x = p.x; bl.y = p.y;
+          if (!bl.rope.cut) { world.destroyJoint(bl.rope.joint); bl.rope.cut = true; }
+          world.destroyBody(bl.body);
+        }
 
         if (bounces.length) {
           // Tampon topu en az T.bumpMin hızla geri atar (langırttaki gibi canlı).
@@ -1049,7 +1142,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
+  return { pinTri, segHitsRect, W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
 }));
 
 </script>
@@ -1600,6 +1693,109 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
         { name: 'sensör', parts: [{ type: 'bumper', x: 2, y: 9, o: 'r' }, { type: 'bumper', x: 3, y: 7, o: 'l' }, { type: 'sensor', x: 6, y: 1, o: '-', link: 'f0' }], inputs: [] },
       ],
     },
+    // ------------------------------------------------ Defter 4: balonlar ve makaslar
+    {
+      id: 'makas',
+      name: 'Snip', book: 4,
+      task: 'Cut the rope and bounce the ball over the wall into the cup.',
+      start: { x: 3.5, y: 6 },
+      hangs: [{ ball: 0, x: 3.5, y: 8.6 }],
+      walls: [[0, 0, 5, 0.4], [3, 8.6, 4, 8.9], [7, 0, 9.6, 2.4], [9.6, 0, 16, 3.2]],
+      cup: { x: 10.2, y: 3.2, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { cutter: 1, ramp: 2, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'The scissors cut a rope in their own square. Put them on the rope, then build a path for the falling ball.',
+        ready: 'Press Run, then press 1 to cut.',
+        run: 'Press 1 to cut the rope.',
+        fail: 'A falling ball only drops straight down. A ramp turns the fall into a roll, and a spring throws it over the wall.',
+        after: 'Three parts are enough: the scissors, one ramp and the spring.',
+      },
+      sol: [{ name: 'kes', parts: [{ type: 'cutter', x: 3, y: 7, o: '-' }, { type: 'ramp', x: 3, y: 3, o: 'dr' }, { type: 'spring', x: 5, y: 2, o: 'u' }], inputs: [{ t: 0.5, num: 1, act: 'press' }] }],
+    },
+    {
+      id: 'balon',
+      name: 'Balloon', book: 4,
+      task: 'Float the ball over the wall and drop it into the cup.',
+      start: { x: 2.5, y: 0.68 },
+      balloons: [{ ball: 0, len: 1.1 }],
+      walls: [[0, 0, 16, 0.4], [0, 9.5, 16, 9.8], [5, 0.4, 5.4, 5], [11, 0.4, 16, 3]],
+      fixed: [{ type: 'fan', x: 0, y: 8, o: 'r' }],
+      cup: { x: 11.4, y: 3, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { pin: 1, ramp: 2, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 2 }],
+      hints: {
+        place: 'The balloon lifts the ball. Hold the fan to blow it along, and a pin pops it.',
+        ready: 'Press Run and hold 1.',
+        run: 'Hold 1 to blow the balloon to the right.',
+        fail: 'Watch where the balloon stops. Pop it there and catch the falling ball with a ramp.',
+        after: 'A spring hanging in the air can kick the ball across too. Try it!',
+      },
+      sol: [{ name: 'iğne + rampa', parts: [{ type: 'pin', x: 9, y: 8, o: 'u' }, { type: 'ramp', x: 9, y: 4, o: 'dr' }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 15, num: 1, act: 'up' }] }],
+    },
+    {
+      id: 'salincak',
+      name: 'Swing', book: 4,
+      task: 'Swing the ball and let it fly over the wall into the cup.',
+      start: { x: 4, y: 4.5 },
+      hangs: [{ ball: 0, x: 4, y: 9.2 }],
+      walls: [[0, 0, 16, 0.4], [3.4, 9.2, 4.6, 9.5], [8.6, 0.4, 9, 2.2]],
+      cup: { x: 11.4, y: 0.4, w: 2, back: { side: 'r', h: 2 } },
+      tray: { fan: 1, cutter: 1, sensor: 2, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'presses', n: 1 }],
+      hints: {
+        place: 'Push the hanging ball with a fan so it swings. Cut the rope while it swings up toward the cup.',
+        ready: 'Press Run. Hold the fan for a moment, let go, then cut.',
+        run: 'Hold the fan, let go, and cut at the right moment.',
+        fail: 'Cut while the ball is swinging up to the right. A sensor on its path can cut for you.',
+        after: 'With a sensor on the swing path, you only touch the fan.',
+      },
+      sol: [
+        { name: 'elle', parts: [{ type: 'fan', x: 7, y: 4, o: 'l' }, { type: 'cutter', x: 5, y: 6, o: '-' }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 1.5, num: 1, act: 'up' }, { t: 2.45, num: 2, act: 'press' }] },
+        { name: 'sensör', parts: [{ type: 'fan', x: 7, y: 4, o: 'l' }, { type: 'cutter', x: 5, y: 6, o: '-' }, { type: 'sensor', x: 6, y: 5, o: '-', link: 2 }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 1.2, num: 1, act: 'up' }] },
+      ],
+    },
+    {
+      id: 'teleferik',
+      name: 'Cable Car', book: 4,
+      task: 'Free the balloon, let it ride up the slope and drop the ball into the cup.',
+      start: { x: 2.5, y: 0.68 },
+      balloons: [{ ball: 0, len: 1.1 }],
+      walls: [[0, 0, 16, 0.4], [[1, 5.4], [15, 9.6], [15, 9.9], [1, 5.7]], [0.6, 3.2, 6, 3.5], [6.6, 0.4, 7, 2.4]],
+      cup: { x: 10.2, y: 0.4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { fan: 1, cutter: 1, sensor: 2, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'The balloon is stuck under the shelf. Blow it out with a fan, then cut its rope over the cup.',
+        ready: 'Press Run and hold the fan.',
+        run: 'Let go of the fan once the balloon is free. Cut over the cup.',
+        fail: 'The balloon slides up the slope. Put the scissors where the rope will be when the ball is over the cup.',
+        after: 'Fully automatic: a sensor under the ball at the start can switch the fan on by itself.',
+      },
+      sol: [
+        { name: 'elle + sensör', parts: [{ type: 'fan', x: 0, y: 2, o: 'r' }, { type: 'cutter', x: 10, y: 6, o: '-' }, { type: 'sensor', x: 10, y: 6, o: '-', link: 2 }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 6, num: 1, act: 'up' }] },
+        { name: 'tam otomatik', parts: [{ type: 'fan', x: 0, y: 2, o: 'r' }, { type: 'cutter', x: 10, y: 6, o: '-' }, { type: 'sensor', x: 10, y: 6, o: '-', link: 2 }, { type: 'sensor', x: 2, y: 0, o: '-', link: 1 }], inputs: [] },
+      ],
+    },
+    {
+      id: 'posta',
+      name: 'Air Mail', book: 4,
+      task: 'Get the ball out, up and over, into the cup under the roof.',
+      start: { x: 1.5, y: 0.68 },
+      balloons: [{ ball: 0, len: 1.1 }],
+      walls: [[0, 0, 5.4, 0.4], [0, 2.6, 4, 2.9], [5.4, 0, 5.8, 5], [[4, 8], [16, 9.6], [16, 9.9], [4, 8.3]], [11.6, 0, 16, 3.6], [11.6, 5.8, 16, 6.1], [15.6, 3.6, 16, 5.8]],
+      cup: { x: 12.6, y: 3.6, w: 2, back: { side: 'r', h: 1.2 } },
+      tray: { fan: 1, pin: 1, spring: 1, ramp: 1, sensor: 1, cutter: 1 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 3 }],
+      hints: {
+        place: 'Not every part is needed. The cup is under a roof: the ball has to come in from the side.',
+        ready: 'Press Run and hold the fan.',
+        run: 'Hold the fan until the balloon is out from under the shelf.',
+        fail: 'Pop the balloon over the gap, then throw the falling ball sideways under the roof.',
+        after: 'Three parts are enough: a fan, a pin and a spring.',
+      },
+      sol: [{ name: 'üç parça', parts: [{ type: 'fan', x: 0, y: 1, o: 'r' }, { type: 'pin', x: 7, y: 7, o: 'u' }, { type: 'spring', x: 7, y: 0, o: 'u' }], inputs: [{ t: 0, num: 1, act: 'down' }, { t: 4, num: 1, act: 'up' }] }],
+    },
   ];
 }));
 
@@ -1947,6 +2143,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     sensor(t, h) { bell(tone(h.song, h.c, 2, 84, 96), t, 0.07, X.sfx, 0.45); },
     flipper(t, h) { thump(t, 0.22, 220, 90, 0.12, X.sfx); hiss(t, 0.1, 0.05, 'bandpass', 1800, 1, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.13, 0, X.sfx); },
     bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
+    cutter(t, h) { hiss(t, 0.16, 0.035, 'highpass', 5200, 0, X.sfx); wood(t + 0.01, 0.06, 2600, X.sfx); hiss(t + 0.05, 0.1, 0.03, 'highpass', 6500, 0, X.sfx); mallet(tone(h.song, h.c, 1, 72, 84), t + 0.05, 0.07, 0, X.sfx); },
+    pop(t, h, o) {
+      const x = clamp((o && o.x) || 0, -0.7, 0.7);
+      hiss(t, 0.34, 0.07, 'bandpass', 1400, 0.7, X.sfx); thump(t, 0.2, 180, 60, 0.08, X.sfx);
+      bell(tone(h.song, h.c, 0, 79, 91), t + 0.04, 0.07, X.sfx, 0.5); mallet(tone(h.song, h.c, 2, 72, 84), t + 0.03, 0.09, x, X.sfx);
+    },
     gate(t, h) { hiss(t, 0.12, 0.14, 'bandpass', 900, 1.2, X.sfx, 600); mallet(tone(h.song, h.c, 0, 48, 60), t, 0.16, 0, X.sfx); },
     magnet(t, h) {
       const f = mtof(tone(h.song, h.c, 0, 36, 48)) * 2, lp = X.ac.createBiquadFilter();
@@ -2079,9 +2281,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper' };
-  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -2154,6 +2356,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     flipper: ['New part', 'Flipper', 'Press it and it swings up and hits the ball. A resting ball flies straight up.'],
     steel: ['New ball', 'Steel ball', 'A second ball. Both balls have to get in.'],
     flags: ['New cup', 'Flag cups', 'A flagged cup only takes the ball of its own color.'],
+    cutter: ['New part', 'Scissors', 'Press it and it cuts any rope in its square.'],
+    balloon: ['New thing', 'Balloon', 'It lifts its ball up. Wind from a fan pushes it along.'],
+    pin: ['New part', 'Pin', 'Pops a balloon that touches it. The ball drops.'],
   };
   const INTRO = (() => {
     const seen = new Set();
@@ -2162,6 +2367,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       for (const k of ORDER) if (types.includes(k) && !seen.has(k)) { seen.add(k); if (NEWS[k]) got.push(k); }
       if (!seen.has('steel') && KM.ballKinds(L).includes('steel')) { seen.add('steel'); got.push('steel'); }
       if (!seen.has('flags') && KM.cupsOf(L).some(c => c.kind)) { seen.add('flags'); got.push('flags'); }
+      if (!seen.has('balloon') && (L.balloons || []).length) { seen.add('balloon'); got.push('balloon'); }
       return got;
     });
   })();
@@ -2768,6 +2974,90 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     c.restore();
   }
 
+  // Makas: turuncu (elle kumanda) iki ağız, iki halka. Basınca hücresinden geçen ipi keser;
+  // kurarken kestiği hücre kesik çizgiyle gösterilir.
+  function drawCutter(c, Vw, p, rt, ann) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, k = rt && rt.snipT > 0 ? rt.snipT / 0.3 : 0;
+    const open = 0.42 * (k > 0 && !reduceMotion ? 1 - Math.sin(k * Math.PI) : 1);
+    if (ann || k > 0) { c.beginPath(); c.rect(p.x + 0.05, p.y + 0.05, 0.9, 0.9); stroke(c, Vw, hand(k > 0 ? 0.8 : 0.45), LW.hair, DASH.hidden); }
+    const px = cx - 0.04, py = cy;
+    for (const sgn of [1, -1]) {
+      c.save(); c.translate(px, py); c.rotate(sgn * open / 2);
+      c.beginPath(); c.moveTo(0, 0.09 * sgn); c.lineTo(0.52, 0); c.lineTo(0, -0.025 * sgn); c.closePath();
+      fill(c, C.paper); fill(c, hand(rt && k > 0 ? 0.5 : 0.25)); stroke(c, Vw, C.hand, LW.part);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(-0.15, 0.06 * sgn); stroke(c, Vw, C.hand, LW.edge);
+      c.beginPath(); c.arc(-0.27, 0.13 * sgn, 0.12, 0, TAU); fill(c, hand(0.2)); stroke(c, Vw, C.hand, LW.edge);
+      c.restore();
+    }
+    c.beginPath(); c.arc(px, py, 0.045, 0, TAU); fill(c, C.ink);
+    badge(c, Vw, p.num, p.x + 0.82, p.y + 0.82, 0.14);
+  }
+
+  // İğne: kesitli taban ve sivri çelik uç. Balona değerse balon patlar; topa bir şey yapmaz.
+  function drawPin(c, Vw, p) {
+    const t = KM.pinTri(p), d = KM.DIRS[p.o], n = [-d[1], d[0]], bx = (t[0][0] + t[2][0]) / 2, by = (t[0][1] + t[2][1]) / 2;
+    const q = [[bx + n[0] * 0.2, by + n[1] * 0.2], [bx - n[0] * 0.2, by - n[1] * 0.2]];
+    const r = [[q[0][0] - d[0] * 0.08, q[0][1] - d[1] * 0.08], [q[1][0] - d[0] * 0.08, q[1][1] - d[1] * 0.08]];
+    const box = [Math.min(q[0][0], r[1][0]), Math.min(q[0][1], r[1][1]), Math.max(q[0][0], r[1][0]), Math.max(q[0][1], r[1][1])];
+    section(c, Vw, () => { c.moveTo(q[0][0], q[0][1]); c.lineTo(q[1][0], q[1][1]); c.lineTo(r[1][0], r[1][1]); c.lineTo(r[0][0], r[0][1]); c.closePath(); }, box, C.ink, LW.part);
+    c.beginPath(); c.moveTo(t[0][0], t[0][1]); c.lineTo(t[1][0], t[1][1]); c.lineTo(t[2][0], t[2][1]); c.closePath();
+    fill(c, C['paper-hi'] || C.paper); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) axisLine(c, Vw, bx, by, t[1][0] - d[0] * 0.12, t[1][1] - d[1] * 0.12, ink(0.45));
+  }
+
+  // Balon ve ipi (bölümün kendisinde). Balon kırmızı; ip mürekkep.
+  const BALLOON = '#e2604f';
+  function drawBalloon(c, Vw, x, y, alpha) {
+    const r = T.balR;
+    c.save(); c.globalAlpha = alpha;
+    c.beginPath(); c.ellipse(x, y + 0.03, r * 0.94, r * 1.08, 0, 0, TAU); fill(c, BALLOON); stroke(c, Vw, '#7d2418', LW.part);
+    c.beginPath(); c.moveTo(x, y - r * 1.02); c.lineTo(x - 0.07, y - r * 1.02 - 0.09); c.lineTo(x + 0.07, y - r * 1.02 - 0.09); c.closePath(); fill(c, BALLOON); stroke(c, Vw, '#7d2418', LW.thin);
+    c.beginPath(); c.ellipse(x - r * 0.38, y + r * 0.42, r * 0.17, r * 0.27, -0.5, 0, TAU); fill(c, 'rgba(255,255,255,0.5)');
+    c.restore();
+  }
+  function rope(c, Vw, a, b, alpha) {
+    // Hafif sarkık ip: ortası biraz yana kıvrılır.
+    const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.04, my = (a[1] + b[1]) / 2;
+    c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(mx, my, b[0], b[1]);
+    stroke(c, Vw, ink(0.85 * alpha), LW.thin);
+  }
+  function hook(c, Vw, x, y) {
+    c.beginPath(); c.arc(x, y, 0.09, 0, TAU); fill(c, C.paper); stroke(c, Vw, C.ink, LW.part);
+  }
+  function drawRopes(c, Vw, L, run) {
+    if (run) {
+      const sim = S.sim;
+      for (const r of sim.ropes) {
+        if (r.kind === 'hang') hook(c, Vw, r.hook[0], r.hook[1]);
+        if (r.cut) {
+          if (r.kind === 'hang') rope(c, Vw, r.hook, [r.hook[0], r.hook[1] - 0.35], 0.6);
+          continue;
+        }
+        const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb);
+        rope(c, Vw, [a.x, a.y], [b.x, b.y], 1);
+      }
+      for (const bl of sim.balloons) {
+        if (!bl.alive) continue;
+        const bp = bl.body.getPosition();
+        if (bl.rope.cut) rope(c, Vw, [bp.x, bp.y - T.balR], [bp.x - 0.05, bp.y - T.balR - 0.8], 0.7);
+        drawBalloon(c, Vw, bp.x, bp.y, 1);
+      }
+    } else {
+      const st = KM.startsOf(L);
+      for (const h of L.hangs || []) { const b = st[h.ball || 0]; rope(c, Vw, [h.x, h.y], [b.x, b.y + T.R], 0.8); hook(c, Vw, h.x, h.y); }
+      for (const q of L.balloons || []) {
+        const b = st[q.ball || 0], len = q.len || 1.1;
+        // Üstünde raf varsa balon rafın altında başlar (ip gevşek).
+        let lim = Infinity;
+        for (const w of L.walls || []) if (typeof w[0] === 'number' && w[0] <= b.x && w[2] >= b.x && w[1] > b.y) lim = Math.min(lim, w[1]);
+        const top = Math.min(b.y + T.R + len, lim - 2 * T.balR - 0.02);
+        rope(c, Vw, [b.x, top], [b.x, b.y + T.R], 0.8);
+        drawBalloon(c, Vw, b.x, top + T.balR, 0.85);
+        if (Vw.lod) { c.beginPath(); c.moveTo(b.x, top + 2 * T.balR + 0.12); c.lineTo(b.x, top + 2 * T.balR + 0.62); stroke(c, Vw, ink(0.5), LW.hair, DASH.hidden); arrow(c, Vw, b.x, top + 2 * T.balR + 0.7, Math.PI / 2, 6, ink(0.55)); }
+      }
+    }
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -2798,6 +3088,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     else if (p.type === 'magnet') drawMagnet(c, Vw, p, rt, time);
     else if (p.type === 'flipper') drawFlipper(c, Vw, p, rt, ann);
     else if (p.type === 'bumper') drawBumper(c, Vw, p, rt, ann);
+    else if (p.type === 'cutter') drawCutter(c, Vw, p, rt, ann);
+    else if (p.type === 'pin') drawPin(c, Vw, p);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
@@ -2937,6 +3229,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       const tagged = new Set();   // aynı türden birkaç parça varsa etiket ilkinde, çerçeve hepsinde
       for (const it of items) if (it.p.fixed && S.introNew.has(it.p.type)) { drawNewTag(c, V, it.p, time, !tagged.has(it.p.type)); tagged.add(it.p.type); }
     }
+    drawRopes(c, V, L, run);
     if (run) {
       S.sim.balls.forEach((b, i) => {
         if (S.sim.bstate[i] === 'out') return;
@@ -3010,6 +3303,19 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
           if (q > 0) { c.moveTo(f.x + 0.17 + 0.8 * q, f.y); c.arc(f.x, f.y, 0.17 + 0.8 * q, 0, TAU); }
         }
         stroke(c, V, rgba(C.ball, 0.85 * (1 - k)), LW.part);
+      } else if (f.k === 'pop') {
+        // Balon patladı: kırmızı parçalar ve kısa çizgiler dışarı saçılır.
+        const k = age / 0.45; if (k >= 1) continue;
+        c.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = i * TAU / 10 + 0.3, r0 = 0.2 + 0.6 * k, r1 = r0 + 0.18 * (1 - k);
+          c.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); c.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+        }
+        c.lineCap = 'round'; stroke(c, V, rgba(BALLOON, 0.95 * (1 - k)), LW.edge); c.lineCap = 'butt';
+        for (let i = 0; i < 5; i++) {
+          const a = i * TAU / 5 + 1.1, r = 0.25 + 0.7 * k;
+          c.beginPath(); c.arc(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r - 0.5 * k * k, 0.06, 0, TAU); fill(c, rgba(BALLOON, 1 - k));
+        }
       } else if (f.k === 'win') {
         // Makine çalıştı: kovadan çıkan ışınlar ve kovanın üstünde kendini çizen onay işareti.
         const k = age / 1.15; if (k >= 1) continue;
@@ -3378,7 +3684,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.goalN = 0; S.goalAt = null; S.winAt = null; S.flashT = null; S.lastHit = []; S.newSeen = true;
     S.held.clear();
-    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on }));
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on })); S.popsSeen = 0;
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run'); musicMode('run');
     refreshSide(); buildPult(); updatePult();
@@ -3462,11 +3768,20 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper' }[rt.type] || 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
+      if (sim.pops > S.popsSeen) {
+        S.popsSeen = sim.pops;
+        for (const bl of sim.balloons) if (!bl.alive && !bl.fxDone) {
+          bl.fxDone = true;
+          if (bl.y > H + 0.3) continue;   // tavanın üstüne kaçıp patlayan balon görünmez
+          sfx('pop', { x: bl.x / W * 2 - 1 });
+          if (!reduceMotion) S.fx.push({ k: 'pop', x: bl.x, y: bl.y, t: S.time });
+        }
+      }
       if (sim.status === 'goal') {
         if (!S.goalPlayed) {
           S.goalPlayed = true; S.goalAt = S.time; S.flashT = S.time;
@@ -3591,6 +3906,9 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     } else if (k === 'flags') {
       const Vi = makeView(w, h, dpr, -0.15, -0.1, 4.6, 2.05); Vi.tf(c);
       drawCup(c, Vi, { x: 0, y: 0, w: 2, kind: 'yellow' }, 0); drawCup(c, Vi, { x: 2.3, y: 0, w: 2, kind: 'steel' }, 0);
+    } else if (k === 'balloon') {
+      const Vi = makeView(w, h, dpr, -0.9, -0.35, 1.8, 2.6); Vi.tf(c);
+      rope(c, Vi, [0, 1.3], [0, 0.28], 1); drawBalloon(c, Vi, 0, 1.3 + T.balR, 1); drawBall(c, Vi, 0, 0, 0.3, 1, 0);
     }
   }
 
@@ -3635,7 +3953,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors' };
 
   // ---------------------------------------------------------------- Atölye: kendi çizimin
   // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.
