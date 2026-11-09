@@ -4,9 +4,9 @@
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper' };
-  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'sensor'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -79,6 +79,9 @@
     flipper: ['New part', 'Flipper', 'Press it and it swings up and hits the ball. A resting ball flies straight up.'],
     steel: ['New ball', 'Steel ball', 'A second ball. Both balls have to get in.'],
     flags: ['New cup', 'Flag cups', 'A flagged cup only takes the ball of its own color.'],
+    cutter: ['New part', 'Scissors', 'Press it and it cuts any rope in its square.'],
+    balloon: ['New thing', 'Balloon', 'It lifts its ball up. Wind from a fan pushes it along.'],
+    pin: ['New part', 'Pin', 'Pops a balloon that touches it. The ball drops.'],
   };
   const INTRO = (() => {
     const seen = new Set();
@@ -87,6 +90,7 @@
       for (const k of ORDER) if (types.includes(k) && !seen.has(k)) { seen.add(k); if (NEWS[k]) got.push(k); }
       if (!seen.has('steel') && KM.ballKinds(L).includes('steel')) { seen.add('steel'); got.push('steel'); }
       if (!seen.has('flags') && KM.cupsOf(L).some(c => c.kind)) { seen.add('flags'); got.push('flags'); }
+      if (!seen.has('balloon') && (L.balloons || []).length) { seen.add('balloon'); got.push('balloon'); }
       return got;
     });
   })();
@@ -693,6 +697,90 @@
     c.restore();
   }
 
+  // Makas: turuncu (elle kumanda) iki ağız, iki halka. Basınca hücresinden geçen ipi keser;
+  // kurarken kestiği hücre kesik çizgiyle gösterilir.
+  function drawCutter(c, Vw, p, rt, ann) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, k = rt && rt.snipT > 0 ? rt.snipT / 0.3 : 0;
+    const open = 0.42 * (k > 0 && !reduceMotion ? 1 - Math.sin(k * Math.PI) : 1);
+    if (ann || k > 0) { c.beginPath(); c.rect(p.x + 0.05, p.y + 0.05, 0.9, 0.9); stroke(c, Vw, hand(k > 0 ? 0.8 : 0.45), LW.hair, DASH.hidden); }
+    const px = cx - 0.04, py = cy;
+    for (const sgn of [1, -1]) {
+      c.save(); c.translate(px, py); c.rotate(sgn * open / 2);
+      c.beginPath(); c.moveTo(0, 0.09 * sgn); c.lineTo(0.52, 0); c.lineTo(0, -0.025 * sgn); c.closePath();
+      fill(c, C.paper); fill(c, hand(rt && k > 0 ? 0.5 : 0.25)); stroke(c, Vw, C.hand, LW.part);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(-0.15, 0.06 * sgn); stroke(c, Vw, C.hand, LW.edge);
+      c.beginPath(); c.arc(-0.27, 0.13 * sgn, 0.12, 0, TAU); fill(c, hand(0.2)); stroke(c, Vw, C.hand, LW.edge);
+      c.restore();
+    }
+    c.beginPath(); c.arc(px, py, 0.045, 0, TAU); fill(c, C.ink);
+    badge(c, Vw, p.num, p.x + 0.82, p.y + 0.82, 0.14);
+  }
+
+  // İğne: kesitli taban ve sivri çelik uç. Balona değerse balon patlar; topa bir şey yapmaz.
+  function drawPin(c, Vw, p) {
+    const t = KM.pinTri(p), d = KM.DIRS[p.o], n = [-d[1], d[0]], bx = (t[0][0] + t[2][0]) / 2, by = (t[0][1] + t[2][1]) / 2;
+    const q = [[bx + n[0] * 0.2, by + n[1] * 0.2], [bx - n[0] * 0.2, by - n[1] * 0.2]];
+    const r = [[q[0][0] - d[0] * 0.08, q[0][1] - d[1] * 0.08], [q[1][0] - d[0] * 0.08, q[1][1] - d[1] * 0.08]];
+    const box = [Math.min(q[0][0], r[1][0]), Math.min(q[0][1], r[1][1]), Math.max(q[0][0], r[1][0]), Math.max(q[0][1], r[1][1])];
+    section(c, Vw, () => { c.moveTo(q[0][0], q[0][1]); c.lineTo(q[1][0], q[1][1]); c.lineTo(r[1][0], r[1][1]); c.lineTo(r[0][0], r[0][1]); c.closePath(); }, box, C.ink, LW.part);
+    c.beginPath(); c.moveTo(t[0][0], t[0][1]); c.lineTo(t[1][0], t[1][1]); c.lineTo(t[2][0], t[2][1]); c.closePath();
+    fill(c, C['paper-hi'] || C.paper); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) axisLine(c, Vw, bx, by, t[1][0] - d[0] * 0.12, t[1][1] - d[1] * 0.12, ink(0.45));
+  }
+
+  // Balon ve ipi (bölümün kendisinde). Balon kırmızı; ip mürekkep.
+  const BALLOON = '#e2604f';
+  function drawBalloon(c, Vw, x, y, alpha) {
+    const r = T.balR;
+    c.save(); c.globalAlpha = alpha;
+    c.beginPath(); c.ellipse(x, y + 0.03, r * 0.94, r * 1.08, 0, 0, TAU); fill(c, BALLOON); stroke(c, Vw, '#7d2418', LW.part);
+    c.beginPath(); c.moveTo(x, y - r * 1.02); c.lineTo(x - 0.07, y - r * 1.02 - 0.09); c.lineTo(x + 0.07, y - r * 1.02 - 0.09); c.closePath(); fill(c, BALLOON); stroke(c, Vw, '#7d2418', LW.thin);
+    c.beginPath(); c.ellipse(x - r * 0.38, y + r * 0.42, r * 0.17, r * 0.27, -0.5, 0, TAU); fill(c, 'rgba(255,255,255,0.5)');
+    c.restore();
+  }
+  function rope(c, Vw, a, b, alpha) {
+    // Hafif sarkık ip: ortası biraz yana kıvrılır.
+    const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.04, my = (a[1] + b[1]) / 2;
+    c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(mx, my, b[0], b[1]);
+    stroke(c, Vw, ink(0.85 * alpha), LW.thin);
+  }
+  function hook(c, Vw, x, y) {
+    c.beginPath(); c.arc(x, y, 0.09, 0, TAU); fill(c, C.paper); stroke(c, Vw, C.ink, LW.part);
+  }
+  function drawRopes(c, Vw, L, run) {
+    if (run) {
+      const sim = S.sim;
+      for (const r of sim.ropes) {
+        if (r.kind === 'hang') hook(c, Vw, r.hook[0], r.hook[1]);
+        if (r.cut) {
+          if (r.kind === 'hang') rope(c, Vw, r.hook, [r.hook[0], r.hook[1] - 0.35], 0.6);
+          continue;
+        }
+        const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb);
+        rope(c, Vw, [a.x, a.y], [b.x, b.y], 1);
+      }
+      for (const bl of sim.balloons) {
+        if (!bl.alive) continue;
+        const bp = bl.body.getPosition();
+        if (bl.rope.cut) rope(c, Vw, [bp.x, bp.y - T.balR], [bp.x - 0.05, bp.y - T.balR - 0.8], 0.7);
+        drawBalloon(c, Vw, bp.x, bp.y, 1);
+      }
+    } else {
+      const st = KM.startsOf(L);
+      for (const h of L.hangs || []) { const b = st[h.ball || 0]; rope(c, Vw, [h.x, h.y], [b.x, b.y + T.R], 0.8); hook(c, Vw, h.x, h.y); }
+      for (const q of L.balloons || []) {
+        const b = st[q.ball || 0], len = q.len || 1.1;
+        // Üstünde raf varsa balon rafın altında başlar (ip gevşek).
+        let lim = Infinity;
+        for (const w of L.walls || []) if (typeof w[0] === 'number' && w[0] <= b.x && w[2] >= b.x && w[1] > b.y) lim = Math.min(lim, w[1]);
+        const top = Math.min(b.y + T.R + len, lim - 2 * T.balR - 0.02);
+        rope(c, Vw, [b.x, top], [b.x, b.y + T.R], 0.8);
+        drawBalloon(c, Vw, b.x, top + T.balR, 0.85);
+        if (Vw.lod) { c.beginPath(); c.moveTo(b.x, top + 2 * T.balR + 0.12); c.lineTo(b.x, top + 2 * T.balR + 0.62); stroke(c, Vw, ink(0.5), LW.hair, DASH.hidden); arrow(c, Vw, b.x, top + 2 * T.balR + 0.7, Math.PI / 2, 6, ink(0.55)); }
+      }
+    }
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -723,6 +811,8 @@
     else if (p.type === 'magnet') drawMagnet(c, Vw, p, rt, time);
     else if (p.type === 'flipper') drawFlipper(c, Vw, p, rt, ann);
     else if (p.type === 'bumper') drawBumper(c, Vw, p, rt, ann);
+    else if (p.type === 'cutter') drawCutter(c, Vw, p, rt, ann);
+    else if (p.type === 'pin') drawPin(c, Vw, p);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
     if (p.fixed) fixings(c, Vw, p);
   }
@@ -862,6 +952,7 @@
       const tagged = new Set();   // aynı türden birkaç parça varsa etiket ilkinde, çerçeve hepsinde
       for (const it of items) if (it.p.fixed && S.introNew.has(it.p.type)) { drawNewTag(c, V, it.p, time, !tagged.has(it.p.type)); tagged.add(it.p.type); }
     }
+    drawRopes(c, V, L, run);
     if (run) {
       S.sim.balls.forEach((b, i) => {
         if (S.sim.bstate[i] === 'out') return;
@@ -935,6 +1026,19 @@
           if (q > 0) { c.moveTo(f.x + 0.17 + 0.8 * q, f.y); c.arc(f.x, f.y, 0.17 + 0.8 * q, 0, TAU); }
         }
         stroke(c, V, rgba(C.ball, 0.85 * (1 - k)), LW.part);
+      } else if (f.k === 'pop') {
+        // Balon patladı: kırmızı parçalar ve kısa çizgiler dışarı saçılır.
+        const k = age / 0.45; if (k >= 1) continue;
+        c.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = i * TAU / 10 + 0.3, r0 = 0.2 + 0.6 * k, r1 = r0 + 0.18 * (1 - k);
+          c.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); c.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+        }
+        c.lineCap = 'round'; stroke(c, V, rgba(BALLOON, 0.95 * (1 - k)), LW.edge); c.lineCap = 'butt';
+        for (let i = 0; i < 5; i++) {
+          const a = i * TAU / 5 + 1.1, r = 0.25 + 0.7 * k;
+          c.beginPath(); c.arc(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r - 0.5 * k * k, 0.06, 0, TAU); fill(c, rgba(BALLOON, 1 - k));
+        }
       } else if (f.k === 'win') {
         // Makine çalıştı: kovadan çıkan ışınlar ve kovanın üstünde kendini çizen onay işareti.
         const k = age / 1.15; if (k >= 1) continue;
@@ -1303,7 +1407,7 @@
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.goalN = 0; S.goalAt = null; S.winAt = null; S.flashT = null; S.lastHit = []; S.newSeen = true;
     S.held.clear();
-    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on }));
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on })); S.popsSeen = 0;
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run'); musicMode('run');
     refreshSide(); buildPult(); updatePult();
@@ -1387,11 +1491,20 @@
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper' }[rt.type] || 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
         s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
       });
+      if (sim.pops > S.popsSeen) {
+        S.popsSeen = sim.pops;
+        for (const bl of sim.balloons) if (!bl.alive && !bl.fxDone) {
+          bl.fxDone = true;
+          if (bl.y > H + 0.3) continue;   // tavanın üstüne kaçıp patlayan balon görünmez
+          sfx('pop', { x: bl.x / W * 2 - 1 });
+          if (!reduceMotion) S.fx.push({ k: 'pop', x: bl.x, y: bl.y, t: S.time });
+        }
+      }
       if (sim.status === 'goal') {
         if (!S.goalPlayed) {
           S.goalPlayed = true; S.goalAt = S.time; S.flashT = S.time;
@@ -1516,6 +1629,9 @@
     } else if (k === 'flags') {
       const Vi = makeView(w, h, dpr, -0.15, -0.1, 4.6, 2.05); Vi.tf(c);
       drawCup(c, Vi, { x: 0, y: 0, w: 2, kind: 'yellow' }, 0); drawCup(c, Vi, { x: 2.3, y: 0, w: 2, kind: 'steel' }, 0);
+    } else if (k === 'balloon') {
+      const Vi = makeView(w, h, dpr, -0.9, -0.35, 1.8, 2.6); Vi.tf(c);
+      rope(c, Vi, [0, 1.3], [0, 0.28], 1); drawBalloon(c, Vi, 0, 1.3 + T.balR, 1); drawBall(c, Vi, 0, 0, 0.3, 1, 0);
     }
   }
 
@@ -1560,7 +1676,7 @@
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors' };
 
   // ---------------------------------------------------------------- Atölye: kendi çizimin
   // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.

@@ -24,6 +24,7 @@
     magRange: 2.5, magV: 6, magA: 14, magK: 10, magMax: 4,
     flipLen: 1.6, flipDown: -0.3, flipUp: 0.45, flipW: 9, flipBackW: 5, flipPulse: 0.25,
     bumpMin: 9,
+    balR: 0.42, balRise: 1.4, balK: 6, balMaxF: 3, balFanV: 2.6, balTop: 10.5, hookR: 0.08,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -46,6 +47,10 @@
     // Tampon: hücrenin köşegeninde sekitici levha. 'r' \ biçiminde (düşen topu sağa atar), 'l' / biçiminde.
     // Çarpan top en az T.bumpMin hızla geri sekiyor.
     bumper: { orients: ['r', 'l'], w: 1, h: 1 },
+    // Makas: basınca hücresinden geçen ipleri keser (balon ipi ya da kancaya asılı top). Sensöre de bağlanır.
+    cutter: { orients: ['-'], w: 1, h: 1, manual: 'press' },
+    // İğne: balon değince patlar. Ucu o yöne bakar.
+    pin: { orients: ['u', 'r', 'd', 'l'], w: 1, h: 1 },
   };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
@@ -82,6 +87,24 @@
     // Köşeden köşeye (biraz taşarak): yerde yuvarlanan top da yüzüne çarpsın, ucuna değil.
     const e = 0.06;
     return p.o === 'r' ? [[p.x - e, p.y + 1 + e], [p.x + 1 + e, p.y - e]] : [[p.x - e, p.y - e], [p.x + 1 + e, p.y + 1 + e]];
+  }
+
+  // İğne: hücrenin tabanından o yöne uzanan sivri üçgen (dünya köşeleri).
+  function pinTri(p) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, d = DIRS[p.o], n = [-d[1], d[0]];
+    const base = [cx - d[0] * 0.45, cy - d[1] * 0.45], tip = [cx + d[0] * 0.42, cy + d[1] * 0.42];
+    return [[base[0] + n[0] * 0.13, base[1] + n[1] * 0.13], tip, [base[0] - n[0] * 0.13, base[1] - n[1] * 0.13]];
+  }
+  // Doğru parçası dikdörtgeni kesiyor mu (makas için)
+  function segHitsRect(a, b, r) {
+    let t0 = 0, t1 = 1;
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    for (const [pp, q] of [[-dx, a[0] - r[0]], [dx, r[2] - a[0]], [-dy, a[1] - r[1]], [dy, r[3] - a[1]]]) {
+      if (pp === 0) { if (q < 0) return false; continue; }
+      const t = q / pp;
+      if (pp < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+    }
+    return true;
   }
 
   function fanZone(p) {
@@ -252,6 +275,10 @@
         box(statics, [g.px - 0.08, p.y + 0.1, g.px + 0.08, g.py - 0.14]);   // menteşe ayağı
         rt.body = body; rt.angle = T.flipDown; rt.pulse = 0; rt.s = s;
         flippers.push(rt);
+      } else if (p.type === 'cutter') {
+        rt.cuts = 0;
+      } else if (p.type === 'pin') {
+        statics.createFixture(pl.Polygon(pinTri(p).map(q => pl.Vec2(q[0], q[1]))), { friction: 0.2 }).setUserData({ kind: 'pin', rt });
       } else if (p.type === 'bumper') {
         const [a, b] = bumperLine(p);
         statics.createFixture(pl.Box(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2, 0.07, pl.Vec2((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.atan2(b[1] - a[1], b[0] - a[0])),
@@ -271,11 +298,35 @@
     });
     const ball = balls[0];
     const mass = ball.getMass();
+
+    // İpler ve balonlar (bölümün kendisinde): hangs = kancaya asılı top, balloons = topu taşıyan balon.
+    const ropes = [], balloons = [];
+    const tie = (bodyA, pa, bodyB, pb, len, extra) => {
+      const j = world.createJoint(pl.RopeJoint({ maxLength: len, localAnchorA: bodyA.getLocalPoint(pa), localAnchorB: bodyB.getLocalPoint(pb) }, bodyA, bodyB));
+      const r = Object.assign({ joint: j, bodyA, bodyB, la: bodyA.getLocalPoint(pa), lb: bodyB.getLocalPoint(pb), cut: false }, extra);
+      ropes.push(r); return r;
+    };
+    (level.hangs || []).forEach(h => {
+      const b = balls[h.ball || 0], bp = b.getPosition();
+      statics.createFixture(pl.Circle(pl.Vec2(h.x, h.y), T.hookR), { isSensor: true });
+      tie(statics, pl.Vec2(h.x, h.y), b, pl.Vec2(bp.x, bp.y + T.R), Math.max(0.1, h.y - bp.y - T.R), { kind: 'hang', hook: [h.x, h.y] });
+    });
+    (level.balloons || []).forEach((q, k) => {
+      const b = balls[q.ball || 0], bp = b.getPosition(), len = q.len || 1.1;
+      const body = world.createDynamicBody({ position: pl.Vec2(bp.x, bp.y + T.R + len + T.balR), fixedRotation: true, linearDamping: 0.4 });
+      body.createFixture(pl.Circle(T.balR), { density: 0.05, friction: 0, restitution: 0.3 }).setUserData({ kind: 'balloon', k });
+      const bl = { body, alive: true, popT: -1, k, x: bp.x, y: bp.y + T.R + len + T.balR };
+      bl.rope = tie(body, pl.Vec2(bp.x, bp.y + T.R + len), b, pl.Vec2(bp.x, bp.y + T.R), len, { kind: 'balloon', balloon: bl, ballIdx: q.ball || 0 });
+      balloons.push(bl);
+    });
+    const popQueue = [];
     const need = Math.min(level.need || balls.length, balls.length);
 
     const launches = [], bounces = [];
     world.on('begin-contact', c => {
       const fa = c.getFixtureA(), fb = c.getFixtureB(), ua = fa.getUserData(), ub = fb.getUserData();
+      const bal = ua && ua.kind === 'balloon' ? ua : ub && ub.kind === 'balloon' ? ub : null;
+      if (bal && ((ua && ua.kind === 'pin') || (ub && ub.kind === 'pin'))) popQueue.push(bal.k);
       const bu = ua && ua.kind === 'bumper' ? ua.rt : ub && ub.kind === 'bumper' ? ub.rt : null;
       const bb = ua && ua.kind === 'ball' ? fa : ub && ub.kind === 'ball' ? fb : null;
       if (bu && bb) bounces.push([bu, bb.getBody()]);
@@ -293,7 +344,7 @@
     });
 
     const sim = {
-      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need,
+      world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, need, ropes, balloons, pops: 0,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -315,6 +366,18 @@
         }
         if (rt.type === 'gate') {
           rt.open = !rt.open; rt.fires++;
+          if (manual) sim.presses++;
+          return true;
+        }
+        if (rt.type === 'cutter') {
+          // Hücresinden geçen bütün ipler kesilir.
+          const r0 = [rt.x, rt.y, rt.x + 1, rt.y + 1];
+          for (const r of ropes) {
+            if (r.cut) continue;
+            const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb);
+            if (segHitsRect([a.x, a.y], [b.x, b.y], r0)) { world.destroyJoint(r.joint); r.cut = true; rt.cuts++; }
+          }
+          rt.fires++; rt.snipT = 0.3;
           if (manual) sim.presses++;
           return true;
         }
@@ -425,8 +488,38 @@
           rt.body.setAngularVelocity(rt.s * w);
         }
 
+        // Balon: ağırlıksız gibi yükselir (ipindeki topu da taşır), açık pervanenin kuşağında rüzgârla sürüklenir.
+        for (const bl of balloons) {
+          if (!bl.alive) continue;
+          const body = bl.body, v = body.getLinearVelocity(), bp = body.getPosition();
+          const m = body.getMass() + (bl.rope.cut ? 0 : balls[bl.rope.ballIdx].getMass());
+          let tx = 0, ty = T.balRise, wind = false;
+          for (const rt of fans) {
+            if (!rt.on) continue;
+            const z = rt.zone;
+            if (bp.x < z[0] - 0.3 || bp.x > z[2] + 0.3 || bp.y < z[1] - 0.3 || bp.y > z[3] + 0.3) continue;
+            const d = DIRS[rt.o]; tx += d[0] * T.balFanV; ty += d[1] * T.balFanV; wind = true;
+          }
+          const cap = m * T.G * T.balMaxF;
+          // Rüzgâr yokken yatayda yalnız hafif hava sürtünmesi: eğik tavana değen balon kayarak ilerler.
+          const fx = Math.max(-cap, Math.min(cap, wind ? m * T.balK * (tx - v.x) : -m * 0.8 * v.x));
+          const fy = Math.max(0, Math.min(cap, m * T.G + m * T.balK * (ty - v.y)));
+          body.applyForceToCenter(pl.Vec2(fx, fy), true);
+          if (bp.y > T.balTop) popQueue.push(bl.k);
+        }
+        for (const rt of rts) if (rt.snipT > 0) rt.snipT -= DT;
+
         world.step(DT, 8, 3);
         sim.steps++;
+
+        while (popQueue.length) {
+          const bl = balloons[popQueue.pop()];
+          if (!bl || !bl.alive) continue;
+          bl.alive = false; bl.popT = sim.steps; sim.pops++;
+          const p = bl.body.getPosition(); bl.x = p.x; bl.y = p.y;
+          if (!bl.rope.cut) { world.destroyJoint(bl.rope.joint); bl.rope.cut = true; }
+          world.destroyBody(bl.body);
+        }
 
         if (bounces.length) {
           // Tampon topu en az T.bumpMin hızla geri atar (langırttaki gibi canlı).
@@ -530,5 +623,5 @@
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
+  return { pinTri, segHitsRect, W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
 }));
