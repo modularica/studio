@@ -3,7 +3,7 @@
 import os
 from playwright.sync_api import sync_playwright
 
-URL = 'file:///tmp/km-local.html#hepsi'
+URL = 'file:///tmp/km-local.html'
 OUT = '/tmp/km-shots'
 os.makedirs(OUT, exist_ok=True)
 errors = []

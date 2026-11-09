@@ -2430,7 +2430,6 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const C = {};
   for (const k of ['paper', 'paper-hi', 'paper-deep', 'ink', 'ink-dim', 'hand', 'ball', 'eye', 'bad']) C[k] = css.getPropertyValue('--' + k).trim();
   const FONT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
-  const ALL_OPEN = location.hash === '#hepsi';
   const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
   const pad2 = n => String(n).padStart(2, '0');
   const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -3413,11 +3412,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   const devicesAll = () => allParts().filter(p => PARTS[p.type].manual);
   const trayTotal = () => Object.values(S.level.tray || {}).reduce((a, b) => a + b, 0);
   const trayLeft = type => ((S.level.tray || {})[type] || 0) - S.parts.filter(p => p.type === type).length;
-  function unlocked(i) {
-    if (i === 0 || ALL_OPEN || LEVELS[i].book === 'W') return true;
-    const prev = S.progress[LEVELS[i - 1].id];
-    return !!(prev && prev.solved);
-  }
+  // Bütün çizimler açık (9 Kasım 2026, Umut'un isteği): sıra yalnızca öneri.
+  function unlocked() { return true; }
   function centerOf(p) { const d = KM.sizeOf(p); return [p.x + d.w / 2, p.y + d.h / 2]; }
   function autoLink(sensor) {
     const [sx, sy] = centerOf(sensor);
@@ -4093,7 +4089,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     const box = $('result-unlock'), items = $('unlock-items');
     box.hidden = !news.length && !book; box.classList.remove('in');
     $('unlock-book').hidden = !book;
-    if (book) $('unlock-book').innerHTML = `<span class="cap">Notebook ${book} unlocked</span><span class="bk">${BOOKS[book] || ''}</span>`;
+    if (book) $('unlock-book').innerHTML = `<span class="cap">Up next: Notebook ${book}</span><span class="bk">${BOOKS[book] || ''}</span>`;
     items.textContent = '';
     for (const k of news) {
       const [kind, name, desc] = NEWS[k], el = document.createElement('div');
