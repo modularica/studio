@@ -17,6 +17,7 @@
     { "source": "/drawing-board/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
     { "source": "/kucuk-muhendisler/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
     { "source": "/lab/kucuk-muhendisler/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
+    { "source": "/vagon-defteri/:path*", "destination": "/lab/vagon-defteri/:path*", "permanent": false },
     { "source": "/oyunlar.json", "destination": "/lab/oyunlar.json", "permanent": false }
   ]
 }
