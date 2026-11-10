@@ -18,6 +18,7 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		7C1A00012FF0A00100A1B2C3 /* GameCenterPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1A00022FF0A00100A1B2C3 /* GameCenterPlugin.swift */; };
 		7C1A00032FF0A00100A1B2C3 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1A00042FF0A00100A1B2C3 /* MainViewController.swift */; };
+		7C1A00062FF0A00100A1B2C3 /* ReviewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1A00072FF0A00100A1B2C3 /* ReviewPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 		7C1A00022FF0A00100A1B2C3 /* GameCenterPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterPlugin.swift; sourceTree = "<group>"; };
 		7C1A00042FF0A00100A1B2C3 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		7C1A00052FF0A00100A1B2C3 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		7C1A00072FF0A00100A1B2C3 /* ReviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +76,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				7C1A00042FF0A00100A1B2C3 /* MainViewController.swift */,
 				7C1A00022FF0A00100A1B2C3 /* GameCenterPlugin.swift */,
+				7C1A00072FF0A00100A1B2C3 /* ReviewPlugin.swift */,
 				7C1A00052FF0A00100A1B2C3 /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -169,6 +172,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				7C1A00012FF0A00100A1B2C3 /* GameCenterPlugin.swift in Sources */,
+				7C1A00062FF0A00100A1B2C3 /* ReviewPlugin.swift in Sources */,
 				7C1A00032FF0A00100A1B2C3 /* MainViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -311,7 +315,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = RP6BV8C8SN;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -319,7 +323,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.uzigames.fish;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -335,7 +339,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = RP6BV8C8SN;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -343,7 +347,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.uzigames.fish;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";

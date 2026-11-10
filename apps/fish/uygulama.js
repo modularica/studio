@@ -9,6 +9,8 @@
   var Haptics = C.registerPlugin('Haptics');
   // Our own small plugin: ios/App/App/GameCenterPlugin.swift (registered in MainViewController.swift).
   var GameCenter = C.registerPlugin('GameCenter');
+  // Ours too: ios/App/App/ReviewPlugin.swift, Apple's rating prompt.
+  var Review = C.registerPlugin('Review');
   var LIDERLIK = 'com.uzigames.fish.biggest'; // App Store Connect leaderboard ID; score = length in mm
   var sonYut = 0;
   function sessiz(p) { if (p && p.catch) p.catch(function () {}); return p; }
@@ -32,10 +34,23 @@
     }, function (e) { console.log('[gamecenter] signIn failed', e && e.message); return false; });
   }
   girisYap();
+  // Rating prompt: after a round that set a new best length, once the player has finished 5 rounds,
+  // at most every 60 days from our side (iOS itself shows it at most 3 times a year). Shown a moment
+  // after the game over screen appears, never during play.
+  function puanIste(rekor) {
+    try {
+      var turlar = (+localStorage.getItem('koi.turlar') || 0) + 1;
+      localStorage.setItem('koi.turlar', String(turlar));
+      var son = +localStorage.getItem('koi.puanSorusu') || 0;
+      if (!rekor || turlar < 5 || Date.now() - son < 60 * 864e5) return;
+      localStorage.setItem('koi.puanSorusu', String(Date.now()));
+      setTimeout(function () { sessiz(Review.request()); }, 1800);
+    } catch (e) {}
+  }
   window.uygulama = {
     gameCenter: false, // true once the player is signed in to Game Center
-    // a finished round's length in cm (gameOver in lab/fish/index.html)
-    skor: function (cm) { gonder(cm); },
+    // a finished round's length in cm and whether it was a new best (gameOver in lab/fish/index.html)
+    skor: function (cm, rekor) { gonder(cm); puanIste(rekor); },
     // Leaderboard buttons: resolves true if Game Center's leaderboard opened, false if the player isn't signed in.
     liderlik: function () {
       return (window.uygulama.gameCenter ? Promise.resolve(true) : girisYap()).then(function (girdi) {

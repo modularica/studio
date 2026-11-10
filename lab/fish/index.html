@@ -1298,7 +1298,7 @@ function gameOver(f) {
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
     : null;
-  if (window.uygulama && uygulama.skor) uygulama.skor(P.l); // iOS app: Game Center
+  if (window.uygulama && uygulama.skor) uygulama.skor(P.l, isBest); // iOS app: Game Center, rating prompt
   setTimeout(() => showOver(isBest), 1100);
 }
 function showOver(isBest) {
