@@ -36,7 +36,7 @@
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside id="side">
-      <div class="note"><span class="cap">Note</span><p id="hint"></p></div>
+      <div class="note"><span class="cap">Note</span><p id="hint"></p><button class="note-guide" id="btn-guide" type="button" hidden>Show me how</button></div>
       <div class="panel" id="bom">
         <div class="panel-head"><span class="cap">Parts list</span><span class="cap">Qty</span></div>
         <ol id="bom-list"></ol>
@@ -121,6 +121,15 @@
 </div>
 
 <div id="dragimg" aria-hidden="true"></div>
+
+<div id="coach" hidden>
+  <div class="coach-in">
+    <p id="coach-text" role="status" aria-live="polite"></p>
+    <div class="coach-btns"><button id="coach-skip" type="button">Skip guide</button><button id="coach-next" type="button" hidden>OK</button></div>
+  </div>
+</div>
+<div id="coach-ring" aria-hidden="true" hidden></div>
+<div id="coach-hand" aria-hidden="true" hidden></div>
 
 <!--LIBS-->
 <script>

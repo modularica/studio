@@ -1094,6 +1094,7 @@
       if (cand.type === 'magnet') drawMagnetRange(c, V, cand);
       c.restore();
     }
+    drawGuide(c, time);
     drawEffects(c, time);
     // Yerleşince kısa bir oturma çizgisi.
     const sn = S.snap;
@@ -1250,6 +1251,7 @@
       const li = document.createElement('li');
       const isNew = !!(S.introNew && S.introNew.has(type));
       li.className = 'bom-row' + (left > 0 ? '' : ' empty') + (isNew ? ' is-new' : '');
+      li.dataset.type = type;
       li.innerHTML = `<span class="no">${i + 1}</span><canvas aria-hidden="true"></canvas><span class="nm">${NAMES[type]}${isNew ? ' <i class="tag-new">New</i>' : ''}</span><span class="qty">×${left}</span>`;
       li.setAttribute('aria-label', `${NAMES[type]}${isNew ? ', new part' : ''}, ${left} left`);
       li.addEventListener('pointerdown', e => startTrayDrag(type, e));
@@ -1324,6 +1326,352 @@
     const el = $('press-count'); if (el.textContent !== t) el.textContent = t;
   }
 
+  // ---------------------------------------------------------------- rehber
+  // Yeni bir parçanın ilk çiziminde oyun elinden tutar: parçanın gideceği yer tahtada kesik çizgili
+  // hayalet olarak çizilir, sarı balon ne yapılacağını söyler, bir parmak parça listesinden hayalete
+  // sürükleme hareketini gösterir, dokunulacak yer (liste satırı, Run, kumanda düğmesi) parlar.
+  // Elle kumandalı cihazlarda makine doğru anda donar ve "Şimdi bas" der; basınca devam eder. Yani
+  // rehberli ilk deneme hep tutar. Adımlar çizimin `guide` alanından gelir; yoksa yeniliklerden (INTRO)
+  // ve doğrulanmış çözümden (`guideSol`, yoksa yeni parçaların hepsini kullanan, eski parçası en az
+  // olan çözüm) kurulur. Çözülmüş çizimde ya da "Skip guide" denince kendiliğinden açılmaz; notun
+  // altındaki "Show me how" yeniden açar.
+  const G = { on: false, steps: [], i: 0, sol: null, news: [], idx: [], full: true, sched: [], k: 0, freeze: null, early: new Set(), armed: false, again: false, view: null, key: '', avail: false, t0: 0 };
+  const guideOff = new Set();
+  const nameOf = t => NAMES[t].toLowerCase();
+
+  function guideFor(i) {
+    const L = LEVELS[i];
+    if (!L || L.book === 'W' || !L.sol || !L.sol.length) return null;
+    const news = INTRO[i] || [], tray = L.tray || {};
+    if (!L.guide && !news.length) return null;
+    const placedNew = news.filter(k => tray[k]);
+    const handNew = news.some(k => PARTS[k] && PARTS[k].manual && !tray[k]);
+    // Hangi çözüm gösterilir: yeni parçaların hepsini kullanan, eski parçası en az olan; yeni parça
+    // yoksa elle oynanan (parçasız) çözüm.
+    const oldN = q => q.parts.filter(p => !placedNew.includes(p.type)).length;
+    let si = typeof L.guideSol === 'number' ? L.guideSol : -1;
+    if (si < 0 && placedNew.length) {
+      L.sol.forEach((q, j) => { if (placedNew.every(t => q.parts.some(p => p.type === t)) && (si < 0 || oldN(q) < oldN(L.sol[si]))) si = j; });
+    }
+    if (si < 0 && handNew) si = L.sol.findIndex(q => !q.parts.length && (q.inputs || []).length);
+    if (si < 0 && handNew) si = L.sol.findIndex(q => (q.inputs || []).length);
+    const sol = L.sol[Math.max(0, si)];
+    // Rehber yalnız yeni parçaların yerini gösterir; çözümde eski parçalar da varsa makinenin gerisi
+    // oyuncuya kalır ("Your turn"). Hepsi gösterildiyse ilk çalıştırma da rehberli olur.
+    const full = !!L.guide || !oldN(sol);
+    const idx = sol.parts.map((p, j) => j).filter(j => full || placedNew.includes(sol.parts[j].type));
+    let steps;
+    if (L.guide) steps = L.guide.map(q => Object.assign({}, q));
+    else {
+      steps = [];
+      for (const k of news) {
+        const f = (L.fixed || []).findIndex(q => q.type === k);
+        if (PARTS[k] && !tray[k] && f >= 0) steps.push({ look: 'fixed:' + f, say: `New part: the ${nameOf(k)}. ${NEWS[k][2]}` });
+        else if (k === 'steel') steps.push({ look: 'balls', say: `New: a steel ball. ${NEWS.steel[2]}` });
+        else if (k === 'flags') steps.push({ look: 'cups', say: `New: flag cups. ${NEWS.flags[2]}` });
+        else if (k === 'balloon') steps.push({ look: 'balloon', say: `New: the balloon. ${NEWS.balloon[2]}` });
+      }
+      // Yalnız yeni top ya da kova gelen çizimde çözüm verilmez: bakış adımlarıyla biter.
+      if (placedNew.length && idx.length) steps.push({ place: true });
+      if (!full) steps.push({ rest: true });
+      else if (placedNew.length || handNew) steps.push({ run: true, say: (sol.inputs || []).length ? 'Press Run. I will tell you when to use the controls.' : '' });
+      if (!steps.length) return null;
+    }
+    return { steps, sol, news: placedNew, idx, full };
+  }
+
+  function guideStart(force) {
+    const g = guideFor(S.li), prog = S.progress[S.level.id];
+    G.avail = !!g; G.view = null; G.key = ''; G.again = false; G.armed = false; G.freeze = null; G.early.clear();
+    G.on = !!g && (force || !((prog && prog.solved) || guideOff.has(S.level.id)));
+    if (G.on) Object.assign(G, { steps: g.steps, sol: g.sol, news: g.news, idx: g.idx, full: g.full, i: 0, sched: [], k: 0, t0: S.time });
+    if (force) sfx('tick');
+    guideTick(true);
+  }
+  function guideEnd(skip) {
+    if (skip) guideOff.add(S.level.id);
+    G.on = false; G.freeze = null; G.armed = false; G.view = null;
+    guideTick(true);
+  }
+
+  // Çözümdeki parçalar kurulumdakilerle eşlenir (tür, kare, yön). Sensörde bağlantı da bakılır:
+  // 'f0' sabit cihaz, sayı çözümdeki sırası (1'den).
+  function guideMatch() {
+    const used = new Set();
+    const m = G.sol.parts.map(q => {
+      const p = S.parts.find(p => !used.has(p) && p.type === q.type && p.x === q.x && p.y === q.y && p.o === q.o);
+      if (p) used.add(p);
+      return p || null;
+    });
+    const linkOk = G.sol.parts.map((q, j) => {
+      if (q.type !== 'sensor' || !m[j] || q.link == null) return true;
+      const want = typeof q.link === 'number' ? (m[q.link - 1] && m[q.link - 1].id) : q.link;
+      return want != null && m[j].link === want;
+    });
+    return { m, linkOk, extra: S.parts.filter(p => !used.has(p)) };
+  }
+  // placed: rehberin gösterdiği parçalar yerinde. ready: kurulum çözümün tıpkısı (rehberli çalıştırma için).
+  function guideState() {
+    const g = guideMatch();
+    g.placed = G.idx.every(j => g.m[j] && g.linkOk[j]) && !(G.full && g.extra.length);
+    g.ready = g.m.every(Boolean) && g.linkOk.every(Boolean) && !g.extra.length;
+    return g;
+  }
+  const guideReady = () => guideState().ready;
+
+  // Tahta koordinatından ekran dikdörtgenine (CSS pikseli).
+  function boardRect(x0, y0, x1, y1) {
+    const r = cv.getBoundingClientRect();
+    return { left: r.left + V.sx(x0), right: r.left + V.sx(x1), top: r.top + V.sy(y1), bottom: r.top + V.sy(y0) };
+  }
+  const partBox = (p, g) => { const d = KM.sizeOf(p); g = g || 0; return [p.x - g, p.y - g, p.x + d.w + g, p.y + d.h + g]; };
+  const elRect = el => el.getBoundingClientRect();
+  const cellsHit = (a, b) => KM.cellsOf(a).some(([x, y]) => KM.cellsOf(b).some(q => q[0] === x && q[1] === y));
+  function lookBox(what) {
+    const L = S.level;
+    if (what === 'pipe' || what === 'ball') { const st = KM.startsOf(L)[0]; return [st.x - 0.7, st.y - 0.6, st.x + 0.7, st.y + 0.6]; }
+    if (what === 'balls') {
+      const b = KM.startsOf(L);
+      return [Math.min(...b.map(q => q.x)) - 0.6, Math.min(...b.map(q => q.y)) - 0.6, Math.max(...b.map(q => q.x)) + 0.6, Math.max(...b.map(q => q.y)) + 0.6];
+    }
+    if (what === 'cup' || what === 'cups') {
+      const cs = what === 'cup' ? [KM.cupsOf(L)[0]] : KM.cupsOf(L);
+      return [Math.min(...cs.map(c => c.x)) - 0.15, Math.min(...cs.map(c => c.y)) - 0.12, Math.max(...cs.map(c => c.x + c.w)) + 0.15, Math.max(...cs.map(c => c.y)) + 1.2];
+    }
+    if (what === 'balloon') { const st = KM.startsOf(L)[(L.balloons[0].ball || 0)]; return [st.x - 0.7, st.y - 0.5, st.x + 0.7, st.y + 2.4]; }
+    if (what.startsWith('fixed:')) return partBox(L.fixed[+what.slice(6)], 0.1);
+    return [0, 0, W, H];
+  }
+  const bomRow = type => document.querySelector(`.bom-row[data-type="${type}"]`);
+
+  // Rehberin şu anki görünümü: balon metni ve yeri, tahtadaki hayaletler ve çerçeve, parlayan öğe,
+  // parmağın hareketi (from → to: sürükle; yalnız to: dokun).
+  function guideView() {
+    if (!G.on || !V || overlayOpen() || S.mode === 'edit') return null;
+    if (S.mode === 'run') {
+      const f = G.freeze;
+      if (!f || !S.sim) return null;
+      const rt = f.rt, name = nameOf(rt.type);
+      const say = f.act === 'press' ? `Now! Press ${rt.num}, or tap the ${name}.` : f.act === 'down' ? `Now! Press and hold ${rt.num}.` : 'Now let go!';
+      const tgt = rt.btn && rt.btn.offsetParent ? rt.btn : null;
+      return { key: 'freeze' + G.k, say, rect: tgt ? elRect(tgt) : boardRect(...partBox(rt.p)), side: !!tgt, ring: tgt, box: partBox(rt.p, 0.12), tap: tgt ? elRect(tgt) : boardRect(...partBox(rt.p)) };
+    }
+    let st = G.steps[G.i];
+    while (st && ((st.place && guideState().placed) || (st.look && S.parts.length))) st = G.steps[++G.i];
+    if (!st) { G.on = false; return null; }
+    if (st.look) {
+      const b = lookBox(st.look);
+      return { key: 'look' + G.i, say: st.say, rect: boardRect(...b), box: b, next: true };
+    }
+    if (st.place) {
+      const { m, linkOk, extra } = guideMatch();
+      const missJ = G.idx.filter(j => !m[j]);
+      const j = missJ.length ? missJ[0] : -1, q = G.sol.parts[j];
+      const ghosts = missJ.map(k => ({ p: G.sol.parts[k], cur: k === j }));
+      const quiet = !!S.drag;
+      // Planda olmayan parça, sıradaki hayaletin karesini kapatıyorsa ya da (rehber bütün makineyi
+      // gösteriyorsa) her şey yerindeyse: çıkar.
+      const needT = new Set(missJ.map(k => G.sol.parts[k].type));
+      const junk = extra.filter(p => !needT.has(p.type));
+      const block = junk.find(p => q ? cellsHit(p, q) : G.full);
+      if (block) {
+        const r = boardRect(...partBox(block));
+        const b = cv.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+        const ds = [[cx - b.left, -1, 0], [b.right - cx, 1, 0], [cy - b.top, 0, -1], [b.bottom - cy, 0, 1]].sort((u, w) => u[0] - w[0])[0];
+        const ox = cx + ds[1] * (ds[0] + 36), oy = cy + ds[2] * (ds[0] + 36);
+        return { key: 'junk' + block.id, say: `This machine doesn’t need that ${nameOf(block.type)}. Drag it off the board.`, rect: r, box: partBox(block, 0.1), ghosts, quiet, from: r, to: { left: ox, right: ox, top: oy, bottom: oy } };
+      }
+      if (j < 0) {   // hepsi yerinde, bir sensörün bağlantısı yanlış
+        const js = G.idx.find(k => !linkOk[k]), sp = m[js], q2 = G.sol.parts[js];
+        const dev = typeof q2.link === 'number' ? m[q2.link - 1] : S.level.fixed[+String(q2.link).slice(1)];
+        const dn = dev ? nameOf(dev.type) : 'device';
+        if (S.linkFrom === sp && dev) return { key: 'link2' + js, say: `Now tap the ${dn}.`, rect: boardRect(...partBox(dev)), box: partBox(dev, 0.1), ghosts, quiet, tap: boardRect(...partBox(dev)) };
+        return { key: 'link' + js, say: `The sensor has to work the ${dn}. Tap the sensor, then tap the ${dn}.`, rect: boardRect(...partBox(sp)), box: partBox(sp, 0.1), ghosts, quiet, tap: boardRect(...partBox(sp)) };
+      }
+      const qr = boardRect(...partBox(q));
+      const wrong = S.parts.find(p => !m.includes(p) && p.type === q.type && p.x === q.x && p.y === q.y);
+      if (wrong) return { key: 'turn' + j, say: `Tap the ${nameOf(q.type)} to turn it until it matches the outline.`, rect: qr, ghosts, quiet, tap: qr };
+      const left = trayLeft(q.type) > 0;
+      const fresh = G.news.includes(q.type) && !S.parts.some(p => p.type === q.type);
+      const say = fresh && st.say ? st.say
+        : fresh ? `New part: the ${nameOf(q.type)}. ${NEWS[q.type][2]} Drag it onto the dotted outline.`
+        : j === 0 && st.say ? st.say
+        : left ? `Drag the ${nameOf(q.type)} from the parts list onto the dotted outline.` : `Move the ${nameOf(q.type)} onto the dotted outline.`;
+      const row = left ? bomRow(q.type) : null;
+      const src = row ? elRect(row) : (() => { const o = extra.find(p => p.type === q.type); return o ? boardRect(...partBox(o)) : null; })();
+      return { key: 'place' + j + (left ? 'L' : 'M') + (fresh ? 'F' : ''), say, rect: qr, ghosts, quiet, ring: row, from: src, to: qr };
+    }
+    if (st.rest) {
+      const panel = $('bom');
+      const r = panel.offsetParent ? elRect(panel) : elRect($('run'));
+      return { key: 'rest' + G.i, say: st.say || 'Your turn: build the rest of the machine with the other parts, then press Run.', rect: r, side: true, next: true };
+    }
+    if (st.run) {
+      const say = G.again ? 'Almost! Press Run again. I will help with the timing.' : st.say || 'Now press Run and watch your machine.';
+      const r = elRect($('run'));
+      return { key: 'run' + (G.again ? 'A' : ''), say, rect: r, side: true, ring: $('run'), tap: r };
+    }
+    return null;
+  }
+
+  // Balonu, halkayı ve parmağı yerleştirir; metin değişmedikçe yalnız konum güncellenir.
+  let coachPos = '', ringPos = '', handPos = '';
+  function guideTick(force) {
+    const v = guideView();
+    G.view = v;
+    const btn = $('btn-guide'), want = !(G.avail && !G.on && S.mode === 'build');
+    if (btn.hidden !== want) btn.hidden = want;
+    const el = $('coach'), ring = $('coach-ring'), hand = $('coach-hand');
+    if (!v || v.quiet) {
+      if (!el.hidden) el.hidden = true;
+      if (!ring.hidden) ring.hidden = true;
+      if (!hand.hidden) hand.hidden = true;
+      if (!v) G.key = '';
+      return;
+    }
+    if (force || el.hidden || v.key !== G.key || $('coach-text').textContent !== v.say) {
+      if (v.key !== G.key) G.t0 = S.time;
+      G.key = v.key;
+      $('coach-text').textContent = v.say;
+      $('coach-next').hidden = !v.next;
+      el.hidden = false; coachPos = '';
+      const inner = el.firstElementChild;
+      inner.classList.remove('pop'); void inner.offsetWidth; inner.classList.add('pop');
+    }
+    placeCoach(v.rect, v.side);
+    if (v.ring) {
+      const r = v.ring.getBoundingClientRect();
+      const pos = `${r.left - 5},${r.top - 5},${r.width + 10},${r.height + 10}`;
+      if (ring.hidden) ring.hidden = false;
+      if (pos !== ringPos) {
+        ringPos = pos;
+        ring.style.transform = `translate(${Math.round(r.left - 5)}px, ${Math.round(r.top - 5)}px)`;
+        ring.style.width = `${Math.round(r.width + 10)}px`; ring.style.height = `${Math.round(r.height + 10)}px`;
+      }
+    } else if (!ring.hidden) ring.hidden = true;
+    moveHand(hand, v);
+  }
+  // Parmak: sürüklemede kaynaktan hedefe gider (bas, taşı, bırak), dokunmada yerinde basar.
+  function moveHand(hand, v) {
+    const to = v.to || v.tap;
+    if (!to || reduceMotion && v.from) { if (!hand.hidden) hand.hidden = true; return; }
+    const c = r => [(r.left + r.right) / 2, (r.top + r.bottom) / 2];
+    const [tx, ty] = c(to);
+    let x = tx, y = ty, sc = 1, op = 1;
+    const t = (S.time - G.t0) % (v.from ? 2.4 : 1.2);
+    if (v.from && !reduceMotion) {
+      const [fx, fy] = c(v.from);
+      if (t < 0.35) { x = fx; y = fy; sc = 1 - 0.25 * (t / 0.35); op = Math.min(1, t / 0.15); }
+      else if (t < 1.55) { const k = (t - 0.35) / 1.2, e = k < 0.5 ? 2 * k * k : 1 - 2 * (1 - k) * (1 - k); x = fx + (tx - fx) * e; y = fy + (ty - fy) * e; sc = 0.75; }
+      else if (t < 1.9) { sc = 0.75 + 0.25 * ((t - 1.55) / 0.35); }
+      else { op = 1 - (t - 1.9) / 0.5; }
+    } else if (!reduceMotion) {
+      sc = t < 0.25 ? 1 - 0.25 * (t / 0.25) : t < 0.5 ? 0.75 + 0.25 * ((t - 0.25) / 0.25) : 1;
+    }
+    if (hand.hidden) hand.hidden = false;
+    const pos = `translate(${Math.round(x)}px, ${Math.round(y)}px) scale(${sc.toFixed(3)})`;
+    if (pos !== handPos) { handPos = pos; hand.style.transform = pos; }
+    const o = Math.max(0, op).toFixed(2);
+    if (hand.style.opacity !== o) hand.style.opacity = o;
+  }
+  function placeCoach(rect, side) {
+    const el = $('coach'), bw = el.offsetWidth, bh = el.offsetHeight, vw = innerWidth, vh = innerHeight, m = 8, gap = 14;
+    const cx = (rect.left + rect.right) / 2, cy = (rect.top + rect.bottom) / 2;
+    const at = {
+      above: [cx - bw / 2, rect.top - gap - bh], below: [cx - bw / 2, rect.bottom + gap],
+      left: [rect.left - gap - bw, cy - bh / 2], right: [rect.right + gap, cy - bh / 2],
+    };
+    // Yan sütundaki hedefte (Run, kumanda) geniş ekranda balon soluna, dar ekranda üstüne gelir.
+    const order = side && rect.left > vw * 0.55 ? ['left', 'above', 'below', 'right'] : ['above', 'below', 'right', 'left'];
+    const fits = s => { const [x, y] = at[s]; return x >= m - 40 && y >= m && x + bw <= vw - m + 40 && y + bh <= vh - m; };
+    const s = order.find(fits) || order[0];
+    const x = Math.max(m, Math.min(vw - bw - m, at[s][0])), y = Math.max(m, Math.min(vh - bh - m, at[s][1]));
+    const ax = Math.round(Math.max(16, Math.min(bw - 16, cx - x))), ay = Math.round(Math.max(16, Math.min(bh - 16, cy - y)));
+    const pos = `${Math.round(x)},${Math.round(y)},${s},${ax},${ay}`;
+    if (pos === coachPos) return;
+    coachPos = pos;
+    el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    el.dataset.side = s;
+    el.style.setProperty('--ax', ax + 'px'); el.style.setProperty('--ay', ay + 'px');
+  }
+
+  // Tahtada: hayalet parçalar (soluk çizim, kesik sarı çerçeve; sıradaki parlak) ve gösterilen yerin çerçevesi.
+  function drawGuide(c, time) {
+    const v = G.view;
+    if (!v) return;
+    const wave = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(time * 4.5);
+    for (const g of v.ghosts || []) {
+      const p = Object.assign({ id: 'ghost' }, g.p), d = KM.sizeOf(p);
+      c.save(); c.globalAlpha = g.cur ? 0.3 + 0.18 * wave : 0.16;
+      drawPart(c, V, p, null, time, false);
+      c.restore();
+      if (g.cur) { c.fillStyle = rgba(C.ball, 0.06 + 0.06 * wave); c.fillRect(p.x, p.y, d.w, d.h); }
+      c.beginPath(); c.rect(p.x + 0.04, p.y + 0.04, d.w - 0.08, d.h - 0.08);
+      stroke(c, V, rgba(C.ball, g.cur ? 0.55 + 0.4 * wave : 0.35), g.cur ? LW.edge : LW.thin, DASH.hidden);
+    }
+    if (v.box) {
+      const [x0, y0, x1, y1] = v.box;
+      c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0);
+      stroke(c, V, rgba(C.ball, 0.55 + 0.4 * wave), LW.edge, DASH.hidden);
+    }
+  }
+
+  // Çalıştırınca: kurulum çözümle aynıysa çözümün basışları sıraya girer; makine o anlarda donar.
+  function guideArm() {
+    G.freeze = null; G.k = 0; G.early.clear(); G.sched = []; G.armed = false;
+    if (!G.on) return;
+    while (G.steps[G.i] && G.steps[G.i].look) G.i++;
+    if (G.steps[G.i] && G.steps[G.i].rest) { guideEnd(false); return; }   // oyuncu kendisi devraldı
+    const inputs = (G.sol.inputs || []).slice().sort((a, b) => a.t - b.t);
+    if (!G.full || !inputs.length || !guideReady()) return;
+    const ref = KM.listParts(S.level, G.sol.parts.map((q, j) => Object.assign({ id: 900 + j }, q)));
+    for (const inp of inputs) {
+      const d = ref.find(q => q.num === inp.num);
+      const rt = d && S.sim.devices.find(r => r.type === d.type && r.x === d.x && r.y === d.y);
+      if (!rt) { G.sched = []; return; }
+      G.sched.push({ step: Math.round(inp.t / DT), act: inp.act, rt });
+    }
+    G.armed = true;
+  }
+  // Kurulum çözümle aynıysa parçalar çözümün sırasına dizilir: fizik aynı sırayla kurulur
+  // (çözüm doğrulanırken olduğu gibi) ve kumanda numaraları rehberin söylediğiyle aynı olur.
+  function guideOrder() {
+    if (!G.on || !G.full || !guideReady()) return;
+    const { m } = guideMatch();
+    S.parts = m.slice();
+  }
+  // frame() her fizik adımından önce sorar: true ise adım atılmaz, makine bekler.
+  function guideHold() {
+    if (!G.armed || !S.sim) return false;
+    if (G.freeze) return true;
+    const f = G.sched[G.k];
+    if (!f || S.sim.steps < f.step) return false;
+    const holding = [...S.held.values()].includes(f.rt);
+    if (f.act === 'down' && holding) { S.sim.hold(f.rt, true); G.k++; updatePult(); return guideHold(); }
+    if (f.act === 'up' && G.early.has(f.rt)) { G.early.delete(f.rt); if (!holding) S.sim.hold(f.rt, false); G.k++; updatePult(); return guideHold(); }
+    G.freeze = f; sfx('tick');
+    return true;
+  }
+  // Rehberli çalıştırmada kumandaya basılınca: yalnız beklenen an sayılır.
+  function guideDown(rt, pid) {
+    if (!G.armed || G.k >= G.sched.length) return false;
+    const f = G.freeze;
+    if (f && f.rt === rt && (f.act === 'press' || f.act === 'down')) { G.freeze = null; G.k++; return false; }
+    const next = G.sched.slice(G.k).find(q => q.rt === rt);
+    if (PARTS[rt.type].manual === 'hold' && next && next.act === 'down' && !f) { S.held.set(pid, rt); updatePult(); return true; }
+    toast(f ? `Not that one. Press ${f.rt.num}.` : 'Wait for my signal.', 1400);
+    return true;
+  }
+  function guideUp(rt, pid) {
+    if (!G.armed || PARTS[rt.type].manual !== 'hold') return false;
+    const f = G.freeze;
+    if (f && f.rt === rt && f.act === 'up') { G.freeze = null; G.k++; return false; }
+    const next = G.sched.slice(G.k).find(q => q.rt === rt);
+    if (next && next.act === 'down') { S.held.delete(pid); updatePult(); return true; }   // erken basılıp bırakıldı
+    if (next && next.act === 'up') { S.held.delete(pid); G.early.add(rt); updatePult(); return true; }
+    return false;
+  }
+
   // ---------------------------------------------------------------- bölüm
   function loadLevel(i) {
     hideToast();
@@ -1345,6 +1693,7 @@
     }
     persist();
     refreshHeader(); refreshSide();
+    guideStart(false);
   }
 
   function addPlaced(p) {
@@ -1481,12 +1830,14 @@
   // ---------------------------------------------------------------- çalıştırma
   function devDown(rt, pid) {
     if (!S.sim || S.sim.status === 'out') return;
+    if (guideDown(rt, pid)) return;
     if (PARTS[rt.type].manual === 'hold') { S.held.set(pid, rt); S.sim.hold(rt, true); }
     else S.sim.press(rt, true);
     updatePult();
   }
   function devUp(rt, pid) {
     if (!S.held.has(pid)) return;
+    if (guideUp(rt, pid)) return;
     S.held.delete(pid);
     if (S.sim && PARTS[rt.type].manual === 'hold' && ![...S.held.values()].includes(rt)) S.sim.hold(rt, false);
     updatePult();
@@ -1501,6 +1852,7 @@
   function startRun() {
     if (S.drag || overlayOpen()) return;
     exitLink(); hideToast(); audio();
+    guideOrder();
     S.sim = KM.createSim(S.level, S.parts.map(p => Object.assign({}, p)));
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.goalN = 0; S.goalAt = null; S.winAt = null; S.flashT = null; S.lastHit = []; S.newSeen = true;
@@ -1509,10 +1861,12 @@
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run'); musicMode('run');
     refreshSide(); buildPult(); updatePult();
+    guideArm();
   }
 
   function stopRun(reason) {
     if (!S.sim) return;
+    G.freeze = null; G.armed = false;
     releaseAll();
     S.trails = S.sim.trails.map(t => t.slice());
     S.trailFail = reason !== 'user' ? reason : null;
@@ -1523,6 +1877,7 @@
     if (reason === 'out') { toast('The ball fell off. The dotted line shows its last path.'); sfx('fail'); }
     else if (reason === 'timeout') toast('Time’s up. Take another look at the machine.');
     else if (reason === 'rest') toast('The ball stopped. Change the setup and try again.');
+    if (G.on) { G.again = reason !== 'user'; G.i = Math.max(0, G.steps.findIndex(q => q.place || q.run)); }
     refreshSide();
   }
 
@@ -1538,9 +1893,11 @@
     persist();
     const got = L.badges.filter(b => prog.badges[b.k]).length;
     lab.note(`${L.book === 'W' ? 'Atölye: ' + cleanName(L.name) : 'Çizim ' + pad2(S.li + 1) + ' ' + L.name}: çalıştı · damga ${got}/${L.badges.length} · elle ${presses}`);
+    G.armed = false; G.freeze = null;
     releaseAll();
     S.trails = sim.trails.map(t => t.slice()); S.trailFail = null; S.sim = null; S.mode = 'build'; S.lastFail = null; S.goalAt = null;
     if (first) S.introNew = null;
+    guideEnd(false);
     refreshSide();
     showResult(res, fresh, used, presses, t, first);
   }
@@ -1584,7 +1941,10 @@
       const g = S.goalAt == null ? -1 : S.time - S.goalAt;
       S.acc += dt * (g < 0 || reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
       let n = 0;
-      while (S.acc >= DT && n < 12) { sim.step(); S.acc -= DT; n++; }
+      while (S.acc >= DT && n < 12) {
+        if (guideHold()) { S.acc = 0; break; }
+        sim.step(); S.acc -= DT; n++;
+      }
       if (n >= 12) S.acc = 0;
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
@@ -1622,6 +1982,7 @@
       }
       updatePult();
     }
+    guideTick(false);
     render();
     requestAnimationFrame(frame);
   }
@@ -2068,6 +2429,14 @@
   });
   document.addEventListener('gesturestart', e => e.preventDefault());
   $('run').addEventListener('click', toggleRun);
+  $('coach-skip').addEventListener('click', () => guideEnd(true));
+  $('coach-next').addEventListener('click', () => {
+    const st = G.steps[G.i];
+    sfx('tick');
+    if (st && st.rest) { guideEnd(false); return; }
+    G.i++; guideTick(true);
+  });
+  $('btn-guide').addEventListener('click', () => guideStart(true));
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('btn-new-drawing').addEventListener('click', () => { closeOverlay('levels'); openEditor(starterDoc()); });
   $('btn-edit').addEventListener('click', () => { if (S.level.ws) openEditor(S.level.ws); });
@@ -2122,7 +2491,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
 
   // Test ve geliştirme için küçük bir kapı.
-  window.KM_GAME = { S, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
+  window.KM_GAME = { S, G, guideStart, guideFor, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
 
   function boot(data) {
     if (lab.on) document.documentElement.classList.add('lab');

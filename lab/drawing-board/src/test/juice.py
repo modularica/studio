@@ -23,7 +23,8 @@ def open_page(b, w, h, dpr=1, solved=0):
     return page
 
 def put(page, idx, parts=None):
-    page.evaluate("""([idx, parts]) => { const G = KM_GAME; if (G.S.li !== idx) G.loadLevel(idx); G.S.parts = [];
+    # Rehber kapatılır: bu denemede basışlar duvar saatiyle yapılıyor, rehber dondurmasıyla değil.
+    page.evaluate("""([idx, parts]) => { const G = KM_GAME; if (G.S.li !== idx) G.loadLevel(idx); G.G.on = false; G.S.parts = [];
         const sols = G.S.level.sol || [];
         const list = parts || (sols.length ? sols[0].parts : []);
         for (const p of list) G.addPlaced(Object.assign({ id: G.S.nextId++ }, { type: p.type, o: p.o, x: p.x, y: p.y, link: p.link == null ? null : p.link }));
@@ -62,20 +63,33 @@ def solve(page, idx, label, parts=None, keys=None, shots=()):
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox', '--autoplay-policy=no-user-gesture-required'])
-    # Masaüstü: sıfırdan 1. ve 2. çizim
+    # Masaüstü: sıfırdan 1. çizim (sonraki çizim yeni bir şey getirmiyor)
     page = open_page(b, 1366, 1024)
+    IDS = page.evaluate('KM_LEVELS.map(l => l.id)')
+    ix = IDS.index
     page.mouse.click(5, 5)   # ilk dokunuş: ses açılır
-    info = solve(page, 0, 'L1', parts=[{'type': 'ramp', 'o': 'dl', 'x': 6, 'y': 5}],
-                 shots=[(-330, '40-kutlama-tahtada'), (480, '41-sonuc-damga'), (2700, '42-sonuc-yeni-parca')])
-    if info and (not info['unlock'] or 'Spring' not in info['unlock']): fails.append('L1: Spring açılmadı')
+    info = solve(page, 0, 'L1', parts=[{'type': 'ramp', 'o': 'dr', 'x': 6, 'y': 2}],
+                 shots=[(-330, '40-kutlama-tahtada'), (480, '41-sonuc-damga')])
+    if info and info['unlock']: fails.append('L1: beklenmeyen yenilik: ' + info['unlock'])
     audio = page.evaluate("({ playing: KM_AUDIO.state.playing, mode: KM_AUDIO.state.want, song: KM_AUDIO.state.song.id })")
     print('müzik:', audio)
+    page.context.close()
+
+    # Bridge → yay: "New part unlocked!" ve listede New
+    page = open_page(b, 1366, 1024, solved=ix('kopru'))
+    info = solve(page, ix('kopru'), 'Bridge → yay', shots=[(2700, '42-sonuc-yeni-parca')])
+    if info and (not info['unlock'] or 'Spring' not in info['unlock']): fails.append('Bridge: Spring açılmadı')
     page.click('#btn-next'); page.wait_for_timeout(400)
     page.screenshot(path=f'{OUT}/43-yeni-parca-listede.png')
-    if not page.locator('.bom-row.is-new').count(): fails.append('L2: listede New yok')
-    info = solve(page, 1, 'L2', parts=[{'type': 'spring', 'o': 'u', 'x': 5, 'y': 0}])
-    if info and (not info['unlock'] or 'Piston' not in info['unlock']): fails.append('L2: Piston açılmadı')
+    if not page.locator('.bom-row.is-new').count(): fails.append('Bounce: listede New yok')
+    page.context.close()
+
+    # All the Way → piston: tahtada NEW, bölüm kartlarında rozet
+    page = open_page(b, 1366, 1024, solved=ix('bant'))
+    info = solve(page, ix('bant'), 'All the Way → piston')
+    if info and (not info['unlock'] or 'Piston' not in info['unlock']): fails.append('All the Way: Piston açılmadı')
     page.click('#btn-next'); page.wait_for_timeout(400)
+    page.evaluate("KM_GAME.G.on = false"); page.wait_for_timeout(100)
     page.screenshot(path=f'{OUT}/44-yeni-parca-tahtada.png')
     page.click('#btn-levels'); page.wait_for_timeout(500)
     page.screenshot(path=f'{OUT}/45-bolumler-yeni.png')
@@ -83,32 +97,31 @@ with sync_playwright() as p:
     print('kart rozetleri:', chips)
     page.click('#levels-close')
     print('müzik:', page.evaluate("({ playing: KM_AUDIO.state.playing, mode: KM_AUDIO.state.want, song: KM_AUDIO.state.song.id, next: KM_AUDIO.state.next && KM_AUDIO.state.next.id })"))
-    # Tekrar çözüm: yeni damga yoksa başlık değişir, yenilik çıkmaz.
     page.context.close()
 
-    page = open_page(b, 1366, 1024, solved=10)
-    info = solve(page, 10, 'L11 → çelik bilye', shots=[(2800, '46-celik-bilye')])
-    if info and (not info['unlock'] or 'Steel ball' not in info['unlock']): fails.append('L11: çelik bilye açılmadı')
+    page = open_page(b, 1366, 1024, solved=ix('domino') - 1)
+    info = solve(page, ix('domino') - 1, 'On and Off → çelik bilye', shots=[(2800, '46-celik-bilye')])
+    if info and (not info['unlock'] or 'Steel ball' not in info['unlock']): fails.append('On and Off: çelik bilye açılmadı')
     page.context.close()
-    page = open_page(b, 1366, 1024, solved=15)
-    auto = page.evaluate("KM_LEVELS[15].sol[1].parts")
-    info = solve(page, 15, 'L16 → defter 2', parts=auto, shots=[(3000, '47-defter-2')])
-    if info and (not info['unlock'] or 'Notebook 2' not in info['unlock']): fails.append('L16: defter 2 açılmadı')
+    page = open_page(b, 1366, 1024, solved=ix('hava-akimi'))
+    auto = page.evaluate("KM_LEVELS.find(l => l.id === 'hava-akimi').sol[1].parts")
+    info = solve(page, ix('hava-akimi'), 'Updraft → defter 2', parts=auto, shots=[(3000, '47-defter-2')])
+    if info and (not info['unlock'] or 'Notebook 2' not in info['unlock']): fails.append('Updraft: defter 2 açılmadı')
     page.context.close()
-    page = open_page(b, 1366, 1024, solved=16)
-    info = solve(page, 16, 'L17 → bayraklı kova', parts=[], keys=[(4.0, '1')], shots=[(2800, '48-bayrakli-kova')])
-    if info and (not info['unlock'] or 'Flag cups' not in info['unlock']): fails.append('L17: bayraklı kova açılmadı')
+    page = open_page(b, 1366, 1024, solved=ix('kapi'))
+    info = solve(page, ix('kapi'), 'Gate → bayraklı kova', parts=[], keys=[(4.0, '1')], shots=[(2800, '48-bayrakli-kova')])
+    if info and (not info['unlock'] or 'Flag cups' not in info['unlock']): fails.append('Gate: bayraklı kova açılmadı')
     # Aynı çizimi yeniden çöz: yenilik çıkmamalı
     page.click('#btn-retry'); page.wait_for_timeout(200)
-    info = solve(page, 16, 'L17 tekrar', parts=[], keys=[(4.0, '1')])
-    if info and info['unlock']: fails.append('L17 tekrar: yenilik yine çıktı')
+    info = solve(page, ix('kapi'), 'Gate tekrar', parts=[], keys=[(4.0, '1')])
+    if info and info['unlock']: fails.append('Gate tekrar: yenilik yine çıktı')
     page.context.close()
 
     # Telefon: dikey ve yatay sonuç kartı
     for (w, h, name) in [(390, 844, '49-telefon-dikey'), (844, 390, '50-telefon-yatay')]:
         page = open_page(b, w, h, 3)
         page.screenshot(path=f'{OUT}/{name}-antet.png')
-        solve(page, 0, name, parts=[{'type': 'ramp', 'o': 'dl', 'x': 6, 'y': 5}], shots=[(2800, f'{name}-sonuc')])
+        solve(page, 0, name, parts=[{'type': 'ramp', 'o': 'dr', 'x': 6, 'y': 2}], shots=[(2800, f'{name}-sonuc')])
         page.context.close()
     b.close()
 print('hatalar:', errors or 'yok')
