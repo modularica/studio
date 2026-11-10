@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Hesap onayları</title>
+<title>Account approvals</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,21 +31,21 @@
 <body>
 <main class="page">
   <div class="topbar">
-    <a class="mark" href="/lab/">Uzay'ın sayfası</a>
-    <a class="link" href="/lab/">← Oyunlar</a>
+    <a class="mark" href="/lab/">Uzay’s page</a>
+    <a class="link" href="/lab/">← Games</a>
   </div>
-  <h1>Hesap <span class="u">onayları</span></h1>
-  <p class="lede" id="lede">Yeni açılan hesaplar, sen onaylayınca Lab'a girer.</p>
+  <h1>Account <span class="u">approvals</span></h1>
+  <p class="lede" id="lede">New accounts get into the Lab once you approve them.</p>
 
   <ul class="bekleyenler" id="bekleyenler"></ul>
-  <p class="foot bos" id="bos" hidden>Onay bekleyen hesap yok.</p>
+  <p class="foot bos" id="bos" hidden>No accounts are waiting.</p>
 
   <section class="bolum" id="onayliBolum" hidden>
-    <h2 id="onayliBaslik">Onaylı</h2>
+    <h2 id="onayliBaslik">Approved</h2>
     <ul class="liste" id="onaylilar"></ul>
   </section>
   <section class="bolum" id="kapaliBolum" hidden>
-    <h2 id="kapaliBaslik">Kapatılan</h2>
+    <h2 id="kapaliBaslik">Turned down</h2>
     <ul class="liste" id="kapalilar"></ul>
   </section>
   <p class="hata" id="hata" role="alert"></p>
@@ -61,36 +61,37 @@
   const once = t => {
     if (!t) return '';
     const s = (Date.now() - new Date(t).getTime()) / 1000;
-    if (s < 90) return 'az önce';
-    if (s < 3600) return `${Math.round(s / 60)} dakika önce`;
-    if (s < 86400) return `${Math.round(s / 3600)} saat önce`;
-    if (s < 86400 * 30) return `${Math.round(s / 86400)} gün önce`;
-    return new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const n = (x, w) => `${x} ${w}${x === 1 ? '' : 's'} ago`;
+    if (s < 90) return 'just now';
+    if (s < 3600) return n(Math.round(s / 60), 'minute');
+    if (s < 86400) return n(Math.round(s / 3600), 'hour');
+    if (s < 86400 * 30) return n(Math.round(s / 86400), 'day');
+    return 'on ' + new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   };
   const ayrinti = h => [
-    `${once(h.created_at)} açıldı`,
-    h.oyuncular ? `oyuncular: ${h.oyuncular}` : '',
-    h.son_oynama ? `son oynama ${once(h.son_oynama)}` : ''
+    `made ${once(h.created_at)}`,
+    h.oyuncular ? `players: ${h.oyuncular}` : '',
+    h.son_oynama ? `last played ${once(h.son_oynama)}` : ''
   ].filter(Boolean).join(' · ');
 
   async function karar(h, status, dugmeler) {
     dugmeler.forEach(b => { b.disabled = true; });
     $('hata').textContent = '';
     const { error } = await H.istemci.rpc('hesap_karar', { p_user: h.user_id, p_status: status });
-    if (error) { $('hata').textContent = 'Kaydedilemedi. Tekrar dene.'; dugmeler.forEach(b => { b.disabled = false; }); return; }
+    if (error) { $('hata').textContent = 'Couldn’t save. Try again.'; dugmeler.forEach(b => { b.disabled = false; }); return; }
     yukle();
   }
 
   async function yukle() {
     const { data, error } = await H.istemci.rpc('hesaplar');
-    if (error) { $('hata').textContent = 'Hesaplar yüklenemedi. Sayfayı yenile.'; return; }
+    if (error) { $('hata').textContent = 'Couldn’t load the accounts. Reload the page.'; return; }
     const bekleyen = data.filter(h => h.status === 'pending');
     const onayli = data.filter(h => h.status === 'approved');
     const kapali = data.filter(h => h.status === 'rejected');
 
     $('lede').textContent = bekleyen.length
-      ? `${bekleyen.length} hesap onayını bekliyor. Tanıdığın biriyse onayla; Lab'a girip oynayabilir.`
-      : 'Yeni açılan hesaplar, sen onaylayınca Lab\'a girer.';
+      ? `${bekleyen.length} account${bekleyen.length === 1 ? ' is' : 's are'} waiting for you. If you know them, approve them and they can play in the Lab.`
+      : 'New accounts get into the Lab once you approve them.';
     $('bos').hidden = bekleyen.length > 0;
 
     const kartlar = $('bekleyenler');
@@ -99,10 +100,10 @@
       const li = el('li', 'hk');
       li.append(el('h3', null, h.kullanici), el('p', 'ne', ayrinti(h)));
       const row = el('div', 'row');
-      const evet = el('button', 'btn', 'Onayla'), hayir = el('button', 'btn ghost', 'Kapat');
+      const evet = el('button', 'btn', 'Approve'), hayir = el('button', 'btn ghost', 'Turn down');
       evet.type = hayir.type = 'button';
-      evet.setAttribute('aria-label', `${h.kullanici} hesabını onayla`);
-      hayir.setAttribute('aria-label', `${h.kullanici} hesabını kapat`);
+      evet.setAttribute('aria-label', `Approve ${h.kullanici}`);
+      hayir.setAttribute('aria-label', `Turn down ${h.kullanici}`);
       evet.onclick = () => karar(h, 'approved', [evet, hayir]);
       hayir.onclick = () => karar(h, 'rejected', [evet, hayir]);
       row.append(evet, hayir);
@@ -123,16 +124,16 @@
       }
     };
     $('onayliBolum').hidden = !onayli.length;
-    $('onayliBaslik').textContent = `Onaylı (${onayli.length})`;
-    satirlar($('onaylilar'), onayli, 'Kapat', 'rejected');
+    $('onayliBaslik').textContent = `Approved (${onayli.length})`;
+    satirlar($('onaylilar'), onayli, 'Turn down', 'rejected');
     $('kapaliBolum').hidden = !kapali.length;
-    $('kapaliBaslik').textContent = `Kapatılan (${kapali.length})`;
-    satirlar($('kapalilar'), kapali, 'Onayla', 'approved');
+    $('kapaliBaslik').textContent = `Turned down (${kapali.length})`;
+    satirlar($('kapalilar'), kapali, 'Approve', 'approved');
   }
 
   H.yoneticiMi().then(evet => {
     if (!evet) {
-      $('lede').textContent = 'Bu sayfa sadece yöneticiler için.';
+      $('lede').textContent = 'This page is for admins only.';
       return;
     }
     yukle();

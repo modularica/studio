@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Uzay'ın Oyunları</title>
+<title>Uzay’s Games</title>
 <meta name="robots" content="noindex">
-<meta name="description" content="Uzay'ın babasıyla birlikte yaptığı oyunlar. Tıkla, oyna, iyi eğlenceler!">
+<meta name="description" content="Games Uzay makes with his dad. Tap one, play, have fun!">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Uzay'ın Oyunları">
-<meta property="og:description" content="Uzay'ın babasıyla birlikte yaptığı oyunlar. Tıkla, oyna, iyi eğlenceler!">
+<meta property="og:title" content="Uzay’s Games">
+<meta property="og:description" content="Games Uzay makes with his dad. Tap one, play, have fun!">
 <meta property="og:image" content="https://uzigames.com/lab/fish/cover.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,14 +73,14 @@
 <body>
 <main class="page">
   <div class="topbar">
-    <p class="mark">Uzay'ın sayfası</p>
+    <p class="mark">Uzay’s page</p>
     <a class="player" id="player" href="/lab/giris/?geri=/lab/&amp;degistir=1" hidden></a>
   </div>
-  <h1>Babamla birlikte yaptığımız <span class="u">oyunlar</span></h1>
-  <p class="lede">Merhaba, ben Uzay! Bu oyunları babamla birlikte yaptık. Tıkla, oyna, iyi eğlenceler!</p>
+  <h1>Games my dad and I <span class="u">made</span></h1>
+  <p class="lede">Hi, I’m Uzay! My dad and I made these games together. Tap one, play, have fun!</p>
 
-  <section class="soru" id="soru" hidden aria-label="Kısa bir soru">
-    <button class="kapat" id="soruKapat" type="button" aria-label="Şimdi değil">×</button>
+  <section class="soru" id="soru" hidden aria-label="A quick question">
+    <button class="kapat" id="soruKapat" type="button" aria-label="Not now">×</button>
     <p id="soruMetin"></p>
     <div class="yuzler" id="soruYuzler"></div>
   </section>
@@ -88,11 +88,11 @@
   <ul class="shelf" id="shelf"></ul>
 
   <div class="bottom">
-    <p class="foot">Yeni oyunlar yolda.</p>
+    <p class="foot">More games are on the way.</p>
     <span>
-      <a class="link" id="onayLink" href="/lab/onay/" hidden>Onaylar</a>
-      <a class="link" id="yorumLink" href="/lab/yorumlar/" hidden>Yorumlar</a>
-      <a class="link" href="/lab/takip/">Kim ne oynuyor? →</a>
+      <a class="link" id="onayLink" href="/lab/onay/" hidden>Approvals</a>
+      <a class="link" id="yorumLink" href="/lab/yorumlar/" hidden>Feedback</a>
+      <a class="link" href="/lab/takip/">Who’s playing what? →</a>
     </span>
   </div>
 </main>
@@ -106,8 +106,8 @@
 
   H.hazir.then(({ profil }) => {
     const chip = document.getElementById('player');
-    chip.replaceChildren(H.rozet(profil), document.createTextNode(profil.name), Object.assign(document.createElement('small'), { textContent: 'Değiştir' }));
-    chip.setAttribute('aria-label', `Oynayan: ${profil.name}. Oyuncuyu değiştir`);
+    chip.replaceChildren(H.rozet(profil), document.createTextNode(profil.name), Object.assign(document.createElement('small'), { textContent: 'Switch' }));
+    chip.setAttribute('aria-label', `Playing: ${profil.name}. Switch player`);
     chip.hidden = false;
   });
 
@@ -132,13 +132,13 @@
     adlar = Object.fromEntries(games.map(g => [g.slug, g.title]));
     document.getElementById('shelf').innerHTML = games.filter(g => g.listed !== false).map((g, i) => `
       <li class="card" style="--tilt:${tilts[i % tilts.length]}">
-        <img class="cover" src="${esc(g.slug)}/cover.png" alt="${esc(g.title)} oyunundan bir görüntü" width="1200" height="630" loading="${i < 2 ? 'eager' : 'lazy'}">
+        <img class="cover" src="${esc(g.slug)}/cover.png" alt="A scene from ${esc(g.title)}" width="1200" height="630" loading="${i < 2 ? 'eager' : 'lazy'}">
         <h2>${esc(g.title)}</h2>
         <p>${esc(g.desc)}</p>
         ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
         <div class="alt">
-          <a class="play stretch" href="${esc(g.slug)}/">Oyna</a>
-          <button class="nasil" type="button" data-oyun="${esc(g.slug)}" aria-label="${esc(g.title)} nasıldı?"><span class="ikon" aria-hidden="true">${yuzSvg(g.slug)}</span>Nasıldı?</button>
+          <a class="play stretch" href="${esc(g.slug)}/">Play</a>
+          <button class="nasil" type="button" data-oyun="${esc(g.slug)}" aria-label="How was ${esc(g.title)}?"><span class="ikon" aria-hidden="true">${yuzSvg(g.slug)}</span>How was it?</button>
         </div>
       </li>`).join('');
     document.querySelectorAll('.nasil[data-oyun]').forEach(b => b.addEventListener('click', () => sor(b.dataset.oyun, 'lab-kart')));
@@ -163,7 +163,7 @@
     if (!p) return;
     const kart = document.getElementById('soru');
     const metin = document.getElementById('soruMetin');
-    metin.replaceChildren('Az önce ', Object.assign(document.createElement('b'), { textContent: adlar[p.game] || p.game }), ' oynadın. Nasıldı?');
+    metin.replaceChildren('You just played ', Object.assign(document.createElement('b'), { textContent: adlar[p.game] || p.game }), '. How was it?');
     const yuzler = document.getElementById('soruYuzler');
     yuzler.replaceChildren(...N.PUANLAR.map(x => {
       const b = document.createElement('button');

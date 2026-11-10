@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Kim Ne Oynuyor?</title>
+<title>Who’s playing what?</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,15 +47,15 @@
 <body>
 <main class="page">
   <div class="topbar">
-    <a class="mark" href="/lab/">Uzay'ın sayfası</a>
-    <a class="link" href="/lab/">← Oyunlar</a>
+    <a class="mark" href="/lab/">Uzay’s page</a>
+    <a class="link" href="/lab/">← Games</a>
   </div>
-  <h1>Kim ne <span class="u">oynuyor?</span></h1>
-  <p class="lede">Son 7 günde kim, hangi oyunu, ne kadar oynadı. Sayfa kendiliğinden yenilenir.</p>
+  <h1>Who’s playing <span class="u">what?</span></h1>
+  <p class="lede">Who played which game, and for how long, in the last 7 days. The page updates by itself.</p>
 
-  <ul class="ozet" id="ozet" aria-label="Oyuncular, son 7 gün"></ul>
+  <ul class="ozet" id="ozet" aria-label="Players, last 7 days"></ul>
   <div id="gunluk"></div>
-  <p class="foot bos" id="bos" hidden>Henüz kimse oynamadı. Bir oyun açılınca burada görünecek.</p>
+  <p class="foot bos" id="bos" hidden>Nobody has played yet. When someone opens a game, it shows up here.</p>
   <p class="hata" id="hata" role="alert"></p>
 </main>
 
@@ -69,21 +69,21 @@
   let adlar = {};
 
   const sure = s => {
-    if (s < 60) return '1 dk’dan az';
+    if (s < 60) return 'under 1 min';
     const m = Math.round(s / 60);
-    if (m < 60) return `${m} dk`;
+    if (m < 60) return `${m} min`;
     const h = Math.floor(m / 60), r = m % 60;
-    return r ? `${h} sa ${r} dk` : `${h} sa`;
+    return r ? `${h} h ${r} min` : `${h} h`;
   };
   const gunAdi = d => {
     const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
     const g = new Date(d); g.setHours(0, 0, 0, 0);
     const fark = Math.round((bugun - g) / 86400000);
-    if (fark === 0) return 'Bugün';
-    if (fark === 1) return 'Dün';
-    return g.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+    if (fark === 0) return 'Today';
+    if (fark === 1) return 'Yesterday';
+    return g.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   };
-  const saat = d => new Date(d).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const saat = d => new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
   async function yukle() {
@@ -94,7 +94,7 @@
       .gte('started_at', since)
       .order('started_at', { ascending: false })
       .limit(500);
-    if (error) { $('hata').textContent = 'Kayıtlar yüklenemedi. Sayfayı yenile.'; return; }
+    if (error) { $('hata').textContent = 'Couldn’t load the play log. Reload the page.'; return; }
     $('hata').textContent = '';
     const simdi = Date.now();
     const satirlar = data
@@ -121,7 +121,7 @@
       const li = el('li');
       const fav = Object.entries(k.oyunlar).sort((a, b) => b[1] - a[1])[0];
       li.append(H.rozet(k.profil, 'mid'), el('span', 'ad', k.profil.name), el('span', 'toplam', sure(k.toplam)));
-      li.append(k.canli ? el('span', 'canli', `Şu an ${adlar[k.canli] || k.canli} oynuyor`) : el('span', 'fav', `En çok: ${adlar[fav[0]] || fav[0]}`));
+      li.append(k.canli ? el('span', 'canli', `Playing ${adlar[k.canli] || k.canli} now`) : el('span', 'fav', `Most: ${adlar[fav[0]] || fav[0]}`));
       return li;
     }));
   }
@@ -144,7 +144,7 @@
         const kim = el('span', 'kim'); kim.append(H.rozet(p.profiles, 'small'), document.createTextNode(' ' + p.profiles.name));
         const ne = el('span', 'ne'); ne.append(el('b', null, adlar[p.game] || p.game));
         if (p.note) ne.append(el('small', null, p.note));
-        const sag = p.canli ? el('span', 'sure canli', 'şimdi') : el('span', 'sure', sure(p.seconds));
+        const sag = p.canli ? el('span', 'sure canli', 'now') : el('span', 'sure', sure(p.seconds));
         li.append(t, kim, ne, sag);
         return li;
       }));

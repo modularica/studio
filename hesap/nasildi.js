@@ -16,18 +16,18 @@
 
   var INK = '#1d2433';
   var PUANLAR = [
-    { puan: 4, ad: 'Bayıldım', renk: '#ffb8cb' },
-    { puan: 3, ad: 'Beğendim', renk: '#ffd95a' },
-    { puan: 2, ad: 'Eh işte', renk: '#d5dde2' },
-    { puan: 1, ad: 'Sevmedim', renk: '#a9d1ff' }
+    { puan: 4, ad: 'Loved it', renk: '#ffb8cb' },
+    { puan: 3, ad: 'Liked it', renk: '#ffd95a' },
+    { puan: 2, ad: 'It was OK', renk: '#d5dde2' },
+    { puan: 1, ad: 'Didn’t like it', renk: '#a9d1ff' }
   ];
   var ETIKETLER = [
-    { k: 'tekrar', ad: 'Tekrar oynarım' },
-    { k: 'arkadas', ad: 'Arkadaşımla oynamak isterim' },
-    { k: 'zor', ad: 'Çok zordu' },
-    { k: 'kolay', ad: 'Çok kolaydı' },
-    { k: 'anlamadim', ad: 'Nasıl oynanır anlamadım' },
-    { k: 'hata', ad: 'Hata buldum' }
+    { k: 'tekrar', ad: 'I’d play again' },
+    { k: 'arkadas', ad: 'I want to play with a friend' },
+    { k: 'zor', ad: 'Too hard' },
+    { k: 'kolay', ad: 'Too easy' },
+    { k: 'anlamadim', ad: 'I didn’t get how to play' },
+    { k: 'hata', ad: 'I found a bug' }
   ];
 
   function kalp(x, y) {
@@ -116,31 +116,31 @@
     root.innerHTML = '<style>' + CSS + '</style>' +
       '<div class="kok"><div class="perde"></div>' +
       '<section class="kart" role="dialog" aria-modal="true" aria-labelledby="baslik">' +
-      '<button class="kapat" type="button" aria-label="Kapat">×</button>' +
+      '<button class="kapat" type="button" aria-label="Close">×</button>' +
       '<div class="soruluk">' +
       '<p class="ust">Uzi Games Lab</p>' +
       '<h2 id="baslik"></h2>' +
-      '<div class="yuzler" role="radiogroup" aria-label="Puanın">' +
+      '<div class="yuzler" role="radiogroup" aria-label="Your rating">' +
       PUANLAR.map(function (p) {
         return '<button class="yuz" type="button" role="radio" aria-checked="false" data-p="' + p.puan + '">' + yuz(p.puan, 58) + '<span>' + p.ad + '</span></button>';
       }).join('') +
       '</div>' +
       '<div class="devam" hidden>' +
-      '<p class="soru">Ne düşündün? <span>(istersen)</span></p>' +
+      '<p class="soru">What did you think? <span>(if you like)</span></p>' +
       '<div class="cipler">' + ETIKETLER.map(function (e) {
         return '<button class="cip" type="button" aria-pressed="false" data-k="' + e.k + '">' + e.ad + '</button>';
       }).join('') + '</div>' +
-      '<label class="not"><span>Bir şey eklemek ister misin?</span>' +
-      '<textarea maxlength="600" rows="3" placeholder="Neyi sevdin? Ne zordu? Ne eklensin?"></textarea></label>' +
-      '<button class="gonder" type="button">Gönder</button>' +
+      '<label class="not"><span>Anything else to tell us?</span>' +
+      '<textarea maxlength="600" rows="3" placeholder="What did you love? What was hard? What should we add?"></textarea></label>' +
+      '<button class="gonder" type="button">Send</button>' +
       '<p class="hata" role="alert"></p>' +
       '</div></div>' +
-      '<div class="tesekkur" hidden role="status"><span class="ty"></span><b>Teşekkürler!</b><p>Babamla birlikte okuyacağız.</p></div>' +
+      '<div class="tesekkur" hidden role="status"><span class="ty"></span><b>Thank you!</b><p>My dad and I will read it together.</p></div>' +
       '</section></div>';
 
     var $ = function (s) { return root.querySelector(s); };
     var kok = $('.kok');
-    $('#baslik').textContent = (o.ad || 'Bu oyun') + ' nasıldı?';
+    $('#baslik').textContent = 'How was ' + (o.ad || 'this game') + '?';
 
     // Keep the game from reacting to anything typed or tapped in the sheet.
     ['keydown', 'keyup', 'keypress', 'pointerdown', 'pointermove', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'wheel', 'click', 'contextmenu'].forEach(function (t) {
@@ -183,10 +183,10 @@
     }
     function gonder() {
       if (!durum.puan || durum.gonderiliyor || durum.gonderildi) return;
-      if (!H || !H.yorum) { $('.hata').textContent = 'Önce giriş yapmalısın.'; return; }
+      if (!H || !H.yorum) { $('.hata').textContent = 'You need to sign in first.'; return; }
       durum.gonderiliyor = true;
       var btn = $('.gonder');
-      btn.disabled = true; btn.textContent = 'Gönderiliyor…'; $('.hata').textContent = '';
+      btn.disabled = true; btn.textContent = 'Sending…'; $('.hata').textContent = '';
       H.yorum(veri()).then(function () {
         durum.gonderildi = true;
         $('.soruluk').hidden = true;
@@ -197,7 +197,7 @@
       }, function () {
         durum.gonderiliyor = false;
         btn.disabled = false; btn.textContent = 'Tekrar dene';
-        $('.hata').textContent = 'Gönderilemedi. İnternetini kontrol edip tekrar dene.';
+        $('.hata').textContent = 'Couldn’t send. Check your internet and try again.';
       });
     }
     $('.gonder').addEventListener('click', gonder);

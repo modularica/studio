@@ -6,7 +6,7 @@ Uzay ile babası Umut'un oyun stüdyosu **Uzi Games** (uzigames.com). Repo adı 
 - `uzigames.com/lab/` Lab: Uzay'ın sayfası ve bütün deneme oyunları. Seçilen kişilere açılır, giriş ister, arama motorlarına kapalı (`noindex`, `robots.txt`). Burada tutan oyunlar sonra ilgili platformlarda (App Store, Google Play, web portalları) yayınlanır.
 - Her oyun kendi klasöründe, kendi adresinde açılır: `/lab/<slug>/`.
 
-Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Babamla birlikte yaptığımız oyunlar", "Merhaba, ben Uzay!" (stüdyo sayfasında İngilizce: "Hi, I'm Uzay!"). Yeni metin eklerken bu sesi koru.
+Sitedeki metinler (stüdyo sayfası ve Lab) Uzay'ın ağzından yazılır: "Games my dad and I made", "Hi, I'm Uzay!", "Let my dad know". Yeni metin eklerken bu sesi koru. Sitenin kendisi İngilizce (10 Kasım 2026'dan beri): stüdyo sayfası, Lab ana sayfası, giriş ve "Who's playing?", bekleme ekranı, takip, yorumlar, onaylar, `hesap.js` hata metinleri, "How was it?" penceresi (`nasildi.js`) ve `lab/oyunlar.json` açıklamaları. Oyunların içi kendi dilinde (çoğu Türkçe; Fish, SONGbox, Drawing Board İngilizce); Türkçe oyunların notunda "in Turkish" yazar. Ortak oda arayüzü (`oda.js`) oyunun `dil` ayarına göre Türkçe ya da İngilizce. `hesap.js`'teki `toLocaleLowerCase('tr')` kullanıcı adını eşlemek için, değiştirme.
 
 ## Yapı
 

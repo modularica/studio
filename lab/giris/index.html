@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Kim Oynuyor?</title>
+<title>Who’s playing?</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,105 +43,105 @@
 </head>
 <body>
 <main class="page">
-  <div class="topbar"><a class="mark" href="/lab/">Uzay'ın sayfası</a></div>
+  <div class="topbar"><a class="mark" href="/lab/">Uzay’s page</a></div>
 
-  <p class="foot" id="yukleniyor">Yükleniyor…</p>
+  <p class="foot" id="yukleniyor">Loading…</p>
 
   <!-- Sign in -->
   <section id="girisBolum" hidden>
-    <h1>Giriş <span class="u">yap</span></h1>
-    <p class="lede">Kullanıcı adınla ve şifrenle gir. Hesabın yoksa hemen aç, e-posta gerekmiyor!</p>
+    <h1>Sign <span class="u">in</span></h1>
+    <p class="lede">Sign in with your username and password. No account yet? Make one now, no e-mail needed!</p>
     <form class="kart tape form giris" id="girisForm" novalidate>
-      <label for="kAdi">Kullanıcı adı</label>
+      <label for="kAdi">Username</label>
       <input id="kAdi" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-      <label for="sifre">Şifre</label>
+      <label for="sifre">Password</label>
       <input id="sifre" type="password" autocomplete="current-password" required>
       <p class="hata" id="girisHata" role="alert"></p>
-      <div class="row"><button class="btn" type="submit" id="girisBtn">Giriş yap</button></div>
+      <div class="row"><button class="btn" type="submit" id="girisBtn">Sign in</button></div>
     </form>
-    <p class="gecis">Hesabın yok mu? <button class="link" type="button" id="kayitaGec">Hesap aç</button></p>
+    <p class="gecis">No account? <button class="link" type="button" id="kayitaGec">Make one</button></p>
   </section>
 
   <!-- Sign up -->
   <section id="kayitBolum" hidden>
-    <h1>Hesap <span class="u">aç</span></h1>
-    <p class="lede">Bir kullanıcı adı ve şifre seç, hepsi bu. E-posta gerekmiyor.</p>
+    <h1>Make an <span class="u">account</span></h1>
+    <p class="lede">Pick a username and a password, that’s it. No e-mail needed.</p>
     <form class="kart tape form giris" id="kayitForm" novalidate>
-      <label for="yAdi">Kullanıcı adı</label>
+      <label for="yAdi">Username</label>
       <input id="yAdi" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="yAdiIpucu" required>
-      <p class="ipucu" id="yAdiIpucu">3–20 karakter. Oyunlarda bu ad görünür. Soyadını yazma, takma ad da olur.</p>
-      <label for="ySifre">Şifre</label>
+      <p class="ipucu" id="yAdiIpucu">3–20 characters. This name shows in the games. Don’t use your surname; a nickname is fine.</p>
+      <label for="ySifre">Password</label>
       <input id="ySifre" type="password" autocomplete="new-password" minlength="6" aria-describedby="ySifreIpucu" required>
-      <p class="ipucu" id="ySifreIpucu">En az 6 karakter. Unutursan babama yaz.</p>
-      <label for="ySifre2">Şifre (tekrar)</label>
+      <p class="ipucu" id="ySifreIpucu">At least 6 characters. If you forget it, write to my dad.</p>
+      <label for="ySifre2">Password (again)</label>
       <input id="ySifre2" type="password" autocomplete="new-password" minlength="6" required>
       <p class="hata" id="kayitHata" role="alert"></p>
-      <div class="row"><button class="btn" type="submit" id="kayitBtn">Hesabımı aç</button></div>
+      <div class="row"><button class="btn" type="submit" id="kayitBtn">Make my account</button></div>
     </form>
-    <p class="gecis">Hesabın var mı? <button class="link" type="button" id="giriseGec">Giriş yap</button></p>
+    <p class="gecis">Have an account? <button class="link" type="button" id="giriseGec">Sign in</button></p>
   </section>
 
   <!-- Account waiting for an admin's approval (or turned down) -->
   <section id="bekleBolum" hidden>
-    <h1 id="bekleBaslik">Neredeyse <span class="u">hazır!</span></h1>
+    <h1 id="bekleBaslik">Almost <span class="u">there!</span></h1>
     <div class="kart tape bekle">
       <p id="bekleMetin"></p>
       <p class="foot" id="bekleNot" style="margin:0;font-size:16px"></p>
       <div class="row">
-        <button class="btn" type="button" id="bekleTekrar">Tekrar bak</button>
-        <button class="btn ghost" type="button" id="bekleCikis">Çıkış yap</button>
+        <button class="btn" type="button" id="bekleTekrar">Check again</button>
+        <button class="btn ghost" type="button" id="bekleCikis">Sign out</button>
       </div>
     </div>
   </section>
 
   <!-- Who's playing -->
   <section id="secBolum" hidden>
-    <h1>Kim <span class="u">oynuyor?</span></h1>
-    <p class="lede" id="secLede">Kendi resmine dokun.</p>
+    <h1>Who’s <span class="u">playing?</span></h1>
+    <p class="lede" id="secLede">Tap your own picture.</p>
     <ul class="oyuncular" id="oyuncular"></ul>
 
     <form class="kart tape form panel" id="oyuncuForm" hidden novalidate>
-      <h2 id="formBaslik">Yeni oyuncu</h2>
-      <label for="ad">Adı</label>
+      <h2 id="formBaslik">New player</h2>
+      <label for="ad">Name</label>
       <input id="ad" maxlength="20" autocomplete="off" required>
       <fieldset>
-        <legend>Rengi</legend>
-        <div class="renkler" id="renkler" role="group" aria-label="Oyuncunun rengi"></div>
+        <legend>Colour</legend>
+        <div class="renkler" id="renkler" role="group" aria-label="Player’s colour"></div>
       </fieldset>
       <p class="hata" id="formHata" role="alert"></p>
       <div class="row">
-        <button class="btn" type="submit" id="formKaydet">Ekle</button>
-        <button class="btn ghost" type="button" id="formVazgec">Vazgeç</button>
-        <button class="btn ghost" type="button" id="formSil" hidden>Sil</button>
+        <button class="btn" type="submit" id="formKaydet">Add</button>
+        <button class="btn ghost" type="button" id="formVazgec">Cancel</button>
+        <button class="btn ghost" type="button" id="formSil" hidden>Delete</button>
       </div>
       <div id="silOnay" hidden>
         <p class="onay" id="silMetin"></p>
         <div class="row">
-          <button class="btn danger" type="button" id="silEvet">Evet, sil</button>
-          <button class="btn ghost" type="button" id="silHayir">Vazgeç</button>
+          <button class="btn danger" type="button" id="silEvet">Yes, delete</button>
+          <button class="btn ghost" type="button" id="silHayir">Cancel</button>
         </div>
       </div>
     </form>
 
     <form class="kart tape form panel" id="sifreForm" hidden novalidate>
-      <h2>Şifreni değiştir</h2>
-      <label for="yeniSifre">Yeni şifre</label>
+      <h2>Change your password</h2>
+      <label for="yeniSifre">New password</label>
       <input id="yeniSifre" type="password" autocomplete="new-password" minlength="6" required>
-      <label for="yeniSifre2">Yeni şifre (tekrar)</label>
+      <label for="yeniSifre2">New password (again)</label>
       <input id="yeniSifre2" type="password" autocomplete="new-password" minlength="6" required>
       <p class="hata" id="sifreHata" role="alert"></p>
-      <p class="tamam" id="sifreTamam" hidden>Şifren değişti.</p>
+      <p class="tamam" id="sifreTamam" hidden>Your password has changed.</p>
       <div class="row">
-        <button class="btn" type="submit">Değiştir</button>
-        <button class="btn ghost" type="button" id="sifreVazgec">Kapat</button>
+        <button class="btn" type="submit">Change</button>
+        <button class="btn ghost" type="button" id="sifreVazgec">Close</button>
       </div>
     </form>
 
-    <nav class="alt" aria-label="Hesap">
-      <button class="link" type="button" id="duzenleBtn">Oyuncuları düzenle</button>
-      <a class="link" href="/lab/takip/">Kim ne oynuyor?</a>
-      <button class="link" type="button" id="sifreBtn">Şifremi değiştir</button>
-      <button class="link" type="button" id="cikisBtn">Çıkış yap</button>
+    <nav class="alt" aria-label="Account">
+      <button class="link" type="button" id="duzenleBtn">Edit players</button>
+      <a class="link" href="/lab/takip/">Who’s playing what?</a>
+      <button class="link" type="button" id="sifreBtn">Change my password</button>
+      <button class="link" type="button" id="cikisBtn">Sign out</button>
     </nav>
     <p class="kim" id="kim"></p>
   </section>
@@ -173,7 +173,7 @@
   }
 
   /* ---------- approval ---------- */
-  // New accounts wait until babam (an admin) approves them on /lab/onay/.
+  // New accounts wait until my dad (an admin) approves them on /lab/onay/.
   let bekleSaat = null;
   async function iceri(secim) {
     clearInterval(bekleSaat);
@@ -185,15 +185,15 @@
     bolum('bekleBolum');
     const ad = H.gorunenAd(kullanici);
     if (d === 'rejected') {
-      $('bekleBaslik').innerHTML = 'Lab şimdilik <span class="u">kapalı</span>';
-      $('bekleMetin').textContent = `${ad} hesabıyla Lab'a giriş açık değil. Bir yanlışlık olduğunu düşünüyorsan babama yaz: hello@uzigames.com`;
+      $('bekleBaslik').innerHTML = 'The Lab is <span class="u">closed</span>';
+      $('bekleMetin').textContent = `The Lab isn’t open to the ${ad} account. If you think that’s a mistake, write to my dad: hello@uzigames.com`;
       $('bekleNot').textContent = '';
       $('bekleTekrar').hidden = true;
       return;
     }
-    $('bekleBaslik').innerHTML = 'Neredeyse <span class="u">hazır!</span>';
-    $('bekleMetin').textContent = `Hesabın açıldı, ${ad}! Lab'daki oyunlar babamla benim deneme oyunlarımız; babam hesabını onaylayınca hepsine girebilirsin.`;
-    $('bekleNot').textContent = 'Babama haber ver. Onaylanınca bu sayfa kendiliğinden açılır.';
+    $('bekleBaslik').innerHTML = 'Almost <span class="u">there!</span>';
+    $('bekleMetin').textContent = `Your account is ready, ${ad}! The games in the Lab are ones my dad and I are still testing; once my dad approves your account, you can play them all.`;
+    $('bekleNot').textContent = 'Let my dad know. Once you’re approved, this page opens by itself.';
     $('bekleTekrar').hidden = false;
     clearInterval(bekleSaat);
     bekleSaat = setInterval(async () => {
@@ -206,7 +206,7 @@
     const d = await H.onayDurumu();
     $('bekleTekrar').disabled = false;
     if (d === 'approved') { clearInterval(bekleSaat); secimGoster({ otomatik: true }); }
-    else $('bekleNot').textContent = 'Henüz onaylanmadı. Babama haber verdin mi?';
+    else $('bekleNot').textContent = 'Not approved yet. Did you tell my dad?';
   });
   $('bekleCikis').addEventListener('click', () => { clearInterval(bekleSaat); H.cikis(); });
 
@@ -226,14 +226,14 @@
   $('girisForm').addEventListener('submit', async e => {
     e.preventDefault();
     const ad = $('kAdi').value.trim(), password = $('sifre').value;
-    if (!ad || !password) { $('girisHata').textContent = 'Kullanıcı adını ve şifreni yaz.'; return; }
+    if (!ad || !password) { $('girisHata').textContent = 'Type your username and password.'; return; }
     $('girisBtn').disabled = true; $('girisHata').textContent = '';
     const { data, error } = await sb.auth.signInWithPassword({ email: H.epostaya(ad), password });
     $('girisBtn').disabled = false;
     if (error) {
       $('girisHata').textContent = /invalid/i.test(error.message)
-        ? 'Kullanıcı adı ya da şifre yanlış. Tekrar dene.'
-        : 'Giriş yapılamadı. İnternet bağlantını kontrol edip tekrar dene.';
+        ? 'Wrong username or password. Try again.'
+        : 'Couldn’t sign in. Check your internet connection and try again.';
       return;
     }
     kullanici = data.user;
@@ -246,7 +246,7 @@
     e.preventDefault();
     const ad = $('yAdi').value.trim().replace(/\s+/g, ' '), a = $('ySifre').value, b = $('ySifre2').value;
     const adHata = ad.includes('@') ? '' : H.kullaniciAdiHatasi(ad);
-    const hata = adHata || (a.length < 6 ? 'Şifre en az 6 karakter olmalı.' : a !== b ? 'İki şifre aynı değil.' : '');
+    const hata = adHata || (a.length < 6 ? 'The password needs at least 6 characters.' : a !== b ? 'The two passwords don’t match.' : '');
     if (hata) { $('kayitHata').textContent = hata; return; }
     $('kayitBtn').disabled = true; $('kayitHata').textContent = '';
     const { data, error } = await sb.auth.signUp({ email: H.epostaya(ad), password: a, options: { data: { kullanici_adi: ad } } });
@@ -254,15 +254,15 @@
     if (error) {
       const m = error.message || '';
       $('kayitHata').textContent =
-        /already|registered|exists/i.test(m) ? 'Bu kullanıcı adı alınmış. Başka bir tane dene.' :
-        /password/i.test(m) ? 'Bu şifre kabul edilmedi. Daha uzun bir şifre dene.' :
-        /rate|too many/i.test(m) ? 'Çok fazla deneme oldu. Biraz bekleyip tekrar dene.' :
-        'Hesap açılamadı. Biraz sonra tekrar dene.';
+        /already|registered|exists/i.test(m) ? 'That username is taken. Try another one.' :
+        /password/i.test(m) ? 'That password wasn’t accepted. Try a longer one.' :
+        /rate|too many/i.test(m) ? 'Too many tries. Wait a little and try again.' :
+        'Couldn’t make the account. Try again in a bit.';
       return;
     }
     if (!data.session) {
       // "Confirm email" is still on in Supabase: the account waits for an e-mail that never comes.
-      $('kayitHata').textContent = 'Hesap açıldı ama giriş yapılamadı. Babama haber ver, bir ayarı düzeltmesi gerekiyor.';
+      $('kayitHata').textContent = 'The account was made but couldn’t sign in. Tell my dad, he needs to fix a setting.';
       return;
     }
     kullanici = data.user;
@@ -279,15 +279,15 @@
   /* ---------- who's playing ---------- */
   async function secimGoster({ otomatik }) {
     bolum('secBolum');
-    $('kim').textContent = `Giriş yapan: ${H.gorunenAd(kullanici)}`;
+    $('kim').textContent = `Signed in as ${H.gorunenAd(kullanici)}`;
     // Admins can read every family's players; this screen only lists the signed-in account.
     const { data, error } = await sb.from('profiles').select('id,name,color,owner_id').eq('owner_id', kullanici.id).order('created_at');
-    if (error) { $('secLede').textContent = 'Oyuncular yüklenemedi. Sayfayı yenile.'; return; }
+    if (error) { $('secLede').textContent = 'Couldn’t load the players. Reload the page.'; return; }
     oyuncular = data;
     if (otomatik && oyuncular.length === 1) { sec(oyuncular[0]); return; }
     if (otomatik && !oyuncular.length) {
       // Account without a player yet (e.g. made in the Supabase dashboard): make one from its name.
-      const ad = (H.gorunenAd(kullanici) || 'Oyuncu').slice(0, 20);
+      const ad = (H.gorunenAd(kullanici) || 'Player').slice(0, 20);
       const r = await sb.from('profiles').insert({ name: ad, color: RENKLER[0] }).select('id,name,color,owner_id').single();
       if (!r.error) { sec(r.data); return; }
     }
@@ -297,10 +297,10 @@
 
   function ciz() {
     $('secLede').textContent = !oyuncular.length
-      ? 'İlk oyuncuyu ekle: kendini ya da çocuğunu.'
-      : duzenle ? 'Düzenlemek istediğin oyuncuya dokun.' : 'Kendi resmine dokun.';
+      ? 'Add the first player: yourself or your child.'
+      : duzenle ? 'Tap the player you want to edit.' : 'Tap your own picture.';
     $('oyuncular').classList.toggle('duzenle', duzenle);
-    $('duzenleBtn').textContent = duzenle ? 'Düzenlemeyi bitir' : 'Oyuncuları düzenle';
+    $('duzenleBtn').textContent = duzenle ? 'Done editing' : 'Edit players';
     $('duzenleBtn').hidden = !oyuncular.length;
     const liste = $('oyuncular');
     liste.replaceChildren();
@@ -310,7 +310,7 @@
       b.type = 'button'; b.className = 'oyuncu';
       const ad = document.createElement('span'); ad.className = 'ad'; ad.textContent = p.name;
       b.append(H.rozet(p, 'big'), ad);
-      b.setAttribute('aria-label', duzenle ? `${p.name} oyuncusunu düzenle` : `${p.name} olarak oyna`);
+      b.setAttribute('aria-label', duzenle ? `Edit ${p.name}` : `Play as ${p.name}`);
       b.addEventListener('click', () => duzenle ? formAc(p) : sec(p));
       li.append(b); liste.append(li);
     }
@@ -318,7 +318,7 @@
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'oyuncu ekle';
     const arti = document.createElement('span'); arti.className = 'arti'; arti.textContent = '+'; arti.setAttribute('aria-hidden', 'true');
-    const ad = document.createElement('span'); ad.className = 'ad'; ad.textContent = 'Oyuncu ekle';
+    const ad = document.createElement('span'); ad.className = 'ad'; ad.textContent = 'Add player';
     b.append(arti, ad);
     b.addEventListener('click', () => formAc(null));
     li.append(b); liste.append(li);
@@ -337,7 +337,7 @@
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'renk';
       b.style.setProperty('--sc', r);
-      b.setAttribute('aria-label', `Renk ${i + 1}`);
+      b.setAttribute('aria-label', `Colour ${i + 1}`);
       b.setAttribute('aria-pressed', String(r === secilenRenk));
       b.addEventListener('click', () => { secilenRenk = r; renkleriCiz(); });
       kutu.append(b);
@@ -346,8 +346,8 @@
   function formAc(p) {
     duzenlenen = p;
     $('sifreForm').hidden = true;
-    $('formBaslik').textContent = p ? `${p.name} oyuncusunu düzenle` : 'Yeni oyuncu';
-    $('formKaydet').textContent = p ? 'Kaydet' : 'Ekle';
+    $('formBaslik').textContent = p ? `Edit ${p.name}` : 'New player';
+    $('formKaydet').textContent = p ? 'Save' : 'Add';
     $('formSil').hidden = !p;
     $('formVazgec').hidden = !p && !oyuncular.length;
     $('silOnay').hidden = true;
@@ -364,13 +364,13 @@
   $('oyuncuForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('ad').value.trim().replace(/\s+/g, ' ');
-    if (!name) { $('formHata').textContent = 'Bir ad yaz.'; return; }
+    if (!name) { $('formHata').textContent = 'Type a name.'; return; }
     $('formKaydet').disabled = true;
     let r;
     if (duzenlenen) r = await sb.from('profiles').update({ name, color: secilenRenk }).eq('id', duzenlenen.id).select('id,name,color,owner_id').single();
     else r = await sb.from('profiles').insert({ name, color: secilenRenk }).select('id,name,color,owner_id').single();
     $('formKaydet').disabled = false;
-    if (r.error) { $('formHata').textContent = 'Kaydedilemedi. Tekrar dene.'; return; }
+    if (r.error) { $('formHata').textContent = 'Couldn’t save. Try again.'; return; }
     if (duzenlenen) {
       oyuncular = oyuncular.map(o => o.id === r.data.id ? r.data : o);
       if (H.profil && H.profil.id === r.data.id) H.profilSec(r.data);
@@ -380,7 +380,7 @@
   });
 
   $('formSil').addEventListener('click', () => {
-    $('silMetin').textContent = `${duzenlenen.name} silinsin mi? Oyunlardaki kayıtları ve oynama geçmişi de silinir.`;
+    $('silMetin').textContent = `Delete ${duzenlenen.name}? Their game saves and play history are deleted too.`;
     $('silOnay').hidden = false;
     $('silHayir').focus();
   });
@@ -388,7 +388,7 @@
   $('silEvet').addEventListener('click', async () => {
     const id = duzenlenen.id;
     const { error } = await sb.from('profiles').delete().eq('id', id);
-    if (error) { $('formHata').textContent = 'Silinemedi. Tekrar dene.'; $('silOnay').hidden = true; return; }
+    if (error) { $('formHata').textContent = 'Couldn’t delete. Try again.'; $('silOnay').hidden = true; return; }
     oyuncular = oyuncular.filter(o => o.id !== id);
     if (H.profil && H.profil.id === id) H.profilSec(null);
     formKapat();
@@ -411,10 +411,10 @@
     e.preventDefault();
     const a = $('yeniSifre').value, b = $('yeniSifre2').value;
     $('sifreTamam').hidden = true;
-    if (a.length < 6) { $('sifreHata').textContent = 'Şifre en az 6 karakter olmalı.'; return; }
-    if (a !== b) { $('sifreHata').textContent = 'İki şifre aynı değil.'; return; }
+    if (a.length < 6) { $('sifreHata').textContent = 'The password needs at least 6 characters.'; return; }
+    if (a !== b) { $('sifreHata').textContent = 'The two passwords don’t match.'; return; }
     const { error } = await sb.auth.updateUser({ password: a });
-    if (error) { $('sifreHata').textContent = /different|same/i.test(error.message) ? 'Yeni şifre eskisiyle aynı olamaz.' : 'Şifre değiştirilemedi. Tekrar dene.'; return; }
+    if (error) { $('sifreHata').textContent = /different|same/i.test(error.message) ? 'The new password can’t be the same as the old one.' : 'Couldn’t change the password. Try again.'; return; }
     $('sifreHata').textContent = ''; $('sifreTamam').hidden = false;
     $('yeniSifre').value = ''; $('yeniSifre2').value = '';
   });

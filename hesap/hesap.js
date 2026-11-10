@@ -107,7 +107,7 @@
   }
 
   if (!window.supabase || !window.supabase.createClient) {
-    hataGoster('Oyunlara bağlanılamadı. İnternet bağlantını kontrol edip sayfayı yenile.');
+    hataGoster('Couldn’t connect to the games. Check your internet connection and reload the page.');
     return;
   }
 
@@ -173,7 +173,7 @@
       if (OYUN && durum.profil) oyunuBaslat();
     });
   }, function () {
-    hataGoster('Giriş bilgisi okunamadı. Sayfayı yenile.');
+    hataGoster('Couldn’t read your sign-in. Reload the page.');
   });
 
   /* ---------- oynama süresi ---------- */
@@ -362,12 +362,12 @@
   // Username rules: 3-20 characters, letters (Turkish too), digits, _ . -
   function kullaniciAdiHatasi(ad) {
     var a = String(ad || '').trim();
-    if (a.length < 3) return 'Kullanıcı adı en az 3 karakter olmalı.';
-    if (a.length > 20) return 'Kullanıcı adı en fazla 20 karakter olabilir.';
-    if (!/^[a-zA-Z0-9çğıöşüÇĞİÖŞÜâîûÂÎÛ_. -]+$/.test(a)) return 'Kullanıcı adında sadece harf, rakam, boşluk, nokta, alt çizgi ve tire olabilir.';
+    if (a.length < 3) return 'The username needs at least 3 characters.';
+    if (a.length > 20) return 'The username can have at most 20 characters.';
+    if (!/^[a-zA-Z0-9çğıöşüÇĞİÖŞÜâîûÂÎÛ_. -]+$/.test(a)) return 'The username can only have letters, numbers, spaces, dots, underscores and dashes.';
     var id = kullaniciKimligi(a);
-    if (!/^[a-z0-9]/.test(id)) return 'Kullanıcı adı bir harf ya da rakamla başlamalı.';
-    if (/\.\.|\.$/.test(id)) return 'Kullanıcı adı noktayla bitemez, iki nokta yan yana olamaz.';
+    if (!/^[a-z0-9]/.test(id)) return 'The username has to start with a letter or a number.';
+    if (/\.\.|\.$/.test(id)) return 'The username can’t end with a dot or have two dots in a row.';
     return '';
   }
   // Login field takes a username or, for parents who want it, a real e-mail.

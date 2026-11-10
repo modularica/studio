@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Yorumlar</title>
+<title>Feedback</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,16 +48,16 @@
 <body>
 <main class="page">
   <div class="topbar">
-    <a class="mark" href="/lab/">Uzay'ın sayfası</a>
-    <a class="link" href="/lab/">← Oyunlar</a>
+    <a class="mark" href="/lab/">Uzay’s page</a>
+    <a class="link" href="/lab/">← Games</a>
   </div>
-  <h1>Yorum<span class="u">lar</span></h1>
-  <p class="lede" id="lede">Lab'da oynayanların “Nasıldı?” cevapları.</p>
+  <h1>Feed<span class="u">back</span></h1>
+  <p class="lede" id="lede">“How was it?” answers from the people playing in the Lab.</p>
 
-  <div class="suzgec" id="suzgec" role="group" aria-label="Oyun seç"></div>
+  <div class="suzgec" id="suzgec" role="group" aria-label="Choose a game"></div>
   <ul class="ozetler" id="ozetler"></ul>
   <div id="akis"></div>
-  <p class="foot bos" id="bos" hidden>Henüz cevap yok. Oyunların bitiş ekranındaki “Nasıldı?” düğmesinden gelecekler.</p>
+  <p class="foot bos" id="bos" hidden>No answers yet. They’ll come from the “How was it?” button on the games’ end screens.</p>
   <p class="hata" id="hata" role="alert"></p>
 </main>
 
@@ -74,19 +74,19 @@
 
   const sure = s => {
     const m = Math.round(s / 60);
-    if (m < 60) return `${m} dk`;
+    if (m < 60) return `${m} min`;
     const h = Math.floor(m / 60), r = m % 60;
-    return r ? `${h} sa ${r} dk` : `${h} sa`;
+    return r ? `${h} h ${r} min` : `${h} h`;
   };
   const gunAdi = d => {
     const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
     const g = new Date(d); g.setHours(0, 0, 0, 0);
     const fark = Math.round((bugun - g) / 86400000);
-    if (fark === 0) return 'Bugün';
-    if (fark === 1) return 'Dün';
-    return g.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+    if (fark === 0) return 'Today';
+    if (fark === 1) return 'Yesterday';
+    return g.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   };
-  const saat = d => new Date(d).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const saat = d => new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const yuzEl = (p, px) => { const s = el('span'); s.innerHTML = N.yuz(p, px); return s.firstChild; };
 
   function suzgecCiz() {
@@ -95,7 +95,7 @@
     const kutu = $('suzgec');
     kutu.hidden = sira.length < 2;
     kutu.replaceChildren(...[null, ...sira].map(s => {
-      const b = el('button', null, s ? (adlar[s] || s) : 'Hepsi');
+      const b = el('button', null, s ? (adlar[s] || s) : 'All');
       b.type = 'button';
       b.setAttribute('aria-pressed', String(secili === s));
       b.addEventListener('click', () => { secili = s; ciz(); });
@@ -120,7 +120,7 @@
       li.append(el('h2', null, adlar[oyun] || oyun));
       const oy = oynama.filter(p => p.game === oyun);
       const oyuncu = new Set(oy.map(p => p.profile_id)).size, toplam = oy.reduce((t, p) => t + (p.seconds || 0), 0);
-      li.append(el('p', 'sayi', `${yuzler.length} kişi puan verdi · ${cs.length} cevap` + (oyuncu ? ` · son 30 günde ${oyuncu} kişi, ${sure(toplam)} oynadı` : '')));
+      li.append(el('p', 'sayi', `${yuzler.length} rated · ${cs.length} answer${cs.length === 1 ? '' : 's'}` + (oyuncu ? ` · last 30 days: ${oyuncu} player${oyuncu === 1 ? '' : 's'}, ${sure(toplam)} played` : '')));
       const dag = el('div', 'dagilim');
       for (const p of N.PUANLAR) {
         const n = yuzler.filter(c => c.rating === p.puan).length;
@@ -162,7 +162,7 @@
         const yeni = sonOkuma && new Date(c.created_at).getTime() > sonOkuma;
         const yz = yuzEl(c.rating, 44); yz.setAttribute('role', 'img'); yz.setAttribute('aria-label', puanAdi[c.rating]);
         const ust = el('div', 'ust');
-        if (yeni) ust.append(el('span', 'yeni-etiket', 'yeni'));
+        if (yeni) ust.append(el('span', 'yeni-etiket', 'new'));
         ust.append(H.rozet(k, 'small'), el('span', null, k.name), el('span', 'oyun', `${adlar[c.game] || c.game} · ${puanAdi[c.rating] || ''}`));
         const t = el('time', null, saat(c.created_at)); t.dateTime = c.created_at;
         ust.append(t);
@@ -175,8 +175,8 @@
         if (c.comment) li.append(el('blockquote', null, c.comment));
         const b = c.context || {}, parca = [];
         if (b.not) parca.push(b.not);
-        if (b.sure) parca.push(`${sure(b.sure)} oynamıştı`);
-        if (b.dokunmatik != null) parca.push(b.dokunmatik ? 'telefon/tablet' : 'bilgisayar');
+        if (b.sure) parca.push(`had played ${sure(b.sure)}`);
+        if (b.dokunmatik != null) parca.push(b.dokunmatik ? 'phone/tablet' : 'computer');
         if (parca.length) li.append(el('span', 'baglam', parca.join(' · ')));
         return li;
       }));
@@ -203,14 +203,14 @@
       H.istemci.from('profiles').select('id,name,color'),
       H.istemci.from('plays').select('profile_id,game,seconds,started_at').gte('started_at', since).limit(5000)
     ]);
-    if (fb.error) { $('hata').textContent = 'Yorumlar yüklenemedi. Sayfayı yenile.'; return; }
+    if (fb.error) { $('hata').textContent = 'Couldn’t load the feedback. Reload the page.'; return; }
     oyunlar = liste; adlar = Object.fromEntries(liste.map(o => [o.slug, o.title]));
     cevaplar = fb.data || [];
     kisiler = Object.fromEntries((pr.data || []).map(p => [p.id, p]));
     oynama = pl.data || [];
     $('lede').textContent = yonetici
-      ? 'Lab’da oynayanların “Nasıldı?” cevapları. Bunları sadece sen görüyorsun.'
-      : 'Senin ve aynı hesaptaki oyuncuların “Nasıldı?” cevapları.';
+      ? '“How was it?” answers from the people playing in the Lab. Only you can see these.'
+      : '“How was it?” answers from you and the players on your account.';
     ciz();
     try { localStorage.setItem(OKUNDU, String(Date.now())); } catch (e) {}
   });
