@@ -90,6 +90,7 @@
   <div class="bottom">
     <p class="foot">Yeni oyunlar yolda.</p>
     <span>
+      <a class="link" id="onayLink" href="/lab/onay/" hidden>Onaylar</a>
       <a class="link" id="yorumLink" href="/lab/yorumlar/" hidden>Yorumlar</a>
       <a class="link" href="/lab/takip/">Kim ne oynuyor? →</a>
     </span>
@@ -179,9 +180,15 @@
     kart.hidden = false;
   }
 
-  // Admins get a link to everyone's answers, with a count of the new ones.
+  // Admins get a link to everyone's answers, with a count of the new ones,
+  // and a link to the account approvals, with a count of accounts waiting.
   H.yoneticiMi().then(async evet => {
     if (!evet) return;
+    const onay = document.getElementById('onayLink');
+    onay.hidden = false;
+    H.istemci.rpc('bekleyen_sayisi').then(({ data }) => {
+      if (data > 0) onay.append(Object.assign(document.createElement('span'), { className: 'yeni-sayi', textContent: data > 99 ? '99+' : String(data) }));
+    });
     const link = document.getElementById('yorumLink');
     link.hidden = false;
     let son = 0;

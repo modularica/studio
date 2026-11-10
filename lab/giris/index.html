@@ -36,6 +36,9 @@
 .ipucu{margin:-2px 0 6px;color:var(--muted);font-size:14px;line-height:1.4}
 .gecis{margin:22px 0 0;font-size:16px}
 .gecis .link{font-size:16px}
+.bekle{margin-top:32px;max-width:440px;display:grid;gap:12px}
+.bekle p{margin:0;font-size:17px;line-height:1.5}
+.bekle .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 </style>
 </head>
 <body>
@@ -76,6 +79,19 @@
       <div class="row"><button class="btn" type="submit" id="kayitBtn">Hesabımı aç</button></div>
     </form>
     <p class="gecis">Hesabın var mı? <button class="link" type="button" id="giriseGec">Giriş yap</button></p>
+  </section>
+
+  <!-- Account waiting for an admin's approval (or turned down) -->
+  <section id="bekleBolum" hidden>
+    <h1 id="bekleBaslik">Neredeyse <span class="u">hazır!</span></h1>
+    <div class="kart tape bekle">
+      <p id="bekleMetin"></p>
+      <p class="foot" id="bekleNot" style="margin:0;font-size:16px"></p>
+      <div class="row">
+        <button class="btn" type="button" id="bekleTekrar">Tekrar bak</button>
+        <button class="btn ghost" type="button" id="bekleCikis">Çıkış yap</button>
+      </div>
+    </div>
   </section>
 
   <!-- Who's playing -->
@@ -149,12 +165,50 @@
   H.hazir.then(({ kullanici: k }) => {
     $('yukleniyor').hidden = true;
     // Sent here by a game's sign-in gate: with a single player, go straight back.
-    if (k) { kullanici = k; secimGoster({ otomatik: !degistir }); } else girisGoster();
+    if (k) { kullanici = k; iceri({ otomatik: !degistir }); } else girisGoster();
   });
 
   function bolum(ad) {
-    for (const b of ['girisBolum', 'kayitBolum', 'secBolum']) $(b).hidden = b !== ad;
+    for (const b of ['girisBolum', 'kayitBolum', 'bekleBolum', 'secBolum']) $(b).hidden = b !== ad;
   }
+
+  /* ---------- approval ---------- */
+  // New accounts wait until babam (an admin) approves them on /lab/onay/.
+  let bekleSaat = null;
+  async function iceri(secim) {
+    clearInterval(bekleSaat);
+    const d = await H.onayDurumu();
+    if (d === 'approved') { secimGoster(secim); return; }
+    bekleGoster(d, secim);
+  }
+  function bekleGoster(d, secim) {
+    bolum('bekleBolum');
+    const ad = H.gorunenAd(kullanici);
+    if (d === 'rejected') {
+      $('bekleBaslik').innerHTML = 'Lab şimdilik <span class="u">kapalı</span>';
+      $('bekleMetin').textContent = `${ad} hesabıyla Lab'a giriş açık değil. Bir yanlışlık olduğunu düşünüyorsan babama yaz: hello@uzigames.com`;
+      $('bekleNot').textContent = '';
+      $('bekleTekrar').hidden = true;
+      return;
+    }
+    $('bekleBaslik').innerHTML = 'Neredeyse <span class="u">hazır!</span>';
+    $('bekleMetin').textContent = `Hesabın açıldı, ${ad}! Lab'daki oyunlar babamla benim deneme oyunlarımız; babam hesabını onaylayınca hepsine girebilirsin.`;
+    $('bekleNot').textContent = 'Babama haber ver. Onaylanınca bu sayfa kendiliğinden açılır.';
+    $('bekleTekrar').hidden = false;
+    clearInterval(bekleSaat);
+    bekleSaat = setInterval(async () => {
+      if (document.hidden) return;
+      if (await H.onayDurumu() === 'approved') { clearInterval(bekleSaat); secimGoster(secim || { otomatik: true }); }
+    }, 20000);
+  }
+  $('bekleTekrar').addEventListener('click', async () => {
+    $('bekleTekrar').disabled = true;
+    const d = await H.onayDurumu();
+    $('bekleTekrar').disabled = false;
+    if (d === 'approved') { clearInterval(bekleSaat); secimGoster({ otomatik: true }); }
+    else $('bekleNot').textContent = 'Henüz onaylanmadı. Babama haber verdin mi?';
+  });
+  $('bekleCikis').addEventListener('click', () => { clearInterval(bekleSaat); H.cikis(); });
 
   /* ---------- sign in ---------- */
   function girisGoster() {
@@ -184,7 +238,7 @@
     }
     kullanici = data.user;
     $('sifre').value = '';
-    secimGoster({ otomatik: true });
+    iceri({ otomatik: true });
   });
 
   /* ---------- sign up ---------- */
@@ -213,6 +267,8 @@
     }
     kullanici = data.user;
     $('ySifre').value = ''; $('ySifre2').value = '';
+    // New accounts wait for approval; their first player is made from the username once approved.
+    if (await H.onayDurumu() !== 'approved') { iceri({ otomatik: true }); return; }
     // First player of the account carries the username.
     const r = await sb.from('profiles').insert({ name: ad.includes('@') ? ad.slice(0, ad.indexOf('@')).slice(0, 20) : ad, color: RENKLER[Math.floor(Math.random() * RENKLER.length)] })
       .select('id,name,color,owner_id').single();

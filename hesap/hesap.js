@@ -21,6 +21,8 @@
  *   Hesap.anahtar()        Oturumun erişim anahtarı (başka bir sunucuya kim olduğunu göstermek için)
  *   Hesap.nasildi()        "Nasıldı?" geri bildirim penceresini açar (hesap/nasildi.js). Oyunlarda bir düğmeye
  *                          data-nasildi="oyun-sonu" yazmak yeter; tıklanınca bu oyun için açılır.
+ *   Hesap.onayDurumu()     Hesabın Lab onayı: 'approved', 'pending' ya da 'rejected'. Yeni hesaplar bir yönetici
+ *                          onaylayana kadar bekler; kapı onaysız hesabı giriş sayfasına ("onay bekliyor") gönderir.
  */
 (function () {
   'use strict';
@@ -33,6 +35,7 @@
   // Never change this: existing accounts would stop matching their usernames.
   var KULLANICI_ALANI = 'oyuncu.bringthepoint.com';
   var GIRIS = '/lab/giris/';
+  var ONAY_KEY = 'hesap.onay';    // { uid, durum: 'approved' } once this device has seen the account approved
   var NABIZ = 20000;              // oynama süresi bu aralıkla yazılır
   var YENI_OTURUM = 10 * 60000;   // bu kadar arka planda kalınca yeni oynama kaydı açılır
 
@@ -120,6 +123,37 @@
     }
   });
 
+  /* Lab approval: new accounts wait until an admin approves them (public.members, migration 0006).
+     The answer is remembered per device once approved, so pages don't wait for it; it is still
+     checked in the background and a revoked account is sent back to the sign-in page. */
+  function onayOku(uid) {
+    try { var o = JSON.parse(localStorage.getItem(ONAY_KEY) || 'null'); return o && o.uid === uid ? o.durum : null; } catch (e) { return null; }
+  }
+  function onaySor() {
+    return istemci.rpc('onay_durumu').then(function (r) {
+      if (r.error) return /onay_durumu/.test(r.error.message || '') ? 'approved' : null; // function not there yet: no gate
+      return r.data || 'pending';
+    }, function () { return null; });
+  }
+  function onayDurumu() {
+    var uid = durum.oturum && durum.oturum.user.id;
+    if (!uid) return Promise.resolve(null);
+    return onaySor().then(function (d) {
+      try {
+        if (d === 'approved') localStorage.setItem(ONAY_KEY, JSON.stringify({ uid: uid, durum: d }));
+        else if (d) localStorage.removeItem(ONAY_KEY);
+      } catch (e) {}
+      return d || onayOku(uid) || 'pending';
+    });
+  }
+  function onayKapisi(oturum) {
+    if (onayOku(oturum.user.id) === 'approved') {
+      onayDurumu().then(function (d) { if (d !== 'approved') girise(); });
+      return Promise.resolve(true);
+    }
+    return onayDurumu().then(function (d) { return d === 'approved'; });
+  }
+
   istemci.auth.getSession().then(function (r) {
     var oturum = r && r.data ? r.data.session : null;
     durum.oturum = oturum;
@@ -129,7 +163,10 @@
       if (!oturum) return girise();
       if (KAPI === 'oyuncu' && !durum.profil) return girise();
     }
-    (SENK ? senkBaslat() : Promise.resolve(true)).then(function (goster) {
+    (KAPI !== 'yok' ? onayKapisi(oturum) : Promise.resolve(true)).then(function (onayli) {
+      if (!onayli) { girise(); return false; }
+      return SENK ? senkBaslat() : true;
+    }).then(function (goster) {
       if (!goster) return; // the page is reloading with the account's save
       html.classList.remove('hesap-bekle');
       hazirCoz({ kullanici: oturum ? oturum.user : null, profil: durum.profil });
@@ -493,6 +530,8 @@
         return r.data || [];
       });
     },
+
+    onayDurumu: function () { return onayDurumu(); },
 
     yoneticiMi: function () {
       return hazir.then(function () { return istemci.rpc('yonetici_mi'); })

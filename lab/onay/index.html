@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hesap onayları</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Shantell+Sans:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/lab/defter.css">
+<script src="/hesap/supabase.js"></script>
+<script src="/hesap/hesap.js" data-kapi="oturum"></script>
+<style>
+/* Layout: waiting accounts as cards with approve / turn down, then approved and turned-down accounts as a notebook list */
+.bekleyenler{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+.hk{padding:16px 16px 14px;background:var(--card);border:1px solid var(--card-line);border-radius:6px;box-shadow:0 8px 18px -12px var(--shadow);display:grid;gap:8px;min-width:0}
+.hk h3{margin:0;font:700 24px/1.15 var(--font-hand);color:var(--text);overflow-wrap:anywhere}
+.hk .ne{margin:0;color:var(--muted);font-size:15px;font-weight:600}
+.hk .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.bolum{margin-top:40px}
+.bolum h2{font-size:24px;padding-bottom:6px;border-bottom:2px solid var(--margin);display:inline-block}
+.liste{list-style:none;margin:12px 0 0;padding:0;display:grid}
+.satir{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:12px 4px;border-bottom:1px dashed var(--field-line)}
+.satir b{font:700 19px/1.2 var(--font-hand);color:var(--text);overflow-wrap:anywhere}
+.satir .ne{color:var(--muted);font-size:14.5px;font-weight:600;flex:1 1 220px;min-width:0}
+.satir .link{font-size:15px}
+.bos{margin-top:28px;max-width:42ch}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar">
+    <a class="mark" href="/lab/">Uzay'ın sayfası</a>
+    <a class="link" href="/lab/">← Oyunlar</a>
+  </div>
+  <h1>Hesap <span class="u">onayları</span></h1>
+  <p class="lede" id="lede">Yeni açılan hesaplar, sen onaylayınca Lab'a girer.</p>
+
+  <ul class="bekleyenler" id="bekleyenler"></ul>
+  <p class="foot bos" id="bos" hidden>Onay bekleyen hesap yok.</p>
+
+  <section class="bolum" id="onayliBolum" hidden>
+    <h2 id="onayliBaslik">Onaylı</h2>
+    <ul class="liste" id="onaylilar"></ul>
+  </section>
+  <section class="bolum" id="kapaliBolum" hidden>
+    <h2 id="kapaliBaslik">Kapatılan</h2>
+    <ul class="liste" id="kapalilar"></ul>
+  </section>
+  <p class="hata" id="hata" role="alert"></p>
+</main>
+
+<script>
+(() => {
+  const H = window.Hesap;
+  if (!H) return;
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  const once = t => {
+    if (!t) return '';
+    const s = (Date.now() - new Date(t).getTime()) / 1000;
+    if (s < 90) return 'az önce';
+    if (s < 3600) return `${Math.round(s / 60)} dakika önce`;
+    if (s < 86400) return `${Math.round(s / 3600)} saat önce`;
+    if (s < 86400 * 30) return `${Math.round(s / 86400)} gün önce`;
+    return new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  const ayrinti = h => [
+    `${once(h.created_at)} açıldı`,
+    h.oyuncular ? `oyuncular: ${h.oyuncular}` : '',
+    h.son_oynama ? `son oynama ${once(h.son_oynama)}` : ''
+  ].filter(Boolean).join(' · ');
+
+  async function karar(h, status, dugmeler) {
+    dugmeler.forEach(b => { b.disabled = true; });
+    $('hata').textContent = '';
+    const { error } = await H.istemci.rpc('hesap_karar', { p_user: h.user_id, p_status: status });
+    if (error) { $('hata').textContent = 'Kaydedilemedi. Tekrar dene.'; dugmeler.forEach(b => { b.disabled = false; }); return; }
+    yukle();
+  }
+
+  async function yukle() {
+    const { data, error } = await H.istemci.rpc('hesaplar');
+    if (error) { $('hata').textContent = 'Hesaplar yüklenemedi. Sayfayı yenile.'; return; }
+    const bekleyen = data.filter(h => h.status === 'pending');
+    const onayli = data.filter(h => h.status === 'approved');
+    const kapali = data.filter(h => h.status === 'rejected');
+
+    $('lede').textContent = bekleyen.length
+      ? `${bekleyen.length} hesap onayını bekliyor. Tanıdığın biriyse onayla; Lab'a girip oynayabilir.`
+      : 'Yeni açılan hesaplar, sen onaylayınca Lab\'a girer.';
+    $('bos').hidden = bekleyen.length > 0;
+
+    const kartlar = $('bekleyenler');
+    kartlar.replaceChildren();
+    for (const h of bekleyen) {
+      const li = el('li', 'hk');
+      li.append(el('h3', null, h.kullanici), el('p', 'ne', ayrinti(h)));
+      const row = el('div', 'row');
+      const evet = el('button', 'btn', 'Onayla'), hayir = el('button', 'btn ghost', 'Kapat');
+      evet.type = hayir.type = 'button';
+      evet.setAttribute('aria-label', `${h.kullanici} hesabını onayla`);
+      hayir.setAttribute('aria-label', `${h.kullanici} hesabını kapat`);
+      evet.onclick = () => karar(h, 'approved', [evet, hayir]);
+      hayir.onclick = () => karar(h, 'rejected', [evet, hayir]);
+      row.append(evet, hayir);
+      li.append(row);
+      kartlar.append(li);
+    }
+
+    const satirlar = (liste, hesaplar, dugme, status) => {
+      liste.replaceChildren();
+      for (const h of hesaplar) {
+        const li = el('li', 'satir');
+        const b = el('button', 'link', dugme);
+        b.type = 'button';
+        b.setAttribute('aria-label', `${h.kullanici}: ${dugme}`);
+        b.onclick = () => karar(h, status, [b]);
+        li.append(el('b', null, h.kullanici), el('span', 'ne', ayrinti(h)), b);
+        liste.append(li);
+      }
+    };
+    $('onayliBolum').hidden = !onayli.length;
+    $('onayliBaslik').textContent = `Onaylı (${onayli.length})`;
+    satirlar($('onaylilar'), onayli, 'Kapat', 'rejected');
+    $('kapaliBolum').hidden = !kapali.length;
+    $('kapaliBaslik').textContent = `Kapatılan (${kapali.length})`;
+    satirlar($('kapalilar'), kapali, 'Onayla', 'approved');
+  }
+
+  H.yoneticiMi().then(evet => {
+    if (!evet) {
+      $('lede').textContent = 'Bu sayfa sadece yöneticiler için.';
+      return;
+    }
+    yukle();
+  });
+})();
+</script>
+</body>
+</html>
