@@ -12,16 +12,19 @@
 <meta property="og:url" content="https://uzigames.com/">
 <meta property="og:title" content="Uzi Games">
 <meta property="og:description" content="A tiny studio where Uzay and his dad make games together. Our first game, Little Koi, is out now on the App Store.">
+<meta property="og:image" content="https://uzigames.com/img/little-koi/shot-2.jpg">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@500;600;700&display=swap">
 <style>
-/* Layout: one centered column on squared notebook paper — a badge, the bobbing wordmark, a short hello, a card for our App Store game, a big button into the Lab; a quiet footer */
+/* Layout: one centered column on squared notebook paper — the Uzi Games mark and wordmark, a short hello,
+   Little Koi (icon, App Store link, a gameplay video in a phone frame, a swipeable row of screenshots),
+   a big button into the Lab; a quiet footer */
 :root{
   --paper:#fbf6ec;
   --grid:rgba(35,67,196,.07);
-  --ink:#1d2433;
+  --ink:#151515;
   --ink-dim:#5b6374;
   --koi:#f27a32;
   --koi-deep:#b4501a;
@@ -32,62 +35,80 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
-  :root{--paper:#14181f;--grid:rgba(138,160,255,.07);--ink:#eef0f4;--ink-dim:#a3abbb;--line:rgba(238,240,244,.16);color-scheme:dark}
+  :root{--paper:#14181f;--grid:rgba(138,160,255,.07);--ink:#f3f4f6;--ink-dim:#a3abbb;--line:rgba(238,240,244,.16);color-scheme:dark}
 }
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{min-height:100%}
 body{
-  margin:0;min-height:100%;display:flex;flex-direction:column;
+  margin:0;min-height:100vh;display:flex;flex-direction:column;
   background-color:var(--paper);color:var(--ink);font-family:var(--font-ui);
   background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
   background-size:24px 24px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
 }
 main{
-  flex:1;width:100%;max-width:640px;margin:0 auto;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  padding:calc(env(safe-area-inset-top,0px) + 48px) 0 40px;
+  flex:1;width:100%;max-width:760px;margin:0 auto;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:calc(env(safe-area-inset-top,0px) + 56px) 0 48px;
 }
-.rozet{
-  margin:0 0 22px;padding:7px 14px;border-radius:999px;border:1.5px solid var(--line);
-  font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);
-}
-.logo{
-  margin:0;font-family:var(--font-display);font-weight:400;line-height:.86;
-  font-size:clamp(76px,24vw,168px);letter-spacing:-.01em;
-  display:flex;flex-direction:column;align-items:center;
-}
-.logo .s{display:flex}
-.logo .s:first-child{color:var(--koi);text-shadow:0 6px 0 var(--koi-deep)}
-.logo .s:last-child{font-size:.62em;color:var(--blue);margin-top:.12em}
-@media (prefers-color-scheme:dark){.logo .s:last-child{color:#8aa0ff}}
-.logo i{font-style:normal;display:inline-block;animation:bob 2.8s ease-in-out infinite}
-.logo i:nth-child(2){animation-delay:-.7s}
-.logo i:nth-child(3){animation-delay:-1.4s}
-.logo i:nth-child(4){animation-delay:-2.1s}
-.logo i:nth-child(5){animation-delay:-.35s}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
-.merhaba{margin:34px 0 0;max-width:30ch;font-size:clamp(18px,4.6vw,21px);line-height:1.5;font-weight:600;text-wrap:balance}
-.oyun{
-  margin:30px 0 0;width:100%;max-width:420px;display:flex;align-items:center;gap:16px;
-  padding:16px;border-radius:24px;border:1.5px solid var(--line);background:var(--paper);text-align:left;
-}
-.oyun img{width:84px;height:84px;border-radius:19px;flex:none;box-shadow:0 2px 0 var(--line)}
-.oyun h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:28px;line-height:1}
-.oyun p{margin:4px 0 10px;font-size:15px;line-height:1.35;color:var(--ink-dim)}
+
+/* The mark: dad (tall) and Uzay (short) drawn as one U; plays the same intro as the app, once */
+.marka{display:flex;flex-direction:column;align-items:center;gap:18px;margin:0}
+.isaret{width:clamp(96px,26vw,132px);height:auto;color:var(--ink)}
+.logo{margin:0;font-family:var(--font-display);font-weight:400;line-height:.86;color:var(--ink);display:flex;flex-direction:column;align-items:center}
+.logo .s1{font-size:clamp(64px,19vw,104px)}
+.logo .s2{font-size:clamp(40px,11.8vw,64px);margin-top:.12em}
+.isaret .dad,.isaret .kid{transform-box:fill-box;transform-origin:50% 100%}
+.isaret .dad{animation:pop .32s cubic-bezier(.34,1.8,.5,1) both}
+.isaret .kid{animation:pop .32s .08s cubic-bezier(.34,1.8,.5,1) both,hit .62s .74s cubic-bezier(.3,.7,.4,1)}
+.isaret .u{stroke-dasharray:100}
+.isaret .u:nth-of-type(1){animation:draw .3s .2s cubic-bezier(.55,0,1,1) both}
+.isaret .u:nth-of-type(2){animation:draw .24s .5s cubic-bezier(0,0,.4,1) both}
+.logo .s1{animation:rise .42s .86s cubic-bezier(.34,1.6,.5,1) both}
+.logo .s2{animation:rise .42s .96s cubic-bezier(.34,1.6,.5,1) both}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes hit{0%{transform:none}12%{transform:translateY(2px) scale(1.18,.8)}45%{transform:translateY(-30px) scale(.92,1.1)}72%{transform:translateY(0) scale(1.12,.88)}86%{transform:translateY(-6px) scale(.98,1.02)}100%{transform:none}}
+
+.merhaba{margin:30px 0 0;max-width:30ch;font-size:clamp(18px,4.6vw,21px);line-height:1.5;font-weight:600;text-wrap:balance}
+
+/* Little Koi */
+.koi{margin:52px 0 0;width:100%;display:grid;gap:28px;justify-items:center}
+.koi-ust{display:grid;gap:26px;justify-items:center;width:100%}
+.bilgi{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:340px;order:-1}
+.bilgi img{width:88px;height:88px;border-radius:20px;box-shadow:0 2px 0 var(--line)}
+.etiket{margin:6px 0 0;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+.bilgi h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(40px,11vw,52px);line-height:1}
+.bilgi p{margin:0;font-size:17px;line-height:1.45;color:var(--ink-dim);text-wrap:balance}
 .magaza{
-  display:inline-block;padding:9px 16px 10px;border-radius:999px;background:var(--ink);color:var(--paper);
-  font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;
-}
-@media (max-width:420px){
-  .oyun{gap:12px;padding:14px}
-  .oyun img{width:68px;height:68px;border-radius:15px}
-  .magaza{font-size:14px;padding:9px 13px 10px}
+  margin-top:8px;display:inline-block;padding:13px 22px 14px;border-radius:999px;background:var(--ink);color:var(--paper);
+  font-size:16px;font-weight:700;text-decoration:none;white-space:nowrap;
 }
 .magaza:hover{text-decoration:underline;text-underline-offset:3px}
 .magaza:focus-visible{outline:3px solid var(--koi);outline-offset:3px}
+.telefon{position:relative;width:min(260px,72vw);aspect-ratio:432/936;border-radius:38px;padding:9px;background:#0d0f12;box-shadow:0 24px 40px -24px rgba(0,0,0,.45),0 0 0 1.5px var(--line)}
+.telefon video{display:block;width:100%;height:100%;object-fit:cover;border-radius:30px;background:#0f3d40}
+.oynat{
+  position:absolute;right:16px;bottom:16px;min-width:44px;min-height:44px;padding:0 14px;border-radius:999px;border:0;
+  background:rgba(13,15,18,.72);color:#fff;font:700 13px/1 var(--font-ui);cursor:pointer;
+}
+.oynat:focus-visible{outline:3px solid var(--koi);outline-offset:2px}
+.ekranlar{
+  list-style:none;margin:0;padding:4px 4px 14px;width:100%;
+  display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:4px;
+  -webkit-overflow-scrolling:touch;
+}
+.ekranlar li{flex:none;scroll-snap-align:start}
+.ekranlar img{display:block;width:min(168px,40vw);height:auto;border-radius:16px;box-shadow:0 10px 22px -16px rgba(0,0,0,.5),0 0 0 1px var(--line)}
+@media (min-width:720px){
+  .koi-ust{grid-template-columns:auto minmax(0,1fr);align-items:center;justify-items:start;text-align:left;gap:44px}
+  .bilgi{align-items:flex-start;order:0}
+  .ekranlar{justify-content:center;overflow:visible}
+}
+
 .lab{
-  margin:34px 0 0;display:inline-flex;align-items:center;gap:.45em;
+  margin:48px 0 0;display:inline-flex;align-items:center;gap:.45em;
   padding:18px 34px 20px;border-radius:999px;background:var(--koi);color:#1d2433;
   font-family:var(--font-display);font-weight:400;font-size:clamp(26px,7vw,34px);line-height:1;
   text-decoration:none;box-shadow:0 6px 0 var(--koi-deep);
@@ -100,7 +121,7 @@ main{
 @media (prefers-color-scheme:dark){.lab:focus-visible{outline-color:#8aa0ff}}
 .lab-not{margin:16px 0 0;max-width:34ch;font-size:15px;line-height:1.5;color:var(--ink-dim);text-wrap:balance}
 footer{
-  width:100%;max-width:640px;margin:0 auto;
+  width:100%;max-width:760px;margin:0 auto;
   display:flex;justify-content:space-between;align-items:center;gap:12px;
   padding:16px 0 calc(env(safe-area-inset-bottom,0px) + 20px);border-top:1.5px solid var(--line);
   font-size:14px;color:var(--ink-dim);
@@ -109,25 +130,42 @@ footer nav{display:flex;gap:16px}
 footer a{color:var(--ink);font-weight:700;text-decoration:none;padding:8px 2px}
 footer a:hover{text-decoration:underline;text-underline-offset:3px}
 footer a:focus-visible{outline:2px solid var(--koi);outline-offset:3px;border-radius:4px}
-@media (prefers-reduced-motion:reduce){.logo i{animation:none}}
+@media (prefers-reduced-motion:reduce){.isaret *,.logo span{animation:none!important}}
 </style>
 </head>
 <body>
 <main>
-  <p class="rozet">Out now</p>
-  <h1 class="logo" aria-label="Uzi Games">
-    <span class="s" aria-hidden="true"><i>u</i><i>z</i><i>i</i></span>
-    <span class="s" aria-hidden="true"><i>g</i><i>a</i><i>m</i><i>e</i><i>s</i></span>
-  </h1>
-  <p class="merhaba">Hi, I’m Uzay! My dad and I make games together. Our first game is out now.</p>
-  <section class="oyun" aria-label="Little Koi">
-    <img src="/img/little-koi.png" alt="" width="84" height="84">
-    <div>
-      <h2>Little Koi</h2>
-      <p>Grow from a tiny koi into the biggest fish in the ocean.</p>
-      <a class="magaza" href="https://apps.apple.com/app/id6831537348">Download on the App Store</a>
+  <header class="marka">
+    <svg viewBox="0 0 200 200" class="isaret" width="132" height="132" aria-hidden="true" focusable="false" style="display: block; overflow: visible"><defs><clipPath id="Lev"><rect x="-20" y="-20" width="116.5" height="240"></rect></clipPath><clipPath id="Rev"><rect x="103.5" y="-20" width="116.5" height="240"></rect></clipPath></defs><path d="M58 72 V118 A42 42 0 0 0 100 160" pathLength="100" class="u" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round" clip-path="url(#Lev)"></path><path d="M100 160 A42 42 0 0 0 142 118 V100" pathLength="100" class="u" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round" clip-path="url(#Rev)"></path><g class="dad"><circle cx="58" cy="29" r="20" fill="currentColor"></circle></g><g class="kid"><circle cx="142" cy="63" r="13.5" fill="currentColor"></circle></g></svg>
+    <h1 class="logo" aria-label="Uzi Games"><span class="s1" aria-hidden="true">uzi</span><span class="s2" aria-hidden="true">games</span></h1>
+  </header>
+  <p class="merhaba">Hi, I’m Uzay! My dad and I make games together. The tall one in our logo is him, the short one is me.</p>
+
+  <section class="koi" aria-labelledby="koiBaslik">
+    <div class="koi-ust">
+      <div class="telefon">
+        <video id="video" autoplay muted loop playsinline preload="metadata" poster="/img/little-koi/poster.jpg" aria-label="Little Koi gameplay: a koi eats smaller fish in a pond, a river and the dark ocean">
+          <source src="/img/little-koi/preview.mp4" type="video/mp4">
+        </video>
+        <button class="oynat" type="button" id="oynat">Pause</button>
+      </div>
+      <div class="bilgi">
+        <img src="/img/little-koi.png" alt="" width="88" height="88">
+        <p class="etiket">Our first game · Out now</p>
+        <h2 id="koiBaslik">Little Koi</h2>
+        <p>Start as a tiny koi. Eat smaller fish, swim away from bigger ones, and grow from pond to ocean. Free, no ads, works offline.</p>
+        <a class="magaza" href="https://apps.apple.com/app/id6831537348">Download on the App Store</a>
+      </div>
     </div>
+    <ul class="ekranlar" aria-label="Little Koi screenshots">
+      <li><img src="/img/little-koi/shot-1.jpg" width="480" height="1044" loading="lazy" alt="Start as a little koi: eat, grow, and become the biggest fish around"></li>
+      <li><img src="/img/little-koi/shot-2.jpg" width="480" height="1044" loading="lazy" alt="Eat smaller fish, swim away from bigger ones"></li>
+      <li><img src="/img/little-koi/shot-3.jpg" width="480" height="1044" loading="lazy" alt="From pond to river, sea and ocean"></li>
+      <li><img src="/img/little-koi/shot-4.jpg" width="480" height="1044" loading="lazy" alt="Light up the dark ocean, and watch out for glowing red eyes"></li>
+      <li><img src="/img/little-koi/shot-5.jpg" width="480" height="1044" loading="lazy" alt="Collect real koi patterns: Kohaku, Showa, Tancho and many more"></li>
+    </ul>
   </section>
+
   <a class="lab" href="/lab/">Enter the Lab <span class="ok" aria-hidden="true">→</span></a>
   <p class="lab-not">Come and play the games we’re still testing. For friends and family, with a sign-in.</p>
 </main>
@@ -135,5 +173,16 @@ footer a:focus-visible{outline:2px solid var(--koi);outline-offset:3px;border-ra
   <span>© 2026 Uzi Games</span>
   <nav><a href="/privacy/">Privacy</a><a href="/support/">Support</a><a href="/lab/">Lab</a></nav>
 </footer>
+<script>
+(() => {
+  // The gameplay video loops silently; a button pauses it, and it stays still for reduced motion.
+  const v = document.getElementById('video'), b = document.getElementById('oynat');
+  const set = playing => { b.textContent = playing ? 'Pause' : 'Play'; };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { v.removeAttribute('autoplay'); v.pause(); set(false); }
+  b.addEventListener('click', () => { if (v.paused) { v.play(); set(true); } else { v.pause(); set(false); } });
+  v.addEventListener('pause', () => set(false));
+  v.addEventListener('play', () => set(true));
+})();
+</script>
 </body>
 </html>
