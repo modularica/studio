@@ -160,24 +160,25 @@
 
   // ---- Uzi Games intro --------------------------------------------------------------------------
   // At every launch, on white (the launch screen and the web view are white too): dad's head, then
-  // Uzay's, pop up; their arms draw down and meet as a U; "uzi games" comes up; Uzay hops once.
-  // About 2.5 s; a tap skips it. The logo is designed on the "Uzi Games logo" canvas (El ele).
+  // Uzay's, pop up; the U draws in one stroke from dad's arm round to Uzay's, and when it reaches
+  // him it knocks his head up into a bounce; "uzi games" comes up. About 2 s; a tap skips it. The logo is designed on the "Uzi Games logo" canvas (El ele).
   var LOGO = '<svg viewBox="0 0 200 200" width="150" height="150" role="img" aria-label="Uzi Games" style="display: block; overflow: visible"><defs><clipPath id="Lacilis"><rect x="-20" y="-20" width="116.5" height="240"></rect></clipPath><clipPath id="Racilis"><rect x="103.5" y="-20" width="116.5" height="240"></rect></clipPath></defs><path d="M58 72 V118 A42 42 0 0 0 100 160" pathLength="100" class="u" fill="none" stroke="#151515" stroke-width="34" stroke-linecap="round" clip-path="url(#Lacilis)"></path><path d="M100 160 A42 42 0 0 0 142 118 V100" pathLength="100" class="u" fill="none" stroke="#151515" stroke-width="34" stroke-linecap="round" clip-path="url(#Racilis)"></path><g class="dad"><circle cx="58" cy="29" r="20" fill="#151515"></circle></g><g class="kid"><circle cx="142" cy="63" r="13.5" fill="#151515"></circle></g></svg>';
   var CSS = '#uziAcilis{position:fixed;inset:0;z-index:2147483647;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .35s ease;-webkit-user-select:none;user-select:none}'
     + '#uziAcilis.git{opacity:0;pointer-events:none}'
     + '#uziAcilis .w{display:flex;flex-direction:column;align-items:center;font-family:"Bagel Fat One",sans-serif;line-height:.86;color:#151515}'
     + '#uziAcilis .w1{font-size:68px}#uziAcilis .w2{font-size:42px;margin-top:7px}'
     + '#uziAcilis .dad,#uziAcilis .kid{transform-box:fill-box;transform-origin:50% 100%}'
-    + '#uziAcilis .dad{animation:uzPop .45s cubic-bezier(.34,1.56,.64,1) both}'
-    + '#uziAcilis .kid{animation:uzPop .45s .25s cubic-bezier(.34,1.56,.64,1) both,uzHop .5s 1.75s ease-in-out}'
-    + '#uziAcilis .u{stroke-dasharray:100;animation:uzDraw .7s .5s cubic-bezier(.65,0,.35,1) both}'
-    + '#uziAcilis .u:nth-of-type(2){animation-delay:.85s}'
-    + '#uziAcilis .w1{animation:uzRise .5s 1.15s cubic-bezier(.34,1.56,.64,1) both}'
-    + '#uziAcilis .w2{animation:uzRise .5s 1.3s cubic-bezier(.34,1.56,.64,1) both}'
+    + '#uziAcilis .dad{animation:uzPop .32s cubic-bezier(.34,1.8,.5,1) both}'
+    + '#uziAcilis .kid{animation:uzPop .32s .08s cubic-bezier(.34,1.8,.5,1) both,uzHit .62s .74s cubic-bezier(.3,.7,.4,1)}'
+    + '#uziAcilis .u{stroke-dasharray:100}'
+    + '#uziAcilis .u:nth-of-type(1){animation:uzDraw .3s .2s cubic-bezier(.55,0,1,1) both}'
+    + '#uziAcilis .u:nth-of-type(2){animation:uzDraw .24s .5s cubic-bezier(0,0,.4,1) both}'
+    + '#uziAcilis .w1{animation:uzRise .42s .86s cubic-bezier(.34,1.6,.5,1) both}'
+    + '#uziAcilis .w2{animation:uzRise .42s .96s cubic-bezier(.34,1.6,.5,1) both}'
     + '@keyframes uzPop{0%{transform:scale(0)}100%{transform:scale(1)}}'
     + '@keyframes uzDraw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}'
-    + '@keyframes uzRise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}'
-    + '@keyframes uzHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-16px)}}'
+    + '@keyframes uzRise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}'
+    + '@keyframes uzHit{0%{transform:none}12%{transform:translateY(2px) scale(1.18,.8)}45%{transform:translateY(-30px) scale(.92,1.1)}72%{transform:translateY(0) scale(1.12,.88)}86%{transform:translateY(-6px) scale(.98,1.02)}100%{transform:none}}'
     + '@media (prefers-reduced-motion:reduce){#uziAcilis *{animation:none!important}}';
   var kok = document.documentElement;
   kok.style.visibility = 'hidden'; // until the save is merged and the intro covers the page
@@ -190,14 +191,14 @@
       document.body.appendChild(el);
       kok.style.visibility = '';
       var yavas = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var t1 = setTimeout(function () { window.uygulama.titret('inci'); }, 1950); // Uzay's hop
+      var t1 = setTimeout(function () { window.uygulama.titret('inci'); }, 760); // the U knocks Uzay's head
       var bitir = function () {
         clearTimeout(t1); clearTimeout(t2);
         if (el.classList.contains('git')) return;
         el.classList.add('git');
         setTimeout(function () { el.remove(); st.remove(); }, 400);
       };
-      var t2 = setTimeout(bitir, yavas ? 900 : 2450);
+      var t2 = setTimeout(bitir, yavas ? 900 : 2000);
       el.addEventListener('pointerdown', bitir);
     });
   });
