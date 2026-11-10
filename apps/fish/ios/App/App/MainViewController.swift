@@ -7,5 +7,6 @@ class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(GameCenterPlugin())
         bridge?.registerPluginInstance(ReviewPlugin())
+        bridge?.registerPluginInstance(CloudSavePlugin())
     }
 }
