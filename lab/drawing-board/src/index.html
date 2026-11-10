@@ -36,6 +36,12 @@
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside id="side">
+      <div class="side-head" id="side-head">
+        <button class="tbtn side-toggle" id="side-toggle" type="button" aria-expanded="true" aria-label="Hide the side panel">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path id="side-toggle-ico" d="M8 4l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <div class="sh-info"><p class="sh-name"><span id="sh-no"></span> <span id="sh-name"></span></p><p class="sh-task" id="sh-task"></p></div>
       <div class="note"><span class="cap">Note</span><p id="hint"></p><button class="note-guide" id="btn-guide" type="button" hidden>Show me how</button></div>
       <div class="panel" id="bom">
         <div class="panel-head"><span class="cap">Parts list</span><span class="cap">Qty</span></div>
@@ -130,6 +136,16 @@
 </div>
 <div id="coach-ring" aria-hidden="true" hidden></div>
 <div id="coach-hand" aria-hidden="true" hidden></div>
+
+<div id="rotate" role="alert">
+  <svg class="rot-ico" viewBox="0 0 120 120" aria-hidden="true">
+    <path class="rot-arrow" d="M100 60a40 40 0 0 1-40 40M60 20a40 40 0 0 0-40 40"/>
+    <path class="rot-arrow" d="M54 94l6 6-6 6M66 14l-6 6 6 6"/>
+    <g class="rot-phone"><rect x="40" y="22" width="40" height="76" rx="6"/><path d="M54 90h12"/><circle cx="60" cy="50" r="5"/></g>
+  </svg>
+  <p class="stencil">Turn your phone sideways</p>
+  <p class="rot-sub">Drawing Board is played with the phone held sideways.</p>
+</div>
 
 <!--LIBS-->
 <script>

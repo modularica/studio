@@ -386,6 +386,77 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   #goals { display: none; }
   #run { height: 50px; font-size: 18px; }
 }
+/* Kısa yatay ekran (telefon yatay, body.compact): antet gizlenir, adı, görevi ve düğmeleri yan
+   panelin başına geçer (tahtaya yükseklik kalır). Yan panel daraltılabilir (body.rail): yalnız parça
+   simgeleri, kumanda numaraları ve Run kalır, tahta genişler. */
+.side-head, .sh-info { display: none; }
+body.compact #app { padding: 6px 8px 8px; gap: 0; }
+body.compact .titleblock { display: none; }
+body.compact #stage { gap: 8px; }
+body.compact #side { width: 236px; gap: 6px; }
+body.compact .side-head { display: flex; align-items: center; gap: 6px; flex: none; }
+body.compact .side-head .tb-btns { display: flex; flex-direction: row; gap: 6px; padding: 0; border: 0; }
+body.compact .side-head .tbtn { height: 36px; min-width: 36px; padding: 0 9px; }
+body.compact .side-head .tbtn .lbl { display: none; }
+body.compact .sh-info { display: block; flex: none; padding: 0 2px; }
+body.compact .sh-name { margin: 0; font-size: 13.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.compact #sh-no { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+body.compact .sh-task { margin: 2px 0 0; font-size: 13px; line-height: 1.25; color: var(--ink-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body.compact .note { padding: 5px 8px 6px 9px; flex: 0 1 auto; min-height: 0; overflow: auto; }
+body.compact .note .cap { display: none; }
+body.compact .note p { margin: 0; font-size: 13.5px; }
+body.compact .note-guide { margin-top: 5px; font-size: 13px; padding: 4px 9px 3px; }
+body.compact #goals, body.compact .panel-foot { display: none; }
+body.compact .panel-head { padding: 4px 8px; }
+body.compact #bom, body.compact #pult, body.compact #editor { flex: 0 1 auto; min-height: 0; overflow: auto; }
+body.compact .bom-row { grid-template-columns: 16px 40px 1fr auto; padding: 3px 8px; gap: 6px; }
+body.compact .bom-row canvas { height: 24px; }
+body.compact .bom-row .nm { font-size: 14px; }
+body.compact .bom-row .qty { font-size: 15px; }
+body.compact #pult-buttons { padding: 6px; gap: 6px; }
+body.compact .dev { min-height: 46px; padding: 4px 8px; grid-template-columns: 32px 1fr; column-gap: 8px; }
+body.compact .dev .num { width: 32px; height: 32px; font-size: 18px; }
+body.compact .dev .nm { font-size: 15px; }
+body.compact #run { height: 46px; font-size: 18px; }
+body.compact.editing #side { width: 292px; }
+body.compact.editing .side-toggle { display: none; }
+body.compact.editing .note { flex: none; }
+body.compact #ed-tray { grid-template-columns: 1fr; padding: 2px 10px; }
+body.compact .ed-name, body.compact .ed-tools { padding: 6px 10px; }
+body.compact .ed-actions { padding: 6px 10px 8px; }
+body.compact .ed-actions .btn { height: 38px; padding: 0 10px; }
+body.compact.rail #side { width: 62px; }
+body.compact.rail .side-head, body.compact.rail .side-head .tb-btns { flex-direction: column; }
+body.compact.rail .side-head .tbtn { width: 100%; }
+body.compact.rail #btn-music, body.compact.rail #btn-sound, body.compact.rail .sh-info, body.compact.rail .note,
+body.compact.rail .panel-head, body.compact.rail #btn-edit, body.compact.rail .bom-none, body.compact.rail .pult-none { display: none; }
+body.compact.rail .bom-row { grid-template-columns: 1fr; justify-items: center; gap: 1px; padding: 5px 2px 4px; }
+body.compact.rail .bom-row .no, body.compact.rail .bom-row .nm { display: none; }
+body.compact.rail .bom-row canvas { width: 52px; height: 24px; }
+body.compact.rail .bom-row .qty { font-size: 13px; line-height: 1; }
+body.compact.rail #pult-buttons { padding: 4px; }
+body.compact.rail .dev { grid-template-columns: 1fr; justify-items: center; padding: 4px 0; min-height: 48px; }
+body.compact.rail .dev .nm, body.compact.rail .dev .act { display: none; }
+body.compact.rail #run { gap: 0; }
+body.compact.rail #run-label { display: none; }
+
+/* Telefon dikey tutulunca: oyun yatay oynanır */
+#rotate { display: none; }
+.rot-ico { width: 132px; height: 132px; fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.rot-ico circle { fill: var(--ball); stroke: none; }
+.rot-arrow { stroke: var(--ink-dim); stroke-width: 2; }
+.rot-phone { transform-origin: 60px 60px; animation: rotPhone 2.6s ease-in-out infinite; }
+@keyframes rotPhone { 0%, 22% { transform: rotate(0deg); } 50%, 78% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+#rotate .stencil { font-size: 30px; margin: 0; line-height: 1.05; }
+.rot-sub { margin: 0; max-width: 300px; font-size: 16px; line-height: 1.35; color: var(--ink-dim); }
+@media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
+  #rotate {
+    position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 24px; text-align: center; background: var(--paper);
+  }
+  #app { visibility: hidden; }
+}
+
 @media (max-width: 520px) {
   .sheet-card { padding: 18px 16px 16px; }
   .result-main .result-title { padding-right: 112px; }
@@ -420,6 +491,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 @media (prefers-reduced-motion: reduce) {
   #toast { transition: none; }
   .coach-in.pop, #coach-ring { animation: none; }
+  .rot-phone { animation: none; transform: rotate(-90deg); }
   .bom-row.is-new, .unlock-art::before, .unlock-art::after { animation: none; }
 }
 
@@ -478,6 +550,12 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside id="side">
+      <div class="side-head" id="side-head">
+        <button class="tbtn side-toggle" id="side-toggle" type="button" aria-expanded="true" aria-label="Hide the side panel">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path id="side-toggle-ico" d="M8 4l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <div class="sh-info"><p class="sh-name"><span id="sh-no"></span> <span id="sh-name"></span></p><p class="sh-task" id="sh-task"></p></div>
       <div class="note"><span class="cap">Note</span><p id="hint"></p><button class="note-guide" id="btn-guide" type="button" hidden>Show me how</button></div>
       <div class="panel" id="bom">
         <div class="panel-head"><span class="cap">Parts list</span><span class="cap">Qty</span></div>
@@ -572,6 +650,16 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 </div>
 <div id="coach-ring" aria-hidden="true" hidden></div>
 <div id="coach-hand" aria-hidden="true" hidden></div>
+
+<div id="rotate" role="alert">
+  <svg class="rot-ico" viewBox="0 0 120 120" aria-hidden="true">
+    <path class="rot-arrow" d="M100 60a40 40 0 0 1-40 40M60 20a40 40 0 0 0-40 40"/>
+    <path class="rot-arrow" d="M54 94l6 6-6 6M66 14l-6 6 6 6"/>
+    <g class="rot-phone"><rect x="40" y="22" width="40" height="76" rx="6"/><path d="M54 90h12"/><circle cx="60" cy="50" r="5"/></g>
+  </svg>
+  <p class="stencil">Turn your phone sideways</p>
+  <p class="rot-sub">Drawing Board is played with the phone held sideways.</p>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/planck@1.5.1/dist/planck.min.js"></script>
 <script>
@@ -2690,13 +2778,14 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     muted: !!device.muted,
     // Müzik tercihi ayrı; daha önce sesi kapatmış olanda müzik de kapalı başlar.
     music: device.music === undefined ? !device.muted : !!device.music,
+    rail: !!device.rail,   // kısa yatay ekranda yan panel daraltılmış mı (cihazda kalır)
     goalN: 0, goalAt: null, winAt: null, flashT: null, lastHit: [], introNew: null, newSeen: false,
   };
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li, lid: S.level && S.level.id })); } catch (e) { /* kayıt yoksa da oynanır */ }
   }
   function persistDevice() {
-    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, music: S.music })); } catch (e) { /* yok say */ }
+    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, music: S.music, rail: S.rail })); } catch (e) { /* yok say */ }
   }
 
   // Her çizimin getirdiği yenilik: ilk kez görülen parça, çelik bilye, bayraklı kova.
@@ -3870,6 +3959,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     $('tb-no').textContent = edit ? 'Edit' : L.book === 'W' ? 'Workshop' : `${pad2(S.li + 1)} / ${pad2(OFFICIAL)}`;
     $('tb-name').textContent = cleanName(L.name);
     $('tb-task').textContent = edit ? 'Draw your own machine puzzle. Test it, then share it.' : L.task;
+    $('sh-no').textContent = $('tb-no').textContent; $('sh-name').textContent = $('tb-name').textContent;
+    $('sh-task').textContent = $('tb-task').textContent;
     document.title = `Drawing Board · ${L.name}`;
   }
 
@@ -3909,6 +4000,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 
   function refreshSide() {
     const run = S.mode === 'run', edit = S.mode === 'edit';
+    applyCompact();
     $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit;
     $('btn-edit').hidden = edit || run || S.level.book !== 'W';
     if (edit) { $('bom').hidden = true; $('pult').hidden = true; setHint(); return; }
@@ -4576,6 +4668,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       // Son top kovaya girince an donar, sonra ağır çekim (yalnızca görüntü; fizik adımı aynı).
       const g = S.goalAt == null ? -1 : S.time - S.goalAt;
       S.acc += dt * (g < 0 || reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
+      if (PORTRAIT.matches) S.acc = 0;   // telefon dik tutulurken oyun görünmüyor: makine bekler
       let n = 0;
       while (S.acc >= DT && n < 12) {
         if (guideHold()) { S.acc = 0; break; }
@@ -5031,6 +5124,27 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
       + (on ? '' : '<path d="M2.5 2.5l15 15"/>');
     if (!quiet) try { if (AU) AU.setMusic(on); } catch (e) { /* yok say */ }
   }
+  // Kısa yatay ekran (telefon yatay): antet gizlenir, düğmeleri yan panelin başına taşınır.
+  // Yan panel daraltılabilir; Atölye'de düzenlerken hep açık.
+  const mq = q => (window.matchMedia ? window.matchMedia(q) : { matches: false, addEventListener() {} });
+  const COMPACT = mq('(max-height: 520px) and (min-aspect-ratio: 5/4)');
+  const PORTRAIT = mq('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
+  function applyCompact() {
+    const on = !!COMPACT.matches, b = document.body;
+    const btns = document.querySelector('.tb-btns'), home = on ? $('side-head') : document.querySelector('.titleblock');
+    if (btns && home && btns.parentNode !== home) home.appendChild(btns);
+    const rail = on && S.rail && S.mode !== 'edit';
+    const was = b.classList.contains('rail') + ',' + b.classList.contains('compact');
+    b.classList.toggle('compact', on); b.classList.toggle('rail', rail); b.classList.toggle('editing', S.mode === 'edit');
+    const t = $('side-toggle');
+    t.setAttribute('aria-expanded', String(!rail));
+    t.setAttribute('aria-label', rail ? 'Show the side panel' : 'Hide the side panel');
+    $('side-toggle-ico').setAttribute('d', rail ? 'M12 4l-6 6 6 6' : 'M8 4l6 6-6 6');
+    // Simgeler yeni boyda yeniden çizilir.
+    if (was !== rail + ',' + on && S.level && S.mode === 'build') refreshBom();
+  }
+  function setRail(on) { S.rail = on; persistDevice(); applyCompact(); sfx('tick'); }
+
   function setMuted(m) {
     S.muted = m; persistDevice();
     try { if (AU) AU.setSfx(!m); } catch (e) { /* yok say */ }
@@ -5073,6 +5187,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
     G.i++; guideTick(true);
   });
   $('btn-guide').addEventListener('click', () => guideStart(true));
+  $('side-toggle').addEventListener('click', () => setRail(!S.rail));
+  COMPACT.addEventListener('change', applyCompact);
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('btn-new-drawing').addEventListener('click', () => { closeOverlay('levels'); openEditor(starterDoc()); });
   $('btn-edit').addEventListener('click', () => { if (S.level.ws) openEditor(S.level.ws); });

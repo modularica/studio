@@ -365,6 +365,77 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   #goals { display: none; }
   #run { height: 50px; font-size: 18px; }
 }
+/* Kısa yatay ekran (telefon yatay, body.compact): antet gizlenir, adı, görevi ve düğmeleri yan
+   panelin başına geçer (tahtaya yükseklik kalır). Yan panel daraltılabilir (body.rail): yalnız parça
+   simgeleri, kumanda numaraları ve Run kalır, tahta genişler. */
+.side-head, .sh-info { display: none; }
+body.compact #app { padding: 6px 8px 8px; gap: 0; }
+body.compact .titleblock { display: none; }
+body.compact #stage { gap: 8px; }
+body.compact #side { width: 236px; gap: 6px; }
+body.compact .side-head { display: flex; align-items: center; gap: 6px; flex: none; }
+body.compact .side-head .tb-btns { display: flex; flex-direction: row; gap: 6px; padding: 0; border: 0; }
+body.compact .side-head .tbtn { height: 36px; min-width: 36px; padding: 0 9px; }
+body.compact .side-head .tbtn .lbl { display: none; }
+body.compact .sh-info { display: block; flex: none; padding: 0 2px; }
+body.compact .sh-name { margin: 0; font-size: 13.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.compact #sh-no { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+body.compact .sh-task { margin: 2px 0 0; font-size: 13px; line-height: 1.25; color: var(--ink-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body.compact .note { padding: 5px 8px 6px 9px; flex: 0 1 auto; min-height: 0; overflow: auto; }
+body.compact .note .cap { display: none; }
+body.compact .note p { margin: 0; font-size: 13.5px; }
+body.compact .note-guide { margin-top: 5px; font-size: 13px; padding: 4px 9px 3px; }
+body.compact #goals, body.compact .panel-foot { display: none; }
+body.compact .panel-head { padding: 4px 8px; }
+body.compact #bom, body.compact #pult, body.compact #editor { flex: 0 1 auto; min-height: 0; overflow: auto; }
+body.compact .bom-row { grid-template-columns: 16px 40px 1fr auto; padding: 3px 8px; gap: 6px; }
+body.compact .bom-row canvas { height: 24px; }
+body.compact .bom-row .nm { font-size: 14px; }
+body.compact .bom-row .qty { font-size: 15px; }
+body.compact #pult-buttons { padding: 6px; gap: 6px; }
+body.compact .dev { min-height: 46px; padding: 4px 8px; grid-template-columns: 32px 1fr; column-gap: 8px; }
+body.compact .dev .num { width: 32px; height: 32px; font-size: 18px; }
+body.compact .dev .nm { font-size: 15px; }
+body.compact #run { height: 46px; font-size: 18px; }
+body.compact.editing #side { width: 292px; }
+body.compact.editing .side-toggle { display: none; }
+body.compact.editing .note { flex: none; }
+body.compact #ed-tray { grid-template-columns: 1fr; padding: 2px 10px; }
+body.compact .ed-name, body.compact .ed-tools { padding: 6px 10px; }
+body.compact .ed-actions { padding: 6px 10px 8px; }
+body.compact .ed-actions .btn { height: 38px; padding: 0 10px; }
+body.compact.rail #side { width: 62px; }
+body.compact.rail .side-head, body.compact.rail .side-head .tb-btns { flex-direction: column; }
+body.compact.rail .side-head .tbtn { width: 100%; }
+body.compact.rail #btn-music, body.compact.rail #btn-sound, body.compact.rail .sh-info, body.compact.rail .note,
+body.compact.rail .panel-head, body.compact.rail #btn-edit, body.compact.rail .bom-none, body.compact.rail .pult-none { display: none; }
+body.compact.rail .bom-row { grid-template-columns: 1fr; justify-items: center; gap: 1px; padding: 5px 2px 4px; }
+body.compact.rail .bom-row .no, body.compact.rail .bom-row .nm { display: none; }
+body.compact.rail .bom-row canvas { width: 52px; height: 24px; }
+body.compact.rail .bom-row .qty { font-size: 13px; line-height: 1; }
+body.compact.rail #pult-buttons { padding: 4px; }
+body.compact.rail .dev { grid-template-columns: 1fr; justify-items: center; padding: 4px 0; min-height: 48px; }
+body.compact.rail .dev .nm, body.compact.rail .dev .act { display: none; }
+body.compact.rail #run { gap: 0; }
+body.compact.rail #run-label { display: none; }
+
+/* Telefon dikey tutulunca: oyun yatay oynanır */
+#rotate { display: none; }
+.rot-ico { width: 132px; height: 132px; fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.rot-ico circle { fill: var(--ball); stroke: none; }
+.rot-arrow { stroke: var(--ink-dim); stroke-width: 2; }
+.rot-phone { transform-origin: 60px 60px; animation: rotPhone 2.6s ease-in-out infinite; }
+@keyframes rotPhone { 0%, 22% { transform: rotate(0deg); } 50%, 78% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+#rotate .stencil { font-size: 30px; margin: 0; line-height: 1.05; }
+.rot-sub { margin: 0; max-width: 300px; font-size: 16px; line-height: 1.35; color: var(--ink-dim); }
+@media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
+  #rotate {
+    position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 24px; text-align: center; background: var(--paper);
+  }
+  #app { visibility: hidden; }
+}
+
 @media (max-width: 520px) {
   .sheet-card { padding: 18px 16px 16px; }
   .result-main .result-title { padding-right: 112px; }
@@ -399,6 +470,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
 @media (prefers-reduced-motion: reduce) {
   #toast { transition: none; }
   .coach-in.pop, #coach-ring { animation: none; }
+  .rot-phone { animation: none; transform: rotate(-90deg); }
   .bom-row.is-new, .unlock-art::before, .unlock-art::after { animation: none; }
 }
 

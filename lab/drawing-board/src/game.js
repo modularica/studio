@@ -54,13 +54,14 @@
     muted: !!device.muted,
     // Müzik tercihi ayrı; daha önce sesi kapatmış olanda müzik de kapalı başlar.
     music: device.music === undefined ? !device.muted : !!device.music,
+    rail: !!device.rail,   // kısa yatay ekranda yan panel daraltılmış mı (cihazda kalır)
     goalN: 0, goalAt: null, winAt: null, flashT: null, lastHit: [], introNew: null, newSeen: false,
   };
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify({ progress: S.progress, setups: S.setups, li: S.li, lid: S.level && S.level.id })); } catch (e) { /* kayıt yoksa da oynanır */ }
   }
   function persistDevice() {
-    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, music: S.music })); } catch (e) { /* yok say */ }
+    try { localStorage.setItem(DEVICE_KEY, JSON.stringify({ muted: S.muted, music: S.music, rail: S.rail })); } catch (e) { /* yok say */ }
   }
 
   // Her çizimin getirdiği yenilik: ilk kez görülen parça, çelik bilye, bayraklı kova.
@@ -1234,6 +1235,8 @@
     $('tb-no').textContent = edit ? 'Edit' : L.book === 'W' ? 'Workshop' : `${pad2(S.li + 1)} / ${pad2(OFFICIAL)}`;
     $('tb-name').textContent = cleanName(L.name);
     $('tb-task').textContent = edit ? 'Draw your own machine puzzle. Test it, then share it.' : L.task;
+    $('sh-no').textContent = $('tb-no').textContent; $('sh-name').textContent = $('tb-name').textContent;
+    $('sh-task').textContent = $('tb-task').textContent;
     document.title = `Drawing Board · ${L.name}`;
   }
 
@@ -1273,6 +1276,7 @@
 
   function refreshSide() {
     const run = S.mode === 'run', edit = S.mode === 'edit';
+    applyCompact();
     $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit;
     $('btn-edit').hidden = edit || run || S.level.book !== 'W';
     if (edit) { $('bom').hidden = true; $('pult').hidden = true; setHint(); return; }
@@ -1940,6 +1944,7 @@
       // Son top kovaya girince an donar, sonra ağır çekim (yalnızca görüntü; fizik adımı aynı).
       const g = S.goalAt == null ? -1 : S.time - S.goalAt;
       S.acc += dt * (g < 0 || reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
+      if (PORTRAIT.matches) S.acc = 0;   // telefon dik tutulurken oyun görünmüyor: makine bekler
       let n = 0;
       while (S.acc >= DT && n < 12) {
         if (guideHold()) { S.acc = 0; break; }
@@ -2395,6 +2400,27 @@
       + (on ? '' : '<path d="M2.5 2.5l15 15"/>');
     if (!quiet) try { if (AU) AU.setMusic(on); } catch (e) { /* yok say */ }
   }
+  // Kısa yatay ekran (telefon yatay): antet gizlenir, düğmeleri yan panelin başına taşınır.
+  // Yan panel daraltılabilir; Atölye'de düzenlerken hep açık.
+  const mq = q => (window.matchMedia ? window.matchMedia(q) : { matches: false, addEventListener() {} });
+  const COMPACT = mq('(max-height: 520px) and (min-aspect-ratio: 5/4)');
+  const PORTRAIT = mq('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
+  function applyCompact() {
+    const on = !!COMPACT.matches, b = document.body;
+    const btns = document.querySelector('.tb-btns'), home = on ? $('side-head') : document.querySelector('.titleblock');
+    if (btns && home && btns.parentNode !== home) home.appendChild(btns);
+    const rail = on && S.rail && S.mode !== 'edit';
+    const was = b.classList.contains('rail') + ',' + b.classList.contains('compact');
+    b.classList.toggle('compact', on); b.classList.toggle('rail', rail); b.classList.toggle('editing', S.mode === 'edit');
+    const t = $('side-toggle');
+    t.setAttribute('aria-expanded', String(!rail));
+    t.setAttribute('aria-label', rail ? 'Show the side panel' : 'Hide the side panel');
+    $('side-toggle-ico').setAttribute('d', rail ? 'M12 4l-6 6 6 6' : 'M8 4l6 6-6 6');
+    // Simgeler yeni boyda yeniden çizilir.
+    if (was !== rail + ',' + on && S.level && S.mode === 'build') refreshBom();
+  }
+  function setRail(on) { S.rail = on; persistDevice(); applyCompact(); sfx('tick'); }
+
   function setMuted(m) {
     S.muted = m; persistDevice();
     try { if (AU) AU.setSfx(!m); } catch (e) { /* yok say */ }
@@ -2437,6 +2463,8 @@
     G.i++; guideTick(true);
   });
   $('btn-guide').addEventListener('click', () => guideStart(true));
+  $('side-toggle').addEventListener('click', () => setRail(!S.rail));
+  COMPACT.addEventListener('change', applyCompact);
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('btn-new-drawing').addEventListener('click', () => { closeOverlay('levels'); openEditor(starterDoc()); });
   $('btn-edit').addEventListener('click', () => { if (S.level.ws) openEditor(S.level.ws); });

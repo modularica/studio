@@ -19,8 +19,8 @@ def cell_px(page, x, y):
     return page.evaluate("""([x, y]) => { const V = KM_GAME.view(); const r = document.getElementById('board').getBoundingClientRect();
         return [r.left + V.sx(x), r.top + V.sy(y)]; }""", [x, y])
 
-def open_page(b, w, h, dpr=1):
-    page = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=dpr)
+def open_page(b, w, h, dpr=1, touch=False):
+    page = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=dpr, has_touch=touch, is_mobile=touch)
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
     page.goto(URL); page.wait_for_timeout(700)
@@ -54,10 +54,16 @@ with sync_playwright() as p:
     page.click('#btn-levels'); page.wait_for_timeout(500)
     page.screenshot(path=f'{OUT}/34-bolumler.png')
     page.close()
-    for (w, h, dpr, name) in [(844, 390, 3, 'telefon-yatay'), (390, 844, 3, 'telefon-dikey'), (1180, 820, 2, 'ipad')]:
-        page = open_page(b, w, h, dpr)
+    # Telefon yatay: antet yok, adı ve düğmeleri yan panelde; panel daraltılınca yalnız simgeler.
+    # Telefon dik (dokunmatik): "Turn your phone sideways". iPad dik: dikey düzen.
+    for (w, h, dpr, name, touch) in [(844, 390, 3, 'telefon-yatay', True), (667, 375, 3, 'telefon-yatay-kucuk', True), (390, 844, 3, 'telefon-dikey', True), (1180, 820, 2, 'ipad', True), (820, 1180, 2, 'ipad-dikey', True)]:
+        page = open_page(b, w, h, dpr, touch)
         place(page, 'buyuk-makine'); page.wait_for_timeout(250)
         page.screenshot(path=f'{OUT}/35-{name}.png')
+        if page.evaluate("document.body.classList.contains('compact')"):
+            page.click('#side-toggle'); page.wait_for_timeout(250)
+            page.screenshot(path=f'{OUT}/35-{name}-dar.png')
+            page.click('#side-toggle'); page.wait_for_timeout(100)
         page.close()
     b.close()
 print('hatalar:', errors or 'yok')
