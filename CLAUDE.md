@@ -2,7 +2,7 @@
 
 Uzay ile babası Umut'un oyun stüdyosu **Uzi Games** (uzigames.com). Repo adı şimdilik `studio`.
 
-- `uzigames.com/` herkese açık stüdyo sayfası. Henüz yayınlanmış oyun yok, "Coming soon" diyor. Sayfa sadece İngilizce; ortada Lab'a giden büyük "Enter the Lab" düğmesi var. Arama motorlarına açık, giriş istemez.
+- `uzigames.com/` herkese açık stüdyo sayfası. İlk oyun Little Koi App Store'da (Apple ID 6831537348, https://apps.apple.com/app/id6831537348); sayfada oyun kartı ve "Download on the App Store" bağlantısı var, `apple-itunes-app` etiketi iPhone Safari'de uygulama şeridini gösterir. İkon `img/little-koi.png`. Sayfa sadece İngilizce; ortada Lab'a giden büyük "Enter the Lab" düğmesi var. Arama motorlarına açık, giriş istemez.
 - `uzigames.com/lab/` Lab: Uzay'ın sayfası ve bütün deneme oyunları. Seçilen kişilere açılır, giriş ister, arama motorlarına kapalı (`noindex`, `robots.txt`). Burada tutan oyunlar sonra ilgili platformlarda (App Store, Google Play, web portalları) yayınlanır.
 - Her oyun kendi klasöründe, kendi adresinde açılır: `/lab/<slug>/`.
 

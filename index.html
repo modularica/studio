@@ -4,19 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Uzi Games</title>
-<meta name="description" content="A tiny studio where Uzay and his dad make games together. Our first games are coming soon.">
+<meta name="description" content="A tiny studio where Uzay and his dad make games together. Our first game, Little Koi, is out now on the App Store.">
 <link rel="canonical" href="https://uzigames.com/">
+<meta name="apple-itunes-app" content="app-id=6831537348">
 <meta name="theme-color" content="#fbf6ec">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://uzigames.com/">
 <meta property="og:title" content="Uzi Games">
-<meta property="og:description" content="A tiny studio where Uzay and his dad make games together. Our first games are coming soon.">
+<meta property="og:description" content="A tiny studio where Uzay and his dad make games together. Our first game, Little Koi, is out now on the App Store.">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@500;600;700&display=swap">
 <style>
-/* Layout: one centered column on squared notebook paper — a badge, the bobbing wordmark, a short hello and a big button into the Lab; a quiet footer */
+/* Layout: one centered column on squared notebook paper — a badge, the bobbing wordmark, a short hello, a card for our App Store game, a big button into the Lab; a quiet footer */
 :root{
   --paper:#fbf6ec;
   --grid:rgba(35,67,196,.07);
@@ -67,6 +68,24 @@ main{
 .logo i:nth-child(5){animation-delay:-.35s}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
 .merhaba{margin:34px 0 0;max-width:30ch;font-size:clamp(18px,4.6vw,21px);line-height:1.5;font-weight:600;text-wrap:balance}
+.oyun{
+  margin:30px 0 0;width:100%;max-width:420px;display:flex;align-items:center;gap:16px;
+  padding:16px;border-radius:24px;border:1.5px solid var(--line);background:var(--paper);text-align:left;
+}
+.oyun img{width:84px;height:84px;border-radius:19px;flex:none;box-shadow:0 2px 0 var(--line)}
+.oyun h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:28px;line-height:1}
+.oyun p{margin:4px 0 10px;font-size:15px;line-height:1.35;color:var(--ink-dim)}
+.magaza{
+  display:inline-block;padding:9px 16px 10px;border-radius:999px;background:var(--ink);color:var(--paper);
+  font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;
+}
+@media (max-width:420px){
+  .oyun{gap:12px;padding:14px}
+  .oyun img{width:68px;height:68px;border-radius:15px}
+  .magaza{font-size:14px;padding:9px 13px 10px}
+}
+.magaza:hover{text-decoration:underline;text-underline-offset:3px}
+.magaza:focus-visible{outline:3px solid var(--koi);outline-offset:3px}
 .lab{
   margin:34px 0 0;display:inline-flex;align-items:center;gap:.45em;
   padding:18px 34px 20px;border-radius:999px;background:var(--koi);color:#1d2433;
@@ -95,12 +114,20 @@ footer a:focus-visible{outline:2px solid var(--koi);outline-offset:3px;border-ra
 </head>
 <body>
 <main>
-  <p class="rozet">Coming soon</p>
+  <p class="rozet">Out now</p>
   <h1 class="logo" aria-label="Uzi Games">
     <span class="s" aria-hidden="true"><i>u</i><i>z</i><i>i</i></span>
     <span class="s" aria-hidden="true"><i>g</i><i>a</i><i>m</i><i>e</i><i>s</i></span>
   </h1>
-  <p class="merhaba">Hi, I’m Uzay! My dad and I make games together. Our first games are coming soon.</p>
+  <p class="merhaba">Hi, I’m Uzay! My dad and I make games together. Our first game is out now.</p>
+  <section class="oyun" aria-label="Little Koi">
+    <img src="/img/little-koi.png" alt="" width="84" height="84">
+    <div>
+      <h2>Little Koi</h2>
+      <p>Grow from a tiny koi into the biggest fish in the ocean.</p>
+      <a class="magaza" href="https://apps.apple.com/app/id6831537348">Download on the App Store</a>
+    </div>
+  </section>
   <a class="lab" href="/lab/">Enter the Lab <span class="ok" aria-hidden="true">→</span></a>
   <p class="lab-not">Come and play the games we’re still testing. For friends and family, with a sign-in.</p>
 </main>
