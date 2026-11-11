@@ -12,7 +12,8 @@
 //
 // Page -> server:  merhaba {token, profil, kur, surum}   ayar {ayar} (host, waiting room)   basla (host)
 //                  d {p, v} (my score and live state, up to 15 a second)   o {e} (a one-off event for the others)
-//                  bitir {p, eser} (I'm done; eser = a finished piece of work to show at the end, e.g. a song)
+//                  bitir {p, eser, sk} (I'm done; eser = a finished piece of work to show at the end, e.g. a song;
+//                  sk = what to rank by instead of p, e.g. Kelime Düellosu: who won the match when a clock ran out)
 //                  son (host: end the round now)   and the text 'ping'
 // Server -> page:  hos {ben}   oda {id, durum, kurucu, oyuncular, ayar, en, tur, sira, sonra}
 //                  basla {tohum, tur, ayar, kadro, gecen, sure, log (kayit: [[no, e], ...])}   s {g, k, p: [[no, puan, bitti, v], ...]}
@@ -337,6 +338,7 @@ export class GenelOda extends DurableObject {
     if (m.p !== undefined) k.p = sayi(m.p);
     if (m.v !== undefined) { const s = json(m.v, EN_UZUN_V); if (s != null) k.v = JSON.parse(s); }
     if (m.eser !== undefined) { const s = json(m.eser, EN_UZUN_ESER); if (s != null) k.eser = JSON.parse(s); }
+    if (m.sk !== undefined) k.sk = sayi(m.sk);
     k.b = Math.max(1, simdi - this.r.t0);
     if (!this.r.ilk) {
       this.r.ilk = simdi;
@@ -363,18 +365,19 @@ export class GenelOda extends DurableObject {
 
   sonuc() {
     const sira = this.ayarlar.sira;
-    const liste = [...this.r.kadro.values()].map((k) => ({ no: k.no, ad: k.ad, renk: k.renk, p: k.p, b: k.b, v: k.v, eser: k.eser }));
+    const liste = [...this.r.kadro.values()].map((k) => ({ no: k.no, ad: k.ad, renk: k.renk, p: k.p, b: k.b, v: k.v, eser: k.eser, sk: k.sk }));
+    const deger = (x) => (typeof x.sk === 'number' ? x.sk : x.p);   // the page may say what to rank by (sk)
     liste.sort((a, b) => {
       if (sira === 'sure') {
         if (!!a.b !== !!b.b) return a.b ? -1 : 1;
         if (a.b && b.b && a.b !== b.b) return a.b - b.b;
       }
-      return b.p - a.p || (a.b || 1e12) - (b.b || 1e12);
+      return deger(b) - deger(a) || (a.b || 1e12) - (b.b || 1e12);
     });
     let onceki = null;
     liste.forEach((x, i) => {
       // the same place for a tie
-      const ayni = onceki && (sira === 'sure' ? (x.b === onceki.b && (x.b || x.p === onceki.p)) : x.p === onceki.p);
+      const ayni = onceki && (sira === 'sure' ? (x.b === onceki.b && (x.b || deger(x) === deger(onceki))) : deger(x) === deger(onceki));
       x.sira = ayni ? onceki.sira : i + 1;
       onceki = x;
     });

@@ -10,17 +10,20 @@ Kelime merdiveni, karşılıklı oynanır. Umut ile eşinin isteğinden çıktı
 - **Başlangıç:** sırası gelen oyuncuya üç kelime gösterilir (sözlüğün `serve` listesinden: iyi bilinen, en az 4 bilinen komşusu olan kelimeler), biri seçilip karşıya gönderilir. 10 sn içinde seçmezse rastgele biri gider. Bir maçta aynı başlangıç kelimesi iki kez gelmez. Başlayan her sayıda değişir; iki kişide ilk başlayan yazı tura, bota karşı oyuncu başlar.
 - **Cevap:** gelen kelimenin tek harfi değiştirilir (aynı uzunluk). Yeni kelime listede olmalı ve o sayıda oynanmamış olmalı (oynanan kelime yanar). Hatalı deneme sırayı değiştirmez, sadece süre gider.
 - **Süre:** Rahat 10 sn'den 5'e, Normal 7'den 3,5'e, Hızlı 5'ten 2,5'e; her kelimede 0,5 / 0,4 / 0,3 sn kısalır. İki kişide oyuncu başına +0 / +2 / +4 sn handikap (anne-baba ile çocuk için).
+- **Saat (11 Kasım 2026, Umut: "herkesin 30 saniyesi olsun, bildikçe +2"):** menüde Süre → Saat, altında "Herkesin süresi (bütün maç)": 20 / 30 / 45 / 60 sn (varsayılan 30). Satranç saati gibi: herkesin bütün maç için tek süresi var, yalnız kendi sırasında akar (başlangıç kelimesini seçmek saate dahil değil; o 10 sn'lik çubuk gri), her geçerli kelime +2 sn getirir (`KT.CLOCK.inc`). Handikap saat modunda kelime başına eklenir (+2 handikap = her kelime +4 sn). Süresi biten maçı kaybeder, sayıda önde olsa da (sonuçta "süre bitti"). Çıkmaz yine sayıyı hemen alır; hedef sayıya ulaşan yine kazanır. **Sayıyı ver:** saatin yanındaki düğme; takılan sayıyı rakibe bırakır, kalan süresi kendinde kalır (yoksa yalnız nadir kelimelerle çıkılan bir kelimeye takılmak bütün maçı kaybettirirdi). Kaybedenin yarısında yine yazabileceği kelimeler çıkar. İki saat de oyuncu adlarının yanında/çubuğun yanında görünür (10 sn altında ondalıklı, kırmızı). Seçim Umut ile eşinin denemesi için; hangi süre keyifli, bakılacak.
 - **Sayı:** süresinde cevap veremeyen kaybeder. Kaybedenin yarısında yazabileceği kelimeler çıkar (önce bilinenler, en çok 5).
 - **Çıkmaz:** gönderilen kelimenin listede kullanılmamış hiç komşusu yoksa sayı hemen gönderenin.
 - **Maç:** sayı yarışı. Kısa maç 5 sayı (varsayılan), uzun maç 9 (`core.js` → `TARGET`). Hedefe bir sayı kalınca "Maç sayısı".
 - **Hangi kelimeler (Türkçe):** sözlük kelimeleri (türetilmişler dahil: ÜNLÜ, UÇUŞ) ve iyi bilinen fiillerin kökü (GEL, ANLA, OTUR; sözlüklerde fiiller -mek'li durduğu için). Ekli haller geçmez (EVDE, YOLU, ALDI, BANA). 11 Kasım 2026'da bir günlüğüne "Ekli kelimeler: Geçer" ayarı vardı (commit 7407cb2, kökü kelimenin yanında yazıyordu); ekli isimler saçma geldi (Umut), aynı gün kaldırıldı. İngilizcede ENABLE zaten çekimli biçimleri içeriyor (cats, ran).
 - **İki kişi:** tek ekran; üst yarı 180° dönük, karşılıklı oturmak için (iPad masada). Herkesin kendi klavyesi var, sırası olmayanınki sönük. Ortadaki koyu şeritte gönderilen kelime karşıya uçar (karşıya geçerken döner). Maç sonu kartının bir kopyası üstteki oyuncu için ters durur.
 - **Bota karşı:** oyuncu altta, bot üstte küçük bir şeritte.
+- **Saatte bot:** bulamazsa bir süre arar sonra sayıyı verir (`LEVELS` → `giveUp`: kolay 5–8, orta 4–6,5, zor 3–5 sn; saati azken daha erken). Saati azalınca acele eder ve daha çok kaçırır, çok nadiren süresi biter. Bot maçlarında (tr/4, kısa) maç ~2–4 dk, sayıların çoğu "sayıyı ver"le biter; kolay bot 30 sn'de maçı ~3 sn ile bitiriyor (çocuk için 45–60 sn daha rahat olabilir). Tablo `core.test.js` sonunda.
 - **İki telefondan (11 Kasım 2026):** menüde "İki telefondan" (yalnız Lab'da, girişliyken). Lab'ın ortak odaları (`hesap/oda.js`, sunucu `fish/sunucu/src/genel-oda.js`, oyun adı `kelime`, odada 2 kişi): biri oda kurar, "Arkadaşını çağır" ile link gönderir; kurucu dil, harf, süre ve maç uzunluğunu seçer, ikinci kişi gelince başlatır (`enAz: 2`). Her telefonda kişi altta, rakip üstte küçük şeritte (bota karşı gibi, rakibin renginde).
-  - İki telefon aynı maçı oynar: başlangıç kelimeleri odanın tohumundan (`KT.seeded`), ilk başlayanı tohum seçer. Yalnız sırası gelen hamle yapar ve öbür telefona yollar: `{k: 's'|'h'|'t', w, n}` (başlangıç kelimesi, cevap, süre bitti; `n` = önceki hamle sayısı). Süreyi sırası gelen telefon tutar; öbüründeki saat yalnız gösterir, biterse "X bekleniyor…".
+  - İki telefon aynı maçı oynar: başlangıç kelimeleri odanın tohumundan (`KT.seeded`), ilk başlayanı tohum seçer. Yalnız sırası gelen hamle yapar ve öbür telefona yollar: `{k: 's'|'h'|'t'|'p', w, n, u}` (başlangıç kelimesi, cevap, süre bitti, sayıyı verdi; `n` = önceki hamle sayısı; saat modunda `u` = hamlenin sürdüğü saniye, iki telefon saatleri bundan aynı hesaplar). Süreyi sırası gelen telefon tutar; öbüründeki saat yalnız gösterir, biterse "X bekleniyor…".
   - Oda hamleleri saklar (`kayit`). Bağlantı kopup gelirse `geri(m)` kaçan hamleleri alır, odaya gitmemiş kendi hamlelerini yeniden yollar; sayfa kapanıp açılırsa (odalar listesinden "Katıl") `basla` mesajındaki `log` maçı sessizce yeniden oynatır. Kopanın yeri 5 dk tutulur.
   - Mola yok: duraklat düğmesi odanın menüsünü açar. Maç bitince sonucu oda gösterir (kazanılan sayılar); "Devam" bekleme odasına döner, kurucu rövanş başlatır. Odadan çıkınca telefonun kendi ayarları geri gelir.
-  - Sürüm: oda yalnız aynı kelime listesine sahip sayfaları birleştirir (`surum` = `NET_VERSION` + kelime listelerinin özeti); liste değişince eski sayfa "Oyunun yeni sürümü çıktı" der.
+  - Sürüm: oda yalnız aynı kelime listesine sahip sayfaları birleştirir (`surum` = `NET_VERSION` + kelime listelerinin özeti); liste değişince eski sayfa "Oyunun yeni sürümü çıktı" der. `NET_VERSION` 2: saat modu.
+  - Saat modu odada da var (kurucu Süre → Saat ve süreyi seçer; süre seçimi `goster` ile yalnız Saat'te görünür). Oda sonucu maçı kazananı birinci gösterir (`oda.bitir(…, sk)`): süresi biten sayıda önde olsa da ikinci.
 - **Giriş:** önce değişecek harfe dokun, sonra ekran klavyesinden yeni harfe. Bilgisayarda bütün kelimeyi yazmak da olur (4 harf yazılınca kendiliğinden gönderilir); 1–4 ile harf seçip tek harf yazmak da; 1–3 başlangıç kelimesini seçer. Esc mola.
 
 ## Dosyalar
@@ -29,12 +32,12 @@ Kelime merdiveni, karşılıklı oynanır. Umut ile eşinin isteğinden çıktı
 - `cover.png` paylaşım görseli, `icon.png` ana ekran simgesi: `src/tools/cover.py` üretir.
 - `src/` kaynak (siteye çıkmaz, `.vercelignore`):
   - `words.js` üretilmiş sözlük. **Elle düzenleme**: `tools/words.py` üretir.
-  - `core.js` DOM'suz kurallar, sözlük araması (tek harf farkı için `k_sa` kovaları, `Lexicon(words, lang, len)`) ve bot. Node'da da çalışır.
+  - `core.js` DOM'suz kurallar, sözlük araması (tek harf farkı için `k_sa` kovaları, `Lexicon(words, lang, len)`), saat (`CLOCK`, `Match` `pace: 'saat'`, `bank`, `banks`, `shot(word, used)`, `pass(used)`) ve bot. Node'da da çalışır.
   - `app.js` arayüz (menü, oyun, mola, sonuç, nasıl oynanır), `audio.js` WebAudio sesleri, `index.html` iskelet, `style.css` görünüm, `build.js` derleme.
   - `fonts/` Nunito (OFL). Fredoka kullanma: Fredoka'da ğ, ş, İ yok.
-  - `test/core.test.js` sözlük (fiil kökleri geçer, ekli haller geçmez), Türkçe büyük/küçük harf, kurallar, bot maçları (sonunda bot maçlarının zincir/süre tablosu); `test/browser.py` telefonda bota karşı, 3 harfte fiil kökü (eski ekli ayarlı cihazla), iPad dik ve yatay iki kişi, dil, gerçek dokunma (görüntüler `/tmp/kt-shots/`). Rastgelelik tohumlu, her seferinde aynı maçlar.
+  - `test/core.test.js` sözlük (fiil kökleri geçer, ekli haller geçmez), Türkçe büyük/küçük harf, kurallar, bot maçları, saat kuralları (sonunda bot maçlarının zincir/süre tablosu ve saat modu tablosu); `test/browser.py` telefonda bota karşı, 3 harfte fiil kökü (eski ekli ayarlı cihazla), saat modu (bota karşı: saatler, +2, sayıyı ver, süre bitince maç biter; iPad'de iki kişi, 60 sn, handikap), iPad dik ve yatay iki kişi, dil, gerçek dokunma (görüntüler `/tmp/kt-shots/`). Rastgelelik tohumlu, her seferinde aynı maçlar.
 - Derleme: `node lab/kelime-tenisi/src/build.js --lab` → `index.html`. Hesapsız tek başına kopya: `node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html`.
-- Deneme: `node lab/kelime-tenisi/src/test/core.test.js`, sonra tek başına kopyayı derleyip `python3 lab/kelime-tenisi/src/test/browser.py`. İki telefon: `fish/sunucu`'da `npx wrangler dev --var AUTH_YOK:1 --port 8787 --ip 127.0.0.1`, sonra `python3 lab/kelime-tenisi/src/test/online.py` (iki tarayıcı, taklit hesap; oda kurma ve davet, aynı maç, süre biterse sayı, kopunca yetişme, sayfa yeniden açılınca devam, sonuç ve rövanş).
+- Deneme: `node lab/kelime-tenisi/src/test/core.test.js`, sonra tek başına kopyayı derleyip `python3 lab/kelime-tenisi/src/test/browser.py`. İki telefon: `fish/sunucu`'da `npx wrangler dev --var AUTH_YOK:1 --port 8787 --ip 127.0.0.1`, sonra `python3 lab/kelime-tenisi/src/test/online.py` (iki tarayıcı, taklit hesap; oda kurma ve davet, aynı maç, süre biterse sayı, kopunca yetişme, sayfa yeniden açılınca devam, sonuç ve rövanş, saat modu: iki telefonda aynı süreler, sayıyı verme, sayıda önde olanın süresi bitince oda sonucu).
 
 ## Sözlük
 
@@ -53,9 +56,9 @@ Kelime merdiveni, karşılıklı oynanır. Umut ile eşinin isteğinden çıktı
 ## Kayıt ve Lab
 
 - `kelime-tenisi.v1` (hesaba eşitlenir, `data-kayit`): bota karşı galibiyet/yenilgi (seviye seviye), iki kişilik maç sayısı, iki telefonlu maç sayısı (`online`), en uzun zincir ve kelimeleri, çıkmaz sayısı (`deadEnds`; ilk sürümde `smashes`, açılışta taşınır). Menüde rekor satırı buradan.
-- `kelime-tenisi.device` (cihazda): dil, kelime boyu, süre, maç biçimi (`format` 1 kısa, 2 uzun), bot seviyesi, adlar, handikap, ses, "nasıl oynanır" görüldü mü (11 Kasım'daki `ekli` alanı açılışta silinir). İlk oyuncu adı Lab profilinden gelir.
+- `kelime-tenisi.device` (cihazda): dil, kelime boyu, süre (`pace`: rahat/normal/hizli/saat; saat modunda `bank` sn), maç biçimi (`format` 1 kısa, 2 uzun), bot seviyesi, adlar, handikap, ses, "nasıl oynanır" görüldü mü (11 Kasım'daki `ekli` alanı açılışta silinir). İlk oyuncu adı Lab profilinden gelir.
 - Dil: cihazın dili ne olursa olsun oyun Türkçe açılır. İngilizce yalnız menüdeki "English"e dokunulunca (`langPicked`), sonra hatırlanır.
-- Not (Türkçe): maç başı (mod, dil, harf, süre, hedef sayı), maç sonu (sonuç, skor, en uzun zincir, çıkmaz, süre). İki telefonda oda da not yazar (odaya giriş, tur sonu).
+- Not (Türkçe): maç başı (mod, dil, harf, süre, hedef sayı; saat modunda "saat 30 sn +2"), maç sonu (sonuç, skor, en uzun zincir, çıkmaz, süre; saat modunda kalan süreler, verilen sayılar, süresi biten). İki telefonda oda da not yazar (odaya giriş, tur sonu).
 - Skor: iki telefonlu maçın sonunda kazanılan sayılar `scores`'a `kelime-tenisi-oda` olarak (ayrıntı: sıra, en uzun zincir, hedef). Tek ekran ve bot maçları skor yazmaz.
 - "Nasıldı?" mola penceresinde (`mola`), maç sonunda (`mac-sonu`) ve odanın menüsünde (`oda`).
 - Deneme: `kelime-tenisi.debug` = `1` sayfanın içini `window.__kt` olarak açar (`G`, `speed`, `timeout()`, `lexFor(dil, harf)`, `oda`, `netReceive`).
@@ -67,7 +70,7 @@ Kelime merdiveni, karşılıklı oynanır. Umut ile eşinin isteğinden çıktı
 
 ## Sıradaki
 
-- Umut ile eşinin denemesi: ekli halleri kaldırılmış sürüm (fiil kökleri geçiyor), süre (Rahat mı Normal mi), 3 harf mi 4 harf mi, maç uzunluğu, ipucu listesi okunuyor mu.
+- Umut ile eşinin denemesi: ekli halleri kaldırılmış sürüm (fiil kökleri geçiyor), süre (Rahat mı Normal mı Saat mi; Saat'te kaç saniye), 3 harf mi 4 harf mi, maç uzunluğu, ipucu listesi okunuyor mu. "En keyifli modu bulmaya çalışıyoruz" (Umut).
 - Konsept, ad ve tasarım (tenis kalktı; yeni tema konuşulacak). Ad kesinleşince klasör, slug ve anahtarlar taşınır (eski adres yönlendirilir, kayıt bir kez taşınır).
 - İki telefon (11 Kasım'da yapıldı) Umut ile Zeynep'in denemesi. Sonra: tanımadığın biriyle eşleşme, sıralama ve ligler (`kelime-tenisi-rekabet.md`).
 - Özel vuruşlar: harf ekle/çıkar (3-4-5 harf arası), Türkçe "ek ekleme" modu.

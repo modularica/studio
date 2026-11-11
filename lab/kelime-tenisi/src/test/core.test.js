@@ -188,12 +188,101 @@ test('sayı yarışı: başlayan her sayıda değişir, maç sayısı, hedefe ul
   assert.strictEqual(KT.TARGET[1] < KT.TARGET[2], true);
 });
 
+console.log('Saat (maç boyu süre)');
+const answer = m => m.lex.neighbours(m.point.word, m.point.used).find(x => m.lex.neighbours(x, new Set([...m.point.used, x])).length > 0);
+test('saat: süre maç boyu, yalnız sıradakinden gider, her kelime +2 (handikap da eklenir)', () => {
+  const m = newMatch(11, { pace: 'saat', bank: 30, players: [{ name: 'A' }, { name: 'B', bonus: 2 }] });
+  assert.ok(m.clockMode);
+  assert.deepStrictEqual(m.banks, [30, 30]);
+  m.start(m.point.options[0]);              // the starting word is not on the clock
+  assert.strictEqual(m.shotTime(), 30);
+  m.shot(answer(m), 4.5);                   // B: 30 - 4.5 + 2 + 2
+  assert.deepStrictEqual(m.banks, [30, 29.5]);
+  assert.strictEqual(m.shotTime(), 30);     // A's clock has not moved
+  m.shot(answer(m), 7.25);                  // A: 30 - 7.25 + 2
+  assert.deepStrictEqual(m.banks, [24.75, 29.5]);
+  assert.strictEqual(m.shotTime(0), 24.75);
+  assert.strictEqual(m.paceName, 'saat');
+  assert.deepStrictEqual(KT.CLOCK.banks.includes(KT.CLOCK.bank), true);
+  // the default bank, and the old paces still work
+  assert.deepStrictEqual(newMatch(12, { pace: 'saat' }).banks, [KT.CLOCK.bank, KT.CLOCK.bank]);
+  assert.strictEqual(newMatch(13, { pace: 'rahat' }).clockMode, false);
+});
+test('saat: süresi biten maçı kaybeder (sayısı önde olsa da)', () => {
+  const m = newMatch(14, { pace: 'saat', bank: 20, target: 5, firstStarter: 0 });
+  // B gives three points away
+  for (let i = 0; i < 3; i++) {
+    m.start(m.point.options[0]);
+    if (m.point.turn === 0) m.shot(answer(m), 1);
+    const r = m.pass(1);
+    assert.strictEqual(r.how, 'pass');
+    assert.ok(!r.matchOver);
+    m.next();
+  }
+  assert.deepStrictEqual(m.points, [3, 0]);
+  const lead = 0;
+  m.start(m.point.options[0]);
+  if (m.point.turn !== lead) m.shot(answer(m), 1);
+  assert.strictEqual(m.point.turn, lead);
+  const r = m.timeout();
+  assert.ok(r.matchOver && r.flag);
+  assert.strictEqual(r.how, 'time');
+  assert.strictEqual(m.winner, 1 - lead);          // the one behind wins: the leader's clock ran out
+  assert.strictEqual(m.banks[lead], 0);
+  assert.strictEqual(m.phase, 'matchOver');
+});
+test('saat: sayıyı ver (pas) sayıyı rakibe verir, kalan süre kalır; çıkmaz yine sayı', () => {
+  const m = newMatch(15, { pace: 'saat', bank: 30, firstStarter: 0 });
+  m.start(m.point.options[0]);
+  const r = m.pass(6);
+  assert.strictEqual(r.winner, 0);
+  assert.strictEqual(r.how, 'pass');
+  assert.ok(r.left.common.length >= 1, 'shows what could have been played');
+  assert.deepStrictEqual(m.banks, [30, 24]);
+  assert.strictEqual(m.stats.passes[1], 1);
+  assert.strictEqual(m.stats.misses[1], 0);
+  m.next();
+  // passing with no time left is running out of time
+  m.start(m.point.options[0]);
+  const late = m.pass(99);
+  assert.ok(late.flag && late.matchOver);
+  // no passing in the normal paces
+  const n = newMatch(16, { pace: 'normal' });
+  n.start(n.point.options[0]);
+  assert.strictEqual(n.pass(1), null);
+});
+test('saat: çıkmaz sayıyı hemen alır ve maç sürer', () => {
+  const lex = new KT.Lexicon(WORDS, 'tr', 4);
+  let found = null;
+  for (const s of lex.serves) {
+    for (const v of lex.neighbours(s)) if (lex.neighbours(v, new Set([s, v])).length === 0) { found = [s, v]; break; }
+    if (found) break;
+  }
+  const m = newMatch(17, { pace: 'saat', bank: 30 });
+  m.point.options = [found[0], 'x', 'y'];
+  m.start(found[0]);
+  const r = m.shot(found[1], 3);
+  assert.strictEqual(r.how, 'dead');
+  assert.ok(!r.matchOver && !r.flag);
+  assert.deepStrictEqual(r.banks, [30, 29]);
+});
+test('saat: aynı hamleler iki telefonda aynı süreleri verir', () => {
+  const a = newMatch(18, { pace: 'saat', bank: 45 }), b = newMatch(18, { pace: 'saat', bank: 45 });
+  const times = [1.37, 2.01, 0.33, 4.99, 3.14, 2.72, 1.01];
+  for (const m of [a, b]) {
+    m.start(m.point.options[0]);
+    for (const u of times) { const w = answer(m); if (!w) break; const r = m.shot(w, u); if (r.how) break; }
+  }
+  assert.deepStrictEqual(a.banks, b.banks);
+  for (const x of a.banks) assert.strictEqual(x, Math.round(x * 100) / 100);
+});
+
 console.log('Bot');
 function botMatch(lang, len, levels, seed, opts) {
   const o = opts || {};
   const lex = new KT.Lexicon(WORDS, lang, len);
   const r = KT.seeded(seed);
-  const m = new KT.Match({ lex, players: [{ name: 'A' }, { name: 'B' }], random: r, pace: o.pace || 'normal', target: o.target || KT.TARGET[1] });
+  const m = new KT.Match({ lex, players: [{ name: 'A' }, { name: 'B' }], random: r, pace: o.pace || 'normal', bank: o.bank, target: o.target || KT.TARGET[1] });
   const bots = levels.map(l => new KT.Bot(l, r));
   let seconds = 0, guard = 0;
   while (m.phase !== 'matchOver' && guard++ < 5000) {
@@ -201,11 +290,12 @@ function botMatch(lang, len, levels, seed, opts) {
     if (m.phase === 'start') { const s = bots[m.starter].open(m); seconds += s.delay + 0.7; m.start(s.word); continue; }
     const p = m.point.turn, t = m.shotTime();
     const rep = bots[p].reply(m);
+    if (rep.pass && rep.delay < t) { seconds += rep.delay; m.pass(rep.delay); continue; }
     if (!rep.word || rep.delay >= t) { seconds += t; m.timeout(); continue; }
     assert.ok(lex.isCommon(rep.word), 'bot played a rare word ' + rep.word);
     assert.ok(!m.point.used.has(rep.word), 'bot replayed ' + rep.word);
     seconds += rep.delay + 0.6;
-    const res = m.shot(rep.word);
+    const res = m.shot(rep.word, rep.delay);
     assert.ok(res.ok, JSON.stringify(res));
   }
   assert.strictEqual(m.phase, 'matchOver');
@@ -240,7 +330,34 @@ for (const [lang, len] of cases) {
   });
 }
 
+// pace 'saat': how long the clock lasts, for bots (people are slower: think of the kolay bot)
+const clockReport = {};
+for (const bank of KT.CLOCK.banks) {
+  test(`saat ${bank} sn (tr/4): bot maçları biter`, () => {
+    for (const lv of ['kolay', 'orta', 'zor']) {
+      let flags = 0, secs = 0, passes = 0, left = 0;
+      const N = 60;
+      for (let i = 0; i < N; i++) {
+        const { m, seconds } = botMatch('tr', 4, [lv, lv], 9000 + i, { pace: 'saat', bank });
+        if (m.history[m.history.length - 1].flag) flags++;
+        passes += m.stats.passes[0] + m.stats.passes[1];
+        left += (m.banks[0] + m.banks[1]) / 2;
+        secs += seconds;
+        assert.ok(m.banks.every(x => x >= 0));
+      }
+      clockReport[`${bank} sn · ${lv}`] = {
+        'süresi biten maç': Math.round(100 * flags / N) + '%',
+        'maçta pas': +(passes / N).toFixed(1),
+        'kalan süre (ort.)': Math.round(left / N) + ' sn',
+        'maç ~dk': +(secs / 60 / N).toFixed(1),
+      };
+    }
+  });
+}
+
 console.log(`\nÖzet (bot maçları, normal süre; dakikalar orta-orta, kısa ${KT.TARGET[1]}, uzun ${KT.TARGET[2]} sayı):`);
 console.table(report);
+console.log(`\nSaat modu (tr/4, kısa maç, iki bot aynı seviyede, her kelime +${KT.CLOCK.inc} sn):`);
+console.table(clockReport);
 console.log(`\n${passed} geçti, ${failed} kaldı`);
 process.exit(failed ? 1 : 0);

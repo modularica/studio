@@ -61,7 +61,7 @@
           <label class="name-field p1"><span class="dot"></span><input id="name1" maxlength="14" autocomplete="off" spellcheck="false"></label>
           <label class="name-field p2"><span class="dot"></span><input id="name2" maxlength="14" autocomplete="off" spellcheck="false"></label>
         </div>
-        <div class="row-label" data-t="bonus">Ek süre (handikap)</div>
+        <div class="row-label" id="bonusLabel">Ek süre (handikap)</div>
         <div class="bonus-row">
           <div class="chips small" data-set="bonus0"><button type="button" class="chip" data-v="0">+0</button><button type="button" class="chip" data-v="2">+2 sn</button><button type="button" class="chip" data-v="4">+4 sn</button></div>
           <div class="chips small" data-set="bonus1"><button type="button" class="chip" data-v="0">+0</button><button type="button" class="chip" data-v="2">+2 sn</button><button type="button" class="chip" data-v="4">+4 sn</button></div>
@@ -82,7 +82,18 @@
             <button type="button" class="chip" data-v="rahat" data-t="rahat">Rahat</button>
             <button type="button" class="chip" data-v="normal" data-t="normal">Normal</button>
             <button type="button" class="chip" data-v="hizli" data-t="hizli">Hızlı</button>
+            <button type="button" class="chip" data-v="saat" data-t="saat">Saat</button>
           </div>
+        </div>
+        <div class="opt" id="bankOpt" hidden>
+          <div class="row-label" data-t="bankLabel">Herkesin süresi (bütün maç)</div>
+          <div class="chips" data-set="bank">
+            <button type="button" class="chip" data-v="20">20 sn</button>
+            <button type="button" class="chip" data-v="30">30 sn</button>
+            <button type="button" class="chip" data-v="45">45 sn</button>
+            <button type="button" class="chip" data-v="60">60 sn</button>
+          </div>
+          <p class="opt-hint" id="bankHint"></p>
         </div>
         <div class="opt">
           <div class="row-label" data-t="format">Maç</div>

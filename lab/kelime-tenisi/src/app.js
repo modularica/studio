@@ -20,7 +20,12 @@
       roomAlone: 'Rakibine “Arkadaşını çağır” ile link gönder ya da oyunda “İki telefondan”a bassın.',
       roomLang: 'Dil', pts: '{n} sayı', netWait: '{name} bekleniyor…', netFull: 'Bu odada maç sürüyor.',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
-      word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı',
+      word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı', saat: 'Saat',
+      bankLabel: 'Herkesin süresi (bütün maç)', secs: '{n} sn', bonusClock: 'Her kelimede ek süre (handikap)',
+      bankHint: 'Saat yalnız kendi sıranda akar. Her kelime +{inc} sn. Süresi biten maçı kaybeder.',
+      give: 'Sayıyı ver', gaveYou: 'Sayıyı verdin.', gaveThem: '{name} sayıyı verdi.',
+      flagYou: 'Süren bitti!', flagThem: '{name}: süre bitti!', flagWin: 'Rakibinin süresi bitti!', byFlag: 'süre bitti',
+      statClock: 'Kalan süre: <b>{a}</b>',
       format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
       soundOn: 'Ses açık', soundOff: 'Ses kapalı', paused: 'Mola', resume: 'Devam', quit: 'Ana menü',
       nasildi: 'Nasıldı?', again: 'Rövanş', menu: 'Ana menü', gotIt: 'Anladım',
@@ -41,6 +46,7 @@
       how1: '<b>Başla:</b> üç kelimeden birini seç, karşıya gönder.',
       how2: '<b>Cevap ver:</b> gelen kelimenin <b>tek harfini</b> değiştir. Önce harfe, sonra yeni harfe dokun.',
       how3: '<b>Süre</b> her kelimede biraz kısalır; süresinde cevap veremeyen sayıyı kaybeder. Bir kelime bir sayıda bir kez oynanır.',
+      howClock: '<b>Saat:</b> herkesin bütün maç için {n} saniyesi var. Saat yalnız kendi sıranda akar, her kelime +{inc} sn getirir. Süresi biten maçı kaybeder. Takılırsan <b>Sayıyı ver</b>: sayı rakibe gider, kalan süren seninle kalır. Bir kelime bir sayıda bir kez oynanır.',
       how4: '<b>Çıkmaz:</b> hiç çıkışı olmayan bir kelime gönderirsen sayı hemen senin.',
       howWords: '<b>Kelimeler:</b> sözlükteki kelimeler geçer; fiiller -mek\'siz yazılır (GEL, ANLA). Ekli haller geçmez (EVDE, ALDI).',
       howWin: '<b>{n} sayıya</b> ilk ulaşan kazanır. Her sayıda başlayan değişir.',
@@ -54,7 +60,12 @@
       roomAlone: 'Send your opponent the link with “Invite a friend”, or they can tap “Two phones” in the game.',
       roomLang: 'Language', pts: '{n} points', netWait: 'Waiting for {name}…', netFull: 'A match is on in this room.',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
-      word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast',
+      word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast', saat: 'Clock',
+      bankLabel: 'Each player\'s time (whole match)', secs: '{n} s', bonusClock: 'Extra time per word (handicap)',
+      bankHint: 'Your clock runs only on your turn. Every word adds {inc} s. Run out and you lose the match.',
+      give: 'Give up point', gaveYou: 'You gave the point away.', gaveThem: '{name} gave the point away.',
+      flagYou: 'Your time is up!', flagThem: '{name} is out of time!', flagWin: 'Your opponent is out of time!', byFlag: 'out of time',
+      statClock: 'Time left: <b>{a}</b>',
       format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
       soundOn: 'Sound on', soundOff: 'Sound off', paused: 'Paused', resume: 'Resume', quit: 'Main menu',
       nasildi: 'How was it?', again: 'Rematch', menu: 'Main menu', gotIt: 'Got it',
@@ -75,6 +86,7 @@
       how1: '<b>Start:</b> pick one of three words and send it over.',
       how2: '<b>Answer:</b> change <b>one letter</b> of the word that comes to you. Tap the letter, then the new letter.',
       how3: '<b>Time</b> gets a little shorter with every word; miss it and you lose the point. A word can be played once per point.',
+      howClock: '<b>Clock:</b> each of you has {n} seconds for the whole match. Your clock runs only on your turn and every word adds {inc} s. Run out and you lose the match. Stuck? <b>Give up point</b>: your opponent gets the point and you keep the time you have. A word can be played once per point.',
       how4: '<b>Dead end:</b> send a word with no way out and the point is yours at once.',
       howWords: '<b>Words:</b> any dictionary word counts, plurals and verb forms included (CATS, RAN).',
       howWin: 'First to <b>{n} points</b> wins. The starting player changes every point.',
@@ -93,12 +105,15 @@
   // (langPicked); older saves picked 'en' from navigator.language, so they reset.
   const S = Object.assign({
     lang: 'tr', langPicked: false,
-    mode: 'duo', level: 'orta', len: 4, pace: 'normal', format: 1,
+    mode: 'duo', level: 'orta', len: 4, pace: 'normal', bank: KT.CLOCK.bank, format: 1,
     names: ['', ''], bonus: [0, 0], sound: true, seenHow: false,
   }, readJSON(DEVICE_KEY) || {});
   if (!S.langPicked || !T[S.lang]) S.lang = 'tr';
   if (![3, 4].includes(+S.len)) S.len = 4;
   S.len = +S.len; S.format = +S.format === 2 ? 2 : 1;
+  if (!KT.PACES[S.pace] && S.pace !== 'saat') S.pace = 'normal';
+  if (!KT.CLOCK.banks.includes(+S.bank)) S.bank = KT.CLOCK.bank;
+  S.bank = +S.bank;
   delete S.ekli;   // "inflected words count" setting, 11 Nov 2026 only
   function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function saveDevice() { try { localStorage.setItem(DEVICE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -144,6 +159,9 @@
     $$('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
     $('[data-set=format] [data-v="1"]').textContent = t('short', { n: KT.TARGET[1] });
     $('[data-set=format] [data-v="2"]').textContent = t('long', { n: KT.TARGET[2] });
+    $$('[data-set=bank] .chip').forEach(c => { c.textContent = t('secs', { n: c.dataset.v }); });
+    $('#bankHint').textContent = t('bankHint', { inc: KT.CLOCK.inc });
+    $('#bonusLabel').textContent = t(S.pace === 'saat' ? 'bonusClock' : 'bonus');
     $('#name1').placeholder = t('p1');
     $('#name2').placeholder = t('p2');
     $('#soundBtn').textContent = S.sound ? t('soundOn') : t('soundOff');
@@ -154,7 +172,7 @@
     if (w + l) parts.push(t('record', { w, l }));
     if (save.longest) parts.push(t('recordChain', { n: save.longest }));
     $('#record').textContent = parts.join(' · ');
-    const how = ['how1', 'how2', 'how3', 'how4', 'howWords'].map(k => t(k));
+    const how = ['how1', 'how2', S.pace === 'saat' ? 'howClock' : 'how3', 'how4', 'howWords'].map(k => t(k, { n: S.bank, inc: KT.CLOCK.inc }));
     how.push(t('howWin', { n: KT.TARGET[S.format] }));
     $('#howList').innerHTML = how.map(h => '<li>' + h + '</li>').join('');
   }
@@ -163,7 +181,8 @@
     $$('.mode').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
     $('#setupBot').classList.toggle('on', S.mode === 'bot');
     $('#setupDuo').classList.toggle('on', S.mode === 'duo');
-    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
+    const val = { level: S.level, len: String(S.len), pace: S.pace, bank: String(S.bank), format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
+    $('#bankOpt').hidden = S.pace !== 'saat';
     $$('[data-set]').forEach(g => $$('.chip', g).forEach(c => c.classList.toggle('on', c.dataset.v === val[g.dataset.set])));
     $('#name1').value = S.names[0] || '';
     $('#name2').value = S.names[1] || '';
@@ -176,6 +195,7 @@
     if (k === 'level') S.level = v;
     else if (k === 'len') S.len = +v;
     else if (k === 'pace') S.pace = v;
+    else if (k === 'bank') S.bank = +v;
     else if (k === 'format') S.format = +v;
     else if (k === 'bonus0') S.bonus[0] = +v;
     else if (k === 'bonus1') S.bonus[1] = +v;
@@ -236,14 +256,15 @@
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
     const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
     // online: both phones draw the same starting words from the room's seed
-    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs, random: online ? KT.seeded(online.tohum) : undefined });
+    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, bank: S.bank, firstStarter: fs, random: online ? KT.seeded(online.tohum) : undefined });
     G = {
       m, lex, mode, firstStarter: fs,
       bots: [null, mode === 'bot' ? new KT.Bot(S.level) : null],
       net: online ? { seat: online.seat, me: online.me, opp: online.opp, done: 0, queue: [], sent: [] } : null,
       panels: [$('#panel0'), $('#panel1')],
       sel: [-1, -1], typed: '',
-      clock: { owner: -1, total: 1, left: 0, elapsed: 0, running: false, onEnd: null },
+      clock: { owner: -1, total: 1, limit: 1, left: 0, elapsed: 0, running: false, onEnd: null, bank: false },
+      shown: ['', ''],
       plan: null, waits: [], paused: false, speed: 1, lastTs: performance.now(), raf: 0, lastTick: -1,
       firstShot: [true, true], started: Date.now(), pointBusy: false, stage: null, over: false,
     };
@@ -252,6 +273,7 @@
     const game = $('#game');
     game.classList.toggle('duo', mode === 'duo');
     game.classList.toggle('bot', mode === 'bot' || mode === 'online');
+    game.classList.toggle('clockmode', m.clockMode);
     $('#menu').classList.remove('on');
     game.classList.add('on');
     $('#endSheet').hidden = true;
@@ -262,7 +284,7 @@
     layout();
     G.raf = requestAnimationFrame(frame);
     const who = mode === 'bot' ? 'bota karşı (' + S.level + ')' : mode === 'online' ? 'iki telefon, ' + playerName(1) + ' ile' : 'iki kişi';
-    if (!(online && online.log.length)) labNote(`Maç başladı: ${who}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
+    if (!(online && online.log.length)) labNote(`Maç başladı: ${who}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${paceNote()}, ${KT.TARGET[S.format]} sayı`);
     if (online && online.log.length) {
       netReplay(online.log);   // back in a match that was already going
     } else if (mode === 'duo' || mode === 'online') {
@@ -272,6 +294,8 @@
       enterStart();
     }
   }
+
+  const paceNote = () => (S.pace === 'saat' ? `saat ${S.bank} sn +${KT.CLOCK.inc}` : S.pace);
 
   function stopGame() {
     if (!G) return;
@@ -286,11 +310,16 @@
     p.style.removeProperty('--pc');
     if (isRemote(i) && /^#[0-9a-f]{6}$/i.test(G.net.opp.renk || '')) p.style.setProperty('--pc', G.net.opp.renk);
     if (small(i)) {
-      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="pscore"></span></div>
+      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="ptime"></span><span class="pscore"></span></div>
         <div class="tiles small"></div><div class="clock idle"><i></i></div>`;
     } else {
       p.innerHTML = `<div class="phead"><span class="pname"></span><span class="dots"></span><span class="pscore"></span></div>
-        <div class="msg"></div><div class="tiles"></div><div class="clock idle"><i></i></div><div class="kbd off"></div>`;
+        <div class="msg"></div><div class="tiles"></div>
+        <div class="clockrow"><div class="clock idle"><i></i></div><span class="ptime"></span><button type="button" class="give" disabled></button></div>
+        <div class="kbd off"></div>`;
+      const give = $('.give', p);
+      give.textContent = t('give');
+      give.addEventListener('click', e => { e.preventDefault(); onPass(i); });
       const kbd = $('.kbd', p);
       kbd.innerHTML = KT.KEYS[S.lang].map(row => '<div class="krow">' + [...row].map(c =>
         `<button type="button" class="key" data-k="${c}">${esc(U(c))}</button>`).join('') + '</div>').join('');
@@ -308,6 +337,32 @@
       sc.classList.toggle('hot', !!m.pointFor(i));
       $('.dots', p).innerHTML = Array.from({ length: m.target }, (_, k) => `<i class="${k < m.points[i] ? 'won' : ''}"></i>`).join('');
     }
+    drawBanks();
+  }
+  // pace 'saat': both clocks; the one of the player to move counts down
+  function fmtTime(s) {
+    s = Math.max(0, s);
+    if (s >= 10) { const c = Math.ceil(s); return Math.floor(c / 60) + ':' + String(c % 60).padStart(2, '0'); }
+    return (Math.floor(s * 10) / 10).toFixed(1);
+  }
+  function drawBanks() {
+    if (!G || !G.m.clockMode) return;
+    const c = G.clock;
+    for (const i of [0, 1]) {
+      const live = c.running && c.bank && c.owner === i;
+      const secs = live ? c.left : G.m.banks[i];
+      const txt = fmtTime(secs), key = txt + (live ? '*' : '');
+      if (G.shown[i] === key) continue;
+      G.shown[i] = key;
+      const el = $('.ptime', panelOf(i));
+      el.textContent = txt;
+      el.classList.toggle('run', live);
+      el.classList.toggle('low', secs < 10);
+    }
+  }
+  function setGive(i, on) {
+    if (small(i)) return;
+    $('.give', panelOf(i)).disabled = !on;
   }
 
   function setMsg(i, html, cls) {
@@ -371,16 +426,29 @@
 
   // ---------- clock & scheduler (paused together) ----------
   function wait(sec, fn) { G.waits.push({ left: sec, fn }); }
-  function startClock(owner, seconds, onEnd, visible) {
-    const c = G.clock;
-    c.owner = owner; c.total = seconds; c.left = seconds; c.elapsed = 0; c.running = true; c.onEnd = onEnd; c.visible = visible !== false;
+  // o: { visible (false: the start clock of the bot), bank (pace 'saat': the player's clock for the match) }
+  function startClock(owner, seconds, onEnd, o) {
+    const c = G.clock, opt = o || {};
+    c.owner = owner; c.limit = seconds; c.left = seconds; c.elapsed = 0; c.running = true; c.onEnd = onEnd;
+    c.visible = opt.visible !== false; c.bank = !!opt.bank;
+    c.total = c.bank ? Math.max(seconds, G.m.bank) : seconds;
     G.lastTick = -1;
-    for (const i of [0, 1]) $('.clock', panelOf(i)).classList.toggle('idle', !(c.visible && i === owner));
+    for (const i of [0, 1]) {
+      const bar = $('.clock', panelOf(i));
+      bar.classList.toggle('idle', !(c.visible && i === owner));
+      bar.classList.toggle('pick', G.m.clockMode && !c.bank);   // pace 'saat': picking the starting word is not on the clock
+    }
     drawClock();
   }
   function stopClock() {
     G.clock.running = false; G.plan = null;
     for (const i of [0, 1]) { const c = $('.clock', panelOf(i)); c.classList.add('idle'); c.classList.remove('low'); }
+    drawBanks();
+  }
+  // pace 'saat': seconds the player to move has used (rounded, so both phones of a match count the same)
+  function usedTime() {
+    const c = G.clock;
+    return c.bank ? Math.round(Math.min(c.elapsed, c.limit) * 100) / 100 : undefined;
   }
   function drawClock() {
     const c = G.clock;
@@ -388,7 +456,8 @@
     const bar = $('.clock', panelOf(c.owner));
     const f = Math.max(0, c.left / c.total);
     bar.firstElementChild.style.transform = `scaleX(${f})`;
-    bar.classList.toggle('low', c.left < 2.2 || f < 0.25);
+    bar.classList.toggle('low', c.bank ? c.left < 5 : c.left < 2.2 || f < 0.25);
+    drawBanks();
   }
   function frame(ts) {
     if (!G) return;
@@ -404,7 +473,7 @@
       if (c && c.running) {
         c.left -= dt; c.elapsed += dt;
         drawClock();
-        if (c.visible && c.left <= 3 && c.left > 0) {
+        if (c.visible && c.left <= (c.bank ? 5 : 3) && c.left > 0) {
           const s = Math.ceil(c.left);
           if (s !== G.lastTick) { G.lastTick = s; Sfx.tick(c.left <= 1.5); }
         }
@@ -472,14 +541,14 @@
     G.sel = [-1, -1]; G.typed = '';
     hideBanner(); hideFlyer();
     renderScore(); boardInfo();
-    for (const i of [0, 1]) setKeyboard(i, false);
+    for (const i of [0, 1]) { setKeyboard(i, false); setGive(i, false); }
     renderTiles(r, null);
     setMsg(r, esc(t('startWait', { name: playerName(s) })));
     if (isBot(s)) {
       renderTiles(s, null);
       $('.bot-think', panelOf(s)).hidden = false;
       const choice = G.bots[s].open(m);
-      startClock(s, KT.START_TIME, () => doStart(choice.word), false);
+      startClock(s, KT.START_TIME, () => doStart(choice.word), { visible: false });
       G.plan = { at: choice.delay, fn: () => doStart(choice.word) };
     } else if (isRemote(s)) {
       // the other phone picks (and keeps its own start clock)
@@ -520,28 +589,30 @@
     const m = G.m;
     if (m.phase !== 'rally') return;
     const p = m.point.turn, o = 1 - p, word = m.point.word;
-    const secs = m.shotTime(p);
+    const secs = m.shotTime(p), co = { bank: m.clockMode };
     G.sel[p] = -1; G.typed = '';
-    setKeyboard(o, false);
+    setKeyboard(o, false); setGive(o, false);
     if (isBot(p)) {
       renderTiles(p, word, { land: true });
       $('.bot-think', panelOf(p)).hidden = false;
       setMsg(o, esc(t('thinking', { name: playerName(p) })));
       const rep = G.bots[p].reply(m);
-      startClock(p, secs, onTimeout);
+      startClock(p, secs, onTimeout, co);
       if (rep.word && rep.delay < secs) G.plan = { at: rep.delay, fn: () => playShot(p, rep.word) };
+      else if (rep.pass && rep.delay < secs) G.plan = { at: rep.delay, fn: () => onPass(p) };
     } else if (isRemote(p)) {
       renderTiles(p, word, { land: true });
       $('.bot-think', panelOf(p)).hidden = false;
       setMsg(o, esc(t('thinking', { name: playerName(p) })));
       // the other phone keeps the time and says when it ran out; this clock only shows it
-      startClock(p, secs, () => setMsg(o, esc(t('netWait', { name: playerName(p) }))));
+      startClock(p, secs, () => setMsg(o, esc(t('netWait', { name: playerName(p) }))), co);
     } else {
       renderTiles(p, word, { land: true, active: true });
       setKeyboard(p, true);
+      setGive(p, m.clockMode);
       setMsg(p, esc(G.firstShot[p] ? t('firstTurn') : t('yourTurn')), 'turn');
       if (!small(o)) setMsg(o, esc(t('thinking', { name: playerName(p) })));
-      startClock(p, secs, onTimeout);
+      startClock(p, secs, onTimeout, co);
     }
     G.stage = 'turn';
     pump();
@@ -598,16 +669,17 @@
     return true;
   }
 
-  // remote: the other phone's answer (online)
-  function playShot(p, word, remote) {
+  // remote: the other phone's answer (online), used: the seconds it took there (pace 'saat')
+  function playShot(p, word, remote, used) {
     const m = G.m;
     if (G.over || isRemote(p) !== !!remote) return;
     const before = m.point.word;
     // the other phone's word list said yes (the room only joins pages with the same lists; just in case)
     if (remote && m.check(word).reason === 'unknown') G.lex.validSet.add(word);
-    const r = m.shot(word);
+    const u = remote ? used : usedTime();
+    const r = m.shot(word, u);
     if (!r.ok) return;
-    netSent('h', word, p);
+    netSent('h', word, p, u);
     G.stage = null;
     G.firstShot[p] = false;
     stopClock();
@@ -615,7 +687,7 @@
     if (small(p)) $('.bot-think', panelOf(p)).hidden = true;
     const at = G.lex.diff(before, word);
     renderTiles(p, word, { mark: at, wait: true });
-    setKeyboard(p, false);
+    setKeyboard(p, false); setGive(p, false);
     setMsg(p, esc(sentText(p)) + ' <b>' + esc(U(word)) + '</b>');
     boardInfo();
     if (r.how === 'dead') {
@@ -639,9 +711,28 @@
     G.stage = null;
     if (small(loser)) $('.bot-think', panelOf(loser)).hidden = true;
     G.pointBusy = true;
-    setKeyboard(loser, false);
+    stopClock();
+    setKeyboard(loser, false); setGive(loser, false);
     Sfx.timeUp();
     flyWord(loser, word, () => pointOver(r), { out: true });
+  }
+
+  // pace 'saat': the player to move gives the point away (the "Sayıyı ver" button, the bot, or the other phone)
+  function onPass(p, remote, used) {
+    const m = G && G.m;
+    if (!m || !m.clockMode || m.phase !== 'rally' || m.point.turn !== p || G.pointBusy || G.over || G.paused) return;
+    if (isRemote(p) !== !!remote) return;
+    const word = m.point.word, u = remote ? used : usedTime();
+    const r = m.pass(u);
+    if (!r) return;
+    netSent(r.how === 'time' ? 't' : 'p', null, p, u);
+    G.stage = null;
+    if (small(p)) $('.bot-think', panelOf(p)).hidden = true;
+    G.pointBusy = true;
+    stopClock();
+    setKeyboard(p, false); setGive(p, false);
+    Sfx.timeUp();
+    flyWord(p, word, () => pointOver(r), { out: true });
   }
 
   function altsHtml(left) {
@@ -657,11 +748,20 @@
     const m = G.m, w = r.winner, l = 1 - w;
     stopClock();
     renderScore();
-    for (const i of [0, 1]) setKeyboard(i, false);
+    for (const i of [0, 1]) { setKeyboard(i, false); setGive(i, false); }
     if (r.how === 'dead') {
       banner(t('dead'), 'dead');
       setMsg(w, esc(t('deadYou', { w: U(r.word) })), 'turn');
       setMsg(l, esc(t('deadThem', { w: U(r.word) })));
+    } else if (r.flag) {   // pace 'saat': a clock ran out, the match is over
+      banner(solo() && l === 0 ? t('flagYou') : t('flagThem', { name: playerName(l) }));
+      setMsg(w, esc(t('flagWin')), 'turn');
+      setMsg(l, esc(t('timeUp')) + ' ' + altsHtml(r.left));
+    } else if (r.how === 'pass') {
+      banner(solo() && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
+      setMsg(w, esc(t('pointYou')), 'turn');
+      setMsg(l, esc(t('gaveYou')) + ' ' + altsHtml(r.left));
+      if (small(l)) setMsg(w, esc(t('gaveThem', { name: playerName(l) })) + ' ' + esc(t('pointYou')), 'turn');
     } else {
       banner(solo() && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
       setMsg(w, esc(t('pointYou')), 'turn');
@@ -675,7 +775,7 @@
       wait(4.2, () => endMatch());
       return;
     }
-    const delay = r.how === 'time' && !small(l) ? 4.6 : 2.8;
+    const delay = (r.how === 'time' || r.how === 'pass') && !small(l) ? 4.6 : 2.8;
     G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterStart(); } };
     wait(delay, () => { if (G.skipTo) G.skipTo(); });
     if (G.mode === 'online') pump();   // the other phone may have started the next point already
@@ -767,9 +867,10 @@
         if (m.stats.longest > save.longest) { save.longest = m.stats.longest; save.longestWords = m.stats.longestWords; }
         try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
         const mins = Math.max(1, Math.round((Date.now() - G.started) / 60000));
-        labNote(`İki telefon: ${playerName(0)} ${m.points[0]}–${m.points[1]} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
+        labNote(`İki telefon: ${playerName(0)} ${m.points[0]}–${m.points[1]} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]}${clockNote(m)} · ${mins} dk`);
       }
-      if (oda) oda.bitir(m.points[0], undefined, undefined, winText(w));   // the room shows who won
+      // the room shows who won: ranked by the match (a clock that ran out loses, whatever the score)
+      if (oda) oda.bitir(m.points[0], undefined, undefined, winText(w), w === 0 ? 1 : 0);
       return;
     }
     const save = loadSave();
@@ -785,22 +886,32 @@
     const scoreLine = `${m.points[0]}–${m.points[1]}`;
     const mins = Math.max(1, Math.round((Date.now() - G.started) / 60000));
     labNote(G.mode === 'bot'
-      ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun zincir ${m.stats.longest} · ${m.stats.deadEnds[0]} çıkmaz · ${mins} dk`
-      : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
+      ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun zincir ${m.stats.longest} · ${m.stats.deadEnds[0]} çıkmaz${clockNote(m)} · ${mins} dk`
+      : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]}${clockNote(m)} · ${mins} dk`);
 
     const title = winText(w);
     $('#trophy').innerHTML = `<div class="tile gold">${esc(U([...playerName(w)][0] || '★'))}</div>`;
     $('#endTitle').textContent = title;
-    $('#endScore').textContent = `${playerName(0)} ${scoreLine} ${playerName(1)}`;
+    const flagged = !!(m.history.length && m.history[m.history.length - 1].flag);
+    $('#endScore').textContent = `${playerName(0)} ${scoreLine} ${playerName(1)}` + (flagged ? ' · ' + t('byFlag') : '');
     const items = [];
     if (m.stats.longestWords.length) items.push(t('statLongest', { n: m.stats.longest }) + '<br>' + m.stats.longestWords.map(x => esc(U(x))).join(' → '));
     items.push(t('statDead', { a: G.mode === 'bot' ? m.stats.deadEnds[0] + '–' + m.stats.deadEnds[1] : `${esc(playerName(0))} ${m.stats.deadEnds[0]} · ${esc(playerName(1))} ${m.stats.deadEnds[1]}` }));
     if (G.mode === 'duo') items.push(t('statWords', { a: `${esc(playerName(0))} ${m.stats.words[0]} · ${esc(playerName(1))} ${m.stats.words[1]}` }));
+    if (m.clockMode) items.push(t('statClock', { a: `${esc(playerName(0))} ${fmtTime(m.banks[0])} · ${esc(playerName(1))} ${fmtTime(m.banks[1])}` }));
     $('#endStats').innerHTML = items.map(x => '<li>' + x + '</li>').join('');
     const sheet = $('#endSheet');
     sheet.classList.toggle('duo', G.mode === 'duo');
-    $('#endMirror').innerHTML = `<h2>${esc(title)}</h2><p class="end-score">${esc(playerName(1))} ${m.points[1]}–${m.points[0]} ${esc(playerName(0))}</p>`;
+    $('#endMirror').innerHTML = `<h2>${esc(title)}</h2><p class="end-score">${esc(playerName(1))} ${m.points[1]}–${m.points[0]} ${esc(playerName(0))}${flagged ? ' · ' + esc(t('byFlag')) : ''}</p>`;
     sheet.hidden = false;
+  }
+  // pace 'saat': the clocks at the end, for the Lab note
+  function clockNote(m) {
+    if (!m.clockMode) return '';
+    const last = m.history[m.history.length - 1];
+    return ` · saat ${m.bank} sn, kalan ${fmtTime(m.banks[0])}–${fmtTime(m.banks[1])}` +
+      (m.stats.passes[0] + m.stats.passes[1] ? `, verilen sayı ${m.stats.passes[0]}–${m.stats.passes[1]}` : '') +
+      (last && last.flag ? `, ${playerName(1 - last.winner)} süresini bitirdi` : '');
   }
   $('#againBtn').addEventListener('click', () => { const fs = G ? 1 - G.firstStarter : 0; startMatch(S.mode === 'bot' ? 0 : fs); });
   $('#menuBtn').addEventListener('click', toMenu);
@@ -817,7 +928,7 @@
       const kw = Math.max(22, Math.min(58, Math.floor(W / (rowMax + (rowMax - 1) * 0.16))));
       let tw = Math.min(104, Math.floor(W / (n + (n - 1) * 0.12)) - 4, Math.floor(Hh * 0.22));
       tw = Math.max(36, tw);
-      const fixed = 30 + 46 + 9 + 8 * 4 + tw * 1.14 + 8;    // head, two-line message, clock, gaps, tiles
+      const fixed = 30 + 46 + (G.m.clockMode ? 30 : 9) + 8 * 4 + tw * 1.14 + 8;    // head, two-line message, clock, gaps, tiles
       const kh = Math.max(30, Math.min(Math.round(kw * 1.5), Math.floor((Hh - fixed - kw * 0.36) / 3)));
       p.style.setProperty('--tw', tw + 'px');
       p.style.setProperty('--kw', kw + 'px');
@@ -829,9 +940,12 @@
   // ---------- two phones (hesap/oda.js rooms; server fish/sunucu/src/genel-oda.js, game "kelime") ----------
   // Both phones run the same match from the room's seed; on each, player 0 is this phone and player 1 the other.
   // Only the player whose turn it is moves, and tells the other phone: s (starting word), h (answer),
-  // t (out of time), each with n = how many moves came before it. The room keeps the moves, so a phone that
-  // lost the connection catches up (oda geri) and a reopened page replays the match (basla with log).
-  const NET_VERSION = 1;
+  // t (out of time), p (gave the point away, pace 'saat'), each with n = how many moves came before it, and
+  // with pace 'saat' u = the seconds the move took (both phones work out the same clocks from it).
+  // The room keeps the moves, so a phone that lost the connection catches up (oda geri) and a reopened page
+  // replays the match (basla with log).
+  const NET_VERSION = 2;   // 2: pace 'saat'
+  const MOVE = /^[shtp]$/;
   let oda = null;
   let netPrev = null;   // this phone's own settings; the room's are used while in it
   function netSurum() {  // phones play together only with the same word lists
@@ -843,11 +957,12 @@
     return NET_VERSION + '.' + (h >>> 0).toString(36);
   }
   // A move was made (p: who). This phone's own moves go to the other phone.
-  function netSent(k, w, p) {
+  function netSent(k, w, p, u) {
     if (!G || !G.net) return;
     if (p === 0) {
       const e = { k, n: G.net.done };
       if (w) e.w = w;
+      if (typeof u === 'number') e.u = u;
       G.net.sent.push(e);
       if (oda) oda.olay(e);   // if the connection is down, the catch-up sends it again
     }
@@ -858,14 +973,14 @@
     const seen = new Set(), out = [];
     for (const x of log || []) {
       const e = x && x[1];
-      if (!e || typeof e.n !== 'number' || !/^[sht]$/.test(e.k) || seen.has(e.n)) continue;
+      if (!e || typeof e.n !== 'number' || !MOVE.test(e.k) || seen.has(e.n)) continue;
       seen.add(e.n);
       out.push({ no: x[0], e });
     }
     return out.sort((a, b) => a.e.n - b.e.n);
   }
   function netReceive(no, e) {
-    if (!G || G.mode !== 'online' || G.over || !e || typeof e.n !== 'number' || !/^[sht]$/.test(e.k)) return;
+    if (!G || G.mode !== 'online' || G.over || !e || typeof e.n !== 'number' || !MOVE.test(e.k)) return;
     if (oda && no === oda.ben) return;
     G.net.queue.push(e);
     pump();
@@ -886,7 +1001,9 @@
     } else {
       if (G.stage !== 'turn' || m.phase !== 'rally' || m.point.turn !== 1) return;
       q.shift();
-      if (e.k === 'h') playShot(1, e.w, true); else onTimeout(true);
+      if (e.k === 'h') playShot(1, e.w, true, e.u);
+      else if (e.k === 'p') onPass(1, true, e.u);
+      else onTimeout(true);
     }
   }
   // Back after a dropped connection: moves the other phone made meanwhile, and ours the room never got.
@@ -911,7 +1028,8 @@
           ok = m.start(e.w).ok;
         }
       } else if (m.phase === 'rally' && m.point.turn === p) {
-        if (e.k === 'h') { if (!m.lex.has(e.w)) m.lex.validSet.add(e.w); ok = m.shot(e.w).ok; G.firstShot[p] = false; }
+        if (e.k === 'h') { if (!m.lex.has(e.w)) m.lex.validSet.add(e.w); ok = m.shot(e.w, e.u).ok; G.firstShot[p] = false; }
+        else if (e.k === 'p') ok = !!m.pass(e.u);
         else ok = !!m.timeout();
       }
       if (!ok) break;
@@ -935,11 +1053,12 @@
       $('#record').textContent = t('netFull');
       return;
     }
-    if (!netPrev) netPrev = { lang: S.lang, len: S.len, pace: S.pace, format: S.format };
+    if (!netPrev) netPrev = { lang: S.lang, len: S.len, pace: S.pace, bank: S.bank, format: S.format };
     const a = m.ayar || {};
     if (T[a.dil]) S.lang = a.dil;
     if ([3, 4].includes(+a.len)) S.len = +a.len;
-    if (KT.PACES[a.pace]) S.pace = a.pace;
+    if (KT.PACES[a.pace] || a.pace === 'saat') S.pace = a.pace;
+    S.bank = KT.CLOCK.banks.includes(+a.bank) ? +a.bank : KT.CLOCK.bank;
     S.format = +a.format === 2 ? 2 : 1;
     applyTexts();
     const first = ((m.tohum >>> 0) % 2) === seat ? 0 : 1;   // the seed tosses the coin, the same on both phones
@@ -959,11 +1078,12 @@
       ayarlar: [
         { k: 'dil', ad: t('roomLang'), secenek: [{ d: 'tr', ad: 'Türkçe' }, { d: 'en', ad: 'English' }], v: S.lang },
         { k: 'len', ad: t('word'), secenek: [{ d: 4, ad: t('len4') }, { d: 3, ad: t('len3') }], v: S.len },
-        { k: 'pace', ad: t('pace'), secenek: ['rahat', 'normal', 'hizli'].map(d => ({ d, ad: t(d) })), v: S.pace },
+        { k: 'pace', ad: t('pace'), secenek: ['rahat', 'normal', 'hizli', 'saat'].map(d => ({ d, ad: t(d) })), v: S.pace },
+        { k: 'bank', ad: t('bankLabel'), secenek: KT.CLOCK.banks.map(d => ({ d, ad: t('secs', { n: d }) })), v: S.bank, goster: a => a.pace === 'saat' },
         { k: 'format', ad: t('format'), secenek: [1, 2].map(d => ({ d, ad: t(d === 1 ? 'short' : 'long', { n: KT.TARGET[d] }) })), v: S.format },
       ],
       puanYazi: p => t('pts', { n: Math.round(p) }),
-      skorAyrinti: () => (G && G.mode === 'online' ? { zincir: G.m.stats.longest, hedef: G.m.target } : {}),
+      skorAyrinti: () => (G && G.mode === 'online' ? Object.assign({ zincir: G.m.stats.longest, hedef: G.m.target }, G.m.clockMode ? { saat: G.m.bank, kalan: G.m.banks[0] } : {}) : {}),
       basla: m => startOnline(m),
       geri: m => netCatchUp(m.log),
       olay: (no, e) => netReceive(no, e),
@@ -980,7 +1100,7 @@
 
   if (DEBUG) {
     window.__kt = {
-      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot, netReceive,
+      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot, onPass, netReceive,
       get G() { return G; },
       get oda() { return oda; },
       set speed(v) { if (G) G.speed = v; },

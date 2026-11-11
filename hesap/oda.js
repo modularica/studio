@@ -17,6 +17,7 @@
  *                                    // colours, fonts, how far down the notes go
  *     aciklama: 'Bir oda kur…',      // the lead on the room list
  *     ayarlar: [{ k: 'sure', ad: 'Süre', secenek: [{ d: 180, ad: '3 dk' }, …], v: 300 }],  // host's choices
+ *                                    // goster: (ayar) => bool, show a choice only with some others (default: always)
  *     ayarYazi: (ayar) => '…',       // a short summary for the room list
  *     puanYazi: (p, x) => p + ' puan',
  *     canliYazi: (p, x) => p,        // a shorter one for the live ranking (default: puanYazi)
@@ -40,7 +41,8 @@
  *   oda.menu(f)          the in-game room menu (the game goes on); f runs on "Oyuna dön" (e.g. to unpause)
  *   oda.gonder(p, v)     my score and live state (sent at most 10 times a second)
  *   oda.olay(e)          a one-off event for the others (false: not sent, the connection is down)
- *   oda.bitir(p, eser, v, ust)   I'm done (ust: the waiting sheet's small title instead of "Bitirdin!")
+ *   oda.bitir(p, eser, v, ust, sk)   I'm done (ust: the waiting sheet's small title instead of "Bitirdin!";
+ *                        sk: rank by this instead of p, e.g. who won a match whose score does not say it)
  *   oda.aktif            a round is on and I'm in it        oda.ben   my number in the room
  *   oda.isim(no)         { ad, renk }
  *
@@ -230,17 +232,18 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
   function not(t) { try { if (window.Hesap && Hesap.not) Hesap.not(t); } catch (e) { /* ignore */ } }
 
   // Ranks a list the way the server does: 'sure' = finished first, then the score; 'puan' = the score.
+  const deger = (x) => (typeof x.sk === 'number' ? x.sk : x.p);   // bitir(…, sk): what to rank by
   function sirala(liste, tur) {
     liste.sort((a, b) => {
       if (tur === 'sure') {
         if (!!a.b !== !!b.b) return a.b ? -1 : 1;
         if (a.b && b.b && a.b !== b.b) return a.b - b.b;
       }
-      return b.p - a.p || (a.b || 1e12) - (b.b || 1e12);
+      return deger(b) - deger(a) || (a.b || 1e12) - (b.b || 1e12);
     });
     let onceki = null;
     liste.forEach((x, i) => {
-      const ayni = onceki && (tur === 'sure' ? x.b === onceki.b && (x.b || x.p === onceki.p) : x.p === onceki.p);
+      const ayni = onceki && (tur === 'sure' ? x.b === onceki.b && (x.b || deger(x) === deger(onceki)) : deger(x) === deger(onceki));
       x.sira = ayni ? onceki.sira : i + 1;
       onceki = x;
     });
@@ -541,7 +544,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       a = Object.assign({}, a);
       delete a.yazi;
       let yazi = '';
-      try { yazi = cfg.ayarYazi ? cfg.ayarYazi(a) : cfg.ayarlar.map((g) => ((g.secenek.find((s) => s.d === a[g.k]) || {}).ad || '')).filter(Boolean).join(' · '); } catch (e) { /* ignore */ }
+      try { yazi = cfg.ayarYazi ? cfg.ayarYazi(a) : cfg.ayarlar.filter((g) => !g.goster || g.goster(a)).map((g) => ((g.secenek.find((s) => s.d === a[g.k]) || {}).ad || '')).filter(Boolean).join(' · '); } catch (e) { /* ignore */ }
       if (yazi) a.yazi = String(yazi).slice(0, 60);
       o.ayar = a;
       yolla({ t: 'ayar', ayar: a });
@@ -567,6 +570,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
           if (benKurucu) {
             const s = mk('div', 'secimler');
             for (const g of cfg.ayarlar) {
+              if (g.goster && !g.goster(a)) continue;
               const kutu = mk('div', 'secim'), cipler = mk('div');
               kutu.append(mk('b', '', g.ad), cipler);
               for (const se of g.secenek) {
@@ -672,7 +676,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       }, bekle);
     }
     function olay(e) { return o.aktif ? yolla({ t: 'o', e }) : false; }
-    function bitir(p, eser, v, ust) {
+    function bitir(p, eser, v, ust, sk) {
       if (!o.aktif || o.bittiBen) return;
       clearTimeout(o.gonderT); o.gonderT = 0; o.bekleyen = null;
       o.bittiBen = true;
@@ -680,6 +684,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       const m = { t: 'bitir', p };
       if (eser !== undefined) m.eser = eser;
       if (v !== undefined) m.v = v;
+      if (typeof sk === 'number') m.sk = sk;
       yolla(m);
       if (cfg.izle) setTimeout(() => { if (o.aktif && o.bittiBen && !o.ekran) izle(); }, 1400);
     }

@@ -19,8 +19,13 @@ const KT = (function () {
     normal: { start: 7, step: 0.4, min: 3.5 },
     hizli: { start: 5, step: 0.3, min: 2.5 },
   };
-  const START_TIME = 10;              // seconds to pick the starting word (then one is picked for you)
+  // pace 'saat': a chess clock. Each player has `bank` seconds for the whole match, running only on their
+  // own turn; every word played adds `inc` (+ the player's handicap). Out of time = the match is lost.
+  // A player who is stuck can give the point away (pass) and keep the time that is left.
+  const CLOCK = { banks: [20, 30, 45, 60], bank: 30, inc: 2 };
+  const START_TIME = 10;              // seconds to pick the starting word (then one is picked for you); not on the clock
   const TARGET = { 1: 5, 2: 9 };      // points to win: short match, long match
+  const round2 = x => Math.round(x * 100) / 100;
 
   function seeded(seed) { // mulberry32
     let a = seed >>> 0;
@@ -101,13 +106,18 @@ const KT = (function () {
   }
 
   class Match {
-    // opts: { lex, players: [{ name, bonus }], target, pace, firstStarter, random }
+    // opts: { lex, players: [{ name, bonus }], target, pace, bank, inc, firstStarter, random }
+    // bonus: seconds added to every answer (pace 'saat': to every word's increment)
     constructor(opts) {
       this.lex = opts.lex;
       this.players = opts.players.map(p => Object.assign({ bonus: 0 }, p));
       this.target = opts.target || TARGET[1];
-      this.paceName = PACES[opts.pace] ? opts.pace : 'normal';
-      this.pace = PACES[this.paceName];
+      this.clockMode = opts.pace === 'saat';
+      this.paceName = this.clockMode ? 'saat' : PACES[opts.pace] ? opts.pace : 'normal';
+      this.pace = PACES[this.paceName] || PACES.normal;
+      this.bank = this.clockMode ? (+opts.bank > 0 ? +opts.bank : CLOCK.bank) : 0;
+      this.inc = opts.inc !== undefined ? +opts.inc : CLOCK.inc;
+      this.banks = [this.bank, this.bank];   // seconds left on each clock (pace 'saat')
       this.r = opts.random || Math.random;
       this.points = [0, 0];
       this.starter = opts.firstStarter === 1 ? 1 : 0;   // picks the first word of the point; alternates every point
@@ -116,7 +126,7 @@ const KT = (function () {
       this.pointsPlayed = 0;
       this.history = [];
       this.openers = new Set();     // starting words already used in this match
-      this.stats = { deadEnds: [0, 0], misses: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
+      this.stats = { deadEnds: [0, 0], misses: [0, 0], passes: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
       this.point = null;
       this.newPoint();
     }
@@ -137,11 +147,19 @@ const KT = (function () {
       this.phase = 'rally';
       return { ok: true };
     }
-    // Seconds the player to move has for this answer.
+    // Seconds the player to move has for this answer (pace 'saat': what is left on their clock).
     shotTime(player) {
       const p = player === undefined ? this.point.turn : player;
+      if (this.clockMode) return this.banks[p];
       const n = Math.max(0, this.point.shots.length - 1);
       return Math.max(this.pace.min, this.pace.start - this.pace.step * n) + (this.players[p].bonus || 0);
+    }
+    // Seconds a word adds to the clock (pace 'saat').
+    gain(p) { return this.inc + (this.players[p].bonus || 0); }
+    // pace 'saat': player p used `used` seconds of their turn (both phones of a match get the same number).
+    spend(p, used, word) {
+      if (!this.clockMode) return;
+      this.banks[p] = round2(Math.max(0, this.banks[p] - Math.max(0, +used || 0)) + (word ? this.gain(p) : 0));
     }
     check(word) {
       if (this.phase !== 'rally') return { ok: false, reason: 'phase' };
@@ -153,8 +171,8 @@ const KT = (function () {
       if (!this.lex.has(word)) return { ok: false, reason: 'unknown', at };
       return { ok: true, at };
     }
-    // The player whose turn it is plays `word`.
-    shot(word) {
+    // The player whose turn it is plays `word`; used: seconds it took (pace 'saat').
+    shot(word, used) {
       const c = this.check(word);
       if (!c.ok) return c;
       const pt = this.point, p = pt.turn;
@@ -162,28 +180,40 @@ const KT = (function () {
       pt.used.add(word);
       pt.shots.push({ by: p, word });
       this.stats.words[p]++;
+      this.spend(p, used, true);
       if (this.lex.neighbours(word, pt.used).length === 0) {
         return Object.assign({ ok: true, at: c.at }, this.endPoint(p, 'dead'));
       }
       pt.turn = 1 - p;
       return { ok: true, at: c.at };
     }
-    // The player to move ran out of time.
+    // The player to move ran out of time (pace 'saat': out of time for the match, which is lost).
     timeout() {
       if (this.phase !== 'rally') return null;
+      if (this.clockMode) this.banks[this.point.turn] = 0;
       return this.endPoint(1 - this.point.turn, 'time');
+    }
+    // pace 'saat': the player to move gives the point away and keeps the time that is left.
+    pass(used) {
+      if (this.phase !== 'rally' || !this.clockMode) return null;
+      const p = this.point.turn;
+      this.spend(p, used, false);
+      if (this.banks[p] <= 0) return this.timeout();
+      return this.endPoint(1 - p, 'pass');
     }
     endPoint(winner, how) {
       const pt = this.point, loser = 1 - winner;
-      const left = how === 'time' ? this.lex.split(this.lex.neighbours(pt.word, pt.used)) : { common: [], rare: [] };
+      const left = how === 'time' || how === 'pass' ? this.lex.split(this.lex.neighbours(pt.word, pt.used)) : { common: [], rare: [] };
       const chain = pt.shots.length;            // words played in the point, the starting word included
       if (chain > this.stats.longest) { this.stats.longest = chain; this.stats.longestWords = pt.shots.map(s => s.word); }
       if (how === 'dead') this.stats.deadEnds[winner]++;
       if (how === 'time') this.stats.misses[loser]++;
+      if (how === 'pass') this.stats.passes[loser]++;
       this.points[winner]++;
       this.pointsPlayed++;
-      const res = { winner, how, word: pt.word, chain, shots: pt.shots.slice(), left, points: this.points.slice(), matchOver: false };
-      if (this.points[winner] >= this.target) { res.matchOver = true; this.winner = winner; }
+      const flag = this.clockMode && how === 'time';   // a clock ran out: the match is over
+      const res = { winner, how, word: pt.word, chain, shots: pt.shots.slice(), left, points: this.points.slice(), banks: this.banks.slice(), flag, matchOver: false };
+      if (this.points[winner] >= this.target || flag) { res.matchOver = true; this.winner = winner; }
       this.starter = 1 - this.starter;
       this.phase = res.matchOver ? 'matchOver' : 'pointOver';
       this.history.push(res);
@@ -196,10 +226,11 @@ const KT = (function () {
 
   // Bot. see: chance of spotting each word a person would know; think: seconds (min, max);
   // smart: chance of choosing the word that leaves the opponent the fewest answers.
+  // giveUp: pace 'saat', seconds it looks for a word before it gives the point away.
   const LEVELS = {
-    kolay: { see: 0.5, think: [2.4, 4.6], smart: 0.0, open: [1.8, 3.0] },
-    orta: { see: 0.72, think: [1.6, 3.6], smart: 0.5, open: [1.4, 2.4] },
-    zor: { see: 0.9, think: [1.0, 2.5], smart: 0.85, open: [1.0, 1.8] },
+    kolay: { see: 0.5, think: [2.4, 4.6], smart: 0.0, open: [1.8, 3.0], giveUp: [5, 8] },
+    orta: { see: 0.72, think: [1.6, 3.6], smart: 0.5, open: [1.4, 2.4], giveUp: [4, 6.5] },
+    zor: { see: 0.9, think: [1.0, 2.5], smart: 0.85, open: [1.0, 1.8], giveUp: [3, 5] },
   };
   class Bot {
     constructor(level, random) {
@@ -225,12 +256,18 @@ const KT = (function () {
       }
       return { word, delay: this.between(this.cfg.open) };
     }
-    // { word, delay } or { word: null } when it does not find anything (then it runs out of time).
+    // { word, delay } or { word: null } when it does not find anything (then it runs out of time;
+    // pace 'saat': { word: null, pass: true, delay }, it gives the point away after a while).
     reply(match) {
       const lex = match.lex, pt = match.point;
       const opts = lex.neighbours(pt.word, pt.used, true);
       const seen = opts.filter(() => this.r() < this.cfg.see);
-      if (!seen.length) return { word: null, delay: Infinity, options: opts.length };
+      const bank = match.clockMode ? match.banks[pt.turn] : Infinity;
+      if (!seen.length) {
+        if (!match.clockMode) return { word: null, delay: Infinity, options: opts.length };
+        // looks for a while, gives up sooner when its clock is low
+        return { word: null, pass: true, delay: Math.min(this.between(this.cfg.giveUp), Math.max(0.5, bank * 0.4)), options: opts.length };
+      }
       let word = pick(seen, this.r);
       if (this.r() < this.cfg.smart) {
         let best = Infinity;
@@ -241,11 +278,16 @@ const KT = (function () {
       }
       let delay = this.between(this.cfg.think);
       if (opts.length <= 2) delay += 0.6 + this.r() * 0.8;   // harder to find when there are few
+      if (delay > bank * 0.75) {   // pace 'saat': hurries when its clock is low, and misses more
+        const f = bank * 0.75 / delay;
+        if (this.r() > f) return { word: null, pass: true, delay: Math.max(0.5, bank * 0.4), options: opts.length };
+        delay = bank * 0.75;
+      }
       return { word, delay, options: opts.length };
     }
   }
 
-  return { KEYS, LOCALE, PACES, START_TIME, TARGET, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
+  return { KEYS, LOCALE, PACES, CLOCK, START_TIME, TARGET, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
 })();
 
 if (typeof module !== 'undefined') module.exports = KT;

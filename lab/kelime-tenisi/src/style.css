@@ -72,6 +72,8 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .bonus-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
 .opts { display: flex; flex-direction: column; gap: 10px; }
 .opt { display: flex; flex-direction: column; gap: 6px; }
+.opt[hidden] { display: none; }
+.opt-hint { margin: 0; text-align: center; font-size: 13.5px; color: var(--muted); line-height: 1.3; }
 .primary { background: var(--accent); color: #fff; font-size: 22px; font-weight: 700; padding: 15px 20px; border-radius: 16px; box-shadow: 0 4px 0 var(--accent2); transition: transform .1s, box-shadow .1s; }
 .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent2); }
 .secondary { background: #fff; color: var(--ink); font-size: 18px; padding: 12px 18px; border-radius: 14px; box-shadow: inset 0 0 0 2px #e6dccb; }
@@ -128,8 +130,21 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 
 /* shot clock */
 .clock { flex-shrink: 0; margin-top: auto; width: min(100%, 520px); height: 9px; border-radius: 9px; background: rgba(31,38,51,.08); overflow: hidden; }
+.clockrow { flex-shrink: 0; margin-top: auto; width: min(100%, 520px); display: flex; align-items: center; gap: 10px; }
+.clockrow .clock { flex: 1 1 auto; width: auto; margin-top: 0; }
+/* pace 'saat': each player's clock for the match, and "give the point away" */
+.ptime, .give { display: none; }
+#game.clockmode .ptime { display: block; flex: none; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 3.1ch; text-align: right; }
+#game.clockmode .ptime.run { color: var(--pc); }
+#game.clockmode .ptime.low { color: var(--bad); }
+#game.clockmode .phead .ptime { font-size: 17px; margin-left: auto; }
+#game.clockmode .phead .ptime + .pscore { margin-left: 8px; }
+#game.clockmode .give { display: block; flex: none; padding: 5px 11px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 2px #e3d8c5; font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; transition: opacity .2s; }
+#game.clockmode .give:disabled { opacity: .3; }
+#game.clockmode .give:not(:disabled):active { background: var(--ink); color: #fff; }
 .clock i { display: block; height: 100%; width: 100%; background: var(--pc); transform-origin: left center; border-radius: 9px; }
 .clock.low i { background: var(--bad); }
+.clock.pick i { background: #b9b2a6; }
 .clock.idle i { opacity: 0; }
 
 /* keyboard */
@@ -141,6 +156,7 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 
 /* bot head */
 .bot-think { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.bot-think[hidden] { display: none; }
 .bot-think i { width: 6px; height: 6px; border-radius: 50%; background: var(--pc); opacity: .3; animation: think 1s infinite; }
 .bot-think i:nth-child(2) { animation-delay: .15s; }
 .bot-think i:nth-child(3) { animation-delay: .3s; }

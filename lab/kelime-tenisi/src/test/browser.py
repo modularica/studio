@@ -1,4 +1,5 @@
-# Tarayıcıda uçtan uca deneme: telefonda bota karşı, 3 harfte fiil kökü (GEL), iPad'de (dik ve yatay) iki kişi, dil (Türkçe açılış, İngilizce seçimi), nasıl oynanır.
+# Tarayıcıda uçtan uca deneme: telefonda bota karşı, 3 harfte fiil kökü (GEL), saat modu (bota karşı ve iPad'de iki kişi),
+# iPad'de (dik ve yatay) iki kişi, dil (Türkçe açılış, İngilizce seçimi), nasıl oynanır.
 # Önce:  node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
 # Sonra: python3 lab/kelime-tenisi/src/test/browser.py      (görüntüler /tmp/kt-shots/)
 import json, os, random, subprocess, sys, time
@@ -43,7 +44,8 @@ def play_turn(pg, i, touch, smash=False):
     tap(pg, f'#panel{i} .key[data-k="{r["w"][r["at"]]}"]', touch)
     return True
 
-def play_match(pg, touch, humans, max_s=240, miss_rate=0.18, smash_rate=0.3, tag=''):
+# give: pace 'saat', a "miss" taps "Sayıyı ver" instead of letting the clock run out
+def play_match(pg, touch, humans, max_s=240, miss_rate=0.18, smash_rate=0.3, tag='', give=False):
     t0 = time.time(); acted = None
     shots = 0
     while time.time() - t0 < max_s:
@@ -59,6 +61,9 @@ def play_match(pg, touch, humans, max_s=240, miss_rate=0.18, smash_rate=0.3, tag
                 acted = key
                 if rnd.random() >= miss_rate:
                     if play_turn(pg, s['turn'], touch, smash=rnd.random() < smash_rate): shots += 1
+                elif give:
+                    pg.wait_for_timeout(rnd.randrange(200, 900))
+                    if st(pg)['running']: tap(pg, f'#panel{s["turn"]} .give', touch)
         time.sleep(0.08)
     return False
 
@@ -99,6 +104,7 @@ with sync_playwright() as p:
           'fiil kökleri geçiyor (ANLA, OTUR), ekli haller geçmiyor (EVDE, ALDI, BANA)')
     check(pg.locator('#panel0 .start-card').count() == 3, 'üç başlangıç kelimesi')
     check(pg.locator('#board .net, #board .ball, .court').count() == 0, 'kort, file, top yok')
+    check(not pg.is_visible('#panel0 .ptime') and not pg.is_visible('#panel0 .give'), 'normal sürede saat ve "Sayıyı ver" yok')
     pg.tap('#panel0 .start-card >> nth=0')
     pg.wait_for_function('__kt.G.m.phase === "rally" && !__kt.G.pointBusy && __kt.G.m.point.turn === 0', timeout=20000)
     pg.screenshot(path=f'{OUT}/phone-turn.png')
@@ -172,6 +178,87 @@ with sync_playwright() as p:
             play_turn(pg, 0, True)
         pg.wait_for_timeout(200)
     check(found, 'fiil kökü denendi')
+    ctx.close()
+
+    print('Telefon · saat (maç boyu süre), bota karşı')
+    ctx, pg = new_page(b, {'width': 390, 'height': 844}, True, True, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'bot', level:'kolay'}))")
+    check(not pg.is_visible('#bankOpt'), 'süre seçimi yalnız Saat seçilince')
+    pg.tap('[data-set=pace] .chip[data-v=saat]')
+    check(pg.is_visible('#bankOpt') and '+2 sn' in pg.inner_text('#bankHint'), 'Saat seçilince herkesin süresi ve "+2 sn" görünüyor')
+    check(pg.inner_text('[data-set=bank] .chip.on') == '30 sn', 'varsayılan 30 sn')
+    pg.tap('[data-set=bank] .chip[data-v="45"]')
+    pg.tap('[data-set=bank] .chip[data-v="30"]')
+    pg.screenshot(path=f'{OUT}/phone-clock-menu.png')
+    pg.tap('#howBtn')
+    check('Sayıyı ver' in pg.inner_text('#howList') and '30 saniyesi' in pg.inner_text('#howList'), 'Nasıl oynanır saat kuralını anlatıyor')
+    pg.tap('#howOk')
+    dev = pg.evaluate("JSON.parse(localStorage.getItem('kelime-tenisi.device'))")
+    check(dev['pace'] == 'saat' and dev['bank'] == 30, 'seçim cihazda hatırlanıyor')
+    pg.tap('#startBtn')
+    pg.wait_for_function('__kt.G.m.phase === "start" && document.querySelector("#panel0 .start-card")', timeout=8000)
+    check(pg.evaluate("document.getElementById('game').classList.contains('clockmode') && __kt.G.m.clockMode && __kt.G.m.bank === 30"), 'maç saat modunda, 30 sn')
+    check(pg.inner_text('#panel0 .ptime') == '0:30' and pg.inner_text('#panel1 .ptime') == '0:30', 'iki saat de 0:30')
+    pg.tap('#panel0 .start-card >> nth=0')
+    pg.wait_for_function('__kt.G.m.phase === "rally" && !__kt.G.pointBusy && __kt.G.m.point.turn === 0', timeout=20000)
+    bot_bank = pg.evaluate('__kt.G.m.banks[1]')
+    check(31.9 >= bot_bank > 26, f'botun saati: 30 - düşünme + 2 = {bot_bank}')
+    check(pg.is_enabled('#panel0 .give'), 'sıra sendeyken "Sayıyı ver" açık')
+    pg.wait_for_timeout(1600)
+    mine = pg.inner_text('#panel0 .ptime')
+    check(mine in ('0:29', '0:28'), 'kendi saatin akıyor: ' + mine)
+    check(pg.evaluate('__kt.G.m.banks[1]') == bot_bank and 'run' not in pg.get_attribute('#panel1 .ptime', 'class'), 'botun saati sıra sende değilken durmuş')
+    pg.screenshot(path=f'{OUT}/phone-clock-turn.png')
+    before = pg.evaluate('__kt.G.clock.left')
+    play_turn(pg, 0, True)
+    pg.wait_for_timeout(100)
+    after = pg.evaluate('__kt.G.m.banks[0]')
+    check(abs(after - (before + 2)) < 0.4, f'kelime +2 sn getirdi: {before:.2f} → {after:.2f}')
+    def my_turn():   # until it is this player's turn to answer (picking starting words on the way)
+        for _ in range(300):
+            s = st(pg)
+            if s['phase'] == 'rally' and s['turn'] == 0 and s['running'] and not s['busy']: return True
+            if s['phase'] == 'start' and s['starter'] == 0 and not s['busy'] and pg.is_visible('#panel0 .start-card'): pg.tap('#panel0 .start-card >> nth=0')
+            pg.wait_for_timeout(120)
+        return False
+    # give the point away
+    check(my_turn(), 'sıra yine sende')
+    b0 = pg.evaluate('__kt.G.clock.left')
+    pts = st(pg)['points']
+    pg.tap('#panel0 .give')
+    pg.wait_for_function('__kt.G.m.phase === "pointOver"', timeout=8000)
+    pg.wait_for_timeout(700)
+    s = st(pg)
+    check(s['points'][1] == pts[1] + 1 and pg.evaluate('__kt.G.m.stats.passes[0]') == 1, 'Sayıyı ver: sayı bota gitti')
+    check(abs(pg.evaluate('__kt.G.m.banks[0]') - b0) < 0.3, 'kalan süre seninle kaldı')
+    check('Sayıyı verdin' in pg.inner_text('#panel0 .msg'), 'mesaj: Sayıyı verdin + yazılabilecekler')
+    pg.screenshot(path=f'{OUT}/phone-clock-pass.png')
+    # run out of time: the match is lost, whatever the score
+    pg.evaluate('__kt.speed = 3')
+    check(my_turn(), 'sıra yine sende')
+    pg.evaluate('__kt.timeout()')
+    pg.wait_for_selector('#endSheet:not([hidden])', timeout=15000)
+    check(pg.evaluate('__kt.G.m.winner') == 1 and pg.evaluate('__kt.G.m.banks[0]') == 0, 'süren bitince maç bitti, bot kazandı')
+    check('süre bitti' in pg.inner_text('#endScore') and 'Kalan süre' in pg.inner_text('#endStats'), 'sonuçta "süre bitti" ve kalan süreler')
+    pg.screenshot(path=f'{OUT}/phone-clock-end.png')
+    save = pg.evaluate("JSON.parse(localStorage.getItem('kelime-tenisi.v1'))")
+    check(save['bot']['kolay']['l'] == 1, 'yenilgi kaydedildi')
+    ctx.close()
+
+    print('iPad dik · iki kişi, saat 60 sn')
+    ctx, pg = new_page(b, {'width': 820, 'height': 1180}, True, False, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'duo', names:['Umut','Zeynep'], pace:'saat', bank:60, bonus:[0,2]}))")
+    check(pg.is_visible('#bankOpt') and 'Her kelimede' in pg.text_content('#bonusLabel'), 'iki kişide handikap "her kelimede ek süre"')
+    pg.tap('#startBtn')
+    pg.wait_for_function('__kt.G.m.phase === "start" && document.querySelector(".start-card")', timeout=8000)
+    check(pg.evaluate('__kt.G.m.gain(0) === 2 && __kt.G.m.gain(1) === 4'), 'handikap kelime başına: +2 ve +4')
+    check(pg.is_visible('#panel1 .give') and pg.is_visible('#panel1 .ptime'), 'üstteki oyuncunun da saati ve düğmesi var')
+    pg.screenshot(path=f'{OUT}/ipad-clock-start.png')
+    pg.evaluate('__kt.speed = 3')
+    keys_ok = pg.evaluate("[...document.querySelectorAll('.key')].every(k => { const r = k.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })")
+    check(keys_ok, 'saat satırıyla bütün tuşlar ekranda')
+    done = play_match(pg, True, {0, 1}, max_s=300, miss_rate=0.12, tag='ipad-clock', give=True)
+    check(done, 'saatli iki kişilik maç bitti: %s, kalan %s' % (st(pg)['points'], pg.evaluate('__kt.G.m.banks')))
+    pg.wait_for_timeout(500)
+    pg.screenshot(path=f'{OUT}/ipad-clock-end.png')
     ctx.close()
 
     print('iPad dik · iki kişi')

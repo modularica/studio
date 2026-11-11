@@ -1,6 +1,7 @@
 # İki telefondan oyun denemesi: iki tarayıcı, yerel oda sunucusu, hesap yerine taklit (Hesap).
 # Oda kurma ve davet linki, iki telefonda aynı maç, süre biterse sayı, bağlantı kopunca yetişme,
-# sayfa yeniden açılınca maçın kaldığı yerden sürmesi, maç sonu sonuç ekranı ve rövanş.
+# sayfa yeniden açılınca maçın kaldığı yerden sürmesi, maç sonu sonuç ekranı ve rövanş, saat modu (aynı süreler,
+# sayıyı verme, süresi biten kaybeder).
 # Önce:  node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
 #        cd fish/sunucu && npx wrangler dev --var AUTH_YOK:1 --port 8787 --ip 127.0.0.1
 # Sonra: python3 lab/kelime-tenisi/src/test/online.py      (görüntüler /tmp/kt-shots/)
@@ -193,6 +194,58 @@ with sync_playwright() as p:
     A.evaluate('__kt.toMenu()')
     A.wait_for_timeout(400)
     check(A.is_visible('#menu') and A.evaluate('__kt.S.len') == 4 and A.evaluate("__kt.S.pace") == 'normal', 'odadan çıkınca menü ve telefonun kendi ayarları geri geldi')
+    B.evaluate('__kt.toMenu()')
+    B.wait_for_timeout(400)
+
+    print('Saat (maç boyu süre), iki telefon')
+    A.tap('#onlineBtn')
+    room(A).get_by_role('button', name='Oda kur').tap()
+    A.wait_for_function('__kt.oda && __kt.oda.id && __kt.oda.ben', timeout=8000)
+    A.wait_for_timeout(400)
+    check(room(A).get_by_role('button', name='20 sn').count() == 0, 'odada "Herkesin süresi" yalnız Saat seçilince')
+    room(A).get_by_role('button', name='Saat').tap()
+    room(A).get_by_role('button', name='20 sn').tap()
+    A.screenshot(path=f'{OUT}/online-clock-wait.png')
+    oda_id = A.evaluate('__kt.oda.id')
+    B.goto(URL + '?oda=' + oda_id); B.wait_for_timeout(500)
+    B.wait_for_function('__kt.oda && __kt.oda.ben', timeout=8000)
+    A.wait_for_function("() => { const h = document.querySelector('[data-oda]'); return h && h.shadowRoot.textContent.includes('Zeynep'); }", timeout=8000)
+    room(A).get_by_role('button', name='Oyunu başlat').tap()
+    for pg in (A, B):
+        pg.wait_for_function("__kt.G && __kt.G.mode === 'online' && __kt.G.m.clockMode", timeout=8000)
+        pg.evaluate('__kt.speed = 2')
+    check(A.evaluate('__kt.G.m.bank') == 20 and B.evaluate('__kt.G.m.bank') == 20, 'iki telefonda da saat, 20 sn')
+    banks = lambda pg: pg.evaluate('__kt.G.m.banks')
+    check(play(A, B, lambda a, b: a and b and a['done'] >= 5 and a['phase'] == 'rally'), 'saatle birkaç kelime gidip geldi')
+    check(settle(A, B) and banks(A) == banks(B)[::-1], 'iki telefonda süreler aynı: %s / %s' % (banks(A), banks(B)))
+    A.screenshot(path=f'{OUT}/online-clock-A.png')
+    def give(pg, other, n=1):
+        got, t0 = 0, time.time()
+        while got < n and time.time() - t0 < 60:
+            s = st(pg)
+            if s and s['phase'] == 'rally' and s['turn'] == 0 and s['stage'] == 'turn' and s['running'] and not s['busy']:
+                pg.tap('#panel0 .give')
+                got += 1
+                pg.wait_for_timeout(300)
+            else:
+                act(pg); act(other)
+            time.sleep(0.12)
+        return got == n
+    check(give(A, B) and settle(A, B), 'Umut sayıyı verdi')
+    check(A.evaluate('__kt.G.m.stats.passes[0]') == 1 and B.evaluate('__kt.G.m.stats.passes[1]') == 1 and banks(A) == banks(B)[::-1],
+          'Zeynep\'in telefonunda da: sayı Zeynep\'in, Umut\'un kalan süresi aynı')
+    check(give(B, A, 3) and settle(A, B), 'Zeynep üç sayı verdi')
+    print('  sayılar %s, süreler %s' % (st(A)['points'], banks(A)))
+    # Umut stops answering: his clock runs out and he loses the match on both phones, whatever the score
+    done = play(A, B, lambda a, b: a and b and a['over'] and b['over'], max_s=90, miss_a=1.0)
+    pa = st(A)['points']
+    check(done and A.evaluate('__kt.G.m.winner') == 1 and B.evaluate('__kt.G.m.winner') == 0, 'Umut\'un süresi bitti, iki telefonda da Zeynep kazandı (%s)' % pa)
+    check(A.evaluate('__kt.G.m.banks[0]') == 0 and B.evaluate('__kt.G.m.history[__kt.G.m.history.length - 1].flag'), 'süre bitti iki telefonda da')
+    A.wait_for_function(res + "().includes('Devam')", timeout=10000)
+    B.wait_for_function(res + "().includes('Devam')", timeout=10000)
+    check('Birinci oldun' in B.evaluate(res + '()') and 'kazandı' in A.evaluate(res + '()'),
+          'oda sonucu maçı kazananı birinci gösteriyor' + (' (sayıda önde olan kaybetti)' if pa[0] > pa[1] else ''))
+    A.screenshot(path=f'{OUT}/online-clock-end-A.png'); B.screenshot(path=f'{OUT}/online-clock-end-B.png')
     ca.close(); cb.close(); br.close()
 
 srv.terminate()
