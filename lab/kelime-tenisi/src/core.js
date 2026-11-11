@@ -38,27 +38,19 @@ const KT = (function () {
     return a;
   }
 
-  // opts.ekli (Turkish): inflected forms count too (evde, aldı, bana), from words.tr.x.
+  // Turkish: dictionary words and the roots of well-known verbs (gel, anla); inflected forms (evde, aldı) do not count.
   class Lexicon {
-    constructor(words, lang, len, opts) {
+    constructor(words, lang, len) {
       const d = words[lang];
       if (!d || !d.common[len]) throw new Error('no words for ' + lang + '/' + len);
-      const x = opts && opts.ekli && d.x ? d.x : null;
       this.lang = lang;
       this.len = len;
-      this.ekli = !!x;
       this.alpha = d.alpha;
       const split = s => (s ? s.split(' ') : []);
-      const common = split(d.common[len]).concat(x ? split(x.common[len]) : []);
-      const rare = split(d.rare[len]).concat(x ? split(x.rare[len]) : []);
+      const common = split(d.common[len]), rare = split(d.rare[len]);
       this.commonSet = new Set(common);
       this.validSet = new Set(common.concat(rare));
-      this.serves = split((x || d).serve[len]);
-      this.roots = null;
-      if (x) {
-        if (!x._roots) x._roots = new Map(split(x.root).map(p => p.split(':')));
-        this.roots = x._roots;
-      }
+      this.serves = split(d.serve[len]);
       this.buckets = new Map();
       for (const w of this.validSet) {
         for (let i = 0; i < len; i++) {
@@ -71,8 +63,6 @@ const KT = (function () {
     }
     has(w) { return this.validSet.has(w); }
     isCommon(w) { return this.commonSet.has(w); }
-    // The dictionary word an inflected form comes from (aldı -> almak), or null.
-    root(w) { return (this.roots && this.validSet.has(w) && this.roots.get(w)) || null; }
     // Words one letter away from w, not in `used`. onlyCommon: the ones most people know.
     neighbours(w, used, onlyCommon) {
       const out = [];

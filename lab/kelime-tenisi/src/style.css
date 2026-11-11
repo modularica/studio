@@ -64,8 +64,6 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .bonus-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
 .opts { display: flex; flex-direction: column; gap: 10px; }
 .opt { display: flex; flex-direction: column; gap: 6px; }
-.opt[hidden] { display: none; }
-.opt-hint { text-align: center; font-size: 13px; color: var(--muted); margin-top: -2px; }
 .primary { background: var(--accent); color: #fff; font-size: 22px; font-weight: 700; padding: 15px 20px; border-radius: 16px; box-shadow: 0 4px 0 var(--accent2); transition: transform .1s, box-shadow .1s; }
 .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent2); }
 .secondary { background: #fff; color: var(--ink); font-size: 18px; padding: 12px 18px; border-radius: 14px; box-shadow: inset 0 0 0 2px #e6dccb; }
@@ -99,7 +97,6 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .msg b { color: var(--ink); font-weight: 700; }
 .msg .alt { display: inline-block; margin: 2px 3px; padding: 1px 7px; border-radius: 7px; background: #fff; color: var(--ink); font-weight: 700; box-shadow: inset 0 0 0 1.5px #e3d8c5; }
 .msg .alt.rare { color: var(--muted); font-weight: 500; }
-.msg .root { color: var(--muted); font-weight: 500; font-size: .9em; }
 
 /* tiles */
 .tiles { flex-shrink: 0; display: flex; gap: calc(var(--tw, 64px) * .12); align-items: center; justify-content: center; min-height: calc(var(--tw, 64px) * 1.14); }
@@ -157,7 +154,6 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .chain { display: inline-flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
 .chain span { background: rgba(255,250,240,.2); padding: 1px 6px; border-radius: 6px; }
 .chain span.last { background: rgba(255,250,240,.92); color: var(--ink); }
-.chain .root { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0; }
 .banner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 3; }
 .banner .b { font-size: clamp(22px, 5.2vh, 40px); font-weight: 800; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.2); opacity: 0; transform: scale(.6); transition: opacity .2s, transform .35s cubic-bezier(.2,1.5,.4,1); white-space: nowrap; }
 .banner.on .b { opacity: 1; transform: scale(1); }

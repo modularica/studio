@@ -17,7 +17,6 @@
       duo: 'İki kişi', duoSub: 'Tek ekran, karşılıklı otur', bot: 'Bota karşı', botSub: 'Tek başına antrenman',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
       word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı',
-      ekli: 'Ekli kelimeler', ekliOn: 'Geçer', ekliOff: 'Geçmez', ekliHint: 'EVDE, ALDI, BANA gibi',
       format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
       soundOn: 'Ses açık', soundOff: 'Ses kapalı', paused: 'Mola', resume: 'Devam', quit: 'Ana menü',
       nasildi: 'Nasıldı?', again: 'Rövanş', menu: 'Ana menü', gotIt: 'Anladım',
@@ -39,7 +38,7 @@
       how2: '<b>Cevap ver:</b> gelen kelimenin <b>tek harfini</b> değiştir. Önce harfe, sonra yeni harfe dokun.',
       how3: '<b>Süre</b> her kelimede biraz kısalır; süresinde cevap veremeyen sayıyı kaybeder. Bir kelime bir sayıda bir kez oynanır.',
       how4: '<b>Çıkmaz:</b> hiç çıkışı olmayan bir kelime gönderirsen sayı hemen senin.',
-      howEkli: '<b>Ekli kelimeler de geçer:</b> EVDE, ALDI, BANA. Kökü belli olan kelimenin kökü yanında küçük yazar.',
+      howWords: '<b>Kelimeler:</b> sözlükteki kelimeler geçer; fiiller -mek\'siz yazılır (GEL, ANLA). Ekli haller geçmez (EVDE, ALDI).',
       howWin: '<b>{n} sayıya</b> ilk ulaşan kazanır. Her sayıda başlayan değişir.',
       demo: ['kasa', 'kara', 'kare'], logo: ['kasa', 'kara'],
     },
@@ -48,7 +47,6 @@
       duo: 'Two players', duoSub: 'One screen, face to face', bot: 'Against the bot', botSub: 'Practice on your own',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
       word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast',
-      ekli: 'Inflected words', ekliOn: 'Allowed', ekliOff: 'Not allowed', ekliHint: '',
       format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
       soundOn: 'Sound on', soundOff: 'Sound off', paused: 'Paused', resume: 'Resume', quit: 'Main menu',
       nasildi: 'How was it?', again: 'Rematch', menu: 'Main menu', gotIt: 'Got it',
@@ -70,7 +68,7 @@
       how2: '<b>Answer:</b> change <b>one letter</b> of the word that comes to you. Tap the letter, then the new letter.',
       how3: '<b>Time</b> gets a little shorter with every word; miss it and you lose the point. A word can be played once per point.',
       how4: '<b>Dead end:</b> send a word with no way out and the point is yours at once.',
-      howEkli: '',
+      howWords: '<b>Words:</b> any dictionary word counts, plurals and verb forms included (CATS, RAN).',
       howWin: 'First to <b>{n} points</b> wins. The starting player changes every point.',
       demo: ['cold', 'cord', 'word'], logo: ['cold', 'cord'],
     },
@@ -86,13 +84,14 @@
   // Turkish first, whatever the device language. English only once someone taps it
   // (langPicked); older saves picked 'en' from navigator.language, so they reset.
   const S = Object.assign({
-    lang: 'tr', langPicked: false, ekli: true,
+    lang: 'tr', langPicked: false,
     mode: 'duo', level: 'orta', len: 4, pace: 'normal', format: 1,
     names: ['', ''], bonus: [0, 0], sound: true, seenHow: false,
   }, readJSON(DEVICE_KEY) || {});
   if (!S.langPicked || !T[S.lang]) S.lang = 'tr';
   if (![3, 4].includes(+S.len)) S.len = 4;
-  S.len = +S.len; S.format = +S.format === 2 ? 2 : 1; S.ekli = S.ekli !== false;
+  S.len = +S.len; S.format = +S.format === 2 ? 2 : 1;
+  delete S.ekli;   // "inflected words count" setting, 11 Nov 2026 only
   function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function saveDevice() { try { localStorage.setItem(DEVICE_KEY, JSON.stringify(S)); } catch (e) {} }
   function loadSave() {
@@ -105,7 +104,6 @@
     delete d.smashes;
     return d;
   }
-  const ekliOn = () => S.lang === 'tr' && S.ekli;
   Sfx.setEnabled(S.sound);
 
   // ---------- Lab ----------
@@ -123,10 +121,7 @@
 
   // ---------- lexicons ----------
   const lexCache = {};
-  const lexFor = (lang, len, ekli) => {
-    const k = lang + len + (ekli ? 'x' : '');
-    return lexCache[k] || (lexCache[k] = new KT.Lexicon(WORDS, lang, len, { ekli }));
-  };
+  const lexFor = (lang, len) => lexCache[lang + len] || (lexCache[lang + len] = new KT.Lexicon(WORDS, lang, len));
 
   // ---------- menu ----------
   function renderLogo() {
@@ -151,8 +146,7 @@
     if (w + l) parts.push(t('record', { w, l }));
     if (save.longest) parts.push(t('recordChain', { n: save.longest }));
     $('#record').textContent = parts.join(' · ');
-    const how = ['how1', 'how2', 'how3', 'how4'].map(k => t(k));
-    if (ekliOn()) how.push(t('howEkli'));
+    const how = ['how1', 'how2', 'how3', 'how4', 'howWords'].map(k => t(k));
     how.push(t('howWin', { n: KT.TARGET[S.format] }));
     $('#howList').innerHTML = how.map(h => '<li>' + h + '</li>').join('');
   }
@@ -161,8 +155,7 @@
     $$('.mode').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
     $('#setupBot').classList.toggle('on', S.mode === 'bot');
     $('#setupDuo').classList.toggle('on', S.mode === 'duo');
-    $('#ekliOpt').hidden = S.lang !== 'tr';
-    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), ekli: S.ekli ? '1' : '0', bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
+    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
     $$('[data-set]').forEach(g => $$('.chip', g).forEach(c => c.classList.toggle('on', c.dataset.v === val[g.dataset.set])));
     $('#name1').value = S.names[0] || '';
     $('#name2').value = S.names[1] || '';
@@ -176,7 +169,6 @@
     else if (k === 'len') S.len = +v;
     else if (k === 'pace') S.pace = v;
     else if (k === 'format') S.format = +v;
-    else if (k === 'ekli') S.ekli = v === '1';
     else if (k === 'bonus0') S.bonus[0] = +v;
     else if (k === 'bonus1') S.bonus[1] = +v;
     saveDevice(); syncMenu(); Sfx.tap();
@@ -223,8 +215,7 @@
 
   function startMatch(firstStarter) {
     stopGame();
-    const ekli = ekliOn();
-    const lex = lexFor(S.lang, S.len, ekli);
+    const lex = lexFor(S.lang, S.len);
     const mode = S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
     const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
@@ -250,7 +241,7 @@
     renderScore();
     layout();
     G.raf = requestAnimationFrame(frame);
-    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}${S.lang === 'tr' ? (ekli ? ', ekliler geçer' : ', yalnız sözlük') : ''}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
+    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
     if (mode === 'duo') {
       banner(t('firstPick', { name: playerName(fs) }));
       wait(1.6, () => { hideBanner(); enterStart(); });
@@ -302,8 +293,6 @@
   }
 
   const sentText = i => (G.mode === 'bot' && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
-  // "ALDI (almak)": the dictionary word an inflected form comes from, when it is clear.
-  const rootTag = w => { const r = G.lex.root(w); return r ? ` <span class="root">(${esc(r)})</span>` : ''; };
 
   function renderTiles(i, word, opts) {
     const o = opts || {};
@@ -348,7 +337,7 @@
       txt = esc(mp !== undefined ? t('matchPoint', { name: playerName(mp) }) : t('starting', { name: playerName(m.starter) }));
     } else if (pt && pt.shots.length) {
       const words = pt.shots.slice(-3).map(s => s.word);
-      txt = '<span class="chain">' + words.map((w, k) => `<span class="${k === words.length - 1 ? 'last' : ''}">${esc(U(w))}${k === words.length - 1 ? rootTag(w) : ''}</span>`).join('') +
+      txt = '<span class="chain">' + words.map((w, k) => `<span class="${k === words.length - 1 ? 'last' : ''}">${esc(U(w))}</span>`).join('') +
         `</span> · ${pt.shots.length}`;
     }
     $('#info0').innerHTML = txt;
@@ -576,7 +565,7 @@
     const at = G.lex.diff(before, word);
     renderTiles(p, word, { mark: at, wait: true });
     setKeyboard(p, false);
-    setMsg(p, esc(sentText(p)) + ' <b>' + esc(U(word)) + '</b>' + rootTag(word));
+    setMsg(p, esc(sentText(p)) + ' <b>' + esc(U(word)) + '</b>');
     boardInfo();
     if (r.how === 'dead') {
       Sfx.deadEnd();

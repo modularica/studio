@@ -1,10 +1,11 @@
-# Tarayıcıda uçtan uca deneme: telefonda bota karşı (ekli kelime, kök), iPad'de (dik ve yatay) iki kişi, dil (Türkçe açılış, İngilizce seçimi), ekli kelime ayarı, nasıl oynanır.
+# Tarayıcıda uçtan uca deneme: telefonda bota karşı, 3 harfte fiil kökü (GEL), iPad'de (dik ve yatay) iki kişi, dil (Türkçe açılış, İngilizce seçimi), nasıl oynanır.
 # Önce:  node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
 # Sonra: python3 lab/kelime-tenisi/src/test/browser.py      (görüntüler /tmp/kt-shots/)
-import os, random, subprocess, sys, time
+import json, os, random, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
 ROOT, OUT, PORT = '/tmp/kt', '/tmp/kt-shots', 8772
+ROOTS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools', 'stats.json'), encoding='utf-8'))['tr-roots']
 os.makedirs(OUT, exist_ok=True)
 srv = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT), '-d', ROOT], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.6)
@@ -18,7 +19,7 @@ def check(cond, msg):
 
 STATE = """(() => { const G = __kt.G; if (!G) return null; const m = G.m;
   return { phase: m.phase, starter: m.starter, turn: m.point ? m.point.turn : -1, word: m.point ? m.point.word : null,
-           points: m.points.slice(), target: m.target, ekli: G.lex.ekli, busy: G.pointBusy, mode: G.mode, shots: m.point ? m.point.shots.length : 0,
+           points: m.points.slice(), target: m.target, busy: G.pointBusy, mode: G.mode, shots: m.point ? m.point.shots.length : 0,
            left: G.clock.left, running: G.clock.running, bot: G.bots.map(b => !!b) }; })()"""
 
 REPLY = """((smash) => { const G = __kt.G, m = G.m, lex = G.lex, used = m.point.used;
@@ -93,7 +94,9 @@ with sync_playwright() as p:
     pg.wait_for_timeout(300)
     s = st(pg)
     check(s['mode'] == 'bot' and s['starter'] == 0 and s['phase'] == 'start', 'maç başladı, ilk kelimeyi oyuncu seçiyor')
-    check(s['ekli'] and s['target'] == 5, 'Türkçede ekli kelimeler varsayılan olarak geçiyor, kısa maç 5 sayı')
+    check(s['target'] == 5, 'kısa maç 5 sayı')
+    check(pg.evaluate("(() => { const l = __kt.lexFor('tr', 4); return l.has('anla') && l.has('otur') && !l.has('evde') && !l.has('aldı') && !l.has('bana'); })()"),
+          'fiil kökleri geçiyor (ANLA, OTUR), ekli haller geçmiyor (EVDE, ALDI, BANA)')
     check(pg.locator('#panel0 .start-card').count() == 3, 'üç başlangıç kelimesi')
     check(pg.locator('#board .net, #board .ball, .court').count() == 0, 'kort, file, top yok')
     pg.tap('#panel0 .start-card >> nth=0')
@@ -124,31 +127,6 @@ with sync_playwright() as p:
         check(st(pg)['word'] == w, 'klavyeden kelime yazılıyor: ' + w.upper())
     else:
         print('  (klavye denemesi atlandı: harfleri hep ASCII olan dönüş yok)')
-    # an inflected form (EVDE, ALDI...) is accepted, with its root next to it
-    pg.evaluate('__kt.speed = 2')
-    found = False
-    for _ in range(80):
-        s = st(pg)
-        if s['phase'] == 'matchOver':
-            break
-        if not s['busy'] and s['phase'] == 'start' and s['starter'] == 0 and pg.is_visible('#panel0 .start-card'):
-            pg.tap('#panel0 .start-card >> nth=0')
-        elif not s['busy'] and s['phase'] == 'rally' and s['turn'] == 0 and s['running']:
-            r = pg.evaluate("""(() => { const G = __kt.G, m = G.m;
-              const w = G.lex.neighbours(m.point.word, m.point.used, true).find(x => G.lex.root(x) && G.lex.neighbours(x, new Set([...m.point.used, x])).length);
-              return w ? { w, at: G.lex.diff(m.point.word, w), root: G.lex.root(w) } : null; })()""")
-            if r:
-                pg.tap(f'#panel0 .tiles .tile >> nth={r["at"]}')
-                pg.tap(f'#panel0 .key[data-k="{r["w"][r["at"]]}"]')
-                pg.wait_for_timeout(150)
-                check(st(pg)['word'] == r['w'] and r['root'] in pg.inner_text('#panel0 .msg'),
-                      f'ekli kelime geçti ve kökü yazıyor: {r["w"].upper()} ({r["root"]})')
-                pg.screenshot(path=f'{OUT}/phone-ekli.png')
-                found = True
-                break
-            play_turn(pg, 0, True)
-        pg.wait_for_timeout(250)
-    check(found, 'ekli kelime denendi')
     pg.evaluate('__kt.speed = 4')
     done = play_match(pg, True, {0}, tag='phone')
     check(done, 'bota karşı maç bitti')
@@ -162,6 +140,38 @@ with sync_playwright() as p:
     check(st(pg)['phase'] == 'start' and st(pg)['points'] == [0, 0], 'rövanş yeni maç açıyor')
     pg.tap('#pauseBtn'); pg.tap('#quitBtn')
     check(pg.is_visible('#menu') and 'Bota karşı' in pg.inner_text('#record'), 'ana menüde rekor satırı')
+    ctx.close()
+
+    print('Telefon · 3 harf, fiil kökü')
+    # a device that saved the 11 Nov "inflected words count" setting
+    ctx, pg = new_page(b, {'width': 390, 'height': 844}, True, True, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'bot', level:'kolay', len:3, ekli:true}))")
+    check(pg.locator('[data-set=ekli]').count() == 0, 'menüde ekli kelime ayarı yok')
+    pg.tap('#startBtn')
+    pg.wait_for_function('__kt.G.m.phase === "start" && document.querySelector("#panel0 .start-card")', timeout=8000)
+    check(not pg.evaluate("__kt.G.lex.has('eve') || __kt.G.lex.has('evi')"), 'eski ayarlı cihazda da EVE, EVİ geçmiyor')
+    pg.evaluate('__kt.speed = 2')
+    found = False
+    for _ in range(120):
+        s = st(pg)
+        if s['phase'] == 'matchOver':
+            break
+        if not s['busy'] and s['phase'] == 'start' and s['starter'] == 0 and pg.is_visible('#panel0 .start-card'):
+            pg.tap('#panel0 .start-card >> nth=0')
+        elif not s['busy'] and s['phase'] == 'rally' and s['turn'] == 0 and s['running']:
+            r = pg.evaluate("""(roots) => { const G = __kt.G, m = G.m;
+              const w = G.lex.neighbours(m.point.word, m.point.used, true).find(x => roots.includes(x));
+              return w ? { w, at: G.lex.diff(m.point.word, w) } : null; }""", ROOTS['3'].split())
+            if r:
+                pg.tap(f'#panel0 .tiles .tile >> nth={r["at"]}')
+                pg.tap(f'#panel0 .key[data-k="{r["w"][r["at"]]}"]')
+                pg.wait_for_timeout(150)
+                check(st(pg)['word'] == r['w'], f'fiil kökü geçti: {st(pg)["word"].upper()}')
+                pg.screenshot(path=f'{OUT}/phone-root.png')
+                found = True
+                break
+            play_turn(pg, 0, True)
+        pg.wait_for_timeout(200)
+    check(found, 'fiil kökü denendi')
     ctx.close()
 
     print('iPad dik · iki kişi')
@@ -216,22 +226,13 @@ with sync_playwright() as p:
     pg.evaluate("localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'bot', level:'zor', lang:'en'}))")
     pg.reload(); pg.wait_for_timeout(300)
     check(pg.inner_text('h1') == 'Kelime Düellosu', "eskiden 'en' kaydetmiş cihaz Türkçe açılıyor")
-    # the inflected-words setting: Türkçe only, "Geçmez" means dictionary words only
-    check(pg.is_visible('#ekliOpt'), 'Türkçede ekli kelime ayarı görünüyor')
-    pg.click('[data-set=ekli] .chip[data-v="0"]')
-    pg.click('#startBtn'); pg.wait_for_timeout(300)
-    check(st(pg)['ekli'] is False and not pg.evaluate("__kt.G.lex.has('evde')"), '"Geçmez" seçilince EVDE geçmiyor')
-    pg.evaluate('__kt.toMenu()')
-    pg.click('[data-set=ekli] .chip[data-v="1"]')
     pg.click('[data-lang=en]')
     check(pg.inner_text('h1') == 'Word Duel', 'English seçilince İngilizce')
-    check(not pg.is_visible('#ekliOpt'), 'İngilizcede ekli kelime ayarı yok')
     pg.reload(); pg.wait_for_timeout(300)
     check(pg.inner_text('h1') == 'Word Duel', 'seçilen dil hatırlanıyor')
     pg.click('#startBtn')
     pg.wait_for_timeout(300)
     check(pg.locator('#panel0 .key').count() == 26, 'İngilizce klavye 26 harf')
-    check(st(pg)['ekli'] is False, 'İngilizcede ekli kural yok')
     pg.click('#panel0 .start-card >> nth=0')
     pg.wait_for_function('__kt.G.m.phase !== "start" && !__kt.G.pointBusy', timeout=8000)
     pg.screenshot(path=f'{OUT}/desk-en.png')

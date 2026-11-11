@@ -1,5 +1,5 @@
 // Kelime Düellosu çekirdek denemesi:  node lab/kelime-tenisi/src/test/core.test.js
-// Sözlük verisi (ekli kelimeler dahil), Türkçe büyük/küçük harf, kurallar (cevap, çıkmaz, süre, sayı yarışı), bot.
+// Sözlük verisi (fiil kökleri dahil, ekli haller yok), Türkçe büyük/küçük harf, kurallar (cevap, çıkmaz, süre, sayı yarışı), bot.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -22,22 +22,19 @@ for (const lang of ['tr', 'en']) {
   for (const len of [3, 4]) {
     test(`${lang}/${len}: harfler, uzunluk, tekrar yok, başlangıç kelimeleri bilinen ve komşulu`, () => {
       const d = WORDS[lang];
-      const sets = [d.common[len], d.rare[len]].concat(d.x ? [d.x.common[len], d.x.rare[len]] : []);
+      const sets = [d.common[len], d.rare[len]];
       const all = [].concat(...sets.map(x => x ? x.split(' ') : []));
       assert.strictEqual(new Set(all).size, all.length, 'duplicate');
       for (const w of all) {
         assert.strictEqual(w.length, len, w);
         for (const c of w) assert.ok(d.alpha.includes(c), w);
       }
-      for (const ekli of d.x ? [false, true] : [false]) {
-        const lex = new KT.Lexicon(WORDS, lang, len, { ekli });
-        for (const s of lex.serves) {
-          assert.ok(lex.isCommon(s), s);
-          assert.ok(!lex.root(s) && d.common[len].split(' ').includes(s), 'starting word is not a dictionary word: ' + s);
-          assert.ok(lex.neighbours(s, null, true).length >= 4, s);
-        }
-        assert.ok(lex.serves.length > 100, 'start word count ' + lex.serves.length);
+      const lex = new KT.Lexicon(WORDS, lang, len);
+      for (const s of lex.serves) {
+        assert.ok(lex.isCommon(s), s);
+        assert.ok(lex.neighbours(s, null, true).length >= 4, s);
       }
+      assert.ok(lex.serves.length > 100, 'start word count ' + lex.serves.length);
     });
   }
 }
@@ -60,24 +57,17 @@ test('Türkçe: türetilmiş kelimeler geçer, çekimli biçimler geçmez', () =
   assert.ok(tr4.has('ölme') && !tr4.isCommon('ölme'));
   for (const w of ['bana', 'evde', 'oldu', 'gücü', 'aklı']) assert.ok(!tr4.has(w), w);
 });
-test('Türkçe ekli kelimeler: EVDE, ALDI, BANA geçer; kaba köklü ekli biçim geçmez; kök gösterilir', () => {
-  const tr3 = new KT.Lexicon(WORDS, 'tr', 3, { ekli: true }), tr4 = new KT.Lexicon(WORDS, 'tr', 4, { ekli: true });
-  assert.ok(tr4.ekli && !new KT.Lexicon(WORDS, 'tr', 4).ekli);
-  for (const w of ['evde', 'aldı', 'bana', 'onun', 'oldu', 'gücü', 'yolu']) assert.ok(tr4.has(w) && tr4.isCommon(w), w);
-  for (const w of ['gel', 'git', 'yap', 'eve', 'işi']) assert.ok(tr3.has(w) && tr3.isCommon(w), w);
-  for (const w of ['masa', 'kale', 'ünlü']) assert.ok(tr4.has(w) && tr4.isCommon(w), w);   // dictionary words stay
-  for (const w of ['göte', 'götü', 'siki', 'sike', 'boka', 'boku', 'piçi']) assert.ok(!tr4.has(w), w);
-  for (const w of ['amı', 'göt', 'sik']) assert.ok(!tr3.has(w), w);
-  for (const w of ['öldü', 'kanı']) assert.ok(!tr4.isCommon(w), w);       // soft roots: never by the bot
-  for (const w of ['yada', 'şuan', 'emre']) assert.ok(!tr4.isCommon(w), w); // frequent for other reasons
-  assert.strictEqual(tr4.root('aldı'), 'almak');
-  assert.strictEqual(tr4.root('evde'), 'ev');
-  assert.strictEqual(tr4.root('masa'), null);                              // dictionary words: no root shown
-  assert.strictEqual(new KT.Lexicon(WORDS, 'tr', 4).root('aldı'), null);
-  // more ways out in the inflected rule
-  const d = new KT.Lexicon(WORDS, 'tr', 4);
-  assert.ok(tr4.neighbours('oyun', null, true).length > d.neighbours('oyun', null, true).length);
-  assert.ok(!new KT.Lexicon(WORDS, 'en', 4, { ekli: true }).ekli);          // English has no such rule
+test('Türkçe: fiil kökleri geçer (GEL, ANLA), ekli haller geçmez (EVDE, ALDI, BANA)', () => {
+  const tr3 = new KT.Lexicon(WORDS, 'tr', 3), tr4 = new KT.Lexicon(WORDS, 'tr', 4);
+  for (const w of ['gel', 'git', 'yap', 'ver', 'oku', 'sus']) assert.ok(tr3.has(w) && tr3.isCommon(w), w);
+  for (const w of ['anla', 'otur', 'oyna', 'unut', 'izle', 'kalk']) assert.ok(tr4.has(w) && tr4.isCommon(w), w);
+  for (const w of ['eve', 'evi', 'işi', 'adı', 'onu', 'idi']) assert.ok(!tr3.has(w), w);
+  for (const w of ['evde', 'yolu', 'suyu', 'aldı', 'oldu', 'bana', 'onun', 'gücü']) assert.ok(!tr4.has(w), w);
+  for (const w of ['taşı', 'dile', 'akla']) assert.ok(!tr4.has(w), w);          // roots that read as inflected nouns
+  for (const w of ['döv', 'boğ', 'kus', 'sok']) assert.ok(tr3.has(w) && !tr3.isCommon(w), w);   // never by the bot
+  for (const w of ['sik', 'göt', 'amı']) assert.ok(!tr3.has(w), w);
+  for (const w of ['masa', 'kale', 'ünlü', 'uçuş']) assert.ok(tr4.has(w) && tr4.isCommon(w), w);
+  assert.ok(!WORDS.tr.x, 'inflected-form lists are gone');
 });
 
 console.log('Türkçe harfler');
@@ -201,7 +191,7 @@ test('sayı yarışı: başlayan her sayıda değişir, maç sayısı, hedefe ul
 console.log('Bot');
 function botMatch(lang, len, levels, seed, opts) {
   const o = opts || {};
-  const lex = new KT.Lexicon(WORDS, lang, len, { ekli: !!o.ekli });
+  const lex = new KT.Lexicon(WORDS, lang, len);
   const r = KT.seeded(seed);
   const m = new KT.Match({ lex, players: [{ name: 'A' }, { name: 'B' }], random: r, pace: o.pace || 'normal', target: o.target || KT.TARGET[1] });
   const bots = levels.map(l => new KT.Bot(l, r));
@@ -222,14 +212,14 @@ function botMatch(lang, len, levels, seed, opts) {
   return { m, seconds };
 }
 const report = {};
-const cases = [['tr', 4, true], ['tr', 3, true], ['tr', 4, false], ['tr', 3, false], ['en', 4, false], ['en', 3, false]];
-for (const [lang, len, ekli] of cases) {
-  const name = `${lang}/${len}${lang === 'tr' ? (ekli ? ' ekli' : ' sözlük') : ''}`;
+const cases = [['tr', 4], ['tr', 3], ['en', 4], ['en', 3]];
+for (const [lang, len] of cases) {
+  const name = `${lang}/${len}`;
   test(`${name}: bot maçları biter, zor bot kolayı yener`, () => {
     let zorWins = 0, chain = 0, points = 0, secs = 0, dead = 0, mins = { 1: 0, 2: 0 };
     const N = 120;
     for (let i = 0; i < N; i++) {
-      const { m, seconds } = botMatch(lang, len, i % 2 ? ['zor', 'kolay'] : ['kolay', 'zor'], 1000 + i, { ekli });
+      const { m, seconds } = botMatch(lang, len, i % 2 ? ['zor', 'kolay'] : ['kolay', 'zor'], 1000 + i);
       if (m.winner === (i % 2 ? 0 : 1)) zorWins++;
       chain += m.history.reduce((a, h) => a + h.chain, 0);
       points += m.history.length;
@@ -237,7 +227,7 @@ for (const [lang, len, ekli] of cases) {
       secs += seconds;
     }
     for (const f of [1, 2]) {
-      for (let i = 0; i < 40; i++) mins[f] += botMatch(lang, len, ['orta', 'orta'], 7000 + i, { ekli, target: KT.TARGET[f] }).seconds / 60 / 40;
+      for (let i = 0; i < 40; i++) mins[f] += botMatch(lang, len, ['orta', 'orta'], 7000 + i, { target: KT.TARGET[f] }).seconds / 60 / 40;
     }
     report[name] = {
       'zor kazanır': Math.round(100 * zorWins / N) + '%',

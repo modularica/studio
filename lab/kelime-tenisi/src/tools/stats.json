@@ -1,48 +1,28 @@
 {
+ "tr-roots": {
+  "3": "bak bil bo\u011f b\u00f6l doy do\u011f dur d\u00f6k d\u00f6n d\u00f6v gel gir git giy g\u00f6m g\u00f6r kon kop ko\u015f kus oku sar sat sev se\u00e7 sil sok sor sun sus s\u00fcr tut uyu ver vur yap yor yut y\u0131k \u00e7iz \u00e7\u0131k \u00f6de \u00f6l\u00e7 \u00f6rt",
+  "4": "anla atla avla ay\u0131r a\u011fla dene edin ekle e\u011fit ilet iste izle i\u015fle kalk kapa kork otur oyna s\u0131na ula\u015f unut uyan uyar uzan uzat yala y\u00fcr\u00fc y\u0131ka \u00f6ner \u00f6nle \u00f6v\u00fcn \u00fcret \u00fcz\u00fcl \u0131s\u0131r \u0131s\u0131t"
+ },
  "tr": {
   "3": {
-   "valid": 766,
-   "common": 342,
-   "serve": 222,
-   "avg_common_neighbours": 7.18,
-   "common_with_0_common_neighbours": 11,
-   "common_with_0_valid_neighbours": 2,
+   "valid": 810,
+   "common": 377,
+   "serve": 258,
+   "avg_common_neighbours": 7.84,
+   "common_with_0_common_neighbours": 13,
+   "common_with_0_valid_neighbours": 3,
    "common_with_1_2": 34,
-   "common_with_5_plus": 253
+   "common_with_5_plus": 291
   },
   "4": {
-   "valid": 2042,
-   "common": 870,
-   "serve": 178,
-   "avg_common_neighbours": 2.63,
-   "common_with_0_common_neighbours": 157,
-   "common_with_0_valid_neighbours": 46,
-   "common_with_1_2": 342,
-   "common_with_5_plus": 149
-  }
- },
- "tr-x": {
-  "3": {
-   "valid": 992,
-   "common": 412,
-   "serve": 241,
-   "avg_common_neighbours": 7.87,
-   "common_with_0_common_neighbours": 7,
-   "common_with_0_valid_neighbours": 0,
-   "common_with_1_2": 26,
-   "common_with_5_plus": 328,
-   "forms": 226
-  },
-  "4": {
-   "valid": 4381,
-   "common": 1220,
-   "serve": 284,
-   "avg_common_neighbours": 4.12,
-   "common_with_0_common_neighbours": 120,
-   "common_with_0_valid_neighbours": 21,
-   "common_with_1_2": 340,
-   "common_with_5_plus": 453,
-   "forms": 2339
+   "valid": 2077,
+   "common": 902,
+   "serve": 197,
+   "avg_common_neighbours": 2.76,
+   "common_with_0_common_neighbours": 152,
+   "common_with_0_valid_neighbours": 44,
+   "common_with_1_2": 344,
+   "common_with_5_plus": 168
   }
  },
  "en": {

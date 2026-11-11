@@ -11,8 +11,8 @@
 #   naughty-tr.json, naughty-en.json      LDNOOBW lists from the npm package naughty-words (CC-BY-4.0),
 #                                         only used here to drop words; nothing from them is shipped
 # and `pip install wordfreq` (frequencies, data CC-BY-SA 4.0) decides which words are "common".
-# Turkish inflected forms need `pip install zemberek-python` (Zemberek's analyzer, Apache-2.0); the first run
-# checks every 3-4 letter string (~4 min) and caches the result as tr-forms.json in the cache dir.
+# Turkish verb roots need `pip install zemberek-python` (Zemberek's analyzer, Apache-2.0); the first run
+# checks every 3-4 letter string (~4 min) and caches the result as tr-forms-v2.json in the cache dir.
 #
 # Output per language and word length (3, 4, 5):
 #   common  words most people know: the bot plays these, serves come from these, the end-of-point
@@ -20,9 +20,9 @@
 #   rare    other valid dictionary words: accepted when a player types them, never played by the bot
 #   serve   common words with plenty of common neighbours (a rally can start) and nothing unpleasant
 # Turkish: dictionary headwords, circumflex letters folded (kâr -> kar), plus EXTRA below (derived words
-#          such as ünlü, uçuş, okçu that Zemberek builds by rule). Under `x` the same three lists for the
-#          "inflected words count" rule (evde, aldı, bana), only the forms that are not dictionary words,
-#          and `root`: the dictionary word each of them comes from (aldı:almak), shown in the game.
+#          such as ünlü, uçuş, okçu that Zemberek builds by rule) and the roots of well-known verbs
+#          (gel, anla, otur; dictionaries list verbs with -mek). Inflected forms (evde, yolu, aldı, bana) do
+#          not count: tried on 11 Nov 2026 (commit 7407cb2) and dropped the same day, they made the game silly.
 # English: every ENABLE word, inflections included (cats, ran), as in most word games.
 import json, os, sys, collections, itertools
 from wordfreq import zipf_frequency
@@ -116,7 +116,7 @@ SERVE_SKIP = {
 SOFT = {
     'tr': '''ölü ölüm ölmek ölme ölüş kan kanlı silah bomba ceset katil şarap rakı bira votka esrar eroin kokain
              salak aptal ahmak enayi ebleh avanak dangalak hıyar öküz domuz geber gebe gebeş leş kusmuk
-             kusmak sıçan sıçmak osur osuruk işemek çiş kaka bok götür''',
+             kusmak sıçan sıçmak osur osuruk işemek çiş kaka bok götür dövmek boğmak''',
     'en': '''kill kills dead die died dies dying gun guns bomb bombs stab stabs blood bloody gore murder
              drug drugs beer beers wine wines rum gin vodka booze drunk weed crack meth stupid idiot moron
              dumb dumbo puke pukes vomit poop poops pee pees fart farts crap shag hell damn butt butts suck
@@ -179,25 +179,19 @@ def naughty(lang):
     return out
 
 
-# ---------- Turkish inflected forms ----------
+# ---------- Turkish verb roots ----------
 VOWELS_TR = set('aeıioöuü')
 SKIP_POS = {'Punctuation', 'Unknown', 'Duplicator', 'Interjection', 'Question'}
 SKIP_SEC = {'ProperNoun', 'Abbreviation', 'RegularAbbreviation', 'Email', 'Url', 'Mention', 'HashTag', 'Emoticon',
             'RomanNumeral', 'Date', 'Clock', 'Percentage', 'Ratio', 'Range', 'Real', 'Distribution'}
-# Turkish letters often typed without their marks online (paşa -> pasa): such a spelling's frequency is mostly
-# the other word's, so an inflected form whose marked spelling is at least as frequent is not "common".
-ASCII_TR = {'c': 'ç', 'g': 'ğ', 'i': 'ı', 'o': 'ö', 's': 'ş', 'u': 'ü'}
-# Inflected forms that look frequent but are not what people mean by them, reviewed by hand (Nov 2026).
-COMMON_ZIPF_FORMS = 3.3   # an inflected form must be a bit more frequent than a dictionary word to count as known
-NOT_COMMON_FORMS = '''den yada emre roma şuan deki erdi teki ili bolu baya anki buda time sun min kate tuna inin
-    özer life del lana buca ren zara ilin inde pete nün bine nede ine here side erer ger anıl urla len aram söke
-    üncü doya anlı mili eyle eri ula alla aksa demi itin piri dom usa azmi ünde timi dür erin nuru pen gere yala
-    yor unda tele öner ıran garı geni fin kon kop yet nana apar bert rene biti emil eni bele dükü buy geli kıçı
-    anar fili anan aran ecem sisi anım azam eken ever imi else tona ayki tap egon lime lem rem emer iter kiti üzer
-    fine alı yum ağar cara hama imiz tama sın haçı tiki adla dola üsse mora uma uza sına arzı bulu dona rama evle
-    jeti pine ekte tipe tene tırı kiki tora uman çıka asra azda beki dura etle mata koda okun tamı yata ölün bur
-    bene sama çeke sız açız inim silk ödü daya okla ene jen neme şaş zatı öten emi öpen ite adan arın atta ezin
-    ayım ediş hole işti nen öve ahde dire mele odan toru oka adar ağca fazı puta özün mimi'''
+# Verb roots. Turkish dictionaries list verbs with -mek (gelmek), so a 3-4 letter verb is only ever its root,
+# the bare command form (gel, anla, otur). The roots of well-known verbs count as plain words.
+VERB_ZIPF = 3.0   # wordfreq Zipf of the verb (gelmek) a root needs
+# Roots that read as an inflected noun rather than a command (taşı: its stone, dile: to the language).
+NOT_ROOTS = 'taşı dile akla arın'
+# Roots that count but the bot never plays: frequency from another word (sun, kon, öner), or not nice as a
+# command (sok, göm).
+NOT_COMMON_ROOTS = 'sok göm sun kon kop yor yala öner sına'
 
 def zemberek_forms():
     """Every 3-4 letter string Zemberek accepts as a Turkish word form, with its analyses
@@ -234,30 +228,21 @@ def zemberek_forms():
         json.dump(out, f, ensure_ascii=False)
     return out
 
-def marked_variants(w):
-    """w with some of c g i o s u replaced by ç ğ ı ö ş ü (w itself excluded)."""
-    pos = [i for i, c in enumerate(w) if c in ASCII_TR]
-    for k in range(1, len(pos) + 1):
-        for sub in itertools.combinations(pos, k):
-            yield ''.join(ASCII_TR[c] if i in sub else c for i, c in enumerate(w))
-
-def inflected_tr(valid, bad, soft, known):
-    """Inflected forms that are not dictionary words: {form: (root shown or None, soft only)}.
-    A form counts only if it has an analysis whose root is not a blocked word (göte, siki never count)."""
+def verb_roots_tr(dictionary, bad):
+    """{root: verb} for well-known verbs whose root (the bare command form: gel, anla) is not a dictionary word.
+    Inflected forms (evde, yolu, aldı, bana) never count: tried on 11 Nov 2026 and dropped, they made the game silly."""
     fold = lambda x: fold_tr(x.lower())
+    skip = set(NOT_ROOTS.split())
     out = {}
     for w, res in zemberek_forms().items():
-        if w in valid or w in bad:
+        if w in dictionary or w in bad or w in skip:
             continue
-        clean = [r for r in res if fold(r[2]) not in bad and fold(r[3]) not in bad]
-        if not clean:
+        verbs = [r[2] for r in res if r[0] == 'Verb' and r[3] == w and not r[4]]
+        if not verbs or any(fold(r[2]) in bad or fold(r[3]) in bad for r in res):
             continue
-        soft_only = all(fold(r[2]) in soft or fold(r[3]) in soft for r in clean)
-        # Root shown to players only when the analyses agree (aldı: almak). "Was a ..." readings of nouns
-        # (al-dı: it was red) do not count against that when there is another reading.
-        plain = [r for r in clean if not r[4]] or clean
-        roots = {fold(r[2]) for r in plain}
-        out[w] = (roots.pop() if len(roots) == 1 else None, soft_only)
+        verb = max(verbs, key=lambda v: zipf_frequency(v, 'tr'))
+        if zipf_frequency(verb, 'tr') >= VERB_ZIPF:
+            out[w] = verb
     return out
 
 def buckets(ws):
@@ -303,6 +288,14 @@ def main():
         bad = naughty(lang) | set(BLOCK[lang].split())
         soft = set(SOFT[lang].split())
         notc = set(NOT_COMMON[lang].split())
+        if lang == 'tr':   # roots of well-known verbs (gel, anla, otur) count as plain words
+            roots = verb_roots_tr(set(allw), bad)
+            for w, verb in roots.items():
+                allw[w] = zipf_frequency(verb, 'tr')
+                if verb in soft:
+                    soft.add(w)
+            notc |= set(NOT_COMMON_ROOTS.split())
+            stats['tr-roots'] = {n: ' '.join(sorted(w for w in roots if len(w) == n)) for n in LENGTHS}
         data[lang] = {'alpha': ALPHA[lang], 'common': {}, 'rare': {}, 'serve': {}}
         stats[lang] = {}
         valid_all = {w for w in allw if len(w) in LENGTHS and w not in bad}
@@ -313,38 +306,6 @@ def main():
             data[lang]['rare'][n] = ' '.join(rare)
             data[lang]['serve'][n] = ' '.join(serve)
             stats[lang][n] = st
-        if lang != 'tr':
-            continue
-        # Rule "inflected words count": the dictionary plus every form Zemberek accepts (evde, aldı, bana).
-        forms = inflected_tr(valid_all, bad, soft, allw)
-        known = dict(allw)
-        for w in forms:
-            known[w] = zipf_frequency(w, 'tr')
-        notc_forms = set(NOT_COMMON_FORMS.split()) | {w for w in forms if known[w] < COMMON_ZIPF_FORMS}
-        inflated = {w for w in forms if any((v in valid_all or v in forms) and zipf_frequency(v, 'tr') >= known[w]
-                                            for v in marked_variants(w))}
-        soft_forms = {w for w, (_, s_only) in forms.items() if s_only}
-        x = {'common': {}, 'rare': {}, 'serve': {}}
-        stats['tr-x'] = {}
-        for n in LENGTHS:
-            dict_valid = [w for w in valid_all if len(w) == n]
-            valid = sorted(dict_valid + [w for w in forms if len(w) == n])
-            common, rare, _, st = lists(valid, known, 'tr', soft | soft_forms, notc | notc_forms | inflated)
-            dict_common = set(data['tr']['common'][n].split())
-            _, _, serve, _ = lists(valid, known, 'tr', soft | soft_forms, notc | notc_forms | inflated,
-                                   serve_from=[w for w in common if w in dict_common])
-            x['common'][n] = ' '.join(w for w in common if w in forms)
-            x['rare'][n] = ' '.join(w for w in rare if w in forms)
-            x['serve'][n] = ' '.join(serve)
-            st['serve'] = len(serve)
-            st['forms'] = sum(1 for w in forms if len(w) == n)
-            stats['tr-x'][n] = st
-        x['root'] = ' '.join(f'{w}:{forms[w][0]}' for w in sorted(forms) if forms[w][0])
-        data['tr']['x'] = x
-        # for review: inflected forms the bot may play, most frequent first
-        review = sorted((w for n in LENGTHS for w in x['common'][n].split()), key=lambda w: -known[w])
-        with open(os.path.join(CACHE, 'tr-forms-common.txt'), 'w', encoding='utf-8') as f:
-            f.write('\n'.join(f'{w}\t{known[w]:.2f}\t{forms[w][0] or "?"}' for w in review))
     js = ('// Generated by tools/words.py. Do not edit by hand.\n'
           '// Turkish: Zemberek-NLP lexicon and analyzer (Apache-2.0) + derived words found in Turkish Wiktionary (CC-BY-SA).\n'
           '// English: ENABLE (public domain).\n'
