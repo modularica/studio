@@ -1,0 +1,5 @@
+{
+  "kid":  { "react": 2.0, "gap": 1.1, "accuracy": 0.85, "buyStaff": true, "fun": 0.6 },
+  "avg":  { "react": 1.2, "gap": 0.7, "accuracy": 0.92, "buyStaff": true, "fun": 0.8 },
+  "fast": { "react": 0.6, "gap": 0.4, "accuracy": 0.97, "buyStaff": true, "fun": 0.95 }
+}

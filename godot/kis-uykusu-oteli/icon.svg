@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#162343"/><stop offset="1" stop-color="#2d4470"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffd27a" stop-opacity="0.85"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#sky)"/>
+  <path d="M -10 92 C 50 40 120 96 180 58 C 215 36 245 46 270 60" fill="none" stroke="#5fd6a4" stroke-width="16" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="58" cy="58" r="15" fill="#f4efe2"/>
+  <circle cx="200" cy="34" r="2.5" fill="#fff"/><circle cx="110" cy="30" r="2" fill="#fff"/><circle cx="226" cy="98" r="2" fill="#fff"/>
+  <path d="M 0 196 C 60 184 190 186 256 194 L 256 256 L 0 256 Z" fill="#eef3f7"/>
+  <rect x="78" y="120" width="104" height="76" fill="#a8392b"/>
+  <path d="M 64 126 L 130 74 L 196 126 Z" fill="#7d2a20"/>
+  <path d="M 58 130 Q 62 118 74 116 L 130 70 L 186 116 Q 198 118 202 130 Q 190 124 182 126 L 130 84 L 78 126 Q 70 124 58 130 Z" fill="#f4f7fa"/>
+  <circle cx="110" cy="158" r="40" fill="url(#glow)"/>
+  <rect x="94" y="142" width="32" height="30" rx="3" fill="#ffd27a" stroke="#f4f7fa" stroke-width="5"/>
+  <path d="M 110 142 V 172 M 94 157 H 126" stroke="#f4f7fa" stroke-width="3"/>
+  <rect x="144" y="148" width="24" height="48" rx="3" fill="#6e2219"/>
+  <rect x="150" y="84" width="16" height="30" fill="#5a4a46"/>
+</svg>
