@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#c4633a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Kelime Tenisi</title>
+<!--LAB_HEAD-->
+<!--ICON-->
+<style>
+/*FONTS*/
+/*STYLE*/
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="menu" class="screen on">
+    <div class="menu-wrap">
+      <header class="brand">
+        <div class="logo" aria-hidden="true"><span class="ball big"></span></div>
+        <h1 data-t="title">Kelime Tenisi</h1>
+        <p class="tagline" data-t="tagline">Tek harfini değiştir, geri gönder.</p>
+      </header>
+
+      <div class="langs" role="group" aria-label="Dil / Language">
+        <button type="button" class="chip" data-lang="tr">Türkçe</button>
+        <button type="button" class="chip" data-lang="en">English</button>
+      </div>
+
+      <div class="modes">
+        <button type="button" class="mode" data-mode="duo">
+          <span class="mode-ico duo" aria-hidden="true"></span>
+          <span class="mode-t" data-t="duo">İki kişi</span>
+          <span class="mode-s" data-t="duoSub">Tek ekran, karşılıklı otur</span>
+        </button>
+        <button type="button" class="mode" data-mode="bot">
+          <span class="mode-ico bot" aria-hidden="true"></span>
+          <span class="mode-t" data-t="bot">Bota karşı</span>
+          <span class="mode-s" data-t="botSub">Tek başına antrenman</span>
+        </button>
+      </div>
+
+      <div class="setup" id="setupBot">
+        <div class="row-label" data-t="level">Bot</div>
+        <div class="chips" data-set="level">
+          <button type="button" class="chip" data-v="kolay" data-t="kolay">Kolay</button>
+          <button type="button" class="chip" data-v="orta" data-t="orta">Orta</button>
+          <button type="button" class="chip" data-v="zor" data-t="zor">Zor</button>
+        </div>
+      </div>
+
+      <div class="setup" id="setupDuo">
+        <div class="names">
+          <label class="name-field p1"><span class="dot"></span><input id="name1" maxlength="14" autocomplete="off" spellcheck="false"></label>
+          <label class="name-field p2"><span class="dot"></span><input id="name2" maxlength="14" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div class="row-label" data-t="bonus">Ek süre (handikap)</div>
+        <div class="bonus-row">
+          <div class="chips small" data-set="bonus0"><button type="button" class="chip" data-v="0">+0</button><button type="button" class="chip" data-v="2">+2 sn</button><button type="button" class="chip" data-v="4">+4 sn</button></div>
+          <div class="chips small" data-set="bonus1"><button type="button" class="chip" data-v="0">+0</button><button type="button" class="chip" data-v="2">+2 sn</button><button type="button" class="chip" data-v="4">+4 sn</button></div>
+        </div>
+      </div>
+
+      <div class="opts">
+        <div class="opt">
+          <div class="row-label" data-t="word">Kelime</div>
+          <div class="chips" data-set="len">
+            <button type="button" class="chip" data-v="3" data-t="len3">3 harf</button>
+            <button type="button" class="chip" data-v="4" data-t="len4">4 harf</button>
+          </div>
+        </div>
+        <div class="opt">
+          <div class="row-label" data-t="pace">Süre</div>
+          <div class="chips" data-set="pace">
+            <button type="button" class="chip" data-v="rahat" data-t="rahat">Rahat</button>
+            <button type="button" class="chip" data-v="normal" data-t="normal">Normal</button>
+            <button type="button" class="chip" data-v="hizli" data-t="hizli">Hızlı</button>
+          </div>
+        </div>
+        <div class="opt">
+          <div class="row-label" data-t="format">Maç</div>
+          <div class="chips" data-set="format">
+            <button type="button" class="chip" data-v="1" data-t="short">Kısa · 1 oyun</button>
+            <button type="button" class="chip" data-v="2" data-t="long">Uzun · 3'te 2</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="startBtn" class="primary" data-t="start">Başla</button>
+
+      <div class="menu-foot">
+        <button type="button" class="link" id="howBtn" data-t="how">Nasıl oynanır?</button>
+        <button type="button" class="link" id="soundBtn"></button>
+      </div>
+      <p class="record" id="record"></p>
+    </div>
+  </section>
+
+  <section id="game" class="screen">
+    <div class="panel top" id="panel1"></div>
+    <div class="court" id="court">
+      <div class="court-lines" aria-hidden="true"></div>
+      <div class="net" aria-hidden="true"></div>
+      <div class="court-info top-info" id="info1"></div>
+      <div class="court-info bot-info" id="info0"></div>
+      <div class="ball" id="ball" aria-hidden="true"></div>
+      <div class="banner" id="banner"></div>
+      <button type="button" class="pause" id="pauseBtn" aria-label="Mola"><span></span><span></span></button>
+    </div>
+    <div class="panel bottom" id="panel0"></div>
+  </section>
+
+  <div class="sheet" id="pauseSheet" hidden>
+    <div class="card">
+      <h2 data-t="paused">Mola</h2>
+      <button type="button" class="primary" id="resumeBtn" data-t="resume">Devam</button>
+      <button type="button" class="secondary" id="quitBtn" data-t="quit">Ana menü</button>
+      <button type="button" class="secondary nasildi" data-nasildi="mola" data-t="nasildi">Nasıldı?</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="endSheet" hidden>
+    <div class="card end">
+      <div class="trophy" aria-hidden="true"><span class="ball big"></span></div>
+      <h2 id="endTitle"></h2>
+      <p class="end-score" id="endScore"></p>
+      <ul class="end-stats" id="endStats"></ul>
+      <button type="button" class="primary" id="againBtn" data-t="again">Rövanş</button>
+      <button type="button" class="secondary" id="menuBtn" data-t="menu">Ana menü</button>
+      <button type="button" class="secondary nasildi" data-nasildi="mac-sonu" data-t="nasildi">Nasıldı?</button>
+    </div>
+    <div class="card mirror" id="endMirror" aria-hidden="true"></div>
+  </div>
+
+  <div class="sheet" id="howSheet" hidden>
+    <div class="card how">
+      <h2 data-t="how">Nasıl oynanır?</h2>
+      <div class="demo" id="demo" aria-hidden="true"></div>
+      <ol class="how-list" id="howList"></ol>
+      <button type="button" class="primary" id="howOk" data-t="gotIt">Anladım</button>
+    </div>
+  </div>
+
+  <div class="rotate" id="rotateNote"><p data-t="rotate">Oyun dikey ekran için. Telefonu dik tut.</p></div>
+</div>
+<script>
+/*WORDS*/
+/*CORE*/
+/*AUDIO*/
+/*APP*/
+</script>
+</body>
+</html>
