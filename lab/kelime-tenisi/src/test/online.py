@@ -1,5 +1,5 @@
 # İki telefondan oyun denemesi: iki tarayıcı, yerel oda sunucusu, hesap yerine taklit (Hesap).
-# Oda kurma ve davet linki, iki telefonda aynı maç, süre biterse sayı, bağlantı kopunca yetişme,
+# Oda kurma, menüdeki "Açık odalar"dan linksiz katılma, davet linki, iki telefonda aynı maç, süre biterse sayı, bağlantı kopunca yetişme,
 # sayfa yeniden açılınca maçın kaldığı yerden sürmesi, maç sonu sonuç ekranı ve rövanş, saat modu (aynı süreler,
 # sayıyı verme, süresi biten kaybeder).
 # Önce:  node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
@@ -118,9 +118,13 @@ with sync_playwright() as p:
         pg.wait_for_timeout(500)
         return ctx, pg
 
-    print('Oda kurma ve davet')
+    print('Oda kurma, menüde açık odalar')
     ca, A = phone('11111111-1111-4111-8111-111111111111', 'Umut', '#2f6fd6')
     check(A.is_visible('#onlineBtn'), 'menüde "İki telefondan" düğmesi var')
+    # Zeynep opens the game first, without a link
+    cb, B = phone('22222222-2222-4222-8222-222222222222', 'Zeynep', '#d94f8a')
+    B.wait_for_selector('#rooms:not([hidden])', timeout=8000)
+    check('açık oda yok' in B.inner_text('#roomList'), 'menüde "Açık odalar": şu an açık oda yok')
     A.screenshot(path=f'{OUT}/online-menu.png')
     A.tap('#onlineBtn')
     room(A).get_by_role('button', name='Oda kur').tap()
@@ -132,8 +136,13 @@ with sync_playwright() as p:
     room(A).get_by_role('button', name='3 harf').tap()
     room(A).get_by_role('button', name='Rahat').tap()
     oda_id = A.evaluate('__kt.oda.id')
-    cb, B = phone('22222222-2222-4222-8222-222222222222', 'Zeynep', '#d94f8a', URL + '?oda=' + oda_id)
+    # the room shows up on Zeynep's menu by itself, with the host's settings
+    B.wait_for_function("document.querySelector('#roomList').textContent.includes(\"Umut'un odası\") && document.querySelector('#roomList').textContent.includes('3 harf')", timeout=10000)
+    check('rakip bekliyor' in B.inner_text('#roomList') and B.is_enabled(f'#roomList [data-room="{oda_id}"]'), 'Zeynep\'in menüsünde Umut\'un odası kendiliğinden çıktı: rakip bekliyor, 3 harf, Katıl')
+    B.screenshot(path=f'{OUT}/online-rooms.png')
+    B.tap(f'#roomList [data-room="{oda_id}"]')
     B.wait_for_function('__kt.oda && __kt.oda.ben', timeout=8000)
+    check(B.evaluate('__kt.oda.id') == oda_id, 'Katıl ile linksiz odaya girdi')
     A.wait_for_function("() => { const h = document.querySelector('[data-oda]'); return h && h.shadowRoot.textContent.includes('Zeynep'); }", timeout=8000)
     A.screenshot(path=f'{OUT}/online-wait.png')
     check(not start.is_disabled(), 'Zeynep gelince "Oyunu başlat" açılıyor')

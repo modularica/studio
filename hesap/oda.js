@@ -37,6 +37,8 @@
  *     cikti() {}                     // we left the room: back to the game's menu
  *   });
  *   oda.dugme(el)        shows el ("Arkadaşlarla oyna") when rooms can be used; a click opens the list
+ *   oda.odalariIzle(cb)  the open rooms outside the sheet (e.g. on the game's menu): cb([{ id, kurucu, renk, n, en,
+ *                        durum: 'bekliyor' | 'oyunda', not }]) now and on every change; returns stop(). oda.katil(id) joins
  *   oda.ac()             the room list
  *   oda.menu(f)          the in-game room menu (the game goes on); f runs on "Oyuna dön" (e.g. to unpause)
  *   oda.gonder(p, v)     my score and live state (sent at most 10 times a second)
@@ -783,6 +785,42 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 
     function kullanilir() { return !!(window.Hesap && Hesap.profil && 'WebSocket' in window && cfg.oyun); }
 
+    // The room list for the game's own screen (its own connection to the lobby, apart from the sheet's).
+    function odalariIzle(cb) {
+      const iz = { dur: false, ws: null, ping: 0, t: 0, giris: false };
+      const tekrar = () => { clearTimeout(iz.t); iz.t = setTimeout(bagla, 4000); };
+      async function bagla() {
+        if (iz.dur) return;
+        await hazir;
+        if (iz.dur || !kullanilir()) return;
+        const tk = await anahtar();
+        if (iz.dur) return;
+        let ws;
+        try { ws = new WebSocket(SUNUCU + '/' + cfg.oyun + '/lobi'); } catch (e) { tekrar(); return; }
+        iz.ws = ws;
+        ws.onopen = () => ws.send(JSON.stringify({ t: 'merhaba', token: tk }));
+        ws.onmessage = (e) => {
+          if (e.data === 'pong' || iz.ws !== ws) return;
+          let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+          if (m.t === 'liste') { try { cb(m.odalar || []); } catch (er) { console.error(er); } }
+          else if (m.t === 'hata' && m.neden === 'giris') iz.giris = true;
+        };
+        ws.onclose = () => {
+          if (iz.ws !== ws) return;
+          iz.ws = null; clearInterval(iz.ping);
+          if (!iz.dur && !iz.giris) tekrar();
+        };
+        clearInterval(iz.ping);
+        iz.ping = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch (e) { /* ignore */ } }, 25000);
+      }
+      bagla();
+      return function dur() {
+        iz.dur = true; clearTimeout(iz.t); clearInterval(iz.ping);
+        const ws = iz.ws; iz.ws = null;
+        if (ws) { try { ws.close(1000); } catch (e) { /* ignore */ } }
+      };
+    }
+
     const api = {
       get aktif() { return o.aktif; },
       get odada() { return !!o.id; },
@@ -795,6 +833,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
       isim(no) { return o.adlar.get(no) || { ad: '?', renk: '#888' }; },
       ac() { if (kullanilir()) ac(); },
       katil(id) { if (kullanilir() && /^[a-z0-9]{8}$/.test(id)) katil(id, false); },
+      odalariIzle,
       menu, gonder, olay, bitir, izle, cik,
       kapat: kapatSayfa,
       // where the live ranking goes, e.g. after the game's canvas moved: { top, right, bottom, left }

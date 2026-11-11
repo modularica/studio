@@ -15,9 +15,11 @@
     tr: {
       title: 'Kelime Düellosu', tagline: 'Tek harfini değiştir, geri gönder.',
       duo: 'İki kişi', duoSub: 'Tek ekran, karşılıklı otur', bot: 'Bota karşı', botSub: 'Tek başına antrenman',
-      online: 'İki telefondan', onlineSub: 'Oda kur, rakibine link gönder',
-      roomLead: 'Bir oda kur, “Arkadaşını çağır” ile linki rakibine gönder. Herkes kendi telefonundan oynar; bir odada iki kişi olur.',
-      roomAlone: 'Rakibine “Arkadaşını çağır” ile link gönder ya da oyunda “İki telefondan”a bassın.',
+      online: 'İki telefondan', onlineSub: 'Oda kur ya da açık odaya katıl',
+      roomLead: 'Bir oda kur. Rakibin oyunu açınca menüdeki “Açık odalar”da odanı görür ve “Katıl”a basar. İstersen “Arkadaşını çağır” ile link de gönderebilirsin. Herkes kendi telefonundan oynar; bir odada iki kişi olur.',
+      roomAlone: 'Rakibin oyunu açınca menüdeki “Açık odalar”da odanı görüp “Katıl”a basacak. İstersen “Arkadaşını çağır” ile link de gönder.',
+      rooms: 'Açık odalar', roomsNone: 'Şu an açık oda yok. Biri “İki telefondan” ile oda kurunca burada görünür.',
+      roomName: '{name} odası', roomWait: 'rakip bekliyor', roomPlaying: 'maç sürüyor', join: 'Katıl', full: 'Dolu',
       roomLang: 'Dil', pts: '{n} sayı', netWait: '{name} bekleniyor…', netFull: 'Bu odada maç sürüyor.',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
       word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı', saat: 'Saat',
@@ -55,9 +57,11 @@
     en: {
       title: 'Word Duel', tagline: 'Change one letter, send it back.',
       duo: 'Two players', duoSub: 'One screen, face to face', bot: 'Against the bot', botSub: 'Practice on your own',
-      online: 'Two phones', onlineSub: 'Start a room, send the link',
-      roomLead: 'Start a room and send the link with “Invite a friend”. Each of you plays on your own phone; two players per room.',
-      roomAlone: 'Send your opponent the link with “Invite a friend”, or they can tap “Two phones” in the game.',
+      online: 'Two phones', onlineSub: 'Start a room or join an open one',
+      roomLead: 'Start a room. When your opponent opens the game, they see it under “Open rooms” on the menu and tap “Join”. You can also send the link with “Invite a friend”. Each of you plays on your own phone; two players per room.',
+      roomAlone: 'When your opponent opens the game, they will see your room under “Open rooms” on the menu and tap “Join”. You can also send the link with “Invite a friend”.',
+      rooms: 'Open rooms', roomsNone: 'No open rooms right now. When someone starts one with “Two phones”, it shows up here.',
+      roomName: '{name}', roomWait: 'waiting for a player', roomPlaying: 'match on', join: 'Join', full: 'Full',
       roomLang: 'Language', pts: '{n} points', netWait: 'Waiting for {name}…', netFull: 'A match is on in this room.',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
       word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast', saat: 'Clock',
@@ -131,6 +135,8 @@
 
   // ---------- Lab ----------
   const H = () => window.Hesap || null;
+  let oda = null;                              // the two-phone rooms (hesap/oda.js), set up below
+  let roomsStop = null, roomsLast = [];        // open rooms on the menu
   function labNote(s) { try { const h = H(); if (h && h.not) h.not(s); } catch (e) {} }
   if (H() && H().hazir) {
     H().hazir.then(r => {
@@ -172,6 +178,7 @@
     if (w + l) parts.push(t('record', { w, l }));
     if (save.longest) parts.push(t('recordChain', { n: save.longest }));
     $('#record').textContent = parts.join(' · ');
+    renderRooms();
     const how = ['how1', 'how2', S.pace === 'saat' ? 'howClock' : 'how3', 'how4', 'howWords'].map(k => t(k, { n: S.bank, inc: KT.CLOCK.inc }));
     how.push(t('howWin', { n: KT.TARGET[S.format] }));
     $('#howList').innerHTML = how.map(h => '<li>' + h + '</li>').join('');
@@ -251,6 +258,7 @@
   // online: { seat, me, opp, tohum, log } from the room (startOnline)
   function startMatch(firstStarter, online) {
     stopGame();
+    watchRooms(false);
     const lex = lexFor(S.lang, S.len);
     const mode = online ? 'online' : S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
@@ -851,6 +859,30 @@
     $('#menu').classList.add('on');
     $('#endSheet').hidden = true;
     syncMenu();
+    watchRooms(true);
+  }
+
+  // ---------- open rooms on the menu (two phones): the other one sees the room and joins, no link needed ----------
+  function watchRooms(on) {
+    if (!on || !oda) { if (roomsStop) { roomsStop(); roomsStop = null; } return; }
+    if (!roomsStop) roomsStop = oda.odalariIzle(list => { roomsLast = list; renderRooms(); });
+  }
+  function renderRooms() {
+    const box = $('#rooms'), ul = $('#roomList');
+    if (!box || !roomsStop) return;
+    box.hidden = false;
+    const list = roomsLast.slice().sort((a, b) => (a.durum === 'bekliyor' ? 0 : 1) - (b.durum === 'bekliyor' ? 0 : 1));
+    if (!list.length) { ul.innerHTML = `<li class="none">${esc(t('roomsNone'))}</li>`; return; }
+    ul.innerHTML = list.map(r => {
+      const wait = r.durum === 'bekliyor', fullRoom = r.n >= (r.en || 2);
+      const name = S.lang === 'tr' ? t('roomName', { name: Oda.ninki(r.kurucu) }) : t('roomName', { name: (r.kurucu || '?') + '’s room' });
+      const sub = [wait ? t('roomWait') : t('roomPlaying'), r.not].filter(Boolean).join(' · ');
+      const c = /^#[0-9a-f]{6}$/i.test(r.renk || '') ? r.renk : '#4b5563';
+      return `<li class="${wait ? 'wait' : ''}"><span class="rz" style="background:${c}">${esc(U([...(r.kurucu || '?')][0]))}</span>` +
+        `<span class="rt"><b>${esc(name)}</b><small>${esc(sub)}</small></span>` +
+        `<button type="button" data-room="${esc(r.id)}"${fullRoom ? ' disabled' : ''}>${esc(fullRoom ? t('full') : t('join'))}</button></li>`;
+    }).join('');
+    $$('[data-room]', ul).forEach(b => b.addEventListener('click', () => { Sfx.tap(); oda.katil(b.dataset.room); }));
   }
 
   // ---------- end ----------
@@ -946,7 +978,6 @@
   // replays the match (basla with log).
   const NET_VERSION = 2;   // 2: pace 'saat'
   const MOVE = /^[shtp]$/;
-  let oda = null;
   let netPrev = null;   // this phone's own settings; the room's are used while in it
   function netSurum() {  // phones play together only with the same word lists
     let h = 2166136261;
@@ -1084,13 +1115,15 @@
       ],
       puanYazi: p => t('pts', { n: Math.round(p) }),
       skorAyrinti: () => (G && G.mode === 'online' ? Object.assign({ zincir: G.m.stats.longest, hedef: G.m.target }, G.m.clockMode ? { saat: G.m.bank, kalan: G.m.banks[0] } : {}) : {}),
+      girdi: () => watchRooms(false),
       basla: m => startOnline(m),
       geri: m => netCatchUp(m.log),
       olay: (no, e) => netReceive(no, e),
       bitti() { if (G && G.mode === 'online') { G.over = true; G.skipTo = null; G.waits = []; stopClock(); } },
-      cikti() { if (netPrev || (G && G.mode === 'online')) leaveOnline(); },
+      cikti() { if (netPrev || (G && G.mode === 'online')) leaveOnline(); else if ($('#menu').classList.contains('on')) watchRooms(true); },
     });
     oda.dugme($('#onlineBtn'));
+    watchRooms(true);
   }
 
   // ---------- start ----------
