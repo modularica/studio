@@ -11,14 +11,14 @@
    "common_with_5_plus": 253
   },
   "4": {
-   "valid": 1951,
-   "common": 838,
-   "serve": 163,
-   "avg_common_neighbours": 2.58,
+   "valid": 2042,
+   "common": 870,
+   "serve": 178,
+   "avg_common_neighbours": 2.63,
    "common_with_0_common_neighbours": 157,
-   "common_with_0_valid_neighbours": 48,
-   "common_with_1_2": 331,
-   "common_with_5_plus": 137
+   "common_with_0_valid_neighbours": 46,
+   "common_with_1_2": 342,
+   "common_with_5_plus": 149
   }
  },
  "en": {

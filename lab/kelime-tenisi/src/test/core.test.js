@@ -50,6 +50,13 @@ test('istenmeyen kelimeler yok', () => {
   assert.ok(en4.has('kill') && !en4.isCommon('kill'));
   assert.ok(en4.has('tony') && !en4.isCommon('tony'));
 });
+test('Türkçe: türetilmiş kelimeler geçer, çekimli biçimler geçmez', () => {
+  const tr4 = new KT.Lexicon(WORDS, 'tr', 4);
+  for (const w of ['ünlü', 'uçuş', 'iniş', 'atış', 'okçu', 'etli', 'üçlü', 'yeme']) assert.ok(tr4.has(w) && tr4.isCommon(w), w);
+  for (const w of ['evci', 'öpüş', 'işli']) assert.ok(tr4.has(w), w);
+  assert.ok(tr4.has('ölme') && !tr4.isCommon('ölme'));
+  for (const w of ['bana', 'evde', 'oldu', 'gücü', 'aklı']) assert.ok(!tr4.has(w), w);
+});
 
 console.log('Türkçe harfler');
 test('İ/ı büyük-küçük harf', () => {

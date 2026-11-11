@@ -29,14 +29,16 @@ Kelime merdiveni, tenis gibi oynanır. Umut ile eşinin isteğinden çıktı: ka
 
 ## Sözlük
 
-- **Türkçe:** Zemberek-NLP sözlüğü (Apache-2.0; `master-dictionary.dict` + `non-tdk.dict`). Yalnız sözlük maddeleri, çekimli biçim yok; şapkalı harfler düz (kâr → kar). Alfabe 29 harf (q, w, x yok). Büyük harf `toLocaleUpperCase('tr-TR')`: i → İ, ı → I.
+- **Türkçe:** Zemberek-NLP sözlüğü (Apache-2.0; `master-dictionary.dict` + `non-tdk.dict`). Yalnız sözlük maddeleri, çekimli biçim yok (bana, evde, oldu geçmez); şapkalı harfler düz (kâr → kar). Alfabe 29 harf (q, w, x yok). Büyük harf `toLocaleUpperCase('tr-TR')`: i → İ, ı → I.
+- **Türetilmiş kelimeler (`EXTRA`, 91 kelime):** Zemberek'in sözlükte tutmayıp kuralla ürettiği kelimeler (-lI ünlü, -CI okçu, -mA yeme, -Iş uçuş, -sI otsu, -CA azca). Zemberek'in çözümleyicisiyle (pip `zemberek-python`; Python 3.13'te `typing.io` yamasıyla çalışır) bulundu, yalnız Türkçe Vikisözlük'ün kelime listesinde de olanlar tutuldu (GitHub `mertemin/turkish-word-list`, Vikisözlük'ten toplanmış, CC-BY-SA), yanlış köklü çözümlemeler (aklı = ak+lı) elle atıldı.
+- **Başka bir listeye göre kapsama (11 Kasım 2026, aynı Vikisözlük listesiyle ölçüldü; liste oyuna girmez):** listedeki 3 harfli kelimelerin %97,5'i, 4 harflilerin %96,9'u oyunda geçerli (türetilmişler eklenmeden %92,3). Eksik kalanlar: çekimli zamirler (bana, sana, buna, onda; kural gereği), engellenenler, Türkçe sözlüğe karışmış İngilizceler (mail, idea), birkaç eski ya da nadir kelime (borş, tuşe, ukba, taat). Bilinenlerin %99'u listede var; olmayanlar abi, ise, mod, oto, blog gibi.
 - **İngilizce:** ENABLE (kamu malı), çekimli biçimler dahil (cats, ran).
 - **Bilinen (`common`):** wordfreq Zipf ≥ 3 (wordfreq verisi CC-BY-SA 4.0) eksi elle ayıklananlar (`NOT_COMMON`: eski, teknik, dini, etnik, ünlem, kısaltma; Türkçede sıklığı başka kelimenin çekiminden gelenler (gele, dine…), İngilizcede çoğunlukla ad olarak geçenler (tony, jill…)). Bot yalnız bilinenleri oynar; servisler bilinenlerden; ipucunda önce bilinenler.
 - **`rare`:** öbür sözlük kelimeleri; oyuncu yazarsa kabul edilir.
 - **`BLOCK`:** hiç kabul edilmez (aile oyunu; LDNOOBW listeleri + elle; Türkçe sözlüğe karışmış İngilizce kelimeler). **`SOFT`:** oyuncu yazarsa kabul, ama bot, servis ve ipucu kullanmaz (şiddet, alkol, hakaret, tuvalet).
-- **Yoğunluk (11 Kasım 2026):** TR 4 harf 838 bilinen, ortalama 2,6 bilinen komşu, %19'unun hiç bilinen komşusu yok → kısa ralliler, sık smaç fırsatı. TR 3 harf 342 bilinen, ortalama 7,2. EN 4 harf 1640, ortalama 6,5; EN 3 harf 512, ortalama 10,3. 5 harf çok seyrek (TR ortalama 1,6), oyunda yok. Ayrıntı `src/tools/stats.json`.
+- **Yoğunluk (11 Kasım 2026):** TR 4 harf 870 bilinen (2042 geçerli), ortalama 2,6 bilinen komşu, %18'inin hiç bilinen komşusu yok → kısa ralliler, sık smaç fırsatı. TR 3 harf 342 bilinen, ortalama 7,2. EN 4 harf 1640, ortalama 6,5; EN 3 harf 512, ortalama 10,3. 5 harf çok seyrek (TR ortalama 1,6), oyunda yok. Ayrıntı `src/tools/stats.json`.
 - Yeniden üretmek: betiğin başındaki URL'lerden kaynakları bir klasöre indir (LDNOOBW listeleri npm `naughty-words` paketinden `naughty-tr.json` / `naughty-en.json` adıyla), `pip install wordfreq`, `python3 lab/kelime-tenisi/src/tools/words.py <klasör>`.
-- **App Store'dan önce:** wordfreq verisi CC-BY-SA 4.0. "Bilinen" işaretinin buradan türemesi için atıf ve lisans kontrolü gerekir (ya da kendi listemizi çıkarırız). Zemberek (Apache-2.0) ve ENABLE (kamu malı) sorun değil.
+- **App Store'dan önce:** wordfreq verisi CC-BY-SA 4.0. "Bilinen" işaretinin buradan türemesi için atıf ve lisans kontrolü gerekir (ya da kendi listemizi çıkarırız). `EXTRA`'nın süzgeci Vikisözlük (CC-BY-SA): atıf yeter ya da 91 kelimeye elle bakılır. Zemberek (Apache-2.0) ve ENABLE (kamu malı) sorun değil.
 
 ## Kayıt ve Lab
 
