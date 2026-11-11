@@ -3,6 +3,7 @@
 ## Şu an
 
 - **Tek kişilik:** `lab/fish/index.html`, `/lab/fish/` adresinde. Sonsuz gölet, 3 can, leaderboard (`scores`, oyun `fish`).
+  - Kasım 2026 (`fish-ejder` dalı): büyüme yavaşlar, her suyun boy sınırı var, hafif açlık, kayalar ve buz, akıntıda girdap ve şelale altı hızlı su, denizde gelgit. Gölette 1 m'de dere açılır, nehre geçilir; nehirdeki Ejder Kapısı'nı 1,5 m'de geçen koi ejder olur ve tur zaferle biter. Ayrıntı `CLAUDE.md`. Odalar eski kurallarla.
 - **Odalar (arkadaşlarla):** Başlangıç ekranında "Play with friends".
   - Odalar bir listede görünür, kod yok. Biri oda kurar, arkadaşları listeden katılır, kurucu "Start the round" der.
   - Tur 5 dakika sürer, odaya en çok 8 koi girer. Tur sürerken de katılınabilir.
@@ -34,3 +35,7 @@
 - [x] İnci: oynadıkça kazanılır, özel desenler inciyle alınır.
 - [ ] Uygulama mağazasına çıkınca: gerçek parayla inci (uygulama içi satın alma).
 - [ ] itch.io, CrazyGames gibi portallar.
+- [ ] Tek kişilikteki yolculuğu Lab'da oynatıp ayarla: dere uzaklığı (25 m), kapı uzaklığı (60 m), şelale altı akıntı, açlık hızı. Oyuncu notlarına ("Nasıldı?") ve `plays` notlarına bak (`Gölete sığmıyor`, `Nehre geçti`, `Ejder oldu`).
+- [ ] Leaderboard: haftalık tablo ve ödül; formül değişti (`v: 2`), tüm zamanlar tablosunda eski turlar karışık. Plan proje dokümanında (Little Koi oyun tasarımı, bölüm 6), henüz yapılmadı.
+- [ ] Ejderden sonrası: deniz ve okyanusta ejder olarak devam mı, yoksa her tur gölette yeniden mi başlasın? Şimdilik tur ejderle biter.
+- [ ] Odalara da gelsin mi? Gelirse sunucu (`fish/sunucu/src/kurallar.js`) da değişmeli.

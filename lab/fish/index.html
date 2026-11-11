@@ -69,6 +69,8 @@ body{
 .readout .lbl{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
 .readout .val{font-weight:800;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .readout .unit{font-size:15px;font-weight:700;margin-left:4px;color:var(--ink-dim)}
+.readout.ac .lbl{color:#ffb27d}
+.readout.ac .val{color:#ffd0ad}
 .tools{display:flex;align-items:center;gap:8px;pointer-events:auto}
 .lives{display:flex;gap:3px;margin-right:4px}
 .life{width:26px;height:13px;fill:var(--koi)}
@@ -181,6 +183,7 @@ body{
 .best.new{color:var(--koi);font-weight:800;letter-spacing:.04em}
 .over-title{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(42px,12vw,64px);line-height:.95;text-wrap:balance;text-shadow:0 5px 0 rgba(5,26,28,.4)}
 .over-title em{font-style:normal;color:var(--danger)}
+.over-title em.altin{color:#f2c43a}
 .stat{margin:0;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
 .eyebrow{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
 .notes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
@@ -328,8 +331,8 @@ body:not(.odada) #cikBtn{display:none}
 <canvas id="pond" role="img" aria-label="A pond seen from above, with fish swimming"></canvas>
 
 <header class="hud" id="hud" hidden>
-  <div class="readout">
-    <span class="lbl">Length</span>
+  <div class="readout" id="okuma">
+    <span class="lbl" id="okumaLbl">Length</span>
     <span class="val"><span id="lenNum">10.0</span><span class="unit" id="lenUnit">cm</span></span>
   </div>
   <div class="tools">
@@ -377,7 +380,7 @@ body:not(.odada) #cikBtn{display:none}
 <section class="overlay" id="startOv">
   <div class="panel">
     <h1 class="title" aria-label="Fish"><span>F</span><span>i</span><span>s</span><span>h</span></h1>
-    <p class="lede">You are a 10&nbsp;cm koi. Eat fish smaller than you, keep away from bigger ones, and see how big you can grow.</p>
+    <p class="lede">You are a 10&nbsp;cm koi. Eat smaller fish, keep away from bigger ones, and grow big enough to leap the Dragon Gate.</p>
     <div class="how"><span class="tch">Put your thumb anywhere and drag to swim</span><span class="ptr">Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
     <div class="seviye" id="seviye">
       <div class="sv-ust"><span class="sv-lv" id="svLv">Level 1</span><span class="sv-xp" id="svXp"></span></div>
@@ -529,12 +532,12 @@ const POND_SPECIES = [
 // Keep min/max per step the same as POND_SPECIES (the room server only knows the steps: fish/sunucu/src/kurallar.js).
 const MAPS = {
   golet: {
-    id: 'golet', tag: 'still water', name: 'Pond', level: 1, blurb: 'Lily pads and still water', species: POND_SPECIES,
+    id: 'golet', tag: 'still water', name: 'Pond', level: 1, tavan: 100, blurb: 'Lily pads, rocks and still water; at 1 m a stream takes you on to the river', species: POND_SPECIES,
     water: ['#18595c', '#0a2f33'], shade: '5,24,27', caustic: [.065, .042], speck: '#d9efe3', mini: '#18595c',
     bank: ['#2b4a2d', 'rgba(190,176,122,.6)', 'rgba(225,246,236,.4)']
   },
   nehir: {
-    id: 'nehir', tag: 'current', name: 'River', level: 3, blurb: 'The current carries you; big fish feel it less', species: [
+    id: 'nehir', tag: 'current', name: 'River', level: 3, tavan: 200, blurb: 'Swim against the current to the Dragon Gate; rest behind the rocks', species: [
       { name: 'gudgeon', plural: 'gudgeon', min: 3, max: 10, body: '#b7a985', back: '#5f553d', fin: 'rgba(205,195,160,.85)', w: .11, prof: 'std', pat: 'spots', spot: '#4a4232', tail: 'fork', barbels: .04 },
       { name: 'dace', plural: 'dace', min: 10, max: 18, body: '#d3dcd9', back: '#62798a', fin: 'rgba(225,232,228,.8)', w: .09, prof: 'slim', pat: 'none', tail: 'fork' },
       { name: 'brown trout', short: 'trout', plural: 'brown trout', min: 18, max: 30, body: '#c4a466', back: '#5a4826', fin: 'rgba(196,160,96,.9)', w: .115, prof: 'std', pat: 'spots', spot: '#9c3b26', tail: 'fork' },
@@ -547,7 +550,7 @@ const MAPS = {
     bank: ['#3d5a2c', 'rgba(170,160,130,.75)', 'rgba(225,246,236,.45)']
   },
   deniz: {
-    id: 'deniz', tag: 'kelp', name: 'Sea', level: 6, blurb: 'Hide in the kelp: hunters can’t find you there', species: [
+    id: 'deniz', tag: 'kelp', name: 'Sea', level: 6, tavan: 400, blurb: 'Hide in the kelp: hunters can’t find you there. The tide turns now and then', species: [
       { name: 'anchovy', plural: 'anchovies', min: 3, max: 10, body: '#bccbd8', back: '#3e5f7c', fin: 'rgba(210,225,235,.8)', w: .085, prof: 'slim', pat: 'none', tail: 'fork' },
       { name: 'sardine', plural: 'sardines', min: 10, max: 18, body: '#d9e3ea', back: '#36618a', fin: 'rgba(220,232,240,.8)', w: .1, prof: 'std', pat: 'spots', spot: '#24476b', tail: 'fork' },
       { name: 'mackerel', plural: 'mackerel', min: 18, max: 30, body: '#d3e3df', back: '#2c6d68', fin: 'rgba(200,220,215,.85)', w: .1, prof: 'slim', pat: 'bars', tail: 'fork' },
@@ -560,7 +563,7 @@ const MAPS = {
     bank: ['#d8c08a', 'rgba(255,255,255,.55)', 'rgba(255,255,255,.35)']
   },
   okyanus: {
-    id: 'okyanus', tag: 'dark', name: 'Ocean', level: 10, blurb: 'Deep and dark: you only see what your light reaches', species: [
+    id: 'okyanus', tag: 'dark', name: 'Ocean', level: 10, tavan: 0, blurb: 'Deep and dark, with icebergs: you only see what your light reaches', species: [
       { name: 'lanternfish', short: 'lantern', plural: 'lanternfish', min: 3, max: 10, body: '#5f7390', back: '#28344a', fin: 'rgba(120,150,190,.7)', w: .1, prof: 'std', pat: 'spots', spot: '#7fe7ff', tail: 'fork' },
       { name: 'herring', plural: 'herring', min: 10, max: 18, body: '#bcccdb', back: '#34506d', fin: 'rgba(200,215,230,.8)', w: .095, prof: 'std', pat: 'none', tail: 'fork' },
       { name: 'flying fish', short: 'flyer', plural: 'flying fish', min: 18, max: 30, body: '#aac4e2', back: '#2a4a78', fin: 'rgba(170,200,240,.75)', w: .09, prof: 'slim', pat: 'none', tail: 'fork', finSize: .17 },
@@ -576,9 +579,11 @@ const MAPS = {
 const MAP_IDS = ['golet', 'nehir', 'deniz', 'okyanus'];
 let HARITA = MAPS.golet;
 let SPECIES = HARITA.species;
-// River: the water flows toward +x in lanes (cm/s); the same as akinti() in fish/sunucu/src/kurallar.js.
+// River: the water flows toward +x in lanes (cm/s). In rooms this is exactly akinti() in fish/sunucu/src/kurallar.js;
+// alone the current grows with the koi, slows behind rocks and races near the Dragon Gate (akintiSolo, below).
 const AKINTI = 14;
-function akinti(x, y) { return HARITA.id === 'nehir' ? AKINTI * (.25 + .75 * Math.abs(Math.sin(y / 420))) : 0; }
+function akintiOda(x, y) { return HARITA.id === 'nehir' ? AKINTI * (.25 + .75 * Math.abs(Math.sin(y / 420))) : 0; }
+function akinti(x, y) { return mode === 'oda' ? akintiOda(x, y) : akintiSolo(x, y); }
 // Sea: kelp beds hide a koi from hunters; the same as yosunda() in fish/sunucu/src/kurallar.js.
 const YOSUN_HUCRE = 520;
 function yosunYatagi(ix, iy) {
@@ -589,6 +594,144 @@ function yosunda(x, y) {
   if (HARITA.id !== 'deniz') return false;
   const b = yosunYatagi(Math.floor(x / YOSUN_HUCRE), Math.floor(y / YOSUN_HUCRE));
   return !!b && (x - b.x) * (x - b.x) + (y - b.y) * (y - b.y) < b.r * b.r;
+}
+
+/* ---------- playing alone (Nov 2026): slower growth, a size limit per water, hunger, rocks and ice, currents, the Dragon Gate ----------
+   Rooms keep the old rules (the room server in fish/sunucu runs them): all of this is off while mode === 'oda'. */
+// Growth slows as the koi grows: at 10 cm a meal adds 1.3 times its volume (as in rooms), at 1 m a quarter of that.
+function buyume(l, f) { const k = 1.3 * Math.pow(10 / Math.max(10, l), .6); return Math.cbrt(l * l * l + k * f * f * f); }
+const EJDER_BOY = 150; // cm a koi needs to leap the Dragon Gate
+const KAPI_BOY = 70;   // a koi that starts in the river sees the gate once it is this long (one that comes down the stream sees it at once)
+// Hunger: a koi longer than esik cm that hasn't eaten for bekle seconds shrinks by hiz of its length a second,
+// but never below alt of the biggest it was this round.
+const ACLIK = { esik: 30, bekle: 9, hiz: .01, alt: .7 };
+// The sea's tide flows along x and turns every half cycle, with a few calm seconds in between.
+const GELGIT = 9, GELGIT_DONGU = 90;
+let akintiOlcek = 1; // alone, the current pulls a big koi as hard as a small one (set every frame from the koi's top speed)
+let parilti = 0;     // the golden flash when the koi turns into a dragon
+const yol = { dere: null, kapi: null, gecis: 0, gecisYer: '', sicrama: null, buzKayma: 0, gelgitT: 0, gelgitUyari: -1, gelgitYon: -1, tavanDedi: '', aclikDedi: false, carpT: 0, kapiDedi: -9 };
+function gelgitDeger(t) { return clamp(1.6 * Math.sin(TAU * (t == null ? yol.gelgitT : t) / GELGIT_DONGU), -1, 1); }
+function akintiSolo(x, y) {
+  let v;
+  if (HARITA.id === 'nehir') v = AKINTI * (.25 + .75 * Math.abs(Math.sin(y / 420))) * hizliSu(x);
+  else if (HARITA.id === 'deniz') v = GELGIT * gelgitDeger();
+  else return 0;
+  if (!v) return 0;
+  return v * akintiOlcek * girdap(x, y, v);
+}
+// Below the Dragon Gate the river races: up to 1.8 times as fast right under the falls
+// (in the fastest lane that is 70% of the koi's top speed: hard, but it always gets there).
+function hizliSu(x) {
+  if (!yol.kapi) return 1;
+  const d = x - yol.kapi.x;
+  return d < 0 ? .5 : 1 + .8 * Math.pow(clamp(1 - d / 2600, 0, 1), 1.5);
+}
+// Behind a rock the water is calm (an eddy): fish rest there out of the current.
+function girdap(x, y, v) {
+  let k = 1;
+  const yon = v > 0 ? 1 : -1;
+  engellerYakin(x, y, e => {
+    if (e.tur !== 'kaya') return;
+    const ax = (x - e.x) * yon, ay = Math.abs(y - e.y), uz = e.r * 4, en = e.r * 1.15;
+    if (ax < -e.r * .2 || ax > uz || ay > en) return;
+    const s = (1 - Math.max(0, ax) / uz) * (1 - (ay / en) * (ay / en));
+    if (1 - .9 * s < k) k = 1 - .9 * s;
+  });
+  return k;
+}
+// Rocks and ice, hashed per world cell like the lily pads: every place always looks the same.
+// A cluster is a big rock with smaller ones around it; the gaps between them let small fish through but not big ones.
+const ENGEL = {
+  golet: { cell: 650, p: .38, n: [1, 4], r: [18, 62], gap: [4, 38], tur: 'kaya' },
+  nehir: { cell: 800, p: .44, n: [1, 3], r: [24, 90], gap: [6, 46], tur: 'kaya' },
+  deniz: { cell: 1000, p: .32, n: [2, 5], r: [28, 115], gap: [8, 56], tur: 'kaya' },
+  okyanus: { cell: 3000, p: .3, n: [1, 2], r: [150, 460], gap: [60, 200], tur: 'buz' }
+};
+const engelOnbellek = {};
+function engelYap(x, y, r, tur, ix, iy, k) {
+  const n = tur === 'buz' ? 7 : 11, sekil = [];
+  for (let j = 0; j < n; j++) sekil.push(tur === 'buz' ? .84 + .26 * hash(ix, iy, 760 + k * 16 + j) : .9 + .18 * hash(ix, iy, 760 + k * 16 + j));
+  return { x, y, r, tur, sekil, renk: hash(ix, iy, 790 + k), don: hash(ix, iy, 795 + k) * TAU };
+}
+function engelHucre(ix, iy) {
+  const id = HARITA.id, E = ENGEL[id], m = engelOnbellek[id] || (engelOnbellek[id] = new Map()), key = (ix + 50000) * 100000 + iy + 50000;
+  let list = m.get(key);
+  if (list) return list;
+  list = [];
+  if (hash(ix, iy, 700) < E.p) {
+    const n = E.n[0] + Math.floor(hash(ix, iy, 701) * (E.n[1] - E.n[0] + 1));
+    const cx = (ix + .3 + .4 * hash(ix, iy, 702)) * E.cell, cy = (iy + .3 + .4 * hash(ix, iy, 703)) * E.cell;
+    const r0 = E.r[0] + (E.r[1] - E.r[0]) * hash(ix, iy, 704), a0 = hash(ix, iy, 705) * TAU;
+    list.push(engelYap(cx, cy, r0, E.tur, ix, iy, 0));
+    for (let k = 1; k < n; k++) {
+      const r = r0 * (.35 + .45 * hash(ix, iy, 710 + k)), gap = E.gap[0] + (E.gap[1] - E.gap[0]) * Math.pow(hash(ix, iy, 720 + k), 1.3);
+      const a = a0 + k * TAU / (n - 1) + (hash(ix, iy, 730 + k) - .5) * .8, d = r0 + r + gap;
+      const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+      if (list.some(o => Math.hypot(o.x - x, o.y - y) < o.r + r + E.gap[0])) continue;
+      list.push(engelYap(x, y, r, E.tur, ix, iy, k));
+    }
+  }
+  if (m.size > 4000) m.clear();
+  m.set(key, list);
+  return list;
+}
+// Ice floes drift down the river: they live in a frame that moves with the water (yol.buzKayma).
+const BUZ = { cell: 1100, p: .22, r: [30, 85] };
+const buzOnbellek = new Map();
+function buzHucre(ix, iy) {
+  const key = (ix + 50000) * 100000 + iy + 50000;
+  let list = buzOnbellek.get(key);
+  if (list) return list;
+  list = [];
+  if (hash(ix, iy, 800) < BUZ.p) {
+    const o = engelYap(0, (iy + .3 + .4 * hash(ix, iy, 802)) * BUZ.cell, BUZ.r[0] + (BUZ.r[1] - BUZ.r[0]) * hash(ix, iy, 803), 'buz', ix + 9000, iy, 0);
+    o.x0 = (ix + .3 + .4 * hash(ix, iy, 801)) * BUZ.cell; o.akar = true;
+    list.push(o);
+  }
+  if (buzOnbellek.size > 4000) buzOnbellek.clear();
+  buzOnbellek.set(key, list);
+  return list;
+}
+function buzlarYakin(x, y, cb) {
+  const ix = Math.floor((x - yol.buzKayma) / BUZ.cell), iy = Math.floor(y / BUZ.cell);
+  for (let a = ix - 1; a <= ix + 1; a++) for (let b = iy - 1; b <= iy + 1; b++) for (const o of buzHucre(a, b)) { o.x = o.x0 + yol.buzKayma; cb(o); }
+}
+// Every rock and ice floe near a point (none in rooms, none right at the Dragon Gate's falls).
+function engellerYakin(x, y, cb) {
+  if (mode === 'oda') return;
+  const E = ENGEL[HARITA.id], kx = HARITA.id === 'nehir' && yol.kapi ? yol.kapi.x : NaN;
+  if (E) {
+    const ix = Math.floor(x / E.cell), iy = Math.floor(y / E.cell);
+    for (let a = ix - 1; a <= ix + 1; a++) for (let b = iy - 1; b <= iy + 1; b++) { const L = engelHucre(a, b); for (let i = 0; i < L.length; i++) if (!(Math.abs(L[i].x - kx) < L[i].r + 250)) cb(L[i]); }
+  }
+  if (HARITA.id === 'nehir') buzlarYakin(x, y, o => { if (!(Math.abs(o.x - kx) < o.r + 250)) cb(o); });
+}
+// Pushes something round (o.x, o.y, radius rad) out of the rocks and ice; returns the last one it touched.
+function engeldenCik(o, rad) {
+  let deg = null;
+  for (let pass = 0; pass < 2; pass++) engellerYakin(o.x, o.y, e => {
+    const dx = o.x - e.x, dy = o.y - e.y, min = e.r * .96 + rad, d2 = dx * dx + dy * dy;
+    if (d2 >= min * min) return;
+    const d = Math.sqrt(d2);
+    if (d < 1e-6) o.x = e.x + min; else { o.x = e.x + dx / d * min; o.y = e.y + dy / d * min; }
+    deg = e;
+  });
+  return deg;
+}
+function engelde(x, y, r) { let ic = false; engellerYakin(x, y, e => { if (!ic && Math.hypot(x - e.x, y - e.y) < e.r + r) ic = true; }); return ic; }
+// A wild fish heading for a rock turns to pass it on the side it already leans to.
+function engelKac(f, ta, rad) {
+  let bd = Infinity, b = 0, off = 0;
+  const look = rad * 2 + f.l * 1.2;
+  engellerYakin(f.x, f.y, e => {
+    const dx = e.x - f.x, dy = e.y - f.y, d = Math.hypot(dx, dy) - e.r - rad;
+    if (d >= look || d >= bd) return;
+    const bb = Math.atan2(dy, dx), o = wrapA(bb - ta);
+    if (Math.abs(o) < 1.5) { bd = d; b = bb; off = o; }
+  });
+  if (bd === Infinity) return ta;
+  const yan = b + (off > 0 ? -1 : 1) * (Math.PI / 2 + .3), w = clamp(1 - bd / look, 0, 1);
+  return ta + wrapA(yan - ta) * w;
 }
 
 /* ---------- levels: every fish eaten is experience, bigger fish more (1 to 7 by size step) ---------- */
@@ -647,6 +790,9 @@ const AT = Object.assign({}, KOI, { name: 'horse', at: true, body: '#a2602f', ba
 const PALYACO = Object.assign({}, KOI, { name: 'clown', palyaco: true });
 const KILIK = { at: AT, palyaco: PALYACO };
 let kilik = ''; // '' (koi), 'at' or 'palyaco'
+// A koi that leapt the Dragon Gate: the Gold Dragon koi, slimmer, with long whiskers, a red mane and horns (ejderSusu).
+let ejderSt = null;
+function ejderStili() { return ejderSt || (ejderSt = Object.assign({}, koiStili('dragon'), { name: 'dragon', ejder: true, w: .095, barbels: .42 })); }
 
 // Bigger fish are slower for their size: speeds are body lengths per second times this.
 // 10 cm → 1, 30 cm → 0.72, 1 m → 0.5, 3 m → 0.36 (same as hizCarpani in fish/sunucu/src/kurallar.js).
@@ -738,7 +884,8 @@ const specks = [];
 const TARGET = 15;
 
 const P = { x: 0, y: 0, angle: -Math.PI / 2, speed: 0, l: 10, lShow: 10, spine: null, phase: 0, invuln: 0, grace: 0, gulp: 0,
-  lives: 3, alive: true, autoA: -Math.PI / 2, autoT: 2, marks: null, g: null, sp: KOI, topIdx: 0 };
+  lives: 3, alive: true, autoA: -Math.PI / 2, autoT: 2, marks: null, g: null, sp: KOI, topIdx: 0,
+  zirve: 10, tok: 0, ac: false, ejder: false, ejderOlcek: 1 }; // alone: the biggest this round, seconds since the last meal, hungry, a dragon
 
 /* ---------- spine (follow-the-leader chain) ---------- */
 function initSpine(f, l) {
@@ -815,7 +962,12 @@ function spawnGroup(inView, edibleOnly) {
   const n = (l < P.l * .6 && sp.max <= 45 && Math.random() < .5) ? 2 + (Math.random() * 3 | 0) : 1;
   for (let k = 0; k < n; k++) {
     const ll = clamp(l * rand(.88, 1.12), Math.max(3, sp.min), sp.max - .01);
-    fish.push(makeFish(sp, ll, x + rand(-1, 1) * l * 1.4, y + rand(-1, 1) * l * 1.4, head + rand(-.25, .25)));
+    const yer = { x: x + rand(-1, 1) * l * 1.4, y: y + rand(-1, 1) * l * 1.4 };
+    if (mode !== 'oda') { // never inside a rock, never above the Dragon Gate
+      engeldenCik(yer, sp.w * ll);
+      if (yol.kapi && yer.x < yol.kapi.x + ll) yer.x = yol.kapi.x + ll;
+    }
+    fish.push(makeFish(sp, ll, yer.x, yer.y, head + rand(-.25, .25)));
   }
 }
 
@@ -990,6 +1142,13 @@ function kilikDegistir(k) {
   if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'desen', d: kilik || seciliDesen }));
 }
 const sfxInci = () => { titret('inci'); tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
+const sfxCarp = () => { titret('yut', .2); tone('triangle', 130, 70, .1, .09); }; // a bump against a rock
+const sfxDere = () => { tone('sine', 220, 660, .55, .12); tone('triangle', 330, 990, .45, .05, .08); }; // into the stream
+function sfxEjder() { // the leap: a rising run of bells, then a low swell
+  titret('seviye');
+  [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => tone('sine', f, f, .4, .12, i * .09));
+  tone('triangle', 196, 392, 1.3, .1, .3); tone('sine', 2093, 2093, .6, .05, .62);
+}
 
 const SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const SOUND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
@@ -1035,10 +1194,13 @@ function updateChain() {
   });
   marker.style.left = (chainPos(P.lShow) * 100).toFixed(2) + '%';
 }
-let shownLen = '';
+let shownLen = '', shownAc = false;
 function updateHud() {
-  const f = fmtLen(P.lShow), key = f.n + f.u;
-  if (key !== shownLen) { shownLen = key; lenNum.textContent = f.n; lenUnit.textContent = f.u; marker.style.left = (chainPos(P.lShow) * 100).toFixed(2) + '%'; }
+  const L = yol.sicrama || P.ejder ? P.l : P.lShow; // a leaping koi looks bigger (closer), a dragon is longer: say how long it really is
+  const f = fmtLen(L), key = f.n + f.u;
+  if (key !== shownLen) { shownLen = key; lenNum.textContent = f.n; lenUnit.textContent = f.u; marker.style.left = (chainPos(L) * 100).toFixed(2) + '%'; }
+  const ac = mode === 'play' && P.ac;
+  if (ac !== shownAc) { shownAc = ac; $('okuma').classList.toggle('ac', ac); $('okumaLbl').textContent = ac ? 'Hungry' : 'Length'; }
   updateChain();
 }
 function showToast(text, bad) { toast.textContent = text; toast.classList.toggle('bad', !!bad); toast.hidden = false; toastT = 2.6; }
@@ -1094,6 +1256,8 @@ function haritaKur(id) {
   if (!MAPS[id]) id = 'golet';
   if (HARITA.id === id) return;
   HARITA = MAPS[id]; SPECIES = HARITA.species;
+  if (id !== 'nehir') yol.kapi = null;
+  if (id !== 'golet') yol.dere = null;
   suBoya(); chainKur(); updateChain();
   fish = [];
   if (mode !== 'oda') for (let i = 0; i < 9; i++) spawnGroup(true, false);
@@ -1185,7 +1349,7 @@ function koiCiz() {
     al.hidden = false;
     al.disabled = inci < d.price;
     al.textContent = inci < d.price ? `${d.price - inci} more pearls needed` : `Buy for ${d.price} pearls`;
-    not.textContent = 'Pick up pearls in the water and earn more at the end of every round.';
+    not.textContent = d.id === 'dragon' ? 'Or get it free: grow to 1.5 m and leap the Dragon Gate in the river.' : 'Pick up pearls in the water and earn more at the end of every round.';
   }
 }
 $('koiAl').addEventListener('click', () => {
@@ -1216,14 +1380,24 @@ function renderStartBest() {
 /* ---------- game flow ---------- */
 function resetPlayer() {
   P.l = P.lShow = 10; P.lives = 3; P.alive = true; P.invuln = 0; P.gulp = 0;
+  P.zirve = 10; P.tok = 0; P.ac = false; P.ejder = false; P.ejderOlcek = 1;
   P.x = cam.x; P.y = cam.y; P.speed = P.l * 1.2;
   koiIzleri(P); initSpine(P, P.l);
   P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length;
 }
+// A new round alone: no stream, no gate, no leap yet.
+function yolSifirla() {
+  Object.assign(yol, { dere: null, kapi: null, gecis: 0, gecisYer: '', sicrama: null, buzKayma: 0, gelgitT: 0, gelgitUyari: -1, gelgitYon: -1, tavanDedi: '', aclikDedi: false, kapiDedi: -9 });
+  parilti = 0;
+}
 function startGame(fromAttract) {
   ensureAudio();
+  yolSifirla();
+  if (HARITA.id !== soloHarita) haritaKur(soloHarita); // after a journey to the river, a round starts again in the water picked on the menu
   if (!fromAttract) resetPlayer();
   else { P.l = P.lShow = 10; P.lives = 3; P.alive = true; P.invuln = 0; P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length; }
+  P.zirve = 10; P.tok = 0; P.ac = false; P.ejder = false; P.ejderOlcek = 1;
+  engeldenCik(P, P.l * .12); initSpine(P, P.l);
   tally = {}; eatenCount = 0; killer = null; sayilan = {};
   xpBasla = xpToplam(); svGosterilen = levelOf(xpBasla);
   inciTur = 0; inciler.length = 0; inciT = 8;
@@ -1250,9 +1424,11 @@ function resume() {
   if (mode !== 'paused') return;
   ensureAudio(); mode = 'play'; pauseOv.hidden = true; last = performance.now(); lockOn();
 }
-function eat(f) {
+function eat(f) { // (alone only: in rooms the server decides who eats)
   f.dead = true;
-  P.l = Math.cbrt(P.l * P.l * P.l + 1.3 * f.l * f.l * f.l);
+  P.l = buyume(P.l, f.l);
+  if (HARITA.tavan && P.l > HARITA.tavan) P.l = HARITA.tavan; // each water has a biggest koi it can hold
+  P.zirve = Math.max(P.zirve, P.l); P.tok = 0; P.ac = false;
   P.gulp = 1;
   tally[f.sp.name] = (tally[f.sp.name] || 0) + 1; eatenCount++;
   const m = f.spine[2];
@@ -1283,29 +1459,36 @@ function gameOver(f) {
   for (let i = 0; i < 9; i++) bubbles.push({ x: m.x, y: m.y, vx: rand(-1, 1) * P.lShow * .6, vy: rand(-1, 1) * P.lShow * .6, r: rand(2, 4.5), life: rand(.6, 1.1) });
   sfxOver(); lockOff();
   hud.hidden = true; toast.hidden = true;
-  const isBest = P.l > best + .001;
-  if (isBest) { best = P.l; store.set('fish.best', best); }
+  turBitir(1100, { killer: f.sp.name });
+  hesapNotu(`${fmtLenStr(P.zirve)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
+}
+// The end of a round alone (eaten, or leapt the Dragon Gate): the best, pearls, the leaderboard, then the end screen.
+// The score is the biggest the koi got this round (hunger may have shrunk it since).
+function turBitir(gecikme, ayrinti) {
+  const boy = P.zirve, isBest = boy > best + .001;
+  if (isBest) { best = boy; store.set('fish.best', best); }
   sayilmayaniEkle();
-  // pearls for the round: one for every two fish, one for every 10 cm
-  turInci = Math.floor(eatenCount / 2) + Math.floor(P.l / 10);
+  // pearls for the round: one for every two fish, one for every 10 cm (and 50 for a dragon)
+  turInci = Math.floor(eatenCount / 2) + Math.floor(boy / 10) + (P.ejder ? 50 : 0);
   inciEkle(turInci);
-  hesapNotu(`${fmtLenStr(P.l)} · yakalayan: ${f.sp.name} · en iyi ${fmtLenStr(best)}`);
   renderStartBest();
-  // Post the round to the leaderboard, then read this week's table for the game-over screen.
+  // Post the round to the leaderboard, then read this week's table for the end screen.
+  // v: 2 marks rounds played with slower growth and size limits (from November 2026).
   lbSonuc = window.Hesap
-    ? Hesap.skor(Math.round(P.l * 10) / 10, { killer: f.sp.name, eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id })
+    ? Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, v: 2 }, ayrinti))
         .catch(() => {})
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
     : null;
-  if (window.uygulama && uygulama.skor) uygulama.skor(P.l, isBest); // iOS app: Game Center, rating prompt
-  setTimeout(() => showOver(isBest), 1100);
+  if (window.uygulama && uygulama.skor) uygulama.skor(boy, isBest); // iOS app: Game Center, rating prompt
+  setTimeout(() => showOver(isBest), gecikme);
 }
+const tumTurler = () => MAP_IDS.flatMap(id => MAPS[id].species);
 function showOver(isBest) {
   if (mode !== 'over') return;
-  $('overTitle').innerHTML = `Eaten by a <em>${killer ? killer.name : 'bigger fish'}</em>`;
-  $('overStat').textContent = `Your koi grew to ${fmtLenStr(P.l)}.`;
-  const eaten = SPECIES.filter(s => tally[s.name]);
+  $('overTitle').innerHTML = P.ejder ? 'Your koi became a <em class="altin">dragon</em>' : `Eaten by a <em>${killer ? killer.name : 'bigger fish'}</em>`;
+  $('overStat').textContent = P.ejder ? `It leapt the Dragon Gate at ${fmtLenStr(P.zirve)}.` : `Your koi grew to ${fmtLenStr(P.zirve)}.`;
+  const eaten = tumTurler().filter(s => tally[s.name]); // a round can cross from the pond into the river
   $('notes').innerHTML = eaten.length
     ? eaten.map(s => `<li><span class="sw" style="background:${s.body}"></span>${tally[s.name]} ${tally[s.name] === 1 ? s.name : s.plural}</li>`).join('')
     : '<li>Nothing eaten this time</li>';
@@ -1314,6 +1497,7 @@ function showOver(isBest) {
   b.classList.toggle('new', isBest);
   lbGoster(lbSonuc);
   xpSonCiz($('overXp'), xpBasla, xpToplam(), turInci + inciTur);
+  if (P.ejder && P.yeniDesen) $('overXp').append(mk('p', 'yeni', 'New koi pattern: Gold Dragon (in My koi)'));
   overOv.hidden = false; document.body.classList.add('lb-acik');
   $('againBtn').focus({ preventScroll: true });
 }
@@ -1657,6 +1841,7 @@ function odaOyunu(m) {
   ripples.length = 0; bubbles.length = 0; labels.length = 0;
   oda.tally = {}; oda.sayilan = {}; oda.yedigi = 0; oda.koi = 0; oda.enBuyuk = 10; oda.tabloKey = '';
   P.alive = false; P.speed = 0;
+  yolSifirla(); P.ejder = false; P.ejderOlcek = 1; P.ac = false; // rooms keep the old rules: no gate, no hunger
   hepsiniGizle();
   document.body.classList.add('odada');
   hud.hidden = false; odaPanel.hidden = false; toast.hidden = true; olumOv.hidden = true;
@@ -1995,8 +2180,9 @@ $('againBtn').addEventListener('click', () => startGame(false));
 $('resumeBtn').addEventListener('click', resume);
 // Back to the start screen (to pick another water, a koi pattern…); an unfinished round counts what was eaten.
 function menuyeDon() {
-  if (mode === 'paused') { if (P.l > best) { best = P.l; store.set('fish.best', best); } sayilmayaniEkle(); }
+  if (mode === 'paused') { if (P.zirve > best) { best = P.zirve; store.set('fish.best', best); } sayilmayaniEkle(); }
   mode = 'attract'; lockOff(); inciler.length = 0;
+  yolSifirla(); haritaKur(soloHarita);
   resetPlayer(); P.speed = P.l * 1.2; P.grace = 0;
   for (const o of [overOv, pauseOv]) o.hidden = true;
   hud.hidden = true; toast.hidden = true; document.body.classList.remove('lb-acik');
@@ -2009,7 +2195,7 @@ pauseBtn.addEventListener('click', pause);
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 addEventListener('pagehide', () => {
   if (mode !== 'play') return;
-  if (P.l > best) store.set('fish.best', P.l);
+  if (P.zirve > best) store.set('fish.best', P.zirve);
   sayilmayaniEkle(); // count what was eaten in an unfinished round, once
 });
 
@@ -2058,9 +2244,13 @@ function updateFish(dt) {
       f.wanderT -= dt; if (f.wanderT <= 0) { f.wander = f.angle + rand(-1.1, 1.1); f.wanderT = rand(1.5, 4); }
       ta = f.wander; f.mode = 'wander';
     }
+    const fr = f.sp.w * f.l;
+    ta = engelKac(f, ta, fr); // swim around rocks and ice (a hunter can't follow a small koi through a narrow gap)
     turnToward(f, ta, turn * dt);
     f.speed += (ts - f.speed) * (1 - Math.exp(-dt * 2.6));
     f.x += (Math.cos(f.angle) * f.speed + akinti(f.x, f.y)) * dt; f.y += Math.sin(f.angle) * f.speed * dt;
+    engeldenCik(f, fr * .95);
+    if (yol.kapi && f.x < yol.kapi.x + f.l * .5) f.x = yol.kapi.x + f.l * .5; // only a koi can leap the falls
     f.phase += dt * (3 + f.speed / f.l * 4.2);
     updateSpine(f, f.l);
   }
@@ -2103,14 +2293,123 @@ function spawnTick(dt) {
   if (spawnT <= 0 && fish.length < TARGET) { spawnGroup(false, false); spawnT = .18; }
 }
 
+/* ---------- alone: the size limit, the stream to the river, the Dragon Gate, hunger, the tide ---------- */
+function yolculuk(dt) {
+  const id = HARITA.id, tavan = HARITA.tavan;
+  if (tavan && P.l >= tavan - .05 && yol.tavanDedi !== id) {
+    yol.tavanDedi = id;
+    if (id === 'golet') { dereAc(); showToast('The pond is too small: find the stream'); sfxLevel(); hesapNotu(`Gölete sığmıyor · ${fmtLenStr(P.l)}`); }
+    else if (id === 'nehir') showToast('That’s as big as the river allows');
+    else showToast(`That’s as big as the ${HARITA.name.toLowerCase()} allows: ${tavan / 100} m`);
+  }
+  if (yol.dere && yol.gecis <= 0 && Math.hypot(P.x - yol.dere.x, P.y - yol.dere.y) < yol.dere.r + P.lShow * .2) {
+    yol.gecis = 1.1; yol.gecisYer = 'nehir'; P.grace = Math.max(P.grace, 1.2); sfxDere();
+  }
+  if (id !== 'nehir') return;
+  if (!yol.kapi && P.l >= KAPI_BOY) { yol.kapi = { x: P.x - 6000 }; showToast('Dragon Gate upstream: leap it at 1.5 m'); sfxLevel(); }
+  const k = yol.kapi;
+  if (!k) return;
+  if (P.x - k.x > 8000) k.x = P.x - 8000; // the gate is never more than 80 m away
+  const rad = P.lShow * .45;
+  if (P.x < k.x + rad) {
+    if (P.l >= EJDER_BOY) sicramaBasla();
+    else { P.x = k.x + rad; if (time - yol.kapiDedi > 4) { yol.kapiDedi = time; showToast('Too small to leap: grow to 1.5 m', true); } }
+  }
+}
+// The pond is too small now: a stream opens 25 m away and leads on to the river.
+function dereAc() {
+  const a = rand(0, TAU), o = { x: P.x + Math.cos(a) * 2500, y: P.y + Math.sin(a) * 2500 };
+  engeldenCik(o, 220);
+  yol.dere = { x: o.x, y: o.y, r: 130, a: Math.atan2(o.y - P.y, o.x - P.x) };
+}
+// Halfway through the fade: the koi swims out of the pond and into the river, as big as it was.
+function suyaGec(id) {
+  P.grace = 2.5; P.invuln = 0; P.tok = 0; P.ac = false; // the river's first fish are all food
+  inciler.length = 0;
+  haritaKur(id);
+  yol.tavanDedi = ''; yol.buzKayma = 0;
+  engeldenCik(P, P.lShow * .12); initSpine(P, P.lShow);
+  yol.kapi = { x: P.x - 6000 };
+  showToast('The river! The Dragon Gate is upstream');
+  hesapNotu(`Nehre geçti · ${fmtLenStr(P.l)}`);
+}
+function sicramaBasla() {
+  yol.sicrama = { t: 0, x0: P.x, y0: P.y, yuk: 0, indi: false };
+  P.grace = 9; P.invuln = 0; // nobody bites a leaping koi
+  sfxEjder();
+  ripples.push({ x: P.x, y: P.y, r: P.l * .2, max: P.l * 1.6, life: 1 });
+  for (let i = 0; i < 14; i++) bubbles.push({ x: P.x + rand(-1, 1) * P.lShow * .3, y: P.y + rand(-1, 1) * P.lShow * .3, vx: rand(-1, .2) * P.lShow, vy: rand(-1, 1) * P.lShow * .6, r: rand(2, 5), life: rand(.6, 1.2) });
+}
+// The leap: up and over the falls, a golden flash, and the koi comes down a dragon.
+function sicramaGuncelle(dt) {
+  const s = yol.sicrama, T = 1.7;
+  s.t += dt;
+  const k = clamp(s.t / T, 0, 1), e = 1 - Math.pow(1 - k, 3), yuk = Math.sin(Math.min(1, k * 1.15) * Math.PI);
+  turnToward(P, Math.PI, 6 * dt);
+  P.x = s.x0 - e * (P.l * 2.4 + 500); P.y = s.y0 + Math.sin(k * Math.PI) * P.l * .12;
+  P.speed = P.l * 1.6; s.yuk = yuk;
+  if (!P.ejder && s.t >= .85) { P.ejder = true; P.ejderOlcek = 1.35; parilti = 1; konfetiPatlat(); showToast('Your koi became a dragon!'); }
+  if (!s.indi && s.t >= T) { // the splash as it comes down
+    s.indi = true;
+    ripples.push({ x: P.x, y: P.y, r: P.l * .3, max: P.l * 2.2, life: 1 }, { x: P.x, y: P.y, r: P.l * .1, max: P.l * 1.3, life: .8 });
+    for (let i = 0; i < 12; i++) bubbles.push({ x: P.x + rand(-1, 1) * P.l * .3, y: P.y + rand(-1, 1) * P.l * .3, vx: rand(-1, 1) * P.l * .8, vy: rand(-1, 1) * P.l * .8, r: rand(2, 5), life: rand(.6, 1.2) });
+  }
+  P.lShow = P.l * (P.ejder ? P.ejderOlcek : 1) * (1 + .35 * yuk);
+  P.phase += dt * 9;
+  updateSpine(P, P.lShow);
+  if (s.t >= T + .35) zafer();
+}
+function zafer() {
+  yol.sicrama = null;
+  mode = 'over'; lockOff();
+  hud.hidden = true; toast.hidden = true;
+  P.yeniDesen = !alinanlar().includes('dragon'); // the first dragon brings the Gold Dragon pattern
+  if (P.yeniDesen) store.set('fish.desenler', alinanlar().concat('dragon'));
+  turBitir(900, { ejder: true });
+  hesapNotu(`Ejder oldu · ${fmtLenStr(P.zirve)} · ${eatenCount} balık`);
+}
+// A big koi that goes hungry shrinks, slowly, but never below 70% of the biggest it got this round.
+function aclik(dt) {
+  P.tok += dt;
+  const ac = P.l > ACLIK.esik && P.tok > ACLIK.bekle && yol.gecis <= 0 && !yol.sicrama;
+  if (ac) {
+    const alt = Math.max(10, P.zirve * ACLIK.alt);
+    if (P.l > alt) P.l = Math.max(alt, P.l * (1 - ACLIK.hiz * dt));
+    if (!yol.aclikDedi) { yol.aclikDedi = true; showToast('Hungry! Eat or you’ll shrink', true); }
+  }
+  P.ac = ac;
+}
+// The sea: say a few seconds before the tide turns, and which way it flows after.
+function gelgitUyar() {
+  if (mode !== 'play') return;
+  const yari = GELGIT_DONGU / 2, n = Math.floor(yol.gelgitT / yari), ic = yol.gelgitT - n * yari;
+  if (ic > yari - 5 && yol.gelgitUyari !== n) { yol.gelgitUyari = n; showToast('The tide is turning'); }
+  else if (n > 0 && ic > 4 && ic < 12 && yol.gelgitYon !== n) { yol.gelgitYon = n; showToast(gelgitDeger() > 0 ? 'The tide flows →' : 'The tide flows ←'); }
+}
+
 let last = performance.now();
 function update(dt) {
   time += dt;
-  const inPond = mode === 'oda' && P.alive;
-  if (mode === 'play' || inPond) steerPlayer(dt); else if (mode === 'attract') autopilot(dt);
-  if (mode !== 'over' && (mode !== 'oda' || inPond)) {
-    P.lShow += (P.l - P.lShow) * Math.min(1, dt * 4);
+  const inPond = mode === 'oda' && P.alive, solo = mode !== 'oda';
+  // alone, the current is measured against the koi's own top speed, so it pulls a 2 m koi as hard as a 10 cm one
+  akintiOlcek = solo ? 3.6 * P.lShow * hizCarpani(P.lShow) / 36 : 1;
+  if (solo && HARITA.id === 'nehir') yol.buzKayma += AKINTI * .62 * akintiOlcek * dt; // the ice floes drift with the water
+  if (solo && HARITA.id === 'deniz') { yol.gelgitT += dt; gelgitUyar(); }
+  if (yol.gecis > 0) { const once = yol.gecis; yol.gecis -= dt; if (once > .55 && yol.gecis <= .55 && mode === 'play') suyaGec(yol.gecisYer); }
+  parilti = Math.max(0, parilti - dt * .8);
+  if (yol.sicrama) sicramaGuncelle(dt);
+  else if (mode === 'play' || inPond) steerPlayer(dt); else if (mode === 'attract' || (mode === 'over' && P.ejder)) autopilot(dt);
+  if (!yol.sicrama && (mode !== 'over' || P.ejder) && (mode !== 'oda' || inPond)) {
+    P.lShow += (P.l * (P.ejder ? P.ejderOlcek : 1) - P.lShow) * Math.min(1, dt * 4);
     P.x += (Math.cos(P.angle) * P.speed + akinti(P.x, P.y)) * dt; P.y += Math.sin(P.angle) * P.speed * dt;
+    if (solo) {
+      const deg = engeldenCik(P, P.lShow * .12);
+      if (deg && mode === 'play') {
+        if (P.speed > P.lShow * 1.6 && time - yol.carpT > .6) { yol.carpT = time; sfxCarp(); }
+        P.speed *= Math.exp(-dt * 3); // rocks slow you down
+      }
+      if (mode === 'play') { yolculuk(dt); aclik(dt); }
+    }
     P.gizli = yosunda(P.x, P.y);
     if (inPond) { // the shared pond has banks
       const s = oda.R - P.lShow * .3;
@@ -2118,6 +2417,7 @@ function update(dt) {
     }
     P.phase += dt * (3 + P.speed / P.lShow * 4.2);
     updateSpine(P, P.lShow);
+    if (solo) for (let i = 2; i < 10; i++) engeldenCik(P.spine[i], P.lShow * .09 * (1 - i / 14)); // the body slides around rocks too
     P.invuln = Math.max(0, P.invuln - dt); P.grace = Math.max(0, P.grace - dt); P.gulp = Math.max(0, P.gulp - dt * 3);
   }
   // camera with a little look-ahead
@@ -2125,7 +2425,7 @@ function update(dt) {
   const tx = P.x + Math.cos(P.angle) * P.speed * .45, ty = P.y + Math.sin(P.angle) * P.speed * .45;
   const k = 1 - Math.exp(-dt * 3.2);
   cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
-  cam.scale += (targetScale(P.lShow) - cam.scale) * (1 - Math.exp(-dt * 1.6));
+  cam.scale += (targetScale(P.lShow) * (mode === 'over' && P.ejder ? 1.6 : 1) - cam.scale) * (1 - Math.exp(-dt * 1.6)); // after the leap, closer on the dragon
   const sdx = (cam.x - px) * cam.scale, sdy = (cam.y - py) * cam.scale, drift = reduceMotion ? 0 : 1;
   cOff[0] -= sdx * .55 - 9 * dt * drift; cOff[1] -= sdy * .55 - 5 * dt * drift;
   cOff[2] -= sdx * .45 + 7 * dt * drift; cOff[3] -= sdy * .45 - 8 * dt * drift;
@@ -2134,7 +2434,7 @@ function update(dt) {
   if (mode === 'oda') odaGuncelle(dt);
   else {
     updateFish(dt);
-    if (mode === 'play') collide();
+    if (mode === 'play' && !yol.sicrama) collide();
     spawnTick(dt);
   }
 
@@ -2164,7 +2464,7 @@ function inciGuncelle(dt) {
     inciT = rand(12, 20);
     if (inciler.length < 2) for (let t = 0; t < 8; t++) {
       const x = cam.x + rand(-.75, .75) * hw, y = cam.y + rand(-.7, .7) * hh;
-      if (Math.hypot(x - P.x, y - P.y) > P.lShow * 2 && !karada(x, y, P.lShow * .4)) { inciler.push({ x, y, t: 0, r: P.lShow * .15 }); break; }
+      if (Math.hypot(x - P.x, y - P.y) > P.lShow * 2 && !karada(x, y, P.lShow * .4) && !engelde(x, y, P.lShow * .3) && !(yol.kapi && x < yol.kapi.x + P.lShow)) { inciler.push({ x, y, t: 0, r: P.lShow * .15 }); break; }
     }
   }
   for (let i = inciler.length - 1; i >= 0; i--) {
@@ -2421,9 +2721,55 @@ function koiIzleri(f) {
   f.marks3 = [];
   for (let i = 0; i < 9; i++) f.marks3.push({ fi: rand(1.2, 7.8), side: rand(-.6, .6), a: rand(.012, .022), b: rand(.12, .2) });
 }
-function drawShadow(f, st) {
+// A dragon's mane down the back (flames of red, waving) and two horns swept back from the head.
+function ejderSusu(g, ph) {
+  const len = g.len;
+  if (len < 10) return;
+  ctx.fillStyle = 'rgba(214,64,42,.92)';
+  let n = 0;
+  for (let fi = 1.3; fi < 8.3; fi += .5, n++) {
+    const r = frameAt(g, fi), x = r.x, y = r.y, tx = r.tx, ty = r.ty, w = r.w, nx = -ty, ny = tx;
+    const side = n % 2 ? 1 : -1, wav = Math.sin(ph * .8 - fi * 1.3) * .35, L = w * 1.15 + len * .022;
+    const ux = x - tx * L * 1.1 + nx * side * L * (.6 + wav), uy = y - ty * L * 1.1 + ny * side * L * (.6 + wav);
+    ctx.beginPath();
+    ctx.moveTo(x + tx * w * .3, y + ty * w * .3);
+    ctx.quadraticCurveTo(x + nx * side * L * .55 - tx * L * .2, y + ny * side * L * .55 - ty * L * .2, ux, uy);
+    ctx.quadraticCurveTo(x - tx * L * .45, y - ty * L * .45, x - tx * w * .35, y - ty * w * .35);
+    ctx.closePath(); ctx.fill();
+  }
+  const h = frameAt(g, .75), hx = h.x, hy = h.y, htx = h.tx, hty = h.ty, hw = h.w, HL = len * .15;
+  ctx.strokeStyle = '#f7e6b0'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.4, len * .02);
+  for (const side of [1, -1]) {
+    const nx = -hty * side, ny = htx * side, sx = hx + nx * hw * .4, sy = hy + ny * hw * .4;
+    ctx.beginPath(); ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(sx - htx * HL * .2 + nx * HL * .55, sy - hty * HL * .2 + ny * HL * .55, sx - htx * HL + nx * HL * .5, sy - hty * HL + ny * HL * .5);
+    ctx.stroke();
+    const mx = sx - htx * HL * .45 + nx * HL * .44, my = sy - hty * HL * .45 + ny * HL * .44; // a little fork
+    ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx - htx * HL * .32 + nx * HL * .02, my - hty * HL * .32 + ny * HL * .02); ctx.stroke();
+  }
+}
+// A dragon's four short legs, paddling, each with three claws.
+function ejderBacak(g, ph) {
+  const len = g.len;
+  if (len < 12) return;
+  ctx.strokeStyle = '#d29a2c'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [fi, k] of [[2.2, 0], [5.6, 1.7]]) {
+    const r = frameAt(g, fi), x = r.x, y = r.y, tx = r.tx, ty = r.ty, w = r.w, L = len * .09;
+    for (const side of [1, -1]) {
+      const sw = Math.sin(ph * .9 + k + (side > 0 ? 0 : Math.PI)) * .35, nx = -ty * side, ny = tx * side;
+      const sx = x + nx * w * .7, sy = y + ny * w * .7;
+      const kx = sx + nx * L * .8 - tx * L * (.25 + sw), ky = sy + ny * L * .8 - ty * L * (.25 + sw);
+      const fx = kx - tx * L * .55 + nx * L * .25, fy = ky - ty * L * .55 + ny * L * .25;
+      ctx.lineWidth = Math.max(1.5, len * .024);
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
+      ctx.lineWidth = Math.max(.8, len * .009);
+      for (const c of [-.6, 0, .6]) { ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx - tx * L * .28 + nx * L * c * .3, fy - ty * L * .28 + ny * L * c * .3); ctx.stroke(); }
+    }
+  }
+}
+function drawShadow(f, st, ek) {
   const g = f.g; if (g.len < 3) return;
-  const o = Math.min(16, 2 + g.len * .06);
+  const o = Math.min(16, 2 + g.len * .06) * (ek || 1); // ek: a leaping koi's shadow falls farther away
   if (st.palyaco) { const c = frameAt(g, 2.6); ctx.beginPath(); ctx.arc(c.x + o, c.y + o * 1.3, g.len * .36, 0, TAU); ctx.fill(); return; }
   bodyPath(g, st, o, o * 1.3); ctx.fill();
 }
@@ -2433,8 +2779,11 @@ function drawFish(f, st, danger) {
   const g = f.g, len = g.len;
   if (len < 2.4) { ctx.fillStyle = st.body; ctx.beginPath(); ctx.arc(g.x[3], g.y[3], 1.2, 0, TAU); ctx.fill(); return; }
   ctx.fillStyle = st.fin; tailPath(g, st, f.phase); ctx.fill();
-  fins(g, f.phase, 2.1, st.finSize || .075);
-  if (st.pelvic) fins(g, f.phase + 1, 5.2, st.finSize ? st.finSize * .6 : .045);
+  if (st.ejder) ejderBacak(g, f.phase);
+  else {
+    fins(g, f.phase, 2.1, st.finSize || .075);
+    if (st.pelvic) fins(g, f.phase + 1, 5.2, st.finSize ? st.finSize * .6 : .045);
+  }
   if (st.barbels && len > 14) barbels(g, st, f.phase);
   bodyPath(g, st, 0, 0); ctx.fillStyle = st.body; ctx.fill();
   if (st.desen && st.desen.ghost) { ctx.lineWidth = Math.max(1, len * .012); ctx.strokeStyle = 'rgba(200,225,255,.75)'; ctx.stroke(); }
@@ -2444,6 +2793,7 @@ function drawFish(f, st, danger) {
     pattern(f, g, st);
     ctx.restore();
   }
+  if (st.ejder) ejderSusu(g, f.phase);
   const e = frameAt(g, .45), er = Math.max(1.1, len * .016);
   const ex = e.x, ey = e.y, enx = -e.ty * e.w * .72, eny = e.tx * e.w * .72;
   ctx.fillStyle = danger ? '#ff7b62' : '#10201c';
@@ -2795,6 +3145,152 @@ function drawArrows() {
   }
   ctx.globalAlpha = 1;
 }
+/* alone: rocks and ice, the stream out of the pond, the Dragon Gate, and an arrow to whichever is next */
+const KAYA_RENK = { golet: ['#6d7468', '#7c8072', '#5f685d'], nehir: ['#7a7262', '#887d68', '#6b6b61'], deniz: ['#5b5651', '#6c6157', '#50565a'] };
+function kayaYolu(sx, sy, R, e, k) { // a rounded rock outline through the rock's own points
+  const s = e.sekil, n = s.length;
+  ctx.beginPath();
+  for (let j = 0; j <= n; j++) {
+    const a0 = e.don + j * TAU / n, a1 = a0 + TAU / n, r0 = R * k * s[j % n], r1 = R * k * s[(j + 1) % n];
+    const x0 = sx + Math.cos(a0) * r0, y0 = sy + Math.sin(a0) * r0, mx = (x0 + sx + Math.cos(a1) * r1) / 2, my = (y0 + sy + Math.sin(a1) * r1) / 2;
+    if (j === 0) ctx.moveTo(mx, my); else ctx.quadraticCurveTo(x0, y0, mx, my);
+  }
+  ctx.closePath();
+}
+function buzYolu(sx, sy, R, e, k) { // ice has corners
+  const s = e.sekil, n = s.length;
+  ctx.beginPath();
+  for (let j = 0; j < n; j++) { const a = e.don + j * TAU / n, r = R * k * s[j]; j ? ctx.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r) : ctx.moveTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r); }
+  ctx.closePath();
+}
+function engelCiz(e) {
+  const sc = cam.scale, sx = (e.x - cam.x) * sc + W / 2, sy = (e.y - cam.y) * sc + H / 2, R = e.r * sc;
+  if (R < .8 || sx < -R * 2.5 || sx > W + R * 1.4 || sy < -R * 1.4 || sy > H + R * 1.4) return;
+  if (e.tur === 'buz') {
+    ctx.fillStyle = 'rgba(160,214,236,.2)'; buzYolu(sx, sy, R, e, 1.24); ctx.fill(); // most of the ice is under the water
+    ctx.fillStyle = 'rgba(2,20,30,.3)'; buzYolu(sx + R * .08, sy + R * .12, R, e, 1); ctx.fill();
+    ctx.fillStyle = '#dbedf3'; buzYolu(sx, sy, R, e, 1); ctx.fill();
+    ctx.strokeStyle = 'rgba(140,190,210,.9)'; ctx.lineWidth = Math.max(1, R * .04); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; buzYolu(sx - R * .1, sy - R * .12, R, e, .6); ctx.fill();
+    return;
+  }
+  const pal = KAYA_RENK[HARITA.id] || KAYA_RENK.golet;
+  ctx.fillStyle = 'rgba(2,20,22,.34)'; kayaYolu(sx + R * .1, sy + R * .16, R, e, 1.02); ctx.fill();
+  ctx.fillStyle = pal[(e.renk * pal.length) | 0]; kayaYolu(sx, sy, R, e, 1); ctx.fill();
+  ctx.fillStyle = 'rgba(236,240,226,.16)'; kayaYolu(sx - R * .16, sy - R * .2, R, e, .62); ctx.fill();
+  ctx.strokeStyle = 'rgba(225,246,236,.24)'; ctx.lineWidth = Math.max(1, R * .05); kayaYolu(sx, sy, R, e, 1.07); ctx.stroke(); // where the water meets the rock
+  if (HARITA.id === 'nehir') {
+    // foam where the river runs into the rock, calm water swirling behind it
+    ctx.strokeStyle = 'rgba(240,250,246,.5)'; ctx.lineWidth = Math.max(1, R * .08); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(sx, sy, R * 1.12, Math.PI - 1, Math.PI + 1); ctx.stroke();
+    const t = time * 1.2 + e.don;
+    ctx.strokeStyle = 'rgba(225,246,236,.2)'; ctx.lineWidth = Math.max(1, R * .05);
+    for (const side of [1, -1]) { ctx.beginPath(); ctx.arc(sx + R * 1.75, sy + side * R * .45, R * .36, t * side, t * side + 3.4); ctx.stroke(); }
+  }
+}
+function drawEngeller() {
+  if (mode === 'oda') return;
+  const E = ENGEL[HARITA.id], sc = cam.scale, hw = W / 2 / sc, hh = H / 2 / sc, kx = HARITA.id === 'nehir' && yol.kapi ? yol.kapi.x : NaN;
+  if (E) {
+    const x0 = Math.floor((cam.x - hw) / E.cell) - 1, x1 = Math.floor((cam.x + hw) / E.cell) + 1;
+    const y0 = Math.floor((cam.y - hh) / E.cell) - 1, y1 = Math.floor((cam.y + hh) / E.cell) + 1;
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= 900) for (let ix = x0; ix <= x1; ix++) for (let iy = y0; iy <= y1; iy++) for (const e of engelHucre(ix, iy)) if (!(Math.abs(e.x - kx) < e.r + 250)) engelCiz(e);
+  }
+  if (HARITA.id === 'nehir') { // ice floes drifting down the river
+    const u0 = Math.floor((cam.x - hw - yol.buzKayma) / BUZ.cell) - 1, u1 = Math.floor((cam.x + hw - yol.buzKayma) / BUZ.cell) + 1;
+    const y0 = Math.floor((cam.y - hh) / BUZ.cell) - 1, y1 = Math.floor((cam.y + hh) / BUZ.cell) + 1;
+    if ((u1 - u0 + 1) * (y1 - y0 + 1) <= 900) for (let ix = u0; ix <= u1; ix++) for (let iy = y0; iy <= y1; iy++) for (const o of buzHucre(ix, iy)) { o.x = o.x0 + yol.buzKayma; if (!(Math.abs(o.x - kx) < o.r + 250)) engelCiz(o); }
+  }
+}
+// The stream out of the pond: a channel of brighter water running away, and a golden ring at its mouth.
+function drawDere() {
+  const d = yol.dere; if (!d || HARITA.id !== 'golet' || mode === 'oda') return;
+  const sc = cam.scale, sx = (d.x - cam.x) * sc + W / 2, sy = (d.y - cam.y) * sc + H / 2, R = d.r * sc, L = 1800 * sc;
+  if (sx < -L - R || sx > W + L + R || sy < -L - R || sy > H + L + R) return;
+  ctx.save(); ctx.translate(sx, sy); ctx.rotate(d.a);
+  const g = ctx.createLinearGradient(0, 0, L, 0);
+  g.addColorStop(0, 'rgba(150,222,206,.42)'); g.addColorStop(1, 'rgba(150,222,206,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(0, -R); ctx.quadraticCurveTo(L * .5, -R * .55, L, -R * .5); ctx.lineTo(L, R * .5); ctx.quadraticCurveTo(L * .5, R * .55, 0, R); ctx.closePath(); ctx.fill();
+  const bg = ctx.createLinearGradient(0, 0, L, 0);
+  bg.addColorStop(0, 'rgba(70,104,52,.85)'); bg.addColorStop(1, 'rgba(70,104,52,0)');
+  ctx.strokeStyle = bg; ctx.lineWidth = Math.max(2, R * .16); ctx.lineCap = 'round';
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(R * .3, s * R); ctx.quadraticCurveTo(L * .5, s * R * .55, L, s * R * .5); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(235,250,245,.6)'; ctx.lineWidth = Math.max(1, R * .05);
+  for (let i = 0; i < 10; i++) { // the pond's water running off down the stream
+    const u = (time * .3 + i / 10) % 1, x = u * L, w = (1 - .45 * u) * R * (hash(i, 0, 950) - .5) * 1.4;
+    ctx.globalAlpha = (1 - u) * .9; ctx.beginPath(); ctx.moveTo(x, w); ctx.lineTo(x + R * .6, w); ctx.stroke();
+  }
+  const p = (time * .8) % 1;
+  ctx.globalAlpha = .8 * (1 - p); ctx.strokeStyle = '#f2c43a'; ctx.lineWidth = Math.max(1.5, R * .06);
+  ctx.beginPath(); ctx.arc(0, 0, R * (.8 + .5 * p), 0, TAU); ctx.stroke();
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+// The Dragon Gate, water part: deeper water above the falls, the white water of the falls rushing downstream.
+function drawKapiSu() {
+  const k = yol.kapi; if (!k || HARITA.id !== 'nehir' || mode === 'oda') return;
+  const sc = cam.scale, gx = (k.x - cam.x) * sc + W / 2, fw = Math.max(12, 90 * sc), ux = clamp(gx, 0, W);
+  if (ux > 0) { ctx.fillStyle = 'rgba(6,34,58,.3)'; ctx.fillRect(0, 0, ux, H); }
+  if (gx < -fw * 2 || gx > W + fw * 2) return;
+  const g = ctx.createLinearGradient(gx - fw * .2, 0, gx + fw * 1.6, 0);
+  g.addColorStop(0, 'rgba(240,252,252,0)'); g.addColorStop(.12, 'rgba(240,252,252,.85)'); g.addColorStop(.45, 'rgba(225,246,246,.45)'); g.addColorStop(1, 'rgba(225,246,246,0)');
+  ctx.fillStyle = g; ctx.fillRect(gx - fw * .2, 0, fw * 1.8, H);
+  ctx.fillStyle = 'rgba(255,236,170,.55)'; ctx.fillRect(gx - Math.max(1, 3 * sc), 0, Math.max(2, 6 * sc), H); // the lip of the falls catches the light
+  ctx.strokeStyle = '#ffffff'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, 3.5 * sc);
+  const step = 22, j0 = Math.floor((cam.y - H / 2 / sc) / step) - 1, j1 = Math.floor((cam.y + H / 2 / sc) / step) + 1;
+  if (j1 - j0 < 600) for (let j = j0; j <= j1; j++) {
+    const h = hash(j, 3, 900), u = (time * (.7 + .6 * h) + h * 5) % 1, sy = (j * step - cam.y) * sc + H / 2;
+    const x0 = gx + u * fw * 1.4;
+    ctx.globalAlpha = (1 - u) * .7; ctx.beginPath(); ctx.moveTo(x0, sy); ctx.lineTo(x0 + fw * (.2 + .25 * h), sy); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+// The gates over the falls: every 15 m two red posts and a red and gold beam (drawn over the fish, it stands above the water).
+function drawKapiUst() {
+  const k = yol.kapi; if (!k || HARITA.id !== 'nehir' || mode === 'oda') return;
+  const sc = cam.scale, gx = (k.x - cam.x) * sc + W / 2 - 10 * sc, G = 1500, half = 300 * sc, pr = Math.max(3, 30 * sc);
+  if (gx < -pr * 4 || gx > W + pr * 4) return;
+  const j0 = Math.floor((cam.y - H / 2 / sc - 400) / G), j1 = Math.floor((cam.y + H / 2 / sc + 400) / G);
+  ctx.lineWidth = Math.max(1, pr * .12); ctx.lineJoin = 'round';
+  for (let j = j0; j <= j1; j++) {
+    const cy = (j * G - cam.y) * sc + H / 2, top = cy - half - pr * 1.4, bw = pr * 1.3;
+    ctx.fillStyle = 'rgba(2,20,22,.3)'; ctx.fillRect(gx - bw / 2 + pr * .5, top + pr * .8, bw, half * 2 + pr * 2.8);
+    ctx.fillStyle = '#b8322a'; ctx.strokeStyle = '#4e130e';
+    ctx.fillRect(gx - bw / 2, top, bw, half * 2 + pr * 2.8); ctx.strokeRect(gx - bw / 2, top, bw, half * 2 + pr * 2.8);
+    ctx.fillStyle = '#e9b43a'; ctx.fillRect(gx - bw * .14, top + pr * .3, bw * .28, half * 2 + pr * 2.2);
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#9c271f'; ctx.beginPath(); ctx.arc(gx, cy + s * half, pr, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e9b43a'; ctx.beginPath(); ctx.arc(gx, cy + s * half, pr * .45, 0, TAU); ctx.fill();
+    }
+    ctx.fillStyle = '#e9b43a'; ctx.fillRect(gx - pr * .8, cy - pr * .8, pr * 1.6, pr * 1.6); ctx.strokeRect(gx - pr * .8, cy - pr * .8, pr * 1.6, pr * 1.6);
+  }
+}
+// An arrow at the edge of the screen to the stream or the Dragon Gate, with how far it is.
+function drawHedef() {
+  if (mode !== 'play' || yol.sicrama || yol.gecis > 0) return;
+  let wx, wy, ad, d;
+  if (yol.dere && HARITA.id === 'golet') { wx = yol.dere.x; wy = yol.dere.y; ad = 'Stream'; d = Math.hypot(wx - P.x, wy - P.y) - yol.dere.r; }
+  else if (yol.kapi && HARITA.id === 'nehir') { wx = yol.kapi.x; wy = P.y; ad = 'Dragon Gate'; d = P.x - wx; }
+  else return;
+  const sc = cam.scale, sx = (wx - cam.x) * sc + W / 2, sy = (wy - cam.y) * sc + H / 2;
+  const T = 96, B = H - 124, Lm = 30, R = W - 30;
+  if (sx > Lm && sx < R && sy > T && sy < B) return; // it's on the screen
+  const cx = W / 2, cy = (T + B) / 2, ang = Math.atan2(sy - cy, sx - cx), c = Math.cos(ang), s = Math.sin(ang);
+  const t = Math.min(Math.abs(c) > 1e-4 ? (c > 0 ? R - cx : cx - Lm) / Math.abs(c) : 1e9, Math.abs(s) > 1e-4 ? (s > 0 ? B - cy : cy - T) / Math.abs(s) : 1e9);
+  const ax = cx + c * t, ay = cy + s * t;
+  ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
+  ctx.globalAlpha = .85 + .15 * Math.sin(time * 4); ctx.fillStyle = '#f2c43a';
+  ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-7, -11); ctx.lineTo(-2, 0); ctx.lineTo(-7, 11); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  const m = Math.round(Math.max(0, d) / 100), text = m >= 1 ? `${ad} · ${m} m` : ad;
+  ctx.font = '700 12px Figtree, system-ui, sans-serif'; ctx.textBaseline = 'middle';
+  let lx = ax, ly = ay - s * 26;
+  if (Math.abs(c) > .7) { ctx.textAlign = c < 0 ? 'left' : 'right'; lx = ax - c * 22; ly = ay; } // beside an arrow on the left or right edge
+  else { ctx.textAlign = 'center'; lx = clamp(ax, 64, W - 64); }
+  ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(5,28,30,.75)'; ctx.strokeText(text, lx, ly);
+  ctx.fillStyle = '#ffe7a0'; ctx.fillText(text, lx, ly);
+  ctx.globalAlpha = 1;
+}
 function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
@@ -2808,22 +3304,35 @@ function render() {
   if (hid === 'nehir') drawStones();
   else if (hid === 'deniz') drawSeaFloor();
   ctx.fillStyle = HARITA.speck;
-  if (hid === 'nehir') { // the current pulls the specks into streaks
-    for (const s of specks) { const k = akinti(s.x, s.y) / AKINTI; ctx.globalAlpha = s.a * .8; ctx.fillRect((s.x - cam.x) * sc + W / 2, (s.y - cam.y) * sc + H / 2, s.s * (1.5 + 9 * k), Math.max(.8, s.s * .6)); }
+  if (hid === 'nehir' || (hid === 'deniz' && mode !== 'oda')) { // the current (and alone, the sea's tide) pulls the specks into streaks
+    const tam = AKINTI * akintiOlcek;
+    for (const s of specks) {
+      const k = akinti(s.x, s.y) / tam, w = s.s * (1.5 + 9 * Math.abs(k)), x = (s.x - cam.x) * sc + W / 2;
+      ctx.globalAlpha = s.a * .8; ctx.fillRect(k < 0 ? x - w : x, (s.y - cam.y) * sc + H / 2, w, Math.max(.8, s.s * .6));
+    }
   } else for (const s of specks) { ctx.globalAlpha = HARITA.dark ? Math.min(1, s.a * 2) : s.a; ctx.fillRect((s.x - cam.x) * sc + W / 2, (s.y - cam.y) * sc + H / 2, s.s, s.s); }
   ctx.globalAlpha = 1;
   if (hid === 'golet') { ctx.fillStyle = 'rgba(2,20,22,.24)'; forEachPad(padShadow); }
+  drawDere(); drawKapiSu(); drawEngeller();
   drawInciler();
   const inRoom = mode === 'oda';
   if (inRoom) drawBank();
 
-  const list = [], meSt = KILIK[kilik] || koiStili(seciliDesen), hunted = (mode === 'play' || inRoom) && P.alive;
+  const list = [], meSt = P.ejder ? ejderStili() : KILIK[kilik] || koiStili(seciliDesen), hunted = (mode === 'play' || inRoom) && P.alive;
+  const benGorun = P.alive && (mode !== 'over' || P.ejder); // after the leap the dragon swims on behind the end screen
   for (const f of fish) { if (f.dead) continue; if (onScreen(geo(f, f.sp, f.l, 0))) list.push(f); }
   if (inRoom) for (const e of oda.rakip.values()) { if (e.canli && onScreen(geo(e, e.sp, e.lShow, e.gulp))) list.push(e); }
-  if (P.alive && mode !== 'over') { geo(P, meSt, P.lShow, P.gulp); list.push(P); }
+  if (benGorun) { geo(P, meSt, P.lShow, P.gulp); list.push(P); }
   list.sort((a, b) => (a.lShow || a.l) - (b.lShow || b.l));
+  if (benGorun && P.ejder) { // a dragon glows
+    const px = (P.x - cam.x) * sc + W / 2, py = (P.y - cam.y) * sc + H / 2, gr = P.lShow * sc * .85;
+    const gl = ctx.createRadialGradient(px, py, gr * .1, px, py, gr);
+    gl.addColorStop(0, 'rgba(255,214,110,.3)'); gl.addColorStop(1, 'rgba(255,214,110,0)');
+    ctx.fillStyle = gl; ctx.fillRect(px - gr, py - gr, gr * 2, gr * 2);
+  }
+  const ziplama = yol.sicrama ? 1 + 3.5 * (yol.sicrama.yuk || 0) : 1;
   ctx.fillStyle = 'rgba(2,20,22,.3)';
-  for (const f of list) drawShadow(f, f === P ? meSt : f.sp);
+  for (const f of list) drawShadow(f, f === P ? meSt : f.sp, f === P ? ziplama : 1);
   const blink = ((time * 14) | 0) % 2 === 0;
   for (const f of list) {
     if (f === P) {
@@ -2853,6 +3362,8 @@ function render() {
 
   if (hid === 'golet') forEachPad(padTop);
   else if (hid === 'deniz') drawKelp();
+  drawKapiUst();
+  if (yol.sicrama && benGorun) drawFish(P, meSt, false); // a leaping koi is up in the air, over the gate
   if (HARITA.dark) drawDark(list, hunted);
   if (inRoom) drawNames();
 
@@ -2868,7 +3379,17 @@ function render() {
 
   ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
   if (mode === 'play' || (inRoom && P.alive)) drawArrows();
+  drawHedef();
   if (flash > 0) { ctx.fillStyle = `rgba(255,104,84,${(flash * .22).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+  if (parilti > 0) { // a burst of golden light from the new dragon
+    const px = (P.x - cam.x) * sc + W / 2, py = (P.y - cam.y) * sc + H / 2, R = Math.max(W, H) * (.45 + .7 * (1 - parilti));
+    const g = ctx.createRadialGradient(px, py, 0, px, py, R);
+    g.addColorStop(0, `rgba(255,248,222,${(.95 * parilti).toFixed(3)})`);
+    g.addColorStop(.35, `rgba(255,238,196,${(.42 * parilti).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(255,238,196,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  if (yol.gecis > 0) { ctx.fillStyle = `rgba(3,18,22,${clamp(1 - Math.abs(yol.gecis - .55) / .55, 0, 1).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } // down the stream to the river
 }
 
 function frame(now) {
@@ -2899,7 +3420,7 @@ function boot(data) {
   shownLen = ''; chainKey = ''; updateHud();
   if ((data.mode === 'play' || data.mode === 'paused') && data.l > 0) {
     startGame(true);
-    P.l = P.lShow = data.l; P.lives = data.lives || 3; tally = data.tally || {}; eatenCount = data.eaten || 0;
+    P.l = P.lShow = P.zirve = data.l; P.lives = data.lives || 3; tally = data.tally || {}; eatenCount = data.eaten || 0;
     P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length; P.grace = 2.5;
     cam.scale = targetScale(P.l); initSpine(P, P.l);
     renderLives(); shownLen = ''; chainKey = ''; updateHud();
@@ -2920,10 +3441,15 @@ try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get m
       W = w; H = h; cam.x = 0; cam.y = 0; cam.scale = w * .55 / 10;
       const f = { x: 5.4, y: 0, angle: 0, speed: 0, phase: ph, spine: null, g: null };
       initSpine(f, 10); for (let i = 0; i < 10; i++) f.spine[i].y += Math.pow(i / 9, 2) * (bend || 0);
-      const S = KILIK[st] || AT; geo(f, S, 10, 0); ctx.fillStyle = 'rgba(2,20,22,.3)'; drawShadow(f, S); drawFish(f, S, false);
+      if (st === 'ejder') koiIzleri(f);
+      const S = st === 'ejder' ? ejderStili() : KILIK[st] || AT; geo(f, S, 10, 0); ctx.fillStyle = 'rgba(2,20,22,.3)'; drawShadow(f, S); drawFish(f, S, false);
       return c.toDataURL();
     } finally { ctx = eski.ctx; W = eski.W; H = eski.H; cam.x = eski.x; cam.y = eski.y; cam.scale = eski.s; }
-  }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally }; } catch (e) {}
+  }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally,
+    // alone (Nov 2026): the journey, rocks, currents
+    yol, buyume, akinti, gelgitDeger, engellerYakin, engelHucre, engeldenCik, dereAc, suyaGec, sicramaBasla,
+    get akintiOlcek() { return akintiOlcek; }, get parilti() { return parilti; },
+    boyYap: l => { P.l = P.lShow = l; P.zirve = Math.max(P.zirve, l); P.topIdx = SPECIES.filter(s => s.max <= l * .9).length; initSpine(P, l); cam.scale = targetScale(l); } }; } catch (e) {}
 const hot = window.claude && window.claude.hot;
 try { if (hot && hot.snapshot) hot.snapshot(() => ({ mode, l: P.l, lives: P.lives, tally, eaten: eatenCount })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
