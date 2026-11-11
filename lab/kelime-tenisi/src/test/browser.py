@@ -1,4 +1,4 @@
-# Tarayıcıda uçtan uca deneme: telefonda bota karşı, iPad'de (dik ve yatay) iki kişi, İngilizce, nasıl oynanır.
+# Tarayıcıda uçtan uca deneme: telefonda bota karşı, iPad'de (dik ve yatay) iki kişi, dil (Türkçe açılış, İngilizce seçimi), nasıl oynanır.
 # Önce:  node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
 # Sonra: python3 lab/kelime-tenisi/src/test/browser.py      (görüntüler /tmp/kt-shots/)
 import os, random, subprocess, sys, time
@@ -61,8 +61,8 @@ def play_match(pg, touch, humans, max_s=240, miss_rate=0.18, smash_rate=0.3, tag
         time.sleep(0.08)
     return False
 
-def new_page(b, vp, touch, mobile, init=''):
-    ctx = b.new_context(viewport=vp, device_scale_factor=2, has_touch=touch, is_mobile=mobile, locale='tr-TR')
+def new_page(b, vp, touch, mobile, init='', locale='tr-TR'):
+    ctx = b.new_context(viewport=vp, device_scale_factor=2, has_touch=touch, is_mobile=mobile, locale=locale)
     pg = ctx.new_page()
     pg.on('console', lambda m: errors.append(f'console {m.type}: {m.text}') if m.type == 'error' else None)
     pg.on('pageerror', lambda e: errors.append(f'pageerror: {e}'))
@@ -168,10 +168,21 @@ with sync_playwright() as p:
     pg.screenshot(path=f'{OUT}/ipadL-end.png')
     ctx.close()
 
-    print('İngilizce · masaüstü')
-    ctx, pg = new_page(b, {'width': 1280, 'height': 800}, False, False, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'bot', level:'zor'}))")
+    print('Dil · İngilizce cihazda Türkçe açılış, sonra İngilizce')
+    ctx, pg = new_page(b, {'width': 1280, 'height': 800}, False, False, locale='en-US')
+    check(pg.evaluate('navigator.language') == 'en-US' and pg.inner_text('h1') == 'Kelime Tenisi', 'İngilizce cihazda ilk açılış Türkçe')
+    check('Nasıl oynanır' in pg.inner_text('#howSheet h2'), '"Nasıl oynanır?" Türkçe')
+    pg.click('#howOk')
+    pg.reload(); pg.wait_for_timeout(300)
+    check(pg.inner_text('h1') == 'Kelime Tenisi', 'yeniden açınca yine Türkçe')
+    # a device that saved 'en' before this change (language came from navigator.language)
+    pg.evaluate("localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'bot', level:'zor', lang:'en'}))")
+    pg.reload(); pg.wait_for_timeout(300)
+    check(pg.inner_text('h1') == 'Kelime Tenisi', "eskiden 'en' kaydetmiş cihaz Türkçe açılıyor")
     pg.click('[data-lang=en]')
-    check(pg.inner_text('h1') == 'Word Tennis', 'İngilizce başlık')
+    check(pg.inner_text('h1') == 'Word Tennis', 'English seçilince İngilizce')
+    pg.reload(); pg.wait_for_timeout(300)
+    check(pg.inner_text('h1') == 'Word Tennis', 'seçilen dil hatırlanıyor')
     pg.click('#startBtn')
     pg.wait_for_timeout(300)
     check(pg.locator('#panel0 .key').count() == 26, 'İngilizce klavye 26 harf')

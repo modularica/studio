@@ -42,6 +42,7 @@ Kelime merdiveni, tenis gibi oynanır. Umut ile eşinin isteğinden çıktı: ka
 
 - `kelime-tenisi.v1` (hesaba eşitlenir, `data-kayit`): bota karşı galibiyet/yenilgi (seviye seviye), iki kişilik maç sayısı, en uzun ralli ve kelimeleri, smaç sayısı. Menüde rekor satırı buradan.
 - `kelime-tenisi.device` (cihazda): dil, kelime boyu, süre, maç biçimi, bot seviyesi, adlar, handikap, ses, "nasıl oynanır" görüldü mü. İlk oyuncu adı Lab profilinden gelir.
+- Dil: cihazın dili ne olursa olsun oyun Türkçe açılır. İngilizce yalnız menüdeki "English"e dokunulunca (`langPicked`), sonra hatırlanır. (İlk sürüm cihaz diline bakıyordu; o zaman `en` kaydetmiş cihazlar bu yüzden yine Türkçe açılır.)
 - Not (Türkçe): maç başı (mod, dil, harf, süre, biçim), maç sonu (sonuç, skor, en uzun ralli, smaç, süre).
 - "Nasıldı?" mola penceresinde (`mola`) ve maç sonunda (`mac-sonu`). Odası yok.
 - Deneme: `kelime-tenisi.debug` = `1` sayfanın içini `window.__kt` olarak açar (`G`, `speed`, `timeout()`).

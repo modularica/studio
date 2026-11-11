@@ -846,12 +846,14 @@ const Sfx = (function () {
   const U = w => KT.upper(w, S.lang);
 
   // ---------- settings ----------
+  // Turkish first, whatever the device language. English only once someone taps it
+  // (langPicked); older saves picked 'en' from navigator.language, so they reset.
   const S = Object.assign({
-    lang: (navigator.language || 'tr').toLowerCase().startsWith('tr') ? 'tr' : 'en',
+    lang: 'tr', langPicked: false,
     mode: 'duo', level: 'orta', len: 4, pace: 'normal', format: 1,
     names: ['', ''], bonus: [0, 0], sound: true, seenHow: false,
   }, readJSON(DEVICE_KEY) || {});
-  if (!T[S.lang]) S.lang = 'tr';
+  if (!S.langPicked || !T[S.lang]) S.lang = 'tr';
   if (![3, 4].includes(+S.len)) S.len = 4;
   S.len = +S.len; S.format = +S.format === 2 ? 2 : 1;
   function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -910,7 +912,7 @@ const Sfx = (function () {
     $('#name2').value = S.names[1] || '';
     applyTexts();
   }
-  $$('[data-lang]').forEach(b => b.addEventListener('click', () => { S.lang = b.dataset.lang; saveDevice(); syncMenu(); Sfx.tap(); }));
+  $$('[data-lang]').forEach(b => b.addEventListener('click', () => { S.lang = b.dataset.lang; S.langPicked = true; saveDevice(); syncMenu(); Sfx.tap(); }));
   $$('.mode').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; saveDevice(); syncMenu(); Sfx.tap(); }));
   $$('[data-set]').forEach(g => $$('.chip', g).forEach(c => c.addEventListener('click', () => {
     const k = g.dataset.set, v = c.dataset.v;
