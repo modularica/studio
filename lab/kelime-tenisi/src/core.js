@@ -1,6 +1,6 @@
-// Kelime Tenisi: sözlük, kurallar ve bot. DOM'suz; tarayıcıda ve Node testlerinde aynı dosya.
-// Oyun: kelime merdiveni rallisi. Her vuruşta gelen kelimenin tek harfini değiştirip geri gönderirsin.
-// Kullanılan kelime yanar; süresinde dönemeyen sayıyı kaybeder; dönüşü hiç olmayan kelime = smaç.
+// Kelime Düellosu: sözlük, kurallar ve bot. DOM'suz; tarayıcıda ve Node testlerinde aynı dosya.
+// Oyun: kelime merdiveni karşılıklı oynanır. Gelen kelimenin tek harfini değiştirip geri gönderirsin.
+// Kullanılan kelime o sayıda yanar; süresinde cevap veremeyen sayıyı kaybeder; hiç çıkışı olmayan kelime = çıkmaz.
 'use strict';
 
 const KT = (function () {
@@ -13,15 +13,14 @@ const KT = (function () {
   const upper = (w, lang) => String(w).toLocaleUpperCase(LOCALE[lang] || 'en-US');
   const lower = (w, lang) => String(w).toLocaleLowerCase(LOCALE[lang] || 'en-US');
 
-  // Shot clock in seconds: first return, shrink per shot, floor.
+  // Clock in seconds for each answer: first answer, shrink per word, floor.
   const PACES = {
     rahat: { start: 10, step: 0.5, min: 5 },
     normal: { start: 7, step: 0.4, min: 3.5 },
     hizli: { start: 5, step: 0.3, min: 2.5 },
   };
-  const SERVE_TIME = 10;      // seconds to pick a serve word (then one is picked for you)
-  const POINTS_TO_GAME = 4;   // 15, 30, 40, game; at 40-40 the next point wins ("altın sayı")
-  const TENNIS = ['0', '15', '30', '40'];
+  const START_TIME = 10;              // seconds to pick the starting word (then one is picked for you)
+  const TARGET = { 1: 5, 2: 9 };      // points to win: short match, long match
 
   function seeded(seed) { // mulberry32
     let a = seed >>> 0;
@@ -39,18 +38,27 @@ const KT = (function () {
     return a;
   }
 
+  // opts.ekli (Turkish): inflected forms count too (evde, aldı, bana), from words.tr.x.
   class Lexicon {
-    constructor(words, lang, len) {
+    constructor(words, lang, len, opts) {
       const d = words[lang];
       if (!d || !d.common[len]) throw new Error('no words for ' + lang + '/' + len);
+      const x = opts && opts.ekli && d.x ? d.x : null;
       this.lang = lang;
       this.len = len;
+      this.ekli = !!x;
       this.alpha = d.alpha;
-      const common = d.common[len].split(' ');
-      const rare = d.rare[len] ? d.rare[len].split(' ') : [];
+      const split = s => (s ? s.split(' ') : []);
+      const common = split(d.common[len]).concat(x ? split(x.common[len]) : []);
+      const rare = split(d.rare[len]).concat(x ? split(x.rare[len]) : []);
       this.commonSet = new Set(common);
       this.validSet = new Set(common.concat(rare));
-      this.serves = d.serve[len].split(' ');
+      this.serves = split((x || d).serve[len]);
+      this.roots = null;
+      if (x) {
+        if (!x._roots) x._roots = new Map(split(x.root).map(p => p.split(':')));
+        this.roots = x._roots;
+      }
       this.buckets = new Map();
       for (const w of this.validSet) {
         for (let i = 0; i < len; i++) {
@@ -63,6 +71,8 @@ const KT = (function () {
     }
     has(w) { return this.validSet.has(w); }
     isCommon(w) { return this.commonSet.has(w); }
+    // The dictionary word an inflected form comes from (aldı -> almak), or null.
+    root(w) { return (this.roots && this.validSet.has(w) && this.roots.get(w)) || null; }
     // Words one letter away from w, not in `used`. onlyCommon: the ones most people know.
     neighbours(w, used, onlyCommon) {
       const out = [];
@@ -86,11 +96,11 @@ const KT = (function () {
       }
       return at;
     }
-    pickServes(n, r, avoid) {
+    pickStarts(n, r, avoid) {
       const pool = avoid ? this.serves.filter(w => !avoid.has(w)) : this.serves;
       return shuffle(pool.length >= n ? pool : this.serves, r).slice(0, n);
     }
-    // Sort for showing: common words first, each group by fewest letters changed from `w`? keep A-Z.
+    // For showing: common words first, each group A-Z.
     split(words) {
       const c = [], r = [];
       for (const w of words) (this.commonSet.has(w) ? c : r).push(w);
@@ -101,45 +111,43 @@ const KT = (function () {
   }
 
   class Match {
-    // opts: { lex, players: [{ name, bonus }], gamesToWin, pace, firstServer, random }
+    // opts: { lex, players: [{ name, bonus }], target, pace, firstStarter, random }
     constructor(opts) {
       this.lex = opts.lex;
       this.players = opts.players.map(p => Object.assign({ bonus: 0 }, p));
-      this.gamesToWin = opts.gamesToWin || 2;
+      this.target = opts.target || TARGET[1];
       this.paceName = PACES[opts.pace] ? opts.pace : 'normal';
       this.pace = PACES[this.paceName];
       this.r = opts.random || Math.random;
-      this.games = [0, 0];
       this.points = [0, 0];
-      this.server = opts.firstServer === 1 ? 1 : 0;
-      this.phase = 'serve';         // serve | rally | pointOver | matchOver
+      this.starter = opts.firstStarter === 1 ? 1 : 0;   // picks the first word of the point; alternates every point
+      this.phase = 'start';         // start | rally | pointOver | matchOver
       this.winner = -1;
       this.pointsPlayed = 0;
       this.history = [];
-      this.served = new Set();      // serve words already used in this match
-      this.stats = { smashes: [0, 0], misses: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
+      this.openers = new Set();     // starting words already used in this match
+      this.stats = { deadEnds: [0, 0], misses: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
       this.point = null;
       this.newPoint();
     }
-    get receiver() { return 1 - this.server; }
     newPoint() {
-      const opts = this.lex.pickServes(3, this.r, this.served);
-      this.point = { word: null, used: new Set(), shots: [], turn: this.server, serveOptions: opts };
-      this.phase = 'serve';
+      const opts = this.lex.pickStarts(3, this.r, this.openers);
+      this.point = { word: null, used: new Set(), shots: [], turn: this.starter, options: opts };
+      this.phase = 'start';
     }
-    serve(word) {
-      if (this.phase !== 'serve') return { ok: false, reason: 'phase' };
-      if (!this.point.serveOptions.includes(word)) return { ok: false, reason: 'not-offered' };
+    start(word) {
+      if (this.phase !== 'start') return { ok: false, reason: 'phase' };
+      if (!this.point.options.includes(word)) return { ok: false, reason: 'not-offered' };
       const pt = this.point;
       pt.word = word;
       pt.used.add(word);
-      pt.shots.push({ by: this.server, word });
-      this.served.add(word);
-      pt.turn = this.receiver;
+      pt.shots.push({ by: this.starter, word });
+      this.openers.add(word);
+      pt.turn = 1 - this.starter;
       this.phase = 'rally';
       return { ok: true };
     }
-    // Seconds the player to move has for this shot.
+    // Seconds the player to move has for this answer.
     shotTime(player) {
       const p = player === undefined ? this.point.turn : player;
       const n = Math.max(0, this.point.shots.length - 1);
@@ -165,7 +173,7 @@ const KT = (function () {
       pt.shots.push({ by: p, word });
       this.stats.words[p]++;
       if (this.lex.neighbours(word, pt.used).length === 0) {
-        return Object.assign({ ok: true, at: c.at }, this.endPoint(p, 'smash'));
+        return Object.assign({ ok: true, at: c.at }, this.endPoint(p, 'dead'));
       }
       pt.turn = 1 - p;
       return { ok: true, at: c.at };
@@ -178,46 +186,30 @@ const KT = (function () {
     endPoint(winner, how) {
       const pt = this.point, loser = 1 - winner;
       const left = how === 'time' ? this.lex.split(this.lex.neighbours(pt.word, pt.used)) : { common: [], rare: [] };
-      const rally = pt.shots.length;            // words played in the point, serve included
-      if (rally > this.stats.longest) { this.stats.longest = rally; this.stats.longestWords = pt.shots.map(s => s.word); }
-      if (how === 'smash') this.stats.smashes[winner]++;
+      const chain = pt.shots.length;            // words played in the point, the starting word included
+      if (chain > this.stats.longest) { this.stats.longest = chain; this.stats.longestWords = pt.shots.map(s => s.word); }
+      if (how === 'dead') this.stats.deadEnds[winner]++;
       if (how === 'time') this.stats.misses[loser]++;
       this.points[winner]++;
       this.pointsPlayed++;
-      const res = { winner, how, word: pt.word, rally, shots: pt.shots.slice(), left, gameOver: false, matchOver: false };
-      if (this.points[winner] >= POINTS_TO_GAME) {
-        this.games[winner]++;
-        res.gameOver = true;
-        res.gamePoints = this.points.slice();
-        this.points = [0, 0];
-        this.server = 1 - this.server;          // serve changes every game
-        if (this.games[winner] >= this.gamesToWin) {
-          res.matchOver = true;
-          this.winner = winner;
-        }
-      }
-      res.games = this.games.slice();
+      const res = { winner, how, word: pt.word, chain, shots: pt.shots.slice(), left, points: this.points.slice(), matchOver: false };
+      if (this.points[winner] >= this.target) { res.matchOver = true; this.winner = winner; }
+      this.starter = 1 - this.starter;
       this.phase = res.matchOver ? 'matchOver' : 'pointOver';
       this.history.push(res);
       return res;
     }
     next() { if (this.phase === 'pointOver') this.newPoint(); }
-    // "15", "30", "40"; at 40-40 both are "40" and goldenPoint() is true.
-    scoreText(i) { return TENNIS[Math.min(3, this.points[i])]; }
-    goldenPoint() { return this.points[0] === 3 && this.points[1] === 3; }
-    // Game point / match point for player i (one point from it).
-    pointFor(i) {
-      if (this.points[i] < POINTS_TO_GAME - 1) return null;
-      return this.games[i] + 1 >= this.gamesToWin ? 'match' : 'game';
-    }
+    // 'match' when player i is one point from winning.
+    pointFor(i) { return this.points[i] === this.target - 1 ? 'match' : null; }
   }
 
   // Bot. see: chance of spotting each word a person would know; think: seconds (min, max);
-  // smart: chance of choosing the word that leaves the opponent the fewest returns.
+  // smart: chance of choosing the word that leaves the opponent the fewest answers.
   const LEVELS = {
-    kolay: { see: 0.5, think: [2.4, 4.6], smart: 0.0, serve: [1.8, 3.0] },
-    orta: { see: 0.72, think: [1.6, 3.6], smart: 0.5, serve: [1.4, 2.4] },
-    zor: { see: 0.9, think: [1.0, 2.5], smart: 0.85, serve: [1.0, 1.8] },
+    kolay: { see: 0.5, think: [2.4, 4.6], smart: 0.0, open: [1.8, 3.0] },
+    orta: { see: 0.72, think: [1.6, 3.6], smart: 0.5, open: [1.4, 2.4] },
+    zor: { see: 0.9, think: [1.0, 2.5], smart: 0.85, open: [1.0, 1.8] },
   };
   class Bot {
     constructor(level, random) {
@@ -226,13 +218,13 @@ const KT = (function () {
       this.r = random || Math.random;
     }
     between([a, b]) { return a + (b - a) * this.r(); }
-    // Opponent's returns (words people know) after we play w.
+    // Opponent's answers (words people know) after we play w.
     pressure(lex, w, used) {
       const u = new Set(used); u.add(w);
       return lex.neighbours(w, u, true).length;
     }
-    serve(match) {
-      const opts = match.point.serveOptions;
+    open(match) {
+      const opts = match.point.options;
       let word = pick(opts, this.r);
       if (this.r() < this.cfg.smart) {
         let best = Infinity;
@@ -241,7 +233,7 @@ const KT = (function () {
           if (p < best) { best = p; word = w; }
         }
       }
-      return { word, delay: this.between(this.cfg.serve) };
+      return { word, delay: this.between(this.cfg.open) };
     }
     // { word, delay } or { word: null } when it does not find anything (then it runs out of time).
     reply(match) {
@@ -263,7 +255,7 @@ const KT = (function () {
     }
   }
 
-  return { KEYS, LOCALE, PACES, SERVE_TIME, POINTS_TO_GAME, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
+  return { KEYS, LOCALE, PACES, START_TIME, TARGET, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
 })();
 
 if (typeof module !== 'undefined') module.exports = KT;

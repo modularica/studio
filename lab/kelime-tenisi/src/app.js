@@ -1,4 +1,5 @@
-// Kelime Tenisi arayüzü: menü, iki kişi tek ekran (karşılıklı), bota karşı, kayıt ve Lab bağlantıları.
+// Kelime Düellosu arayüzü: menü, iki kişi tek ekran (karşılıklı), bota karşı, kayıt ve Lab bağlantıları.
+// Adres ve kayıt anahtarları ilk adla (kelime-tenisi) kalıyor: paylaşılan link ve kayıtlar bozulmasın.
 (function () {
   'use strict';
 
@@ -12,66 +13,66 @@
   // ---------- texts ----------
   const T = {
     tr: {
-      title: 'Kelime Tenisi', tagline: 'Tek harfini değiştir, geri gönder.',
+      title: 'Kelime Düellosu', tagline: 'Tek harfini değiştir, geri gönder.',
       duo: 'İki kişi', duoSub: 'Tek ekran, karşılıklı otur', bot: 'Bota karşı', botSub: 'Tek başına antrenman',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
       word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı',
-      format: 'Maç', short: 'Kısa · 1 oyun', long: "Uzun · 3'te 2", start: 'Başla', how: 'Nasıl oynanır?',
+      ekli: 'Ekli kelimeler', ekliOn: 'Geçer', ekliOff: 'Geçmez', ekliHint: 'EVDE, ALDI, BANA gibi',
+      format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
       soundOn: 'Ses açık', soundOff: 'Ses kapalı', paused: 'Mola', resume: 'Devam', quit: 'Ana menü',
       nasildi: 'Nasıldı?', again: 'Rövanş', menu: 'Ana menü', gotIt: 'Anladım',
       rotate: 'Oyun dik ekran için. Telefonu dik tut.',
       p1: 'Oyuncu 1', p2: 'Oyuncu 2', botName: 'Bot', you: 'Sen',
-      serveYou: 'Servis sende: bir kelime seç', serveWait: '{name} servis atıyor',
+      startYou: 'Sen başlıyorsun: bir kelime seç', startWait: '{name} kelime seçiyor',
       firstTurn: 'Önce değiştireceğin harfe, sonra yeni harfe dokun', yourTurn: 'Bir harfini değiştir',
       pickKey: 'Şimdi yeni harfi seç', pickTile: 'Önce değiştireceğin harfe dokun',
-      thinking: '{name} düşünüyor', sentBy: '{name} gönderdi',
+      thinking: '{name} düşünüyor', sentBy: '{name} gönderdi', sentYou: 'Gönderdin',
       errUsed: '{w} bu sayıda oynandı', errUnknown: '{w} sözlükte yok',
-      point: 'Sayı {name}!', pointYou: 'Sayı senin!', smash: 'SMAÇ!', smashYou: 'Smaç! {w} kelimesinin dönüşü yok.',
-      smashThem: '{w} kelimesinin dönüşü yoktu.', timeUp: 'Süre bitti.',
-      could: 'Şunları yazabilirdin:', couldRare: 'Sözlükte bir de:', none: 'Bu kelimenin dönüşü yoktu.',
-      game: 'Oyun {name}!', golden: 'Altın sayı', gamePoint: 'Oyun sayısı · {name}', matchPoint: 'Maç sayısı · {name}',
-      servesFirst: 'Yazı tura: {name} başlıyor', serving: 'Servis: {name}',
+      point: 'Sayı {name}!', pointYou: 'Sayı senin!', dead: 'ÇIKMAZ!', deadYou: 'Çıkmaz! {w} kelimesinden çıkış yok.',
+      deadThem: '{w} kelimesinden çıkış yoktu.', timeUp: 'Süre bitti.',
+      could: 'Şunları yazabilirdin:', couldRare: 'Sözlükte bir de:', none: 'Bu kelimeden çıkış yoktu.',
+      matchPoint: 'Maç sayısı · {name}', firstPick: 'Yazı tura: {name} başlıyor', starting: 'Başlayan: {name}',
       winTitle: '{name} kazandı!', youWin: 'Kazandın!', botWins: 'Bot kazandı',
-      score: 'Skor', games: 'Oyunlar',
-      statLongest: 'En uzun ralli: <b>{n} kelime</b>', statSmash: 'Smaç: <b>{a}</b>', statWords: 'Gönderilen kelime: <b>{a}</b>',
-      record: 'Bota karşı: {w} galibiyet, {l} yenilgi', recordRally: 'En uzun ralli: {n} kelime',
-      how1: '<b>Servis:</b> üç kelimeden birini seç, karşıya gönder.',
-      how2: '<b>Dönüş:</b> gelen kelimenin <b>tek harfini</b> değiştir. Önce harfe, sonra yeni harfe dokun.',
-      how3: '<b>Süre</b> her vuruşta biraz kısalır; süresinde dönemeyen sayıyı kaybeder. Bir kelime bir sayıda bir kez oynanır.',
-      how4: '<b>Smaç:</b> dönüşü hiç olmayan bir kelime gönderirsen sayı hemen senin.',
-      how5: '<b>Sayı</b> tenisteki gibi: 15, 30, 40, oyun. 40-40\'ta sıradaki sayı oyunu alır.',
-      demo: ['kasa', 'kara', 'kare'],
+      statLongest: 'En uzun zincir: <b>{n} kelime</b>', statDead: 'Çıkmaz: <b>{a}</b>', statWords: 'Gönderilen kelime: <b>{a}</b>',
+      record: 'Bota karşı: {w} galibiyet, {l} yenilgi', recordChain: 'En uzun zincir: {n} kelime',
+      how1: '<b>Başla:</b> üç kelimeden birini seç, karşıya gönder.',
+      how2: '<b>Cevap ver:</b> gelen kelimenin <b>tek harfini</b> değiştir. Önce harfe, sonra yeni harfe dokun.',
+      how3: '<b>Süre</b> her kelimede biraz kısalır; süresinde cevap veremeyen sayıyı kaybeder. Bir kelime bir sayıda bir kez oynanır.',
+      how4: '<b>Çıkmaz:</b> hiç çıkışı olmayan bir kelime gönderirsen sayı hemen senin.',
+      howEkli: '<b>Ekli kelimeler de geçer:</b> EVDE, ALDI, BANA. Kökü belli olan kelimenin kökü yanında küçük yazar.',
+      howWin: '<b>{n} sayıya</b> ilk ulaşan kazanır. Her sayıda başlayan değişir.',
+      demo: ['kasa', 'kara', 'kare'], logo: ['kasa', 'kara'],
     },
     en: {
-      title: 'Word Tennis', tagline: 'Change one letter, send it back.',
+      title: 'Word Duel', tagline: 'Change one letter, send it back.',
       duo: 'Two players', duoSub: 'One screen, face to face', bot: 'Against the bot', botSub: 'Practice on your own',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
       word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast',
-      format: 'Match', short: 'Short · 1 game', long: 'Long · best of 3', start: 'Play', how: 'How to play',
+      ekli: 'Inflected words', ekliOn: 'Allowed', ekliOff: 'Not allowed', ekliHint: '',
+      format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
       soundOn: 'Sound on', soundOff: 'Sound off', paused: 'Paused', resume: 'Resume', quit: 'Main menu',
       nasildi: 'How was it?', again: 'Rematch', menu: 'Main menu', gotIt: 'Got it',
       rotate: 'This game is played upright. Turn your phone.',
       p1: 'Player 1', p2: 'Player 2', botName: 'Bot', you: 'You',
-      serveYou: 'Your serve: pick a word', serveWait: '{name} is serving',
+      startYou: 'You start: pick a word', startWait: '{name} is picking a word',
       firstTurn: 'Tap the letter to change, then the new letter', yourTurn: 'Change one letter',
       pickKey: 'Now pick the new letter', pickTile: 'First tap the letter you want to change',
-      thinking: '{name} is thinking', sentBy: '{name} sent',
+      thinking: '{name} is thinking', sentBy: '{name} sent', sentYou: 'You sent',
       errUsed: '{w} was already played this point', errUnknown: '{w} is not in the dictionary',
-      point: 'Point {name}!', pointYou: 'Your point!', smash: 'SMASH!', smashYou: 'Smash! There is no way back from {w}.',
-      smashThem: 'There was no way back from {w}.', timeUp: 'Out of time.',
-      could: 'You could have played:', couldRare: 'The dictionary also has:', none: 'There was no way back from that word.',
-      game: 'Game {name}!', golden: 'Golden point', gamePoint: 'Game point · {name}', matchPoint: 'Match point · {name}',
-      servesFirst: 'Coin toss: {name} serves', serving: 'Serving: {name}',
+      point: 'Point {name}!', pointYou: 'Your point!', dead: 'DEAD END!', deadYou: 'Dead end! There is no way out of {w}.',
+      deadThem: 'There was no way out of {w}.', timeUp: 'Out of time.',
+      could: 'You could have played:', couldRare: 'The dictionary also has:', none: 'There was no way out of that word.',
+      matchPoint: 'Match point · {name}', firstPick: 'Coin toss: {name} starts', starting: 'Starting: {name}',
       winTitle: '{name} wins!', youWin: 'You win!', botWins: 'The bot wins',
-      score: 'Score', games: 'Games',
-      statLongest: 'Longest rally: <b>{n} words</b>', statSmash: 'Smashes: <b>{a}</b>', statWords: 'Words sent: <b>{a}</b>',
-      record: 'Against the bot: {w} won, {l} lost', recordRally: 'Longest rally: {n} words',
-      how1: '<b>Serve:</b> pick one of three words and send it over.',
-      how2: '<b>Return:</b> change <b>one letter</b> of the word that comes to you. Tap the letter, then the new letter.',
-      how3: '<b>Time</b> gets a little shorter every shot; miss it and you lose the point. A word can be played once per point.',
-      how4: '<b>Smash:</b> send a word that has no way back and the point is yours at once.',
-      how5: '<b>Scoring</b> as in tennis: 15, 30, 40, game. At 40-40 the next point wins the game.',
-      demo: ['cold', 'cord', 'word'],
+      statLongest: 'Longest chain: <b>{n} words</b>', statDead: 'Dead ends: <b>{a}</b>', statWords: 'Words sent: <b>{a}</b>',
+      record: 'Against the bot: {w} won, {l} lost', recordChain: 'Longest chain: {n} words',
+      how1: '<b>Start:</b> pick one of three words and send it over.',
+      how2: '<b>Answer:</b> change <b>one letter</b> of the word that comes to you. Tap the letter, then the new letter.',
+      how3: '<b>Time</b> gets a little shorter with every word; miss it and you lose the point. A word can be played once per point.',
+      how4: '<b>Dead end:</b> send a word with no way out and the point is yours at once.',
+      howEkli: '',
+      howWin: 'First to <b>{n} points</b> wins. The starting player changes every point.',
+      demo: ['cold', 'cord', 'word'], logo: ['cold', 'cord'],
     },
   };
   const t = (k, vars) => {
@@ -85,13 +86,13 @@
   // Turkish first, whatever the device language. English only once someone taps it
   // (langPicked); older saves picked 'en' from navigator.language, so they reset.
   const S = Object.assign({
-    lang: 'tr', langPicked: false,
+    lang: 'tr', langPicked: false, ekli: true,
     mode: 'duo', level: 'orta', len: 4, pace: 'normal', format: 1,
     names: ['', ''], bonus: [0, 0], sound: true, seenHow: false,
   }, readJSON(DEVICE_KEY) || {});
   if (!S.langPicked || !T[S.lang]) S.lang = 'tr';
   if (![3, 4].includes(+S.len)) S.len = 4;
-  S.len = +S.len; S.format = +S.format === 2 ? 2 : 1;
+  S.len = +S.len; S.format = +S.format === 2 ? 2 : 1; S.ekli = S.ekli !== false;
   function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function saveDevice() { try { localStorage.setItem(DEVICE_KEY, JSON.stringify(S)); } catch (e) {} }
   function loadSave() {
@@ -99,9 +100,12 @@
     d.v = 1;
     d.bot = d.bot || {};
     for (const l of ['kolay', 'orta', 'zor']) d.bot[l] = Object.assign({ w: 0, l: 0 }, d.bot[l] || {});
-    d.duo = d.duo || 0; d.longest = d.longest || 0; d.longestWords = d.longestWords || []; d.smashes = d.smashes || 0;
+    d.duo = d.duo || 0; d.longest = d.longest || 0; d.longestWords = d.longestWords || [];
+    d.deadEnds = d.deadEnds || d.smashes || 0;   // "smashes" in the first version
+    delete d.smashes;
     return d;
   }
+  const ekliOn = () => S.lang === 'tr' && S.ekli;
   Sfx.setEnabled(S.sound);
 
   // ---------- Lab ----------
@@ -119,30 +123,46 @@
 
   // ---------- lexicons ----------
   const lexCache = {};
-  const lexFor = (lang, len) => lexCache[lang + len] || (lexCache[lang + len] = new KT.Lexicon(WORDS, lang, len));
+  const lexFor = (lang, len, ekli) => {
+    const k = lang + len + (ekli ? 'x' : '');
+    return lexCache[k] || (lexCache[k] = new KT.Lexicon(WORDS, lang, len, { ekli }));
+  };
 
   // ---------- menu ----------
+  function renderLogo() {
+    const [a, b] = t('logo'), at = [...a].findIndex((c, i) => c !== b[i]);
+    $('#logo').innerHTML = [...a].map((c, i) => i === at
+      ? `<span class="lt swap"><b>${esc(U(c))}</b><b>${esc(U(b[i]))}</b></span>`
+      : `<span class="lt">${esc(U(c))}</span>`).join('');
+  }
   function applyTexts() {
     document.documentElement.lang = S.lang;
     document.title = t('title');
     $$('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+    $('[data-set=format] [data-v="1"]').textContent = t('short', { n: KT.TARGET[1] });
+    $('[data-set=format] [data-v="2"]').textContent = t('long', { n: KT.TARGET[2] });
     $('#name1').placeholder = t('p1');
     $('#name2').placeholder = t('p2');
     $('#soundBtn').textContent = S.sound ? t('soundOn') : t('soundOff');
+    renderLogo();
     const save = loadSave();
     const w = save.bot.kolay.w + save.bot.orta.w + save.bot.zor.w, l = save.bot.kolay.l + save.bot.orta.l + save.bot.zor.l;
     const parts = [];
     if (w + l) parts.push(t('record', { w, l }));
-    if (save.longest) parts.push(t('recordRally', { n: save.longest }));
+    if (save.longest) parts.push(t('recordChain', { n: save.longest }));
     $('#record').textContent = parts.join(' · ');
-    $('#howList').innerHTML = ['how1', 'how2', 'how3', 'how4', 'how5'].map(k => '<li>' + t(k) + '</li>').join('');
+    const how = ['how1', 'how2', 'how3', 'how4'].map(k => t(k));
+    if (ekliOn()) how.push(t('howEkli'));
+    how.push(t('howWin', { n: KT.TARGET[S.format] }));
+    $('#howList').innerHTML = how.map(h => '<li>' + h + '</li>').join('');
   }
   function syncMenu() {
     $$('[data-lang]').forEach(b => b.classList.toggle('on', b.dataset.lang === S.lang));
     $$('.mode').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
     $('#setupBot').classList.toggle('on', S.mode === 'bot');
     $('#setupDuo').classList.toggle('on', S.mode === 'duo');
-    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
+    $('#ekliOpt').hidden = S.lang !== 'tr';
+    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), ekli: S.ekli ? '1' : '0', bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
     $$('[data-set]').forEach(g => $$('.chip', g).forEach(c => c.classList.toggle('on', c.dataset.v === val[g.dataset.set])));
     $('#name1').value = S.names[0] || '';
     $('#name2').value = S.names[1] || '';
@@ -156,6 +176,7 @@
     else if (k === 'len') S.len = +v;
     else if (k === 'pace') S.pace = v;
     else if (k === 'format') S.format = +v;
+    else if (k === 'ekli') S.ekli = v === '1';
     else if (k === 'bonus0') S.bonus[0] = +v;
     else if (k === 'bonus1') S.bonus[1] = +v;
     saveDevice(); syncMenu(); Sfx.tap();
@@ -200,21 +221,22 @@
   const isBot = i => !!(G && G.bots[i]);
   const panelOf = i => G.panels[i];
 
-  function startMatch(firstServer) {
+  function startMatch(firstStarter) {
     stopGame();
-    const lex = lexFor(S.lang, S.len);
+    const ekli = ekliOn();
+    const lex = lexFor(S.lang, S.len, ekli);
     const mode = S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
-    const fs = firstServer !== undefined ? firstServer : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
-    const m = new KT.Match({ lex, players, gamesToWin: S.format, pace: S.pace, firstServer: fs });
+    const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
+    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs });
     G = {
-      m, lex, mode, firstServer: fs,
+      m, lex, mode, firstStarter: fs,
       bots: [null, mode === 'bot' ? new KT.Bot(S.level) : null],
       panels: [$('#panel0'), $('#panel1')],
       sel: [-1, -1], typed: '',
       clock: { owner: -1, total: 1, left: 0, elapsed: 0, running: false, onEnd: null },
       plan: null, waits: [], paused: false, speed: 1, lastTs: performance.now(), raf: 0, lastTick: -1,
-      ballAt: null, firstShot: [true, true], started: Date.now(), pointBusy: false,
+      firstShot: [true, true], started: Date.now(), pointBusy: false,
     };
     m.players[0].name = playerName(0);
     m.players[1].name = playerName(1);
@@ -228,12 +250,12 @@
     renderScore();
     layout();
     G.raf = requestAnimationFrame(frame);
-    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${S.format === 1 ? 'tek oyun' : "3'te 2"}`);
+    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}${S.lang === 'tr' ? (ekli ? ', ekliler geçer' : ', yalnız sözlük') : ''}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
     if (mode === 'duo') {
-      banner(t('servesFirst', { name: playerName(fs) }));
-      wait(1.6, () => { hideBanner(); enterServe(); });
+      banner(t('firstPick', { name: playerName(fs) }));
+      wait(1.6, () => { hideBanner(); enterStart(); });
     } else {
-      enterServe();
+      enterStart();
     }
   }
 
@@ -248,10 +270,10 @@
     const p = panelOf(i);
     p.className = 'panel ' + (i === 0 ? 'bottom' : 'top') + ' ' + (isBot(i) ? 'cbot' : 'c' + i);
     if (isBot(i)) {
-      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="games"></span><span class="pscore"></span></div>
+      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="tiles small"></div><div class="clock idle"><i></i></div>`;
     } else {
-      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="games"></span><span class="pscore"></span></div>
+      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="msg"></div><div class="tiles"></div><div class="clock idle"><i></i></div><div class="kbd off"></div>`;
       const kbd = $('.kbd', p);
       kbd.innerHTML = KT.KEYS[S.lang].map(row => '<div class="krow">' + [...row].map(c =>
@@ -266,9 +288,9 @@
     for (const i of [0, 1]) {
       const p = panelOf(i);
       const sc = $('.pscore', p);
-      sc.textContent = m.scoreText(i) + '–' + m.scoreText(1 - i);
+      sc.textContent = m.points[i] + '–' + m.points[1 - i];
       sc.classList.toggle('hot', !!m.pointFor(i));
-      $('.games', p).innerHTML = Array.from({ length: m.gamesToWin }, (_, k) => `<i class="${k < m.games[i] ? 'won' : ''}"></i>`).join('');
+      $('.dots', p).innerHTML = Array.from({ length: m.target }, (_, k) => `<i class="${k < m.points[i] ? 'won' : ''}"></i>`).join('');
     }
   }
 
@@ -278,6 +300,10 @@
     el.className = 'msg' + (cls ? ' ' + cls : '');
     el.innerHTML = html;
   }
+
+  const sentText = i => (G.mode === 'bot' && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
+  // "ALDI (almak)": the dictionary word an inflected form comes from, when it is clear.
+  const rootTag = w => { const r = G.lex.root(w); return r ? ` <span class="root">(${esc(r)})</span>` : ''; };
 
   function renderTiles(i, word, opts) {
     const o = opts || {};
@@ -297,14 +323,14 @@
     }
   }
 
-  function renderServeCards(i, words) {
+  function renderStartCards(i, words) {
     const el = $('.tiles', panelOf(i));
     el.className = 'tiles';
-    el.innerHTML = '<div class="serve-cards">' + words.map(w => `<button type="button" class="serve-card" data-w="${esc(w)}">${esc(U(w))}</button>`).join('') + '</div>';
-    $$('.serve-card', el).forEach(b => b.addEventListener('click', () => {
-      if (G.m.phase !== 'serve' || G.m.server !== i || G.pointBusy) return;
+    el.innerHTML = '<div class="start-cards">' + words.map(w => `<button type="button" class="start-card" data-w="${esc(w)}">${esc(U(w))}</button>`).join('') + '</div>';
+    $$('.start-card', el).forEach(b => b.addEventListener('click', () => {
+      if (G.m.phase !== 'start' || G.m.starter !== i || G.pointBusy) return;
       b.classList.add('pick');
-      doServe(b.dataset.w);
+      doStart(b.dataset.w);
     }));
   }
 
@@ -313,20 +339,16 @@
     $('.kbd', panelOf(i)).classList.toggle('off', !on);
   }
 
-  function courtInfo() {
+  // Middle strip: who starts / match point, or the last words of the chain.
+  function boardInfo() {
     const m = G.m, pt = m.point;
     let txt = '';
-    if (m.phase === 'serve') {
-      if (m.goldenPoint()) txt = t('golden');
-      else {
-        const gp = [0, 1].find(i => m.pointFor(i));
-        if (gp !== undefined) txt = t(m.pointFor(gp) === 'match' ? 'matchPoint' : 'gamePoint', { name: playerName(gp) });
-        else txt = t('serving', { name: playerName(m.server) });
-      }
-      txt = esc(txt);
+    if (m.phase === 'start') {
+      const mp = [0, 1].find(i => m.pointFor(i));
+      txt = esc(mp !== undefined ? t('matchPoint', { name: playerName(mp) }) : t('starting', { name: playerName(m.starter) }));
     } else if (pt && pt.shots.length) {
       const words = pt.shots.slice(-3).map(s => s.word);
-      txt = '<span class="chain">' + words.map((w, k) => `<span class="${k === words.length - 1 ? 'last' : ''}">${esc(U(w))}</span>`).join('') +
+      txt = '<span class="chain">' + words.map((w, k) => `<span class="${k === words.length - 1 ? 'last' : ''}">${esc(U(w))}${k === words.length - 1 ? rootTag(w) : ''}</span>`).join('') +
         `</span> · ${pt.shots.length}`;
     }
     $('#info0').innerHTML = txt;
@@ -379,84 +401,95 @@
     if (G) G.raf = requestAnimationFrame(frame);
   }
 
-  // ---------- ball ----------
-  function courtPoint(side) { // side 0 = bottom (player 0), 1 = top
-    const r = $('#court').getBoundingClientRect();
-    const x = r.width * (0.3 + Math.random() * 0.4);
-    const y = side === 0 ? r.height - 22 : 22;
-    return { x, y };
+  // ---------- the word crossing the board ----------
+  function boardPoint(side) { // side 0 = bottom (player 0), 1 = top
+    const r = $('#board').getBoundingClientRect();
+    return { x: r.width / 2, y: side === 0 ? r.height - 24 : 24 };
   }
-  function flyBall(toSide, done, opts) {
+  // A player's facing: the top player sits across the table in duo mode.
+  const facing = side => (G.mode === 'duo' && side === 1 ? 180 : 0);
+  function flyWord(fromSide, word, done, opts) {
     const o = opts || {};
-    const ball = $('#ball');
-    const from = G.ballAt || courtPoint(1 - toSide);
-    const to = o.out ? { x: from.x + (Math.random() - 0.5) * 80, y: toSide === 0 ? $('#court').clientHeight + 40 : -40 } : courtPoint(toSide);
-    const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-    const dur = (o.fast ? 340 : 520) / G.speed;
-    ball.style.opacity = 1;
-    const anim = ball.animate([
-      { transform: `translate(${from.x}px, ${from.y}px) scale(1) rotate(0deg)` },
-      { transform: `translate(${mid.x}px, ${mid.y}px) scale(${o.fast ? 1.25 : 1.55}) rotate(180deg)` },
-      { transform: `translate(${to.x}px, ${to.y}px) scale(1) rotate(360deg)` },
-    ], { duration: dur, easing: 'cubic-bezier(.35,.1,.45,1)', fill: 'forwards' });
-    G.ballAt = o.out ? null : to;
+    const el = $('#flyer');
+    el.innerHTML = [...word].map(c => `<span>${esc(U(c))}</span>`).join('');
+    el.classList.toggle('dead', !!o.dead);
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const at = (p, rot, s) => `translate(${p.x - w / 2}px, ${p.y - h / 2}px) rotate(${rot}deg) scale(${s})`;
+    const from = boardPoint(fromSide);
+    const dur = (o.fast ? 380 : 560) / G.speed;
+    el.style.opacity = 1;
+    let frames;
+    if (o.out) {   // time ran out: the word stays with the player who could not answer, and fades
+      const away = { x: from.x, y: from.y + (fromSide === 0 ? 30 : -30) };
+      frames = [{ transform: at(from, facing(fromSide), 1), opacity: 1 }, { transform: at(away, facing(fromSide), 0.8), opacity: 0 }];
+    } else {
+      const to = boardPoint(1 - fromSide), mid = { x: from.x, y: (from.y + to.y) / 2 };
+      const r0 = facing(fromSide), r1 = facing(1 - fromSide);
+      frames = [
+        { transform: at(from, r0, 0.85), opacity: 1 },
+        { transform: at(mid, (r0 + r1) / 2, o.dead ? 1.35 : 1.15), opacity: 1 },
+        { transform: at(to, r1, 0.95), opacity: 1 },
+      ];
+    }
+    const anim = el.animate(frames, { duration: dur, easing: 'cubic-bezier(.3,.1,.3,1)', fill: 'forwards' });
     anim.onfinish = () => {
       if (!G) return;
-      if (o.out) ball.style.opacity = 0; else Sfx.bounce();
+      el.style.opacity = 0;
+      anim.cancel();
+      if (!o.out) Sfx.land();
       if (done) done();
     };
   }
-  function hideBall() { $('#ball').style.opacity = 0; G.ballAt = null; }
+  function hideFlyer() { $('#flyer').style.opacity = 0; }
 
   function banner(text, cls) {
     const b = $('#banner');
     b.innerHTML = `<div class="b b1 ${cls || ''}">${esc(text)}</div><div class="b b0 ${cls || ''}">${esc(text)}</div>`;
     void b.offsetWidth;
     b.classList.add('on');
-    $('#court').classList.add('banner-on');
+    $('#board').classList.add('banner-on');
   }
-  function hideBanner() { $('#banner').classList.remove('on'); $('#court').classList.remove('banner-on'); }
+  function hideBanner() { $('#banner').classList.remove('on'); $('#board').classList.remove('banner-on'); }
 
-  // ---------- serve ----------
-  function enterServe() {
-    const m = G.m, s = m.server, r = 1 - s;
+  // ---------- starting word ----------
+  function enterStart() {
+    const m = G.m, s = m.starter, r = 1 - s;
     G.pointBusy = false;
     G.sel = [-1, -1]; G.typed = '';
-    hideBanner(); hideBall();
-    renderScore(); courtInfo();
+    hideBanner(); hideFlyer();
+    renderScore(); boardInfo();
     for (const i of [0, 1]) setKeyboard(i, false);
     renderTiles(r, null);
-    setMsg(r, esc(t('serveWait', { name: playerName(s) })));
+    setMsg(r, esc(t('startWait', { name: playerName(s) })));
     if (isBot(s)) {
       renderTiles(s, null);
       $('.bot-think', panelOf(s)).hidden = false;
-      const choice = G.bots[s].serve(m);
-      startClock(s, KT.SERVE_TIME, () => doServe(choice.word), false);
-      G.plan = { at: choice.delay, fn: () => doServe(choice.word) };
+      const choice = G.bots[s].open(m);
+      startClock(s, KT.START_TIME, () => doStart(choice.word), false);
+      G.plan = { at: choice.delay, fn: () => doStart(choice.word) };
     } else {
-      setMsg(s, esc(t('serveYou')), 'turn');
-      renderServeCards(s, m.point.serveOptions);
-      startClock(s, KT.SERVE_TIME, () => doServe(m.point.serveOptions[Math.floor(Math.random() * 3)]));
+      setMsg(s, esc(t('startYou')), 'turn');
+      renderStartCards(s, m.point.options);
+      startClock(s, KT.START_TIME, () => doStart(m.point.options[Math.floor(Math.random() * 3)]));
     }
   }
 
-  function doServe(word) {
+  function doStart(word) {
     const m = G.m;
-    if (m.phase !== 'serve' || G.pointBusy) return;
-    const s = m.server;
-    if (!m.serve(word).ok) return;
+    if (m.phase !== 'start' || G.pointBusy) return;
+    const s = m.starter;
+    if (!m.start(word).ok) return;
     stopClock();
     G.pointBusy = true;
     if (isBot(s)) $('.bot-think', panelOf(s)).hidden = true;
     renderTiles(s, word, { wait: true });
-    setMsg(s, esc(t('sentBy', { name: playerName(s) })) + ' <b>' + esc(U(word)) + '</b>');
-    Sfx.serve();
-    courtInfo();
-    G.ballAt = courtPoint(s);
-    flyBall(1 - s, () => { G.pointBusy = false; enterTurn(); });
+    setMsg(s, esc(sentText(s)) + ' <b>' + esc(U(word)) + '</b>');
+    Sfx.start();
+    boardInfo();
+    flyWord(s, word, () => { G.pointBusy = false; enterTurn(); });
   }
 
-  // ---------- rally ----------
+  // ---------- answers ----------
   function enterTurn() {
     const m = G.m;
     if (m.phase !== 'rally') return;
@@ -515,7 +548,8 @@
     if (!c.ok) {
       if (c.reason === 'used' || c.reason === 'unknown') {
         Sfx.err();
-        setMsg(i, esc(t(c.reason === 'used' ? 'errUsed' : 'errUnknown', { w: U(word) })), 'err');
+        const key = c.reason === 'used' ? 'errUsed' : 'errUnknown';
+        setMsg(i, esc(t(key, { w: U(word) })), 'err');
         const tiles = $('.tiles', panelOf(i));
         const tile = tiles.children[at];
         if (tile) {
@@ -542,27 +576,27 @@
     const at = G.lex.diff(before, word);
     renderTiles(p, word, { mark: at, wait: true });
     setKeyboard(p, false);
-    setMsg(p, esc(t('sentBy', { name: playerName(p) })) + ' <b>' + esc(U(word)) + '</b>');
-    courtInfo();
-    if (r.how === 'smash') {
-      Sfx.smash();
-      flyBall(1 - p, () => pointOver(r), { fast: true });
+    setMsg(p, esc(sentText(p)) + ' <b>' + esc(U(word)) + '</b>' + rootTag(word));
+    boardInfo();
+    if (r.how === 'dead') {
+      Sfx.deadEnd();
+      flyWord(p, word, () => pointOver(r), { fast: true, dead: true });
     } else {
-      Sfx.hit(1);
-      flyBall(1 - p, () => { G.pointBusy = false; enterTurn(); });
+      Sfx.send();
+      flyWord(p, word, () => { G.pointBusy = false; enterTurn(); });
     }
   }
 
   function onTimeout() {
     const m = G.m;
     if (m.phase !== 'rally' || G.pointBusy) return;
-    const loser = m.point.turn;
+    const loser = m.point.turn, word = m.point.word;
     const r = m.timeout();
     if (!r) return;
     G.pointBusy = true;
     setKeyboard(loser, false);
-    Sfx.miss();
-    flyBall(loser, () => pointOver(r), { out: true });
+    Sfx.timeUp();
+    flyWord(loser, word, () => pointOver(r), { out: true });
   }
 
   function altsHtml(left) {
@@ -579,10 +613,10 @@
     stopClock();
     renderScore();
     for (const i of [0, 1]) setKeyboard(i, false);
-    if (r.how === 'smash') {
-      banner(t('smash'), 'smash');
-      setMsg(w, esc(t('smashYou', { w: U(r.word) })), 'turn');
-      setMsg(l, esc(t('smashThem', { w: U(r.word) })));
+    if (r.how === 'dead') {
+      banner(t('dead'), 'dead');
+      setMsg(w, esc(t('deadYou', { w: U(r.word) })), 'turn');
+      setMsg(l, esc(t('deadThem', { w: U(r.word) })));
     } else {
       banner(G.mode === 'bot' && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
       setMsg(w, esc(t('pointYou')), 'turn');
@@ -591,20 +625,15 @@
     }
     Sfx.point(G.mode === 'duo' || w === 0);
     if (r.matchOver) {
-      wait(2.4, () => { banner(t('game', { name: playerName(w) })); Sfx.match(); });
+      wait(2.4, () => { banner(G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) })); Sfx.win(); });
       wait(4.2, () => endMatch(r));
       return;
     }
-    if (r.gameOver) {
-      wait(2.4, () => { banner(t('game', { name: playerName(w) })); Sfx.game(); renderScore(); });
-      wait(4.4, () => { m.next(); enterServe(); });
-      return;
-    }
     const delay = r.how === 'time' && !isBot(l) ? 4.6 : 2.8;
-    G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterServe(); } };
+    G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterStart(); } };
     wait(delay, () => { if (G.skipTo) G.skipTo(); });
   }
-  $('#court').addEventListener('pointerdown', e => {
+  $('#board').addEventListener('pointerdown', e => {
     if (e.target.closest('#pauseBtn')) return;
     if (G && G.skipTo && G.m.phase === 'pointOver' && !G.paused) G.skipTo();
   });
@@ -614,7 +643,7 @@
     if (!G || G.paused || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Escape') { pause(); return; }
     const m = G.m;
-    if (m.phase === 'serve' && !isBot(m.server) && /^[1-3]$/.test(e.key)) { doServe(m.point.serveOptions[+e.key - 1]); return; }
+    if (m.phase === 'start' && !isBot(m.starter) && /^[1-3]$/.test(e.key)) { doStart(m.point.options[+e.key - 1]); return; }
     if (m.phase !== 'rally' || G.pointBusy) return;
     const p = m.point.turn;
     if (isBot(p)) return;
@@ -668,39 +697,40 @@
   }
 
   // ---------- end ----------
-  function endMatch(r) {
+  function endMatch() {
     const m = G.m, w = m.winner;
     stopClock();
     const save = loadSave();
     if (G.mode === 'bot') {
       if (w === 0) save.bot[S.level].w++; else save.bot[S.level].l++;
-      save.smashes += m.stats.smashes[0];
+      save.deadEnds += m.stats.deadEnds[0];
     } else {
       save.duo++;
-      save.smashes += m.stats.smashes[0] + m.stats.smashes[1];
+      save.deadEnds += m.stats.deadEnds[0] + m.stats.deadEnds[1];
     }
     if (m.stats.longest > save.longest) { save.longest = m.stats.longest; save.longestWords = m.stats.longestWords; }
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
-    const scoreLine = S.format === 1 ? `${r.gamePoints[0]}–${r.gamePoints[1]}` : `${m.games[0]}–${m.games[1]}`;
+    const scoreLine = `${m.points[0]}–${m.points[1]}`;
     const mins = Math.max(1, Math.round((Date.now() - G.started) / 60000));
     labNote(G.mode === 'bot'
-      ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun ralli ${m.stats.longest} · ${m.stats.smashes[0]} smaç · ${mins} dk`
-      : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun ralli ${m.stats.longest} · smaç ${m.stats.smashes[0]}–${m.stats.smashes[1]} · ${mins} dk`);
+      ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun zincir ${m.stats.longest} · ${m.stats.deadEnds[0]} çıkmaz · ${mins} dk`
+      : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
 
     const title = G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) });
+    $('#trophy').innerHTML = `<div class="tile gold">${esc(U([...playerName(w)][0] || '★'))}</div>`;
     $('#endTitle').textContent = title;
     $('#endScore').textContent = `${playerName(0)} ${scoreLine} ${playerName(1)}`;
     const items = [];
     if (m.stats.longestWords.length) items.push(t('statLongest', { n: m.stats.longest }) + '<br>' + m.stats.longestWords.map(x => esc(U(x))).join(' → '));
-    items.push(t('statSmash', { a: G.mode === 'bot' ? m.stats.smashes[0] + '–' + m.stats.smashes[1] : `${esc(playerName(0))} ${m.stats.smashes[0]} · ${esc(playerName(1))} ${m.stats.smashes[1]}` }));
+    items.push(t('statDead', { a: G.mode === 'bot' ? m.stats.deadEnds[0] + '–' + m.stats.deadEnds[1] : `${esc(playerName(0))} ${m.stats.deadEnds[0]} · ${esc(playerName(1))} ${m.stats.deadEnds[1]}` }));
     if (G.mode === 'duo') items.push(t('statWords', { a: `${esc(playerName(0))} ${m.stats.words[0]} · ${esc(playerName(1))} ${m.stats.words[1]}` }));
     $('#endStats').innerHTML = items.map(x => '<li>' + x + '</li>').join('');
     const sheet = $('#endSheet');
     sheet.classList.toggle('duo', G.mode === 'duo');
-    $('#endMirror').innerHTML = `<h2>${esc(title)}</h2><p class="end-score">${esc(playerName(1))} ${scoreLine.split('–').reverse().join('–')} ${esc(playerName(0))}</p>`;
+    $('#endMirror').innerHTML = `<h2>${esc(title)}</h2><p class="end-score">${esc(playerName(1))} ${m.points[1]}–${m.points[0]} ${esc(playerName(0))}</p>`;
     sheet.hidden = false;
   }
-  $('#againBtn').addEventListener('click', () => { const fs = G ? 1 - G.firstServer : 0; startMatch(S.mode === 'bot' ? 0 : fs); });
+  $('#againBtn').addEventListener('click', () => { const fs = G ? 1 - G.firstStarter : 0; startMatch(S.mode === 'bot' ? 0 : fs); });
   $('#menuBtn').addEventListener('click', toMenu);
 
   // ---------- layout ----------

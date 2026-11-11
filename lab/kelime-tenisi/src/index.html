@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#c4633a">
+<meta name="theme-color" content="#2b3344">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Kelime Tenisi</title>
+<title>Kelime Düellosu</title>
 <!--LAB_HEAD-->
 <!--ICON-->
 <style>
@@ -20,8 +20,8 @@
   <section id="menu" class="screen on">
     <div class="menu-wrap">
       <header class="brand">
-        <div class="logo" aria-hidden="true"><span class="ball big"></span></div>
-        <h1 data-t="title">Kelime Tenisi</h1>
+        <div class="logo" id="logo" aria-hidden="true"></div>
+        <h1 data-t="title">Kelime Düellosu</h1>
         <p class="tagline" data-t="tagline">Tek harfini değiştir, geri gönder.</p>
       </header>
 
@@ -72,6 +72,14 @@
             <button type="button" class="chip" data-v="4" data-t="len4">4 harf</button>
           </div>
         </div>
+        <div class="opt" id="ekliOpt">
+          <div class="row-label" data-t="ekli">Ekli kelimeler</div>
+          <div class="chips" data-set="ekli">
+            <button type="button" class="chip" data-v="1" data-t="ekliOn">Geçer</button>
+            <button type="button" class="chip" data-v="0" data-t="ekliOff">Geçmez</button>
+          </div>
+          <div class="opt-hint" data-t="ekliHint">EVDE, ALDI, BANA gibi</div>
+        </div>
         <div class="opt">
           <div class="row-label" data-t="pace">Süre</div>
           <div class="chips" data-set="pace">
@@ -83,8 +91,8 @@
         <div class="opt">
           <div class="row-label" data-t="format">Maç</div>
           <div class="chips" data-set="format">
-            <button type="button" class="chip" data-v="1" data-t="short">Kısa · 1 oyun</button>
-            <button type="button" class="chip" data-v="2" data-t="long">Uzun · 3'te 2</button>
+            <button type="button" class="chip" data-v="1">Kısa · 5 sayı</button>
+            <button type="button" class="chip" data-v="2">Uzun · 9 sayı</button>
           </div>
         </div>
       </div>
@@ -101,12 +109,11 @@
 
   <section id="game" class="screen">
     <div class="panel top" id="panel1"></div>
-    <div class="court" id="court">
-      <div class="court-lines" aria-hidden="true"></div>
-      <div class="net" aria-hidden="true"></div>
-      <div class="court-info top-info" id="info1"></div>
-      <div class="court-info bot-info" id="info0"></div>
-      <div class="ball" id="ball" aria-hidden="true"></div>
+    <div class="board" id="board">
+      <div class="board-line" aria-hidden="true"></div>
+      <div class="board-info top-info" id="info1"></div>
+      <div class="board-info bot-info" id="info0"></div>
+      <div class="flyer" id="flyer" aria-hidden="true"></div>
       <div class="banner" id="banner"></div>
       <button type="button" class="pause" id="pauseBtn" aria-label="Mola"><span></span><span></span></button>
     </div>
@@ -124,7 +131,7 @@
 
   <div class="sheet" id="endSheet" hidden>
     <div class="card end">
-      <div class="trophy" aria-hidden="true"><span class="ball big"></span></div>
+      <div class="trophy" id="trophy" aria-hidden="true"></div>
       <h2 id="endTitle"></h2>
       <p class="end-score" id="endScore"></p>
       <ul class="end-stats" id="endStats"></ul>

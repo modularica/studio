@@ -1,4 +1,4 @@
-// Kelime Tenisi: kaynakları tek HTML dosyasına derler (yazı tipi Nunito dosyaya gömülü, dış bağlantı yok).
+// Kelime Düellosu (lab/kelime-tenisi): kaynakları tek HTML dosyasına derler (yazı tipi Nunito dosyaya gömülü, dış bağlantı yok).
 // Fredoka değil: Fredoka'da ğ, ş, İ yok.
 //   node lab/kelime-tenisi/src/build.js --lab      -> lab/kelime-tenisi/index.html (site: hesap satırları + paylaşım etiketleri)
 //   node lab/kelime-tenisi/src/build.js <çıktı>    -> hesapsız tek başına kopya
@@ -24,10 +24,10 @@ for (const w of [500, 700, 800]) {
   }
 }
 
-const DESC = 'Kelime merdiveni, tenis gibi: gelen kelimenin tek harfini değiştirip geri gönder. Süresinde dönemeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe ve İngilizce.';
+const DESC = 'Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe (ekli kelimeler de geçer) ve İngilizce.';
 const LAB_HEAD = `<meta name="description" content="${DESC}">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Kelime Tenisi">
+<meta property="og:title" content="Kelime Düellosu">
 <meta property="og:description" content="${DESC}">
 <meta property="og:image" content="https://uzigames.com/lab/kelime-tenisi/cover.png">
 <meta property="og:image:width" content="1200">

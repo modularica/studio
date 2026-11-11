@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#c4633a">
+<meta name="theme-color" content="#2b3344">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Kelime Tenisi</title>
-<meta name="description" content="Kelime merdiveni, tenis gibi: gelen kelimenin tek harfini değiştirip geri gönder. Süresinde dönemeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe ve İngilizce.">
+<title>Kelime Düellosu</title>
+<meta name="description" content="Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe (ekli kelimeler de geçer) ve İngilizce.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Kelime Tenisi">
-<meta property="og:description" content="Kelime merdiveni, tenis gibi: gelen kelimenin tek harfini değiştirip geri gönder. Süresinde dönemeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe ve İngilizce.">
+<meta property="og:title" content="Kelime Düellosu">
+<meta property="og:description" content="Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe (ekli kelimeler de geçer) ve İngilizce.">
 <meta property="og:image" content="https://uzigames.com/lab/kelime-tenisi/cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -32,10 +32,9 @@
   --muted: #6c707a;
   --paper: #f6f0e4;
   --cream: #fffaf0;
-  --clay: #c4633a;
-  --clay2: #b2552f;
-  --line: rgba(255, 246, 232, .82);
-  --ballc: #d5ee3e;
+  --accent: #c4633a;
+  --accent2: #b2552f;
+  --board: #2b3344;
   --p0: #2563eb;
   --p1: #d63a78;
   --bad: #d64040;
@@ -52,29 +51,19 @@ input { font: inherit; }
 .screen { position: absolute; inset: 0; display: none; }
 .screen.on { display: flex; }
 
-/* ---------- ball ---------- */
-.ball {
-  width: 34px; height: 34px; border-radius: 50%; display: inline-block; position: relative;
-  background: radial-gradient(circle at 35% 30%, #f0fb9b 0 18%, var(--ballc) 46%, #b6cf22 100%);
-  box-shadow: 0 2px 4px rgba(0,0,0,.18);
-}
-.ball::before, .ball::after {
-  content: ''; position: absolute; border: 2px solid rgba(255,255,255,.92); border-radius: 50%;
-  width: 70%; height: 70%; top: 15%;
-}
-.ball::before { left: -38%; border-left-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
-.ball::after { right: -38%; border-right-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
-.ball.big { width: 64px; height: 64px; }
-.ball.big::before, .ball.big::after { border-width: 3px; }
+/* ---------- logo: a word with one letter changing ---------- */
+.lt { width: 42px; height: 48px; border-radius: 9px; background: var(--cream); box-shadow: inset 0 0 0 2px #eadfcb, 0 4px 0 #dccfb8; display: grid; place-items: center; font-size: 27px; font-weight: 800; color: var(--ink); overflow: hidden; }
+.lt.swap b { grid-area: 1 / 1; font-weight: 800; animation: swapOut 3.2s ease-in-out infinite; }
+.lt.swap b + b { color: var(--p1); animation-name: swapIn; }
+@keyframes swapOut { 0%, 42% { transform: none; opacity: 1; } 50%, 92% { transform: translateY(-110%); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes swapIn { 0%, 42% { transform: translateY(110%); opacity: 0; } 50%, 92% { transform: none; opacity: 1; } 100% { transform: translateY(110%); opacity: 0; } }
 
 /* ---------- menu ---------- */
 #menu { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .menu-wrap { margin: auto; width: 100%; max-width: 470px; padding: calc(18px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
 .brand { text-align: center; padding-top: 6px; }
-.brand .logo { height: 72px; display: flex; align-items: center; justify-content: center; }
-.brand .logo .ball { animation: bob 2.4s ease-in-out infinite; }
-@keyframes bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(40deg); } }
-h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; color: var(--clay2); }
+.brand .logo { height: 64px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; color: var(--accent2); }
 .tagline { margin: 2px 0 0; color: var(--muted); font-size: 17px; }
 .langs, .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .chip { padding: 9px 14px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 2px #e6dccb; font-size: 16px; font-weight: 500; color: var(--ink); transition: background .15s, box-shadow .15s, color .15s; }
@@ -83,7 +72,7 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mode { background: #fff; border-radius: 18px; padding: 14px 10px 12px; box-shadow: inset 0 0 0 2px #e6dccb, 0 3px 0 #e2d6c2; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; transition: transform .12s, box-shadow .15s; }
 .mode:active { transform: translateY(2px); }
-.mode.on { box-shadow: inset 0 0 0 3px var(--clay), 0 3px 0 var(--clay2); }
+.mode.on { box-shadow: inset 0 0 0 3px var(--accent), 0 3px 0 var(--accent2); }
 .mode-t { font-size: 19px; font-weight: 700; }
 .mode-s { font-size: 13.5px; color: var(--muted); line-height: 1.2; }
 .mode-ico { width: 56px; height: 40px; position: relative; display: block; }
@@ -104,11 +93,13 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .bonus-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
 .opts { display: flex; flex-direction: column; gap: 10px; }
 .opt { display: flex; flex-direction: column; gap: 6px; }
-.primary { background: var(--clay); color: #fff; font-size: 22px; font-weight: 700; padding: 15px 20px; border-radius: 16px; box-shadow: 0 4px 0 var(--clay2); transition: transform .1s, box-shadow .1s; }
-.primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--clay2); }
+.opt[hidden] { display: none; }
+.opt-hint { text-align: center; font-size: 13px; color: var(--muted); margin-top: -2px; }
+.primary { background: var(--accent); color: #fff; font-size: 22px; font-weight: 700; padding: 15px 20px; border-radius: 16px; box-shadow: 0 4px 0 var(--accent2); transition: transform .1s, box-shadow .1s; }
+.primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent2); }
 .secondary { background: #fff; color: var(--ink); font-size: 18px; padding: 12px 18px; border-radius: 14px; box-shadow: inset 0 0 0 2px #e6dccb; }
 .menu-foot { display: flex; justify-content: space-between; }
-.link { color: var(--clay2); font-size: 16px; padding: 6px 4px; text-decoration: underline; text-underline-offset: 3px; }
+.link { color: var(--accent2); font-size: 16px; padding: 6px 4px; text-decoration: underline; text-underline-offset: 3px; }
 .record { text-align: center; color: var(--muted); font-size: 14px; margin: 0; min-height: 1em; }
 
 /* ---------- game layout ---------- */
@@ -126,9 +117,9 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .phead { width: 100%; max-width: 640px; display: flex; align-items: center; gap: 8px; }
 .pname { font-size: 18px; font-weight: 700; color: var(--pc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pname::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--pc); margin-right: 6px; vertical-align: 1px; }
-.games { display: flex; gap: 4px; }
-.games i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--pc); display: block; }
-.games i.won { background: var(--pc); }
+.dots { display: flex; gap: 3px; flex-shrink: 0; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--pc); display: block; }
+.dots i.won { background: var(--pc); }
 .pscore { margin-left: auto; font-size: 26px; font-weight: 800; min-width: 2.3ch; text-align: right; color: var(--ink); }
 .pscore.hot { color: var(--gold); }
 .msg { flex-shrink: 0; margin-top: auto; min-height: 24px; font-size: 17px; color: var(--muted); text-align: center; line-height: 1.25; max-width: 600px; }
@@ -137,6 +128,7 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .msg b { color: var(--ink); font-weight: 700; }
 .msg .alt { display: inline-block; margin: 2px 3px; padding: 1px 7px; border-radius: 7px; background: #fff; color: var(--ink); font-weight: 700; box-shadow: inset 0 0 0 1.5px #e3d8c5; }
 .msg .alt.rare { color: var(--muted); font-weight: 500; }
+.msg .root { color: var(--muted); font-weight: 500; font-size: .9em; }
 
 /* tiles */
 .tiles { flex-shrink: 0; display: flex; gap: calc(var(--tw, 64px) * .12); align-items: center; justify-content: center; min-height: calc(var(--tw, 64px) * 1.14); }
@@ -154,9 +146,9 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 @keyframes land { from { transform: translateY(-14px) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(4px); } }
 .tiles.small { --tw: 34px; gap: 4px; min-height: 40px; }
-.serve-cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.serve-card { padding: 10px 14px; border-radius: 14px; background: var(--cream); box-shadow: inset 0 0 0 2px #eadfcb, 0 4px 0 #dccfb8; font-size: calc(var(--tw, 64px) * .42); font-weight: 800; letter-spacing: 2px; color: var(--ink); transition: transform .1s; }
-.serve-card:active, .serve-card.pick { transform: translateY(3px); box-shadow: inset 0 0 0 3px var(--pc), 0 1px 0 #dccfb8; color: var(--pc); }
+.start-cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.start-card { padding: 10px 14px; border-radius: 14px; background: var(--cream); box-shadow: inset 0 0 0 2px #eadfcb, 0 4px 0 #dccfb8; font-size: calc(var(--tw, 64px) * .42); font-weight: 800; letter-spacing: 2px; color: var(--ink); transition: transform .1s; }
+.start-card:active, .start-card.pick { transform: translateY(3px); box-shadow: inset 0 0 0 3px var(--pc), 0 1px 0 #dccfb8; color: var(--pc); }
 
 /* shot clock */
 .clock { flex-shrink: 0; margin-top: auto; width: min(100%, 520px); height: 9px; border-radius: 9px; background: rgba(31,38,51,.08); overflow: hidden; }
@@ -178,33 +170,30 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .bot-think i:nth-child(3) { animation-delay: .3s; }
 @keyframes think { 50% { opacity: 1; transform: translateY(-3px); } }
 
-/* ---------- court ---------- */
-.court { position: relative; flex: 0 0 auto; height: clamp(92px, 17vh, 170px); background: var(--clay); overflow: hidden; box-shadow: inset 0 6px 10px -6px rgba(0,0,0,.25), inset 0 -6px 10px -6px rgba(0,0,0,.25); }
-#game.bot .court { height: clamp(120px, 27vh, 260px); }
-.court-lines { position: absolute; inset: 10px 14%; border: 3px solid var(--line); border-radius: 2px; }
-.court-lines::before { content: ''; position: absolute; left: 12%; right: 12%; top: 0; bottom: 0; border-left: 3px solid var(--line); border-right: 3px solid var(--line); }
-.court-lines::after { content: ''; position: absolute; left: 50%; top: 22%; bottom: 22%; border-left: 3px solid var(--line); }
-.net { position: absolute; left: 6%; right: 6%; top: calc(50% - 4px); height: 8px; background: repeating-linear-gradient(90deg, rgba(31,38,51,.6) 0 2px, transparent 2px 7px), rgba(255,255,255,.18); border-top: 3px solid #fff; box-shadow: 0 3px 4px rgba(0,0,0,.18); }
-.net::before, .net::after { content: ''; position: absolute; top: -8px; width: 6px; height: 18px; background: #2d3340; border-radius: 2px; }
-.net::before { left: -6px; } .net::after { right: -6px; }
-.court .ball#ball { position: absolute; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; opacity: 0; will-change: transform; z-index: 2; }
-.court-info { position: absolute; left: 0; right: 0; text-align: center; font-size: 15px; color: rgba(255,250,240,.95); font-weight: 700; letter-spacing: .5px; pointer-events: none; z-index: 1; }
-.court-info { transition: opacity .2s; }
-#court.banner-on .court-info { opacity: 0; }
+/* ---------- board: the strip the word crosses ---------- */
+.board { position: relative; flex: 0 0 auto; height: clamp(92px, 17vh, 170px); background-color: var(--board); background-image: radial-gradient(rgba(255,255,255,.07) 1.2px, transparent 1.4px); background-size: 18px 18px; overflow: hidden; box-shadow: inset 0 6px 10px -6px rgba(0,0,0,.3), inset 0 -6px 10px -6px rgba(0,0,0,.3); }
+#game.bot .board { height: clamp(120px, 27vh, 260px); }
+.board-line { position: absolute; left: 7%; right: 7%; top: 50%; border-top: 2px dashed rgba(255,250,240,.22); }
+.flyer { position: absolute; left: 0; top: 0; display: flex; gap: 3px; opacity: 0; z-index: 2; pointer-events: none; will-change: transform; }
+.flyer span { width: 26px; height: 29px; border-radius: 6px; background: var(--cream); box-shadow: inset 0 0 0 1.5px #eadfcb, 0 2px 0 #c9bba1; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: var(--ink); }
+.flyer.dead span { background: var(--gold); box-shadow: 0 2px 0 #a8770c; color: #3a2a00; }
+.board-info { position: absolute; left: 0; right: 0; text-align: center; font-size: 15px; color: rgba(255,250,240,.95); font-weight: 700; letter-spacing: .5px; pointer-events: none; z-index: 1; transition: opacity .2s; }
+#board.banner-on .board-info { opacity: 0; }
 .bot-info { bottom: 8px; }
 .top-info { top: 8px; }
 #game.duo .top-info { transform: rotate(180deg); }
 #game.bot .top-info { display: none; }
 .chain { display: inline-flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
 .chain span { background: rgba(255,250,240,.2); padding: 1px 6px; border-radius: 6px; }
-.chain span.last { background: rgba(255,250,240,.92); color: var(--clay2); }
+.chain span.last { background: rgba(255,250,240,.92); color: var(--ink); }
+.chain .root { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0; }
 .banner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 3; }
 .banner .b { font-size: clamp(22px, 5.2vh, 40px); font-weight: 800; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.2); opacity: 0; transform: scale(.6); transition: opacity .2s, transform .35s cubic-bezier(.2,1.5,.4,1); white-space: nowrap; }
 .banner.on .b { opacity: 1; transform: scale(1); }
 #game.duo .banner .b1 { transform: rotate(180deg) scale(.6); }
 #game.duo .banner.on .b1 { transform: rotate(180deg) scale(1); }
 #game.bot .banner .b1 { display: none; }
-.banner .b.smash { color: var(--ballc); }
+.banner .b.dead { color: var(--gold); }
 .pause { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,250,240,.9); display: flex; align-items: center; justify-content: center; gap: 4px; z-index: 4; box-shadow: 0 2px 0 rgba(0,0,0,.15); }
 .pause span { width: 4px; height: 14px; background: var(--ink); border-radius: 2px; }
 
@@ -214,6 +203,8 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .card { width: 100%; max-width: 380px; background: var(--paper); border-radius: 22px; padding: 22px 18px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); text-align: center; max-height: calc(100% - 20px); overflow-y: auto; }
 .card h2 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
 .card.end .trophy { display: flex; justify-content: center; }
+.trophy .tile { --tw: 60px; }
+.tile.gold { background: var(--gold); box-shadow: 0 4px 0 #a8770c; color: #3a2a00; }
 .end-score { font-size: 20px; margin: 0; color: var(--muted); }
 .end-stats { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; text-align: left; }
 .end-stats li { background: #fff; border-radius: 12px; padding: 8px 12px; box-shadow: inset 0 0 0 1.5px #e9dfcf; }
@@ -226,7 +217,7 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 #endSheet.duo .card.mirror { order: 1; }
 .card.mirror h2 { font-size: 22px; }
 .how-list { text-align: left; margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 16.5px; line-height: 1.35; }
-.how-list b { font-weight: 700; color: var(--clay2); }
+.how-list b { font-weight: 700; color: var(--accent2); }
 .demo { --tw: 46px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 4px; }
 .demo .tiles { --pc: var(--p0); }
 .demo .arrow { font-size: 15px; color: var(--muted); }
@@ -237,7 +228,8 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand .logo .ball, .tiles.land .tile, .bot-think i { animation: none; }
+  .lt.swap b, .tiles.land .tile, .bot-think i { animation: none; }
+  .lt.swap b + b { display: none; }
 }
 
 </style>
@@ -248,8 +240,8 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
   <section id="menu" class="screen on">
     <div class="menu-wrap">
       <header class="brand">
-        <div class="logo" aria-hidden="true"><span class="ball big"></span></div>
-        <h1 data-t="title">Kelime Tenisi</h1>
+        <div class="logo" id="logo" aria-hidden="true"></div>
+        <h1 data-t="title">Kelime Düellosu</h1>
         <p class="tagline" data-t="tagline">Tek harfini değiştir, geri gönder.</p>
       </header>
 
@@ -300,6 +292,14 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
             <button type="button" class="chip" data-v="4" data-t="len4">4 harf</button>
           </div>
         </div>
+        <div class="opt" id="ekliOpt">
+          <div class="row-label" data-t="ekli">Ekli kelimeler</div>
+          <div class="chips" data-set="ekli">
+            <button type="button" class="chip" data-v="1" data-t="ekliOn">Geçer</button>
+            <button type="button" class="chip" data-v="0" data-t="ekliOff">Geçmez</button>
+          </div>
+          <div class="opt-hint" data-t="ekliHint">EVDE, ALDI, BANA gibi</div>
+        </div>
         <div class="opt">
           <div class="row-label" data-t="pace">Süre</div>
           <div class="chips" data-set="pace">
@@ -311,8 +311,8 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
         <div class="opt">
           <div class="row-label" data-t="format">Maç</div>
           <div class="chips" data-set="format">
-            <button type="button" class="chip" data-v="1" data-t="short">Kısa · 1 oyun</button>
-            <button type="button" class="chip" data-v="2" data-t="long">Uzun · 3'te 2</button>
+            <button type="button" class="chip" data-v="1">Kısa · 5 sayı</button>
+            <button type="button" class="chip" data-v="2">Uzun · 9 sayı</button>
           </div>
         </div>
       </div>
@@ -329,12 +329,11 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 
   <section id="game" class="screen">
     <div class="panel top" id="panel1"></div>
-    <div class="court" id="court">
-      <div class="court-lines" aria-hidden="true"></div>
-      <div class="net" aria-hidden="true"></div>
-      <div class="court-info top-info" id="info1"></div>
-      <div class="court-info bot-info" id="info0"></div>
-      <div class="ball" id="ball" aria-hidden="true"></div>
+    <div class="board" id="board">
+      <div class="board-line" aria-hidden="true"></div>
+      <div class="board-info top-info" id="info1"></div>
+      <div class="board-info bot-info" id="info0"></div>
+      <div class="flyer" id="flyer" aria-hidden="true"></div>
       <div class="banner" id="banner"></div>
       <button type="button" class="pause" id="pauseBtn" aria-label="Mola"><span></span><span></span></button>
     </div>
@@ -352,7 +351,7 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 
   <div class="sheet" id="endSheet" hidden>
     <div class="card end">
-      <div class="trophy" aria-hidden="true"><span class="ball big"></span></div>
+      <div class="trophy" id="trophy" aria-hidden="true"></div>
       <h2 id="endTitle"></h2>
       <p class="end-score" id="endScore"></p>
       <ul class="end-stats" id="endStats"></ul>
@@ -376,14 +375,14 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 </div>
 <script>
 // Generated by tools/words.py. Do not edit by hand.
-// Turkish: Zemberek-NLP lexicon (Apache-2.0) + derived words found in Turkish Wiktionary (CC-BY-SA).
+// Turkish: Zemberek-NLP lexicon and analyzer (Apache-2.0) + derived words found in Turkish Wiktionary (CC-BY-SA).
 // English: ENABLE (public domain).
 // "common" = wordfreq Zipf >= 3 (wordfreq data CC-BY-SA 4.0).
-const WORDS = {"tr":{"alpha":"abcçdefgğhıijklmnoöprsştuüvyz","common":{"3":"abi acı ada adi ait akü alo alt ama ana ani anı ara arı asi ata ayı açı aşk aşı bal bar bas bay baz bağ baş bej bel ben bey bez beş bin bir bit biz bol bot boy boz boş but buz cam can caz cep cin cip cop dal dam dar dağ def dev dik dil dip diz diş don doz dul dut duş dün düz düş dış ebe ego fal fan far fay faz fen fes fil fit fiş fok fon fön gar gaz gen geç gol gri gök göl göz göç gül gün gür güz güç hak hal ham han hap has hat hem hep her hey his hit hiç hol hop hoş huy hür hız iki ile ilk ima inç iri ise iyi jel jet jön kap kar kas kat kaz kaç kaş kek kel kez kil kim kin kir kit kod kok kol kor kot koy koz koç kum kur kuş kök kör köy köz küf kül küp küs kıl kın kır kıt kız kış laf lav lif lig lot loş mal mat maç mil mit mod mor mum muz nal nar naz nem net ney niş not nur oda oje oto ova oya pak pas pat pay pek pes pet peş pil pim pin pis pop pot poz puf pul pus put püf raf rap ray ret rol ruh ruj sac saf sal san sap sav saz saç sağ sel sen ses set sis siz sol son sos soy suç söz süs süt sık sır sığ tam tan tas tat tay taç taş tek tel ten ter tez tip tiz tok ton top toy toz tur tuz tuş tül tüm tüp tür tüy tıp tır ulu var yan yar yas yat yay yaz yağ yaş yel yem yen yer yok yol yön yük yün yüz yıl zam zar zil zor zıt çam çan çap çay çağ çek çil çim çip çit çiğ çok çöl çöp çıt çığ öte öğe üst ütü üye ısı şah şal şan şef şen şey şiş şok şov şut şık","4":"abes abla acil aciz adak adam aday adet adil adli adlı adım afet afiş ahır aile ajan akli akne akor aksi akıl akım akın akış alan alay alem alet alev alfa algı alim alma altı alçı alım alın alış aman amaç amca amfi amir anma anne anıt araç argo arka arma arpa arsa artı arzu asal asil asit askı asla asli asma asık asıl asır atak ataç ateş atkı atlı atma atom atıf atık atış avcı avlu avro avuç ayak ayan ayar ayaz ayna aynı ayrı ayva ayık ayıp azap azar azat azim aziz azot açma açık ağaç ağda ağrı ağır ağıt ağız aşma aşçı aşık baba baca bacı bale balo bank bant bari baro batı bayi bazı bela bent bere beri beta bile bina biri blog blok bluz blöf boks bone bora boru borç boya boza boğa brüt burs burç büfe büro büyü cadı cami ceza cici cila cilt cins cips ciro cuma cüce cıva dadı daha dahi dair dama dana dans dart darı dava dayı dede defa deha deli demo denk depo dere deri ders dert deva deve dinç diri disk diva diye dize dizi dişi doku dolu dost doğa doğu dram duru duyu dört düet ebru edep efor ekim ekin ekip ekli ekol eksi ekşi elek elit elli elma elçi emek emel emin emir ense epey epik erik esas eser esin esir eski etap etek etik etki etli etme etüt evet evli evre eyer ezgi ezme eğer eğik eğim eğme eğri eşek eşik eşit eşli eşya faal faiz faks fare fark faul feci feda felç fena fide fiil file film filo fire flaş flüt fobi folk font form foto fren fuar füze fıçı gaga gala gasp gaye gazi gece gemi gene genç geri gezi geçe gibi gişe golf gram grev grip grup göre güve güya gıda hadi hain haki hala hale halk halı hane hani harf harp harç hata hava heba hece hele hibe hile hobi hoca huni hırs iade icat icra idol ifşa ikaz ikiz ikna ikon ilan ilaç ilgi ilik ilim ilke ille ilçe imaj imal imar imge imha imla imza inat ince inci inek iniş inme inşa ipek iris isim itme ivme iyon iyot izah izci izin için içli içme iğne işte işçi jant jest judo jöle jüri kaba kafa kafe kafi kale kalp kama kamp kamu kano kaos kapı kara kare karo kart kasa kase kask kast kati katı kaya kaza kazı kedi kene kent kere kese keçe keçi kilo kimi kira kist kivi kişi klan klas klik klip klon klor koca koku kola koli koma koni kont konu koro koru kota kova koyu koza koşu kral krem krep kreş kriz krom kros kule kulp kupa kura kurs kurt kuru kutu kuyu kuzu kuğu kötü köşe köşk kült küme küpe küre kürk kına kırk kısa kıta kıyı laik lale lama lapa leke lens link lira lise lobi loca logo lüks maaş mala mali malt mama mana mani mark mars mart marş masa mavi maya mayo mazi maça maço maşa mega menü mera mert mest meze meşe mide midi mine mini misk moda mola mont mors muaf mülk müze naif nane nara nene neon nevi neşe nice nine niye norm nota nötr obez obje obur ocak odak odun ofis okey okul okur okçu olay olgu olma olta oluk olur oluş omuz onay onca onur opak opal orak oran ordu orta otel otuz oval oyma oysa oyuk oyun ozan ozon oğul paha pala pano papa para park paso pati paça paşa peki peri pide pipo pire pisi pist plaj plak plan polo port post pota pres prim priz puan puma puro pusu püre rant rast razı reel reis reji renk rest rica ring risk rota ruhi rulo rüya rıza saat sade safa safi saha sahi saka salt salı sarf sarp sarı sayı sefa sele semt sene sent sera seri sert sevk sini sirk site skeç skor smaç soba soda solo sopa soru soya spor spot staj star stat step stil stok stop sucu sulu suni sunu suşi sörf süit süre sürü sıkı sıla sıra sırf sırt sıva sıvı sızı tabi tabu taht takı tane tank tanı tapu tarz tasa tava tayt taze tazı teke tema tepe tere terk ters test teyp tifo tipi tire toka tork tost tren trio trol tuba tunç tura turp töre tümü tüyo tıpa ucuz ufak ufuk ulus umut uncu uslu usta usul uydu uyku uyma uyum uyuz uzak uzay uzun uzuv uçak uçlu uçma uçuk uçuş uğur uşak vaat vade vadi vaha vaka vale valf vali vals vana vasi vazo veba veda vefa veli veri veto veya vida vinç vize volt yahu yaka yalı yama yana yani yapı yara yarı yasa yaya yazı yedi yeme yeni yeti yine yoga yurt yuva yöre yüce zapt zarf zayi zeka zeki zevk zift zira zula zırh çaba çakı çalı çapa çare çark çatı çene çete çift çile çini çivi çoğu çıra öbür ödem ödev ödül ödün öfke ölçü ömür önce öncü önem öpme örgü örme örtü övgü öykü öyle özel özen özet özgü özlü özne özür öğle öğün öğüt ücra ülke ülkü ümit ünlü ürün üvey üzüm üçer üçlü ılık ırak ısıl ışık ışın şaft şair şaka şans şarj şart şasi şato şaşı şema şevk şifa şiir şike şişe şoke şort şube şuur"},"rare":{"3":"aah aba abd abe abo abs abu acz afi aft agu aha ahi ahu aka aks akı ala alg ali alp ant aps ari ark arp art arz arş asa ask ast ası ate ati aut aya ayn aza azı ağa ağu ağı bad ban bap bat bav baç bed bek bet bip bis boa bom bop bor bre bul bun bön böğ bük büz bız car cağ cem cer cet cif cim cuk cup cüz cık cıs cız dah dav daz deh dek dem din dna dok dua dun duy döl döş dük düo ece eda ede edi efe ege eke eko ekü ela epe erg erk evç eza eğe fak faş fek fel fer fiğ flu fob fol fos ful fut föy füg fır gaf gag gah gak gal gam gem gey gez giz gut gön güm gık gır hab hac had haf har hav hay haz haç hin hiş hor hun hur huğ huş höl höt hüt hık hım hır ide ifa ika iks ila ini irs ita iti iye jak jig jip jul jüt kah kak kal kam kan kav kay kef kem kep ker kes ket keş kik kip kof kom kov kul kup kut kuz kös küm kür küt kıh kıç kığ lag lak lal lam lan leb lef leh lep ley leş lim lir lok lop lor los loğ lup lök löp lös lüp lığ mah mai mam mas mağ maş mef men mes met mey meç mim mir mis mol muş mıh nah nam nan nas nev nim nom oba oha ohm ole oma ons ora org pah pal par per pey peç pik pir pli pof pog pos poy pub pöf pöç pür pıt ram rey rom rop rot ruf ruz rıh sah sak sam say sek sem ser sif sim sin sit sof som sop sup sur sut sör tab tak tal tar tav tef tem tik tim tin tol tor tos tuh tul tun tuğ tör tös töz tüf tüh tük tün tüs tüü tın tıs tığ udi ufo umu uzo vah vat vay vaz vip vın vız yad yak yal yek yeğ yiv yom yoz yoğ yuf yuh yır zan zat zaç zağ zem zen zer zir zom zum zül zıh zıp zır çak çal çar çat çav çeç çir çis çiy çiş çor çul çöz çüş çın çır öcü öge öhö öke ölü örf örk örs örü öze ööf üre ıra ırk ırz şad şak şap şat şaz şeb şek şem şer şet şev şeş şif şip şom şua şuh şıp","4":"aaah abat abis abli abra abuk abus acar acem acep acul acun acur acyo adap adaş adcı adem adıl afak afal afat afif afis afra afur agah agel aguş ahar ahdi ahir ahit ahiz ahzu ahçı ahşa ajur akak akar akaç akik akil akim akis akit akma akse aksu akur akut akva akça akçe alaz alel alez alil allı aloe alto alık alıç amal amel amil amin amip amit amma amme amok amor amut anal anaç anca anfi anif anot anti anut anüs anık anız aort apak apaz apaş apel apre apse apış araf arak arap araz arda arge arif arlı aruz arya arık arız arış arşe asap asar ases asri asım ataş ateh atik atol atçı atıl atım aval avam avaz ayal ayet ayin ayla aylı ayma ayni ayol ayça ayın ayıt azca azel azil azit azma azol azor azık açar açkı açım açıt açış ağcı ağlı ağma ağsı ağıl ağım ağış aşar aşir aşna aşoz aşım aşır aşıt bade badi baha baht bahş baki bakı bala bani bara bark barı bası bati bayt baza bağa bağı bebe beis beka beli berk besi beti beze bezm biat bibi bide bili bini bira biye bişi blum boca boci bono breş brik briz briç brom broş buat bubi buji buke bula bura buru buse buut buğu böce böcü böke böle bölü börk büst büve büğe bıcı caba caiz caka cana cani cari cart cebe cefa ceht celi celp cemi cenk cerh cezp cife cima civa cura cönk cüda cüzi cıda cılk cırt dada daim dane dang dank dara darp daru data daye daği debi defo delk deme deni derk derz derç deyi diba dide dimi dine dini dink diya dore doru dosa dren drog duba dudu duka dönü dürü düse düve düze düğü ebat ebet ecel ecir ecza edat eder edik edim edip edna efil ehem ehil ehli ekit ekme ekru elan elci elde elem elif elik elim elti emay emen emeç emik emiş emme emmi enam enek enez enik enir enli enva eper erat erce erek eren ergi eril erim eriş erke erme eros erte esef esen esik esim esma esme esna esre eten eter etil etol etçi etüd etüv euro evce evci evin eviç evla evye ezan ezel ezik ezim eğin eğir eğiç eğiş eğsi eşey eşme fabl faik fail fakr fani fars fart farz fava faça fent feri fert ferz ferç fevk fevt fevç feyz feza fiks fink fino fişe flit flok flor floş fora fors fota foya foşa frak frer friz fule furt futa fötr füme füru fırt gabi gaco gahi gaip gale gali gama gang gani gard gark garp gato gaus gayr gayz gaza gebe geda gele getr gidi gine gonk gren gres gril gros guaj guaş gurk guru guşa göce gömü gönç görk görü göze göçü güdü güme günü güre gürz gıdı gıgı gına gırt hacı hafi hail haiz haje halt hami hamt hara hare hars hart hasa havi haya haza haşa hela herk hiza hişt hona hora hoşt huri hurç huşu höst hıfz hınk hınç hırt iane iare iaşe ibda ibik ibis ibiş ibra ibre icap icar icaz idam idil ifna ifta iglo iham ihya iken ilah ilam ilca ilga illa illi ilme ilmi imam iman imdi imek imik inak inal inam inan indi ineç inha inik inti ipka ipsi ipçi irap irat irca irin iriş irsi isaf isal isli isot itap itfa itiş itki ivaz ivgi izam izan izaz izaç izbe izge içek içim içiş içki içre iğci iğde işar işba işbu işli işve jale janr jile jips juro kabl kadı kail kaim kain kaju kaka kala kana kani kant kanı kari karı kavi kaşe kebe kefe keka keke kele keme kerh kesi kesp kete keza kile kils kipe kirş kloş klüz kobi kofa koka komi konç kora kort kosa koçu koşa kron kufi kuhi kuka kula kuma kunt kurk kuşe köle köre köse küfe künh künk küsü kıpı kırç kıya kığı lain laka lake lala lame larp laso lata lava laza laşe lenf leva leçe liet lift liga lika linç liva loda lolo lort lota loça luti lutr lüle maki malç mapa marj marn mask maun mayi mazı meke meme meni meri meta mevt meşk miat mihr mika mink mira miri miso miza miço moka morg mudi muin muit murt murç muta muti muço mönü müft müge mürt müta naat naaş nafi nail naip nale name narh nato naşi nebi nece neci neft nema nemf nere neva nida nisa nite niza nova nüks nüve obua obüs ojit okar okka oley omur omça onar onat onlu onma onum opus oral orda orsa orun oruç orya otağ otlu otsu otçu ovma oyum oyuş oğuz pakt pare pars pata paye pazu pazı pena peni pens pepe perm pers pert peso pest peyk pezo peçe pike piko pile pipi pişi popo posa poşu puhu punt punç pupa puşu pırt pışt raca raci raht raks rakı rami ramp rate rağm raşe raşi regl reha remi repo reva revü reye reze rika rina rint ritm riya roba roda roka roza roze ruam ruba rubu rupi röle rücu rüku rükü rüşt rızk saba sabi sabo sada sagu sahn saik sair sake saki sako sala sanı sapa sara sari sası satı sava saya saye sağu sağı seci seda seki sela selp sema semi sena sepi sere serf sevi seza sezi sezü seçi sika silo sima sine siya skif slap slip slot snop sobe sofa sofi sofu soku soma sone sote sten ster stor sual sufi sulh sulp sumo suna sura sure söbe söbü söve süet süje sülf süne sürç sıdk sıma sıpa sığa taam taba tabl tabı taka takt tali talk tamu tapa tapi tapı tarh tart taun taya tayf teba tefe tehi tein tela tepi teşt tike tipo titr tiyo tofu toht topu toto trap tras trok trup trük tual tulu tutu türe türs tüze tını ufki uhde ukde ulak ulam ulan ulaç ulum ulvi umar umde umma umre umum umur uran uray urba uruk urup usçu utku utlu utma utçu uyak uyur uzam uzvi uçar uğra uğru uğut vaaz vahi vaiz vaki vaks vamp vazı veca vena vere vido vira vire virt viya vole voli vuku vuru yaba yafa yakı yatı yave yağı yaşa yeis yeke yele yogi yoma yont yuan yuha yuma yuna yıkı yısa zaaf zade zail zait zamk zari zarp zati zede zerk zevç zina ziya zoka zona züht zınk çala çaça çağa çeki çenk çeri çeçe çipo çise çita çiti çizi çucu çuha çuka çıkı çıma çıpa çıpı çıta çığa öbek ökse öksü ökçe öküz ölet ölme ölüm ölüş önad önek önel öpüş örek ören örfi örge örük örüm örüş ötme ötre ötüş öveç övme övüş özek özge özsu özüt öçlü öğür öşür üful ülen üleş ümmi ümük ünik ürat ürem ürkü üste ütme üvez üzgü üzme üzre üçüz üşme ıhma ılım ırki ırıp ıska ısın ıtri ıtır ığıl ışkı ışıl şafi şaki şale şali şalt şama şano şark şase şavk şayi şeci şelf şems şeni şerh şeri şerç şeyh şiar şile şilt şirk şist şita şive şolo şose şufa şule şura şönt şüfa şüyu şıra"},"serve":{"3":"acı ada ana ani anı ara arı ata ayı açı aşı bal bar bas bay baz bağ baş bel bez beş bin bir bit bol bot boy boz boş but buz cam can caz cin dal dar dağ dik dil dip diz diş don doz dul duş dün düz düş dış fal fan far fay faz fen fil fit fon gaz gen gol gök göl göz göç gül gün gür güz güç hak hal ham han hap has hat his hit hoş jel jet kap kar kas kat kaz kaç kaş kek kel kil kin kit kod kol kor kot koy koz koç kum kur kuş kök kör köy kül küp kıl kır kız kış laf mal mat maç mil mit nar naz nem net ney not pak pas pat pay pet pil pin pis pop poz pul put raf rap ray ret rol sac saf sal san sap sav saz saç sağ sel ses set sis sol son sos soy söz süs sır sığ tam tan tas tat taç taş tek tel ten ter tez tip tok ton top toz tur tuz tuş tüm tüp tür tüy tıp tır yan yar yas yat yay yaz yağ yaş yel yem yen yer yol yön yün yüz zam zar zil çam çan çay çağ çek çim çip çit çiğ çığ şan şen şok","4":"aile akıl akım akın akış alan alem alet alma alım alın alış aman amaç anma asil asma asıl asır atak atma atık atış ayak ayar ayık açma açık ağır aşık bale bant baro batı bazı bora boru boya boğa dana dava dere deri ders dert deva diri doğu ekin elli emek erik etek etik etli evli eğik eşek fare fark file fire gala geri hala halı hane harf hava hile ilan inme itme kaba kafa kafe kale kara kare kart kasa kase kast katı kaya kaza kazı kene kent kere kese kira koca koku kola konu koru kota kova koyu koza koşu kura kurs kurt kuru kutu kuyu kuzu kuğu küre lale mala mali mama mart marş masa maya maça mert mide mine mini nane nine odak okur olma pala papa para park paşa peri pire plan post saha saka salı sarı sene sera seri sert soda soya sıra tane tanı test töre ufak uzak uçak vadi vaka vale vali veba veda vefa veri yaka yalı yapı yara yarı yasa yaya yazı çalı çark çatı çene çile şart"}},"en":{"alpha":"abcdefghijklmnopqrstuvwxyz","common":{"3":"abs ace act add ado ads aft age ago aha aid aim air ale all alp alt amp and ant any ape apt arc are ark arm art ash ask asp ate awe axe aye bad bag bah bam ban bar bat bay bed bee beg bet bid big bin bio bit biz boa bob bog boo bop bot bow box boy bra bro bud bug bun bus but buy bye cab cad cam can cap car cat chi cob cod cog con coo cop cos cot cow coy cry cub cue cup cut dab dad dal dam day den dew did dig dim din dip doc doe dog don dot dry dub due dug duo dye ear eat eau ebb eel egg ego elf elk elm emu end era ere err eve eye fad fan far fat fax fed fee few fig fin fir fit fix flu fly fob foe fog for fox fro fry fun fur gag gal gap gas gee gel gem gen get gig git gnu goo got gum gut guy gym had hah ham hap has hat hay heh hem hen her hex hey hid him hip his hit hmm hoe hog hop hot how hub hue hug huh hum hun hut ice icy ill imp ink inn ion ire ism its ivy jab jag jam jar jaw jay jet jig job jog joy jug keg key kid kin kip kit koi lab lad lag lam lap law lax lay led leg let lid lie lip lit log loo lot low lug lux mad mag man map mar mat max may men met mew mid mix mob mod mom moo mop mow mud mug mum nab nag nah nap nay net new nib nil nip nit nix nod nor not now nun nut oak odd ode off oft ohm oil old one ooh opt orb orc ore our out ova owe owl own pad pal pan pap par pat paw pay pea peg pen pep per pet pew phi pic pie pig pin pip pit ply pod pop pot pow pox pro pry psi pub pug pun pup pus put rad rag rah raj ram ran rap rat raw ray red ref rep ret rev rib rid rig rim rip rob rod roe rom rot row rub rue rug run rut rye sac sad sag sap sat saw sax say sea see set sew she shh shy sic sin sip sir sis sit six ska ski sky sly sob sod son sos sow sox soy spa spy sub sue sum sun sup tab tad tag taj tan tao tap tar tat tax tea tee ten the thy tic tie tin tip toe tom ton too top tot tow toy try tub tug two ugh umm ups urn use van var vat veg vet via vie vis vow vox wad wag wan war was wax way web wed wee wet who why wig win wit wiz woe won woo wow yah yak yam yay yea yen yep yes yet yew yin you yum yup zee zig zip zoo","4":"able aces ache acid acne acre acts adds afar aged ages ahem aide aids aims airs airy akin alas ally aloe alps also alto alum amen amid amir ammo amps anew anon ante anti ants apes apex aqua arch arcs area aria arid arms army arts asks atom atop aunt aura auto avid away axes axis axle baba baby back bags bail bait bake bald bale ball balm band bane bang bank bans barb bard bare bark barn bars base bash bass bath bats bays bead beak beam bean bear beat beau beck beds beef been beep bees beet begs bell belt bend bent best beta bets bias bids bike bile bill bind bins bios bird bite bits blah bled blew blob bloc blot blow blue blur boar boat bode body boil bold bolt bond bone bony book boom boon boos boot bora bore born boss both bots bout bowl bows boys brag bran bras brat bray bred brew brie brig brim bros brow buck buds buff bugs bulb bulk bull bump bunk buns buoy burn burr bury bush bust busy buys buzz byte cabs cafe cage cake calf call calm came camp cams cane cans cant cape caps carb card care carp cars cart casa case cash cast cats cave cell cent chap char chat chef chew chia chic chin chip chit chop chow cite city clad clam clan clap claw clay clip clot club clue coal coat coco code coil coin cola cold colt coma comb come cone cons cook cool coop cope cops copy cord core cork corn cost cosy coup cove cows cozy crab cram crew crib crop crow crux cube cubs cues cuff cult cups curb cure curl curt cusp cute cuts cyst czar dads daft dale dame damp dams dank dare dark darn dart dash data date davy dawn days deaf deal dean dear debt deck deco deed deem deep deer defy deli dell demo dent deny desk dial dice diet digs dill dime dine ding dips dire dirt disc dish disk diss diva dive dock docs does dogs dole doll dome done dons doom door dork dorm dory dose doth dots dove down drab drag draw drew drip drop drum dual dubs duck duct dude duel dues duet duke dull duly dump dune dung dunk dusk dust duty dyed dyer dyes each earl earn ears ease east easy eats echo eddy edge edgy edit eels eggs egos else emir emit ends envy epic eras eros euro even ever evil exam exec exes exit expo eyed eyes face fact fade fail fair fake fall fame fang fans fare farm fast fate fats faux fave fawn fear feat feds feed feel fees feet fell felt fend fern feud fiat fife figs file fill film find fine fink fins fire firm fish fist fits five flag flak flap flat flaw flax flea fled flee flew flex flip flop flow flux foam foes foil fold folk fond font food fool foot ford fore fork form fort foul four fowl foxy frat fray free fret frog from fuel full fund funk furs fury fuse fuss fuzz gaga gags gain gait gala gale gall gals game gang gaps garb gasp gate gave gaze gear geek geez gems gene gent germ gets gift gigs gill gilt girl giro gist give glad glee glen glow glue goal goat goes gold golf gone gong good goon gosh gout gown grab grad gram gray grew grey grid grim grin grip grit grow grub gulf gull gums guru gust guts guys gyms hack haha hail hair hale half hall halo halt hand hang hank hard hare harm harp hash hast hate hath hats haul have hawk hays haze hazy head heal heap hear heat heck heed heel heir held helm help hemp hens herb herd here hero hers hide high hike hill hind hint hips hire hiss hits hive hoax hobo hogs hold hole holy home hone hood hoof hook hoop hope hops horn hose host hour hove howl hubs hues huff huge hugs hula hulk hull hump hung hunk hunt hurt hush huts hymn hype iced icon idea idle idol ills inch info inks inns into ions iris iron isle itch item jack jade jail jams jars java jaws jays jazz jean jeep jeez jerk jest jets jinx jive jobs join joke jolt joys judo jump junk jury just kale kart keel keen keep kept keto keys khan kick kids kiln kilo kind king kink kiss kite kits kiwi knee knew knit knob knot know labs lace lack lacy lads lady lags laid lair lake lama lamb lame lamp land lane laps lark lash lass last late lava lawn laws lays lazy lead leaf leak lean leap left legs lend lens lent less lest lets levy liar lice lick lids lied lien lies lieu life lift like lily limb lime limo limp line link lion lips lisp list lite live load loaf loan lobe loch lock loco loft logo logs lone long look loom loop loot lord lore lose loss lost lots loud love lows lube luck lull lump lung lure lurk lush lynx mace macs made mage mags maid mail main make male mall malt mama mana mane mans many maps mare mark mars mart mash mask mass mast mate math mats mayo maze mead meal mean meat meek meet melt memo mend menu meow mere mesa mesh mess mice midi mild mile milk mill mime mind mine mini mink mint miss mist mite mitt moan moat mobs mock mode mods mojo mold mole moms monk mono mood moon moor moot more morn moss most moth move much muck mugs mule mums muse musk must mute myth nail name nana naps nave navy near neat neck need neon nerd nest nets news newt next nice nick nigh nine node nods noir none nook noon nope norm nose note noun nova null numb nuns nuts oaks oars oath oats obey odds odor ogre oils oily okay omen omit once ones only onto oops opal open opus oral orcs ouch ours outs oval oven over owed owes owls owns pace pack pact pads page paid pain pair pale palm pals pane pang pans pant papa para park part pass past path pats pave pawn paws pays peak pear peas peat peck peek peel peep peer pens perk perm peso pest pets phew pick pics pied pier pies pigs pike pile pill pine ping pink pins pint pipe pita pits pity plan plat play plea plot plow ploy plug plum plus pods poem poet poke pole poll polo poly pond pong pony pool poor pope pops pore pork port pose posh post pots pour pray prep prey prod prof prog prom prop pros pubs puck puff pull pulp puma pump punk puns punt pups pure push puts putt quad quay quid quit quiz race rack raft rage rags raid rail rain raja rake ramp rams rang rank rant raps rare rash rate rats rave rays read real reap rear redo reds reed reef reel refs rein rely rent repo reps rest ribs rice rich ride rife riff rift rigs rims ring rink riot ripe rips rise risk rite road roam roar robe rock rode rods role roll roof rook room root rope rose rosy rout roux rows rubs ruby rude ruff rugs ruin rule rump rune rung runs ruse rush rust sack safe saga sage said sail sake sale salt same sand sane sang sank sans sari sash save says scam scan scar scum seal seam seas seat sect seed seek seem seen seer sees self sell semi send sent sets sewn shah sham shed shin ship shiv shoe shop shot show shun shut sick side sift sigh sign silk sill silo sine sing sink sins sire site sits size skew skid skim skin skip skis skit slab slag slam slap slay sled slew slid slim slip slit slot slow slug slum slur smog smug snag snap snow snug soak soap soar sobs sock soda sofa soft soil sold sole solo soma some song sons soon soot sore sort soul soup sour sous span spar spat spec sped spin spit spot spun spur stag star stat stay stem step stew stir stop stow stub stud stun subs such sued sues suit sumo sums sung sunk suns sure surf swag swam swan swap swat sway swim sync tabs tack taco tact tags tail take tale talk tall tame tang tank tape taps tart task taxi teal team tear teas teen tees tell temp tend tens tent term test text than that thaw thee them then they thin this thou thru thug thus tick tide tidy tied tier ties tiff tiki tile till tilt time tins tint tiny tips tire toad toes tofu toil told toll tomb tome toms tone tong tons took tool toon toot tops tore torn tort toss tote tots tour tout town toys tram trap tray tree trek trim trio trip trot troy true tsar tube tubs tuck tuna tune turf turn tutu twig twin type typo tyre ugly undo unit unto upon urge used user uses vain vale vane vans vary vase vast veal veer veil vein vent verb very vest veto vets vial vibe vice view vile vine visa void volt vote vows wade wage wait wake walk wall wand want ward ware warm warn warp wars wary wash wasp watt wave wavy ways weak wear webs week weep weir weld well went wept were west what when whew whey whim whip whoa whom wick wide wife wigs wild will wilt wind wing wink wins wipe wire wise wish with wits woes woke wolf womb wont wood woof wool word wore work worm worn wrap wren writ yank yard yarn yawn yeah year yell yelp yeti yoga yogi yoke yolk your yuan yuck zeal zero zest zeta zinc zone zoom zoos"},"rare":{"3":"aah aal aas aba abo aby adz aff aga ail ain ais ait ala alb als ama ami amu ana ane ani arb arf ars att auk ava ave avo awa awl awn ays azo baa bal bap bas bel ben bey bib bis bod bos brr bub bum bur bys caw cay cee cel cep cis col cor cox coz cud cur cwm dag dah dak dap daw deb dee del dev dex dey dib die dis dit dol dom dor dos dow dud dui dun dup ecu edh eff efs eft eke eld ell els eme emf ems eng ens eon erg ern ers ess eta eth ewe fas fay feh fem fen fer fet feu fey fez fib fid fie fil fiz foh fon fop fou foy fub fud fug gab gad gae gam gan gar gat gay ged gey ghi gib gid gie gin gip goa gob god gor gox goy gul gun guv hae hag haj hao haw hep hes het hew hic hie hin hob hod hon hoy hup hyp ich ick ids iff ifs ilk ins irk jee jeu jib jin joe jot jow jun jus jut kab kae kaf kas kat kay kea kef ken kep kex khi kif kir koa kob kop kor kos kue lac lar las lat lav lea lee lei lek leu lev lex ley lez lib lin lis lob lop lox lum luv lye mac mae mas maw med mel mem mho mib mig mil mim mir mis moa moc mog mol mon mor mos mot mun mus mut nae nam nan naw neb nee nim nob nog noh nom noo nos nth nub nus oaf oar oat obe obi oca ods oes oho ohs oka oke ole oms ons oot ope ops ora ors ort ose oud oxo oxy pac pah pam pas pax pec ped pee peh pes pht pia pis piu pix poh poi pol pom pud pul pur pya pye pyx qat qua ras rax reb rec ree reg rei rem res rex rho ria rif rin roc rum rya sab sae sal sau sec seg sei sel sen ser sha sib sim sol sop sot sou sri sty suq syn tae tam tas tau tav taw ted teg tel tet tew tho til tis tod tog tor tsk tui tun tup tut tux twa tye udo uke ulu ump uns upo urb urd uta uts vac vas vau vav vaw vee vex vig vim voe vug wab wae wap wat waw wen wha wis wog wok wos wot wry wud wye wyn xis yap yar yaw yeh yid yip yob yod yok yom yon yow yuk zag zap zax zed zek zin zit zoa","4":"aahs aals abas abba abbe abed abet ably abos abri abut abye abys aced achy acme acta acyl adit ados adze aeon aero aery agar agas agee ager agha agin agio agly agma agog agon ague ahoy ails ains airn airt aits ajar ajee akee alae alan alar alba albs alec alee alef ales alfa alga alif alit alky alls alma alme alms alow alts amah amas ambo amia amie amin amis amok amus amyl anas ands anes anga anil anis ankh anna anoa ansa anta aped aper apod apse arak arbs arco ares arfs aril arks arse arty arum arvo aryl asci asea ashy asps atap ates atma auks auld aver aves avos avow awed awee awes awls awns awny awol awry axal axed axel axil axon ayah ayes ayin azan azon baal baas babe babu bach bade bads baff baht balk bals bams bani baps barf barm bask bast bate batt baud bawd bawl bedu beer bels bema bene bens berg berm beth bevy beys bhut bibb bibs bice bide bier biff bigs bilk bima bine bint birk birl birr bise bisk bitt bize blab blae blam blat blaw bleb blet blin blip blub boas bobs bock bods boff bogs bogy bola bole boll bolo bomb bong bonk boor bops bort bosh bosk bota bott boxy boyo bozo brad brae braw bree bren brin brio bris brit broo brrr brut bubo bubs buhl buhr bumf bums bund bung bunn bunt bura burd burg burl burp burs busk buss bute buts byes byre byrl caca cade cadi cads caff cagy caid cain caky calk calo calx caph capo cark carl carn carr cask cate caul cavy caws cays ceca cede cedi cees ceil cels celt cepe ceps cere cero cess cete chad cham chao chaw chay chez chid chis chon chub chug chum ciao cine cion cire cist clag clef clew clod clog clon clop cloy coax cobb cobs coca coda cods coed coff coft cogs coho coif coir coke cole cols coly comp coni conk conn cony coof coos coot corf corm cory cosh coss cote cots cowl cowy coxa coys crag crap craw cris croc crud crus cuds cued cuif cuke cull culm curd curf curn curr curs cusk cuss cwms cyan cyma cyme dabs dace dada dado daff dags dahl dahs dais daks dals damn dang daps darb dato daub daut dawk daws dawt daze dead debs dees deet defi deft deil deke dele delf dels deme demy dene dens dere derm deva devs dews dewy dexy deys dhak dhal dhow dibs dido didy died diel dies dike dims dink dins dint diol dipt dirk dirl dita dite dits ditz djin doat doby dodo doer doff doge dogy doit dojo dols dolt doms dona dong dopa dope dopy dore dorp dorr dors doss dost dote doty doum dour doux dows doxy doze dozy dram drat dray dree dreg drek drib drub drug drys duad duce duci duds duff dugs duit duma dumb duns dunt duos dupe dups dura dure durn duro durr dyad dyne eath eaux eave ebbs ebon eche ecru ecus eddo edhs eely eery effs efts egad egal eger eggy egis eide eked ekes elan elds elhi elks ells elms elmy emes emeu emfs emic emus emyd engs enol enow eons epee epha epos ergo ergs erne erns errs erst eses espy etas etch eths etic etna etui eves ewer ewes exon eyas eyen eyer eyne eyra eyre eyry fado fads fain falx fane fano fard farl faro fart fash faun fava fays faze feal feck fehs feme fems fens feod fere fess feta fete fets feus fiar fibs fice fico fido fids fief fila filo fils fino firn firs fisc fixt fizz flab flam flan flay fley flic flit floc floe flog flub flue flus foal fobs foci fogs fogy fohn foin fons fops fora forb foss foys fozy frae frag frap frig frit friz froe frow frug fubs fuci fuds fugs fugu fuji fume fumy funs furl futz fuze fyce fyke gabs gaby gadi gads gaed gaen gaes gaff gage gama gamb gamp gams gamy gane gaol gape gapy gars gash gast gats gaud gaum gaun gaur gawk gawp gays geck geds geed gees geld gels gelt gens genu gest geta geum ghat ghee ghis gibe gibs gids gied gien gies giga gild gimp gink gins gips gird girn girt gits gled gleg gley glia glib glim glob glom glop glug glum glut gnar gnat gnaw gnus goad goas gobo gobs goby gods goer gogo goof goop goos gore gorp gory gowd gowk goys gran grat gree grig grog grot grue grum guan guar guck gude guff guid gulp guls gunk guns gush guvs gybe gyre gyri gyro gyve haaf haar habu hade hadj haed haem haen haes haet haft hags hahs haik haji hajj hake halm hame hams hant haps hark harl hart hasp haut haws hebe heft hehs heil hell helo heme hems hent herl herm hern hest heth hets hewn hews hick hied hies hila hili hilt hins hisn hist hoar hobs hock hods hoed hoer hoes hogg hoke holk holm holp hols holt homy hong honk hons hoot hora hots howe howf howk hows hoya hoys huck hued huic hums hunh huns hurl husk hwan hyla hypo hyps hyte iamb ibex ibis ices ichs icky idem ides idly idyl iffy iglu ikat ikon ilea ilex ilia ilka ilks illy imam imid immy impi imps inby inia inky inly inro inti iota ired ires irid irks isba isms iwis ixia izar jabs jagg jags jake jamb jane jape jarl jato jauk jaup jeed jeer jees jefe jehu jell jeon jess jete jeux jiao jibb jibe jibs jiff jigs jill jilt jimp jink jinn jins jock joes joey jogs john joky jole josh joss jota jots jouk jowl jows juba jube juga jugs juju juke jupe jura jute juts kaas kabs kadi kaes kafs kagu kaif kail kain kaka kaki kame kami kana kane kaon kapa kaph karn kata kats kava kayo kays kbar keas keck keef keek keet kefs kegs keir kelp kemp keno kens kent kepi keps kerb kerf kern khaf khat khet khis kibe kief kier kifs kill kilt kina kine kino kins kips kirk kirn kirs kist kith kiva knap knar knop knur koan koas kobo kobs koel kohl kola kolo konk kook koph kops kore kors koss koto kris kudo kudu kues kuru kvas kyak kyar kyat kyte lacs lade laic lain lakh laky lall lams lang lank lard lari lars lase lath lati lats laud lave lavs laze leal lear leas lech leek leer lees leet lehr leis leke leks leku leno lept leud leva levo lewd leys libs lich lido lief lier lilt lima limn limy ling linn lino lins lint liny lira lire liri lits litu loam lobo lobs loca loci lode loge logy loin loll loof loon loos lope lops lorn lory lota loth loti loup lour lout lowe lown luau luce lude lues luff luge lugs lulu lums luna lune lunk lunt luny lust lute lutz luvs luxe lwei lyes lyre lyse maar mabe mach mack mads maes magi maim mair mako malm mano marc marl matt maud maul maun maut mawn maws maxi maya mays mazy meed meld mell mels mems meno meou merk merl meta mete meth mewl mews meze mhos mibs mica mids mien miff migg migs mike milo mils milt mina minx mire miri mirk mirs miry mise miso mity mixt moas mocs modi mogs moil moke mola moll mols molt moly mome momi mons mony mool moos mope mops mopy mora mors mort mosk mote mots mott moue mown mows moxa mozo muds muff mugg mull mumm mump mumu muni muns muon mura mure murk murr mush muss muts mutt myna naan nabe nabs nada nags naif nans naoi naos nape narc nard nark nary nays neap nebs neem neep neif nema nene ness nett neuk neum neve nevi nibs nide nidi nill nils nims nipa nips nisi nite nits nixe nixy nobs nock nodi noel noes nogg nogs noil nolo noma nome noms nona nori nosh nosy nota nous nows nowt nubs nuke nurd nurl oafs oast obes obia obis obit oboe obol ocas odea odes odic odyl ofay offs ogam ogee ogle ohed ohia ohms oink okas okeh okes okra olds oldy olea oleo oles olio olla omer onus onyx oohs oots ooze oozy opah oped opes opts orad orbs orby orca ordo ores orle orra orts oryx orzo osar oses ossa otic otto ouds ouph oust ouzo ovum owse oxen oxes oxid oxim oyer oyes oyez paca pacs padi paik pail pall palp paly pams paps pard pare parr pars pase pash pate paty pawl peag peal pean pech pecs peds peed peen pees pegs pehs pein peke pele pelf pelt pend pent peon pepo peps peri pert pews pfft pfui phat phis phiz phon phot phut pial pian pias pica pice pika piki pili pily pima pimp pina piny pion pips pipy pirn pish piso pith pixy pleb pled plew plie plod plop pock poco pogy pois poky pols pome pomp poms pone pons pood pooh poop posy pouf pout pows pram prao prat prau pree prex prez prig prim proa prow psis psst puce puds pugh pugs puja puke pula pule puli puls puna pung puny pupa puri purl purr purs puss putz pyas pyes pyic pyin pyre qaid qats qoph quag quai quey quin quip quod racy rads raff raga ragi raia raki rale rami rand rani rapt rase rasp rath rato raws raya raze razz ream rebs reck recs redd rede reek rees reft regs reif reis rems rend repp resh rete rets revs rhea rhos rhus rial rias rick rids riel rifs rile rill rime rimy rind rins ritz rive roan robs rocs roes roil rolf romp roms rood ropy rota rote roti rotl roto rots roue roup rove rube ruck rudd rued ruer rues ruga ruly rums runt rusk ruth ruts ryas ryes ryke rynd ryot sabe sabs sacs sade sadi sago sags sagy sain saki sall salp sals samp saps sard sark sass sate sati saul sawn saws scab scad scag scop scot scow scry scud scup scut sear secs seel seep sego segs seif seis sels seme sene sept sera sere serf sers seta sett sews sext shad shag shat shaw shay shea shes shew shim shmo shod shog shoo shri shul sial sibb sibs sice sics sike sild silt sima simp sims sinh sipe sips sirs sith sizy skag skas skat skee skeg skep skua slat slaw slob sloe slog slop slub slue smew smit snaw sned snib snip snit snob snog snot snub snye sods soja soke sola soli sols sone sook soph sops sora sorb sord sori sorn soth sots souk sown sows soya soys spae spas spay spew spik spiv spry spud spue sris stab staw stet stey stoa stob stum stye suba sudd suds suer suet sugh sulk sulu sump sunn supe sups suqs sura surd suss swab swig swob swop swot swum sybo syce syke syli syne syph tabu tace tach tads tael tahr tain taka tala talc tali tamp tams tans taos tapa tare tarn taro tarp tars tass tate tats taus taut tavs taws taxa teak teat teds teed teel teem teff tegs tela tele tels tepa tern teth tets tews thae thew thio thir thro thud tics tike tils tine ting tipi tirl tiro titi tivy toby tods tody toea toed toff toft toga togs toit toke tola tole tolu tony toom tope toph topi tora torc tori toro torr tors tory tosh tost tows towy toyo trad tref tret trey trig trod trop trow trug tsks tuba tufa tuff tuft tugs tuis tule tump tung tuns tups turd tush tusk tuts twae twas twee twit twos tyee tyer tyes tyke tyne typp typy tyro tzar udos ughs ukes ulan ulna ulus ulva umbo umps unai unau unbe unci unco unde undy upas upby updo urbs urds urea uric urns ursa urus utas uvea vacs vagi vail vair vamp vang vara vars vasa vats vatu vaus vavs vaws veep vees vela veld vena vend vera vert vext vide vied vier vies viga vigs vill vims vina vino viny viol virl vise vita viva vive voes vole vrow vugg vugh vugs wabs wack wadi wads wady waes waff waft wags waif wail wain wair wale waly wame wane wans wany waps wark wart wast wats wauk waul waur wawl waws waxy weal wean weds weed weel ween weer wees weet weft weka welt wend wens wert wets wham whap whee whet whid whig whin whir whit whiz whop whys wich wile wily wimp wine wino winy wiry wisp wiss wist wite wive woad wogs woks wold wonk wons woos wort wost wots wove wows wuss wych wyes wyle wynd wynn wyns wyte xyst yack yaff yagi yaks yald yams yang yaps yare yaud yaup yawl yawp yaws yays yean yeas yech yegg yeld yelk yens yerk yett yeuk yews yids yill yins yipe yips yird yirr ylem yobs yock yodh yods yogh yoks yond yoni yore yowe yowl yows yuca yuch yuga yuks yule yups yurt ywis zags zany zaps zarf zebu zeds zees zein zeks zerk zigs zill zing zins zips ziti zits zoea zoic zonk zoon zori zyme"},"serve":{"3":"ace act add age aid aim air ale all alt ant apt arc ark arm art ate awe axe aye bad bag bam ban bar bat bay bed bee beg bet bid big bin bio bit bob boo bot bow box boy bro bud bug bus but buy bye cab cam can cap car cat cod con cop cos cow cry cue cup cut dad dam day den dig dim dip doc doe dog don dot dry dub due dug dye ear eat eye fan far fat fax fed fee few fig fin fit fix fly fog fox fry fun fur gag gal gap gas gee gel gem gen get gig got gum gut ham hat hay hey hid hip hit hop hot how hub hug hut ion jam jar jaw jay jet job joy kid kin kit lab lad lag lap law lay led leg let lid lie lip lit log lot low mad mag man map mar mat max may men met mid mix mob mod mom mud mug mum nap net new nod not now nun nut ore out owe pad pal pan par pat pay pen per pet pic pie pig pin pit pod pop pot pub pup put ram ran rap rat raw ray red ref rep rev rid rig rim rip rob rod rom rot row rub rug run sac sad sap sat saw say sea see set shy sin sip sir sis sit six sky son sox soy spy sub sue sum sun tab tag tan tap tar tax tea tee ten tie tin tip toe tom ton too top tow toy try tub van var vet wan war wax way wed wee wet why wig win wit won woo wow yay yea yen yep yes yet yup zip zoo","4":"ages aide aids aims amid ants arms arts back bags bail bake bald bale ball band bang bank bans bare bark barn bars base bash bass bath bats beam bean bear beat beck beds beef bees bell belt bend bent best bets bias bids bike bill bind bite bits blew blow boat boil bold bolt bond bone book boom boot bore born boss both bout bowl boys brew bros buck buds bugs bulk bull bump burn bury bush bust busy buys cafe cage cake call calm came camp cane cans cape caps card care cars cart case cash cast cats cave cell cent chap chat chew chic chin chip chop cite clan clay clip coal coat code coil coin cold coma come cone cons cook cool cope cops copy cord core cork corn cost cove cows crab crew crop crow cube cubs cups curb cure cute cuts dads dale dame damp dare dark darn dash date dawn days deaf deal dean dear deck deed deep deer dell dent dial dice dime ding dire dish disk dive dock dogs doll dome doom dose dots dove drew dual duck duel dull dump dust earn ears ease east eats face fact fade fail fair fake fall fame fans fare farm fast fate fear feat feed feel fees feet fell felt fiat file fill find fine fire firm fist fits five flag flat flaw fled flee flew flex flip flow foil fold fond font food fool foot ford fork form fort foul four full fund funk gain gala gale game gang gaps gate gave gaze gear geek gift gigs gill give glow goat goes gold gone good grab grad gram gray grew grid grim grip grow guts hack hail hair hale half hall halo halt hand hang hank hard hare harm hash hate hats have head heal hear heat heck heel held help herb herd here hero hide hike hill hint hips hire hits hold hole home hood hook hope horn hose host hour hugs hulk hull hung hunt jack jail jean jeep jets jump junk just keen keep kick kids kind king kiss kits know labs lace lack lads laid lake lamb lame lamp land lane laps last late lawn laws lays lead leaf leak lean leap left legs lend lens lent less lets lick lied lies life lift like limb lime line link lips list live load loan lock logs lone long look loop lord lose loss lost lots love luck lump lung lure made maid mail main make male mall maps mare mark mars mart mask mass mate math maze meal mean meat meet melt mere mess mice mild mile milk mill mind mine mini mint miss mist mock mode mold mole moms mood moon more moss most move must mute nail name near neat neck need nest nets next nice nick nine node none noon nose note null nuts oath outs oven owes pace pack pact pads page paid pain pair pale palm park part pass past path pays peak peas peek peel peer pens pest pets pick pics pier pigs pike pile pill pine ping pink pins pint pipe pits play plot poke pole poll polo poly pond pony pool poor pope pops pork port pose post pots pour pray prof prom prop pros puck pull pump punk pure push puts race rack rage raid rail rain ramp rams rang rank rant rare rash rate rats rays read real rear reds reed reel rent reps rest ribs rice ride rift ring ripe rise rite road roar rock rode role roll roof room root rope rose rows rude rule runs rush rust sack safe sage sail sake sale same sand sane sang sank save scam scan scar seal seas seat seed seek seem seen sees sell send sent sets shed shin ship shop shot show sick side silk sing sink sins site sits size skin skip slam slap slim slip slot slow snap snow soap sock soft soil sold sole solo some song sons soon sore sort soul soup sour span spin spit spot spun spur star stat stay stem stop subs sued suit sums sung sunk sure swan swap sway tabs tags tail take tale talk tall tank tape task team tear teen tell tend tens tent test tick tide tied ties tile till tilt time tips tire toes told toll tomb tone tons took tool tops tore torn toss tour town toys trap tray tree trim trip tube tune type vain vale vast vent vest vice vile vine vows wade wage wait wake wall want ward warm warn warp wars wash wave ways weak wear week well went west wide wife wild will wind wing wins wipe wire wise wish woke wood wool word wore work worm worn yard yarn year yell zone zoom"}}};
+const WORDS = {"tr":{"alpha":"abcçdefgğhıijklmnoöprsştuüvyz","common":{"3":"abi acı ada adi ait akü alo alt ama ana ani anı ara arı asi ata ayı açı aşk aşı bal bar bas bay baz bağ baş bej bel ben bey bez beş bin bir bit biz bol bot boy boz boş but buz cam can caz cep cin cip cop dal dam dar dağ def dev dik dil dip diz diş don doz dul dut duş dün düz düş dış ebe ego fal fan far fay faz fen fes fil fit fiş fok fon fön gar gaz gen geç gol gri gök göl göz göç gül gün gür güz güç hak hal ham han hap has hat hem hep her hey his hit hiç hol hop hoş huy hür hız iki ile ilk ima inç iri ise iyi jel jet jön kap kar kas kat kaz kaç kaş kek kel kez kil kim kin kir kit kod kok kol kor kot koy koz koç kum kur kuş kök kör köy köz küf kül küp küs kıl kın kır kıt kız kış laf lav lif lig lot loş mal mat maç mil mit mod mor mum muz nal nar naz nem net ney niş not nur oda oje oto ova oya pak pas pat pay pek pes pet peş pil pim pin pis pop pot poz puf pul pus put püf raf rap ray ret rol ruh ruj sac saf sal san sap sav saz saç sağ sel sen ses set sis siz sol son sos soy suç söz süs süt sık sır sığ tam tan tas tat tay taç taş tek tel ten ter tez tip tiz tok ton top toy toz tur tuz tuş tül tüm tüp tür tüy tıp tır ulu var yan yar yas yat yay yaz yağ yaş yel yem yen yer yok yol yön yük yün yüz yıl zam zar zil zor zıt çam çan çap çay çağ çek çil çim çip çit çiğ çok çöl çöp çıt çığ öte öğe üst ütü üye ısı şah şal şan şef şen şey şiş şok şov şut şık","4":"abes abla acil aciz adak adam aday adet adil adli adlı adım afet afiş ahır aile ajan akli akne akor aksi akıl akım akın akış alan alay alem alet alev alfa algı alim alma altı alçı alım alın alış aman amaç amca amfi amir anma anne anıt araç argo arka arma arpa arsa artı arzu asal asil asit askı asla asli asma asık asıl asır atak ataç ateş atkı atlı atma atom atıf atık atış avcı avlu avro avuç ayak ayan ayar ayaz ayna aynı ayrı ayva ayık ayıp azap azar azat azim aziz azot açma açık ağaç ağda ağrı ağır ağıt ağız aşma aşçı aşık baba baca bacı bale balo bank bant bari baro batı bayi bazı bela bent bere beri beta bile bina biri blog blok bluz blöf boks bone bora boru borç boya boza boğa brüt burs burç büfe büro büyü cadı cami ceza cici cila cilt cins cips ciro cuma cüce cıva dadı daha dahi dair dama dana dans dart darı dava dayı dede defa deha deli demo denk depo dere deri ders dert deva deve dinç diri disk diva diye dize dizi dişi doku dolu dost doğa doğu dram duru duyu dört düet ebru edep efor ekim ekin ekip ekli ekol eksi ekşi elek elit elli elma elçi emek emel emin emir ense epey epik erik esas eser esin esir eski etap etek etik etki etli etme etüt evet evli evre eyer ezgi ezme eğer eğik eğim eğme eğri eşek eşik eşit eşli eşya faal faiz faks fare fark faul feci feda felç fena fide fiil file film filo fire flaş flüt fobi folk font form foto fren fuar füze fıçı gaga gala gasp gaye gazi gece gemi gene genç geri gezi geçe gibi gişe golf gram grev grip grup göre güve güya gıda hadi hain haki hala hale halk halı hane hani harf harp harç hata hava heba hece hele hibe hile hobi hoca huni hırs iade icat icra idol ifşa ikaz ikiz ikna ikon ilan ilaç ilgi ilik ilim ilke ille ilçe imaj imal imar imge imha imla imza inat ince inci inek iniş inme inşa ipek iris isim itme ivme iyon iyot izah izci izin için içli içme iğne işte işçi jant jest judo jöle jüri kaba kafa kafe kafi kale kalp kama kamp kamu kano kaos kapı kara kare karo kart kasa kase kask kast kati katı kaya kaza kazı kedi kene kent kere kese keçe keçi kilo kimi kira kist kivi kişi klan klas klik klip klon klor koca koku kola koli koma koni kont konu koro koru kota kova koyu koza koşu kral krem krep kreş kriz krom kros kule kulp kupa kura kurs kurt kuru kutu kuyu kuzu kuğu kötü köşe köşk kült küme küpe küre kürk kına kırk kısa kıta kıyı laik lale lama lapa leke lens link lira lise lobi loca logo lüks maaş mala mali malt mama mana mani mark mars mart marş masa mavi maya mayo mazi maça maço maşa mega menü mera mert mest meze meşe mide midi mine mini misk moda mola mont mors muaf mülk müze naif nane nara nene neon nevi neşe nice nine niye norm nota nötr obez obje obur ocak odak odun ofis okey okul okur okçu olay olgu olma olta oluk olur oluş omuz onay onca onur opak opal orak oran ordu orta otel otuz oval oyma oysa oyuk oyun ozan ozon oğul paha pala pano papa para park paso pati paça paşa peki peri pide pipo pire pisi pist plaj plak plan polo port post pota pres prim priz puan puma puro pusu püre rant rast razı reel reis reji renk rest rica ring risk rota ruhi rulo rüya rıza saat sade safa safi saha sahi saka salt salı sarf sarp sarı sayı sefa sele semt sene sent sera seri sert sevk sini sirk site skeç skor smaç soba soda solo sopa soru soya spor spot staj star stat step stil stok stop sucu sulu suni sunu suşi sörf süit süre sürü sıkı sıla sıra sırf sırt sıva sıvı sızı tabi tabu taht takı tane tank tanı tapu tarz tasa tava tayt taze tazı teke tema tepe tere terk ters test teyp tifo tipi tire toka tork tost tren trio trol tuba tunç tura turp töre tümü tüyo tıpa ucuz ufak ufuk ulus umut uncu uslu usta usul uydu uyku uyma uyum uyuz uzak uzay uzun uzuv uçak uçlu uçma uçuk uçuş uğur uşak vaat vade vadi vaha vaka vale valf vali vals vana vasi vazo veba veda vefa veli veri veto veya vida vinç vize volt yahu yaka yalı yama yana yani yapı yara yarı yasa yaya yazı yedi yeme yeni yeti yine yoga yurt yuva yöre yüce zapt zarf zayi zeka zeki zevk zift zira zula zırh çaba çakı çalı çapa çare çark çatı çene çete çift çile çini çivi çoğu çıra öbür ödem ödev ödül ödün öfke ölçü ömür önce öncü önem öpme örgü örme örtü övgü öykü öyle özel özen özet özgü özlü özne özür öğle öğün öğüt ücra ülke ülkü ümit ünlü ürün üvey üzüm üçer üçlü ılık ırak ısıl ışık ışın şaft şair şaka şans şarj şart şasi şato şaşı şema şevk şifa şiir şike şişe şoke şort şube şuur"},"rare":{"3":"aah aba abd abe abo abs abu acz afi aft agu aha ahi ahu aka aks akı ala alg ali alp ant aps ari ark arp art arz arş asa ask ast ası ate ati aut aya ayn aza azı ağa ağu ağı bad ban bap bat bav baç bed bek bet bip bis boa bom bop bor bre bul bun bön böğ bük büz bız car cağ cem cer cet cif cim cuk cup cüz cık cıs cız dah dav daz deh dek dem din dna dok dua dun duy döl döş dük düo ece eda ede edi efe ege eke eko ekü ela epe erg erk evç eza eğe fak faş fek fel fer fiğ flu fob fol fos ful fut föy füg fır gaf gag gah gak gal gam gem gey gez giz gut gön güm gık gır hab hac had haf har hav hay haz haç hin hiş hor hun hur huğ huş höl höt hüt hık hım hır ide ifa ika iks ila ini irs ita iti iye jak jig jip jul jüt kah kak kal kam kan kav kay kef kem kep ker kes ket keş kik kip kof kom kov kul kup kut kuz kös küm kür küt kıh kıç kığ lag lak lal lam lan leb lef leh lep ley leş lim lir lok lop lor los loğ lup lök löp lös lüp lığ mah mai mam mas mağ maş mef men mes met mey meç mim mir mis mol muş mıh nah nam nan nas nev nim nom oba oha ohm ole oma ons ora org pah pal par per pey peç pik pir pli pof pog pos poy pub pöf pöç pür pıt ram rey rom rop rot ruf ruz rıh sah sak sam say sek sem ser sif sim sin sit sof som sop sup sur sut sör tab tak tal tar tav tef tem tik tim tin tol tor tos tuh tul tun tuğ tör tös töz tüf tüh tük tün tüs tüü tın tıs tığ udi ufo umu uzo vah vat vay vaz vip vın vız yad yak yal yek yeğ yiv yom yoz yoğ yuf yuh yır zan zat zaç zağ zem zen zer zir zom zum zül zıh zıp zır çak çal çar çat çav çeç çir çis çiy çiş çor çul çöz çüş çın çır öcü öge öhö öke ölü örf örk örs örü öze ööf üre ıra ırk ırz şad şak şap şat şaz şeb şek şem şer şet şev şeş şif şip şom şua şuh şıp","4":"aaah abat abis abli abra abuk abus acar acem acep acul acun acur acyo adap adaş adcı adem adıl afak afal afat afif afis afra afur agah agel aguş ahar ahdi ahir ahit ahiz ahzu ahçı ahşa ajur akak akar akaç akik akil akim akis akit akma akse aksu akur akut akva akça akçe alaz alel alez alil allı aloe alto alık alıç amal amel amil amin amip amit amma amme amok amor amut anal anaç anca anfi anif anot anti anut anüs anık anız aort apak apaz apaş apel apre apse apış araf arak arap araz arda arge arif arlı aruz arya arık arız arış arşe asap asar ases asri asım ataş ateh atik atol atçı atıl atım aval avam avaz ayal ayet ayin ayla aylı ayma ayni ayol ayça ayın ayıt azca azel azil azit azma azol azor azık açar açkı açım açıt açış ağcı ağlı ağma ağsı ağıl ağım ağış aşar aşir aşna aşoz aşım aşır aşıt bade badi baha baht bahş baki bakı bala bani bara bark barı bası bati bayt baza bağa bağı bebe beis beka beli berk besi beti beze bezm biat bibi bide bili bini bira biye bişi blum boca boci bono breş brik briz briç brom broş buat bubi buji buke bula bura buru buse buut buğu böce böcü böke böle bölü börk büst büve büğe bıcı caba caiz caka cana cani cari cart cebe cefa ceht celi celp cemi cenk cerh cezp cife cima civa cura cönk cüda cüzi cıda cılk cırt dada daim dane dang dank dara darp daru data daye daği debi defo delk deme deni derk derz derç deyi diba dide dimi dine dini dink diya dore doru dosa dren drog duba dudu duka dönü dürü düse düve düze düğü ebat ebet ecel ecir ecza edat eder edik edim edip edna efil ehem ehil ehli ekit ekme ekru elan elci elde elem elif elik elim elti emay emen emeç emik emiş emme emmi enam enek enez enik enir enli enva eper erat erce erek eren ergi eril erim eriş erke erme eros erte esef esen esik esim esma esme esna esre eten eter etil etol etçi etüd etüv euro evce evci evin eviç evla evye ezan ezel ezik ezim eğin eğir eğiç eğiş eğsi eşey eşme fabl faik fail fakr fani fars fart farz fava faça fent feri fert ferz ferç fevk fevt fevç feyz feza fiks fink fino fişe flit flok flor floş fora fors fota foya foşa frak frer friz fule furt futa fötr füme füru fırt gabi gaco gahi gaip gale gali gama gang gani gard gark garp gato gaus gayr gayz gaza gebe geda gele getr gidi gine gonk gren gres gril gros guaj guaş gurk guru guşa göce gömü gönç görk görü göze göçü güdü güme günü güre gürz gıdı gıgı gına gırt hacı hafi hail haiz haje halt hami hamt hara hare hars hart hasa havi haya haza haşa hela herk hiza hişt hona hora hoşt huri hurç huşu höst hıfz hınk hınç hırt iane iare iaşe ibda ibik ibis ibiş ibra ibre icap icar icaz idam idil ifna ifta iglo iham ihya iken ilah ilam ilca ilga illa illi ilme ilmi imam iman imdi imek imik inak inal inam inan indi ineç inha inik inti ipka ipsi ipçi irap irat irca irin iriş irsi isaf isal isli isot itap itfa itiş itki ivaz ivgi izam izan izaz izaç izbe izge içek içim içiş içki içre iğci iğde işar işba işbu işli işve jale janr jile jips juro kabl kadı kail kaim kain kaju kaka kala kana kani kant kanı kari karı kavi kaşe kebe kefe keka keke kele keme kerh kesi kesp kete keza kile kils kipe kirş kloş klüz kobi kofa koka komi konç kora kort kosa koçu koşa kron kufi kuhi kuka kula kuma kunt kurk kuşe köle köre köse küfe künh künk küsü kıpı kırç kıya kığı lain laka lake lala lame larp laso lata lava laza laşe lenf leva leçe liet lift liga lika linç liva loda lolo lort lota loça luti lutr lüle maki malç mapa marj marn mask maun mayi mazı meke meme meni meri meta mevt meşk miat mihr mika mink mira miri miso miza miço moka morg mudi muin muit murt murç muta muti muço mönü müft müge mürt müta naat naaş nafi nail naip nale name narh nato naşi nebi nece neci neft nema nemf nere neva nida nisa nite niza nova nüks nüve obua obüs ojit okar okka oley omur omça onar onat onlu onma onum opus oral orda orsa orun oruç orya otağ otlu otsu otçu ovma oyum oyuş oğuz pakt pare pars pata paye pazu pazı pena peni pens pepe perm pers pert peso pest peyk pezo peçe pike piko pile pipi pişi popo posa poşu puhu punt punç pupa puşu pırt pışt raca raci raht raks rakı rami ramp rate rağm raşe raşi regl reha remi repo reva revü reye reze rika rina rint ritm riya roba roda roka roza roze ruam ruba rubu rupi röle rücu rüku rükü rüşt rızk saba sabi sabo sada sagu sahn saik sair sake saki sako sala sanı sapa sara sari sası satı sava saya saye sağu sağı seci seda seki sela selp sema semi sena sepi sere serf sevi seza sezi sezü seçi sika silo sima sine siya skif slap slip slot snop sobe sofa sofi sofu soku soma sone sote sten ster stor sual sufi sulh sulp sumo suna sura sure söbe söbü söve süet süje sülf süne sürç sıdk sıma sıpa sığa taam taba tabl tabı taka takt tali talk tamu tapa tapi tapı tarh tart taun taya tayf teba tefe tehi tein tela tepi teşt tike tipo titr tiyo tofu toht topu toto trap tras trok trup trük tual tulu tutu türe türs tüze tını ufki uhde ukde ulak ulam ulan ulaç ulum ulvi umar umde umma umre umum umur uran uray urba uruk urup usçu utku utlu utma utçu uyak uyur uzam uzvi uçar uğra uğru uğut vaaz vahi vaiz vaki vaks vamp vazı veca vena vere vido vira vire virt viya vole voli vuku vuru yaba yafa yakı yatı yave yağı yaşa yeis yeke yele yogi yoma yont yuan yuha yuma yuna yıkı yısa zaaf zade zail zait zamk zari zarp zati zede zerk zevç zina ziya zoka zona züht zınk çala çaça çağa çeki çenk çeri çeçe çipo çise çita çiti çizi çucu çuha çuka çıkı çıma çıpa çıpı çıta çığa öbek ökse öksü ökçe öküz ölet ölme ölüm ölüş önad önek önel öpüş örek ören örfi örge örük örüm örüş ötme ötre ötüş öveç övme övüş özek özge özsu özüt öçlü öğür öşür üful ülen üleş ümmi ümük ünik ürat ürem ürkü üste ütme üvez üzgü üzme üzre üçüz üşme ıhma ılım ırki ırıp ıska ısın ıtri ıtır ığıl ışkı ışıl şafi şaki şale şali şalt şama şano şark şase şavk şayi şeci şelf şems şeni şerh şeri şerç şeyh şiar şile şilt şirk şist şita şive şolo şose şufa şule şura şönt şüfa şüyu şıra"},"serve":{"3":"acı ada ana ani anı ara arı ata ayı açı aşı bal bar bas bay baz bağ baş bel bez beş bin bir bit bol bot boy boz boş but buz cam can caz cin dal dar dağ dik dil dip diz diş don doz dul duş dün düz düş dış fal fan far fay faz fen fil fit fon gaz gen gol gök göl göz göç gül gün gür güz güç hak hal ham han hap has hat his hit hoş jel jet kap kar kas kat kaz kaç kaş kek kel kil kin kit kod kol kor kot koy koz koç kum kur kuş kök kör köy kül küp kıl kır kız kış laf mal mat maç mil mit nar naz nem net ney not pak pas pat pay pet pil pin pis pop poz pul put raf rap ray ret rol sac saf sal san sap sav saz saç sağ sel ses set sis sol son sos soy söz süs sır sığ tam tan tas tat taç taş tek tel ten ter tez tip tok ton top toz tur tuz tuş tüm tüp tür tüy tıp tır yan yar yas yat yay yaz yağ yaş yel yem yen yer yol yön yün yüz zam zar zil çam çan çay çağ çek çim çip çit çiğ çığ şan şen şok","4":"aile akıl akım akın akış alan alem alet alma alım alın alış aman amaç anma asil asma asıl asır atak atma atık atış ayak ayar ayık açma açık ağır aşık bale bant baro batı bazı bora boru boya boğa dana dava dere deri ders dert deva diri doğu ekin elli emek erik etek etik etli evli eğik eşek fare fark file fire gala geri hala halı hane harf hava hile ilan inme itme kaba kafa kafe kale kara kare kart kasa kase kast katı kaya kaza kazı kene kent kere kese kira koca koku kola konu koru kota kova koyu koza koşu kura kurs kurt kuru kutu kuyu kuzu kuğu küre lale mala mali mama mart marş masa maya maça mert mide mine mini nane nine odak okur olma pala papa para park paşa peri pire plan post saha saka salı sarı sene sera seri sert soda soya sıra tane tanı test töre ufak uzak uçak vadi vaka vale vali veba veda vefa veri yaka yalı yapı yara yarı yasa yaya yazı çalı çark çatı çene çile şart"},"x":{"common":{"3":"adı atı ava avı bak bil böl der dur dök dön eki ele eli ete eti eve evi eşe eşi gel gir git giy gör idi ipe ipi izi içe içi işe işi koş oku ola ona onu ota otu oyu sar sat sev seç sil sor sus sür tut tık uca ucu una unu uyu ver vur yap çiz çık öde öne önü ört özü üne ünü üçe üçü","4":"abim abin adın affı akan akla aklı aktı akıp aldı alsa alta alıp alır anam anda andı anla anın arar ardı arta aslı asın atan atar atla attı atın atıp ayda ayır azdı açan açtı açın açıp ağla ağza ağzı ağın aşan aşka aşkı aştı aşıp baka balı bana başa başı beni beye beyi bezi beşe beşi bire bize bizi botu boyu boşa boşu buna bunu cama camı canı cebi dala dalı dağa dağı dedi dene dese devi dibe dibi dile dili dişe dozu duşa döne düne dünü dışa dışı eden edin eker ekle elin elle emri erir etin etse etti evde evim ezip eğil eğip eşim eşin falı fişi fonu gazı gide gole golü göle gölü gözü göğe göğü güce gücü güle gülü güne hali hana hanı hapı hiçe huyu hıza hızı idim ilde ilet ilki imiş inen iner inip ipin iple isen isme ismi iten itip itti izle izne izni içen içer içip içte içti işim işin işle kabı kalk kapa kası kata kaça kaçı keki kime kiri kodu kolu kulu kumu kuşa kuşu kökü körü köye köyü küle küpü kılı kıza kızı kışa kışı lafa lafı lige ligi malı maçı modu mumu namı nesi neye neyi notu odam odur olan oldu olsa olun olup onda onla onun otur oydu oyla oyna oğlu pası payı peşe pili pulu rafa role rolü ruha ruhu sana sapı sata saça saçı sağa seni sese sesi sete seti seve size sizi sola solu sona sonu sora sosa sosu soyu suda suya suyu suça suçu söze sözü süsü sütü tacı tadı tara taşa taşı teli teni teri tezi tonu topa toza tozu tuzu tuşa tuşu tüpü türü tüyü tıka ufku ulaş unut utan uyan uyar uyun uyup uzan uzar uzat uçan uçtu uçup yanı yapa yayı yaza yaşı yemi yere yeri yola yolu yöne yönü yükü yürü yüze yüzü yıka yıla yılı zarı zile zili zora zoru çapı çaya çayı çağı çipi çöle çölü çöpe çöpü öder ödüm ömre ömrü önde öper öptü öpüp öven özrü ünün üssü üstü üzdü üzen üçte ırkı şahı şefi şeye şeyi şoka şoku şovu şuna şunu şutu"},"rare":{"3":"abı ahı alı aça aşa biç boğ bur buy bös bık cay coş cıv del den değ deş dit dol dom doy doğ döv döğ düm dür düğ eme emi ene eni ere eri ese esi eze fam fem fim fin fıy ged ger gev gra grı göm göy güt ili ime imi ine ire irk isi ite ive ize iğe iği jem jen kon kop kus kıp kıs kıy lem len min nen nüm nün oca ocu odu oka olu omu osu pem pen piş pıs rem ren sez siy sok sun sök sön söv sün süz sın sıt sız tap tep tüt uda udu ufa ufu ula uma ura uru usa usu uta uya uza uzu uça uçu yed yet yit yon yor yum yun yur yut yık yığ çel çiv çök çöm çöğ çıv öce ödü öle ölç öpe öre öve ürk ürü üte üze üşe üşü ıha ılı ışı şaş şum şun","4":"abam aban abca abcı abda abdı ablı absa absı abım abın abız acze aczi acık acım acın acır acıt acış adan adar adat adca adce adci adda adde addi addı adim adin adla adle adsa adse adsi adsı adız affa afim afin afla aflı afsa afsı afta aftı afça afçı agum agun ahde ahim ahin ahla ahlı ahsa ahsı ahta ahtı ahum ahun ahze ahzi ahça ahım ahın ahız akam akde akdi aksa aksı akta akçı aküm akün akıt akız alam alca alcı alda alge algi alin alla alna alnı alpa alpı alsı alız amam anan anar ancı anim anin anki anlı ansa ansı anıl anım anıp anır anış apar aram aran arat arca arcı arim arin arkı arla arpı arsı arza arzı arım arın arıt arşa arşı asam asan asim asin aska asra asrı assa assı asta astı asça asçı asıp asız asış atam atat atem aten atfa atfı atim atin atsa atsı atta atça atız auta autu avca avcu avda avdı avla avlı avsa avsı avun avut avım avın avız ayam ayca aycı aydı ayki aysa aysı ayıl ayım ayız ayış azal azam azan azcı azda azla azle azli azlı azme azmi azsa azsı azıl azım azın azıp azıt azız azış açla açlı açsa açsı açta açça aççı açıl açız ağam ağan ağar ağca ağdı ağna ağsa ağum ağun ağıp aşer aşev aşla aşlı aşra aşrı aşsa aşsı aşta aşça aşıl aşın aşız aşış babı bada badı banı basa bata bava bavı baya bayı baça baçı bede bedi beje beji beke beki bele bene bert bete bine bite biti biçe boam boan bola bole bolu bolü boma bomu bopa bopu bota bozu buca buda budu bulu burk buya buza buzu böne bönü bört böse böğe böğü büke bükü bürü büze büzü bıka bıza bızı cara carı caya caza cazı cağa cağı ccce ccci ccde ccli ccme ccmi ccne ccni ccsi ccye ccyi ceme cifi cime cimi cine cini cipe cipi copa copu coşa cupa cupu cüze cüzü cıvı cıza cızı damı davı daya daza dazı dece deci defe defi deke deki dele demi desi deye değe deşe dike diki dire dnam dnan doca docu doda doka dola doma domu dona donu dosu doya doyu doza duam duan dula dulu duna dunu dura duta dutu duya duşu döke döle dölü döve döğe döşe döşü düce dücü düde düke dükü dülü düme dümü düom düon düre dürt düsü düye düyü düzü düğe düşe düşü ebem eben ecem ecen ecre ecri edam edan edem edil ediş efem efen egem egen egom egon ehle ekem eken ekil ekiz ekiş ekom ekon ekse ekte ekti ekçe ekçi eküm ekün elam elce eldi elen eler elet eliz else elsi emce emci emde emdi emer emil emim emip emiz emle emli emre emse emsi ence enci ende endi enen ener enet enim enin eniz enle ensi epem epen epri erci erde erdi erer erge erin erip erit eriz erki erle erli erse ersi ersu esil esip esiz esiş esle esli esne esri esse essi este esti esçe esçi etim etiz etle etsi ette etçe evdi ever evir eviz evle evse evsi eyle ezam ezdi ezen ezer ezil ezin eziş ezse eğdi eğem eğen eğit eğle eğne eğni eğse eşen eşer eşil eşip eşiz eşiş eşle eşse eşsi eşte eşti eşçe eşçi faca facı fada faka fakı fala fama famı fana fanı fara farı fası faya fayı faza fazı faşa faşı fece fede fele feli feme femi fene feni fere fese fesi feye feyi fice fici fili fime fimi fine fini fisi fite fiti fiye fiyi fiğe fiği flum flun foba fobu foka foku fola folu fona fosa fosu fulü futu föne fönü föye föyü füge fügü fıra fırı fıya gafa gafı gagı gaka gakı galı gamı gara garı gbce gbci gbde gbli gbme gbmi gbne gbni gbsi gbye gbyi geci gede geli geme geni gere gesi geve geye geyi geze geçi gire giye gize gizi grca grcı grda grdı grim grin grla grlı grsa grsı grım grın grız guta gutu göme göne gönü göye göçe güde gümü gürü güze güzü güçe güçü gıka gıkı gıra gırı haba habı hafa hafı haka hakı hama hamı hapa harı hası havı haça haçı here heri hine hini hite hiti hiçi hole holü horu hoşa hoşu huna hunu hura huru huya huğa huğu huşa höle hölü hüre hürü hüte hütü hıka hıkı hıma hımı hıra hırı idem iden idik idin ifam ifan ikam ikan ikim ikin ikse iksi ilce ilci ildi ilen iler ilin ilip iliz iliş ilse ilsi imce imci imde imim imin imiz imle imli imse imsi inde inil inim inin iniz inle inli inse insi inçe inçi ipim ipiz ipli ipse ipte ipti ipuç ipçe irdi iren irer iril irim irip irke irme irse isek isem isin isiz isle isse issi iste isti isçe isçi itam itan iter itil itim itin itiz itle itli itse itsi itte itçe itçi ivdi iven iver ivil ivin ivip iviş ivse iyem iyen iyim iyin izce izde izdi izim iziz izli izse izsi içil içir içit içiz içle içse içsi iççe iççi iğce iğdi iğim iğin iğiz iğle iğli iğse iğsi işen işer işet işit işiz işse işsi işti işçe jaka jakı jece jeci jede jele jeli jeme jemi jene jeni jesi jete jeti jeye jeyi jige jigi jipe jipi jule julü jöne jönü jüte jütü kakı kalı kamı kate kava kavı kaşa kaşı kefi keli kemi kepe kepi keri kert keti keze kezi keşe keşi kgce kgci kgde kgli kgme kgmi kgne kgni kgsi kgye kgyi kike kiki kili kine kini kipi kire kite kiti koda kofu komu kona kopa kork kotu kovu koya kozu koça kupu kusa kuta kuza köke kösü köze közü küfü külü kümü kürü küse küte kütü kıha kıhı kıla kını kıpa kıra kırp kırt kırı kıtı kıça kıçı kığa laca lacı lada laga lagı lakı lali lalı lamı lana lanı lası lavı laya layı lebe lebi lece leci lede lehe lehi leli leme lemi lene leni lepe lepi lesi leye leyi leşe leşi life lifi lime limi lire liri loka loku lopa lopu lora loru losa losu lotu loğa loğu loşa loşu ltce ltci ltde ltli ltme ltmi ltne ltni ltsi ltye ltyi lupa lupu löke lökü löpe löpü löse lösü lüpe lüpü lığa lığı maha mahı maim mamı mata matı mağa mağı maşı mefe mefi mele mene mese mesi meye meyi meçe meçi mice mici mile mili mime mimi mire mise misi mite miti miye miyi mole molü mora moru msce msci msde msli msme msmi msne msni mssi msye msyi muma muza muzu muşa muşu mıha mıhı mızı nala nalı nama nana nanı narı naza nazı nede neli neme nemi neni nete neti neve nime nimi nişe nişi noma nomu nura nuru nüce nücü nüde nülü nüme nümü nüne nünü nüsü nüye nüyü obam oban ocam ocan ocuk ocum ocun ocur ocut odan odca odcu odda oddu odla odlu odsa odsu odum oduz ofla ohla ohma ohmu ojem ojen okla oklu okra oksa oksu okta oktu okum okun okut okuz okça okşa olar olaş olum omam oman omca omcu omda omdu omla omlu omsa omsu omum omun omza omzu onan onaş oncu ondu onsa onsu onul onup onuz onuş oram orga orgu osal osun osur osuz otan otar otat otla otom oton otsa otta ottu otum otun otça ovam ovan ovar ovdu ovsa ovul ovun ovup ovuş oyam oyan oyar oyca oycu oyda oylu oysu oyul oyup oyuz oğla pahı paka pakı palı parı pasa patı paya pece peci pede peke peli peme pemi pene pere pese pesi pete peti peye peyi peçi peşi phce phci phde phli phme phmi phne phni phsi phye phyi pice pici piki pime pimi pine pini piri pise piye piyi pişe plim plin pofa pofu popa popu posu potu poya poyu poza pozu poğa poğu puba pubı pufa pufu pula pusa puta putu pöçe pöçü püfe püfü pürü pısa pıta pıtı rafı rama ramı rapa rapı raya rayı rece reci rede reli reme rene reni resi reyi robu roma romu rotu rufa rufu ruja ruju ruza ruzu rıha rıhı saca sacı safı sakı sama samı sanç sark sars savı saza sazı sece sede seke seli seme serp seye seyi seze seçe sice sici side sife sifi sile sili silk sime simi sise sisi siti siye siyi soka somu sopu soğu suca sudu sula suok supa supu suru susa syor söke söne söre sörü sürt süse süte süze sıdı sıka sına sırı sısa sıta sıya sıza sığı taca tada tala talı tama tamı tana tarı tası tavı tayı tece teci tede tefi teki tele teme temi tene tesi teye teyi teze tice tici tide tiki tili time timi tine tini tipe tisi tiye tiyi tize tizi toku tola tolu tona tora toru tosa tosu toya toyu tule tulü tuna tunu turu tuta tuza tuğa tuğu tvce tvci tvde tvli tvme tvmi tvne tvni tvsi tvye tvyi törü töze tözü tüfe tüfü tüke tükü tüle tülü tüme tüne tünü tüpe tüse tüsü tüte tüye tına tıra tırs tırı tısa tısı tığa tığı ucum ucun udim udin udum udun uduz ufal ufka ufla uflu ufom ufon ufsa ufsu ufta uftu ufum ufun ufuz ufça ufçu ular ulat ulun ulur ulut uluş uman umdu umsa umul umun umup umuş unca unda undu unla unlu unsa unsu unum unun unuz urca urcu urda urdu urla urlu ursa ursu urum urun uruz usan usla ussa ussu ustu usum usun usuz usça utar utla utsa utsu utta uttu utul utun utup utuş utça uysa uyul uyut uyuş uzca uzcu uzda uzdu uzla uzlu uzom uzon uzsa uzsu uzum uzuz uzva uzvu uçla uçsa uçsu uçta uçul uçum uçun uçur uçuz uçça uççu uğun vara varı vata vatı vaza vipe vipi vsce vsci vsde vsli vsme vsmi vsne vsni vssi vsye vsyi vura vına vını vıza vızı yada yadı yala yare yari yası yata yağa yede yeki yeli yene yenç yese yete yeğe yeği yite yive yivi yiye yoka yoku yomu yona yora yort yoza yozu yoğa yoğu yudu yusa yuta yuya yyor yüke yülü yüne yünü yıra yırt yırı yığa zara zata zatı zaça zaçı zağa zağı zene zeni zere zeri zire ziri zoma zomu zuma zumu zıha zıhı zıpa zıpı zıra zırı çaka çama çamı çana çanı çara çarp çarı çata çava çavı çeke çele çent çeçi çili çime çimi çipe çire çiri çisi çite çive çiye çiyi çize çiğe çiği çişe çişi çora çoru çoğa çula çulu çöke çöme çöze çözü çöğe çürü çıda çıka çına çını çırp çırı çıtı çıva çığı öcüm öcün öcüz ödce ödcü ödde öddü öden ödet ödeş ödle ödlü ödse ödsü ödüz ögem ögen ökem öken öldü ölen ölse ölçe ölün ölüp ölür öndü önen öner önet önle önlü önse önsü önüm önün önüz öpen öpse öpül öpün ördü örer öret örfe örfü örke örkü örse örsü örte örül örün örüp ötem öten öter ötse öttü ötül ötün ötüp ötür övdü över övse övül övün övüp özce özcü özde özdü özem özer özle özre özse özsü özüm özün özüz öçle öçse öçsü öçte öçtü öççe öççü öğem öğen öşre öşrü üfle üfür ünce üncü ünde ündü ünle ünse ünsü ünüm ünüz üren ürer üret ürke ürür ürüt ürüş üsle üslü üsse üsçe üsçü üten üter ütse üttü ütül ütüm ütün ütüp ütüş üyem üyen üzer üzse üzül üzün üzüp üzüş üçle üçse üçsü üçtü üççe üççü üçüm üçün üşen üşer üşse üştü üşül üşün üşüp üşür üşüt üşüş ıhan ıhar ıhla ıhsa ıhtı ıhıl ıhın ıhıp ıhış ıkla ıkın ılga ılın ılır ılıt ılış ıram ıran ırar ırat ırga ırka ırla ırza ırzı ısla ısım ısır ısıt ışır ışıt şada şadı şaha şakı şala şalı şana şanı şapa şapı şata şatı şaza şazı şaşa şebe şebi şece şede şefe şeli şeme şemi şene şere şesi şeve şevi şeşe şeşi şife şifi şipe şipi şişi şoma şomu şova şuam şuan şuca şucu şuda şuha şuhu şulu şuma şumu şusu şuta şuya şuyu şıka şıkı şıpa şıpı"},"serve":{"3":"acı ada ana ani anı ara arı ata ayı açı aşı bal bar bas bay baz bağ baş bel bez beş bin bir bit bol bot boy boz boş but buz cam can caz cin dal dar dağ dik dil dip diz diş don doz dul duş dün düz düş dış ebe fal fan far fay faz fen fil fit fon gaz gen geç gol gök göl göz göç gül gün gür güz güç hak hal ham han hap has hat his hit hoş hür iki ile iri ise iyi jel jet kap kar kas kat kaz kaç kaş kek kel kil kin kit kod kol kor kot koy koz koç kum kur kuş kök kör köy kül küp kıl kır kız kış laf mal mat maç mil mit mor nar naz nem net ney not nur oda oya pak pas pat pay pet pil pin pis pop poz pul put raf rap ray ret rol sac saf sal san sap sav saz saç sağ sel ses set sis sol son sos soy söz süs süt sık sır sığ tam tan tas tat taç taş tek tel ten ter tez tip tok ton top toz tur tuz tuş tüm tüp tür tüy tıp tır yan yar yas yat yay yaz yağ yaş yel yem yen yer yol yön yün yüz zam zar zil zor çam çan çay çağ çek çim çip çit çiğ çöl çığ öte şan şen şok şut şık","4":"abla adam adlı adım ahır aile ajan akıl akım akın akış alan alem alet alma altı alçı alım alın alış aman amaç anma araç arka arpa arsa artı asil asla asli asma asıl asır atak atlı atma atıf atık atış ayak ayar ayna ayık ayıp azar açma açık ağda ağır ağıt aşık baba bale bant baro batı bazı biri bora boru boya boğa cadı dana dava dayı dede deli dere deri ders dert deva deve diri diye dize dizi dişi doku dolu doğu duyu ekim ekin ekip elli emek emin emir erik eser esin esir etek etik etli etme evli eğik eşek eşit fare fark file fire gala gece geri gezi göre hadi hala halk halı hane harf hata hava hile ilan ilim ilke ille inme itme ivme için içme kaba kafa kafe kale kalp kapı kara kare kart kasa kase kast katı kaya kaza kazı kedi kene kent kere kese kimi kira kişi koca koku kola konu koru kota kova koyu koza koşu kule kura kurs kurt kuru kutu kuyu kuzu kuğu küme küpe küre kına kısa kıta lale mala mali mama mart marş masa maya maça mert meşe mide mine mini mola nane neşe nine niye nota odak odun okur olma oluk oluş onur oysa oyun ozan pala papa para park paşa peri pide pire plan post saha saka salı sarı sayı sene sera seri sert sini soda sopa soru soya sulu sunu sürü sıla sıra takı tane tanı tava terk ters test tura töre ufak uyuz uzak uzay uçak uçuk vadi vaka vale vali veba veda vefa veli veri yaka yalı yapı yara yarı yasa yaya yazı yedi yeni yöre çaba çalı çapa çark çatı çene çile özen özgü şaka şart"},"root":"abam:aba abca:ab abcı:ab abdı:abd abim:abi abin:abi ablı:ab absa:abs abı:ab abım:ab abın:ab abız:ab acık:acıkmak acım:acı acır:acımak acıt:acımak acış:acışmak adar:adamak adat:adamak adca:ad adce:ad adci:ad adda:ad adde:ad addi:ad addı:ad adim:adi adin:adi adla:ad adle:ad adsa:ad adse:ad adsi:ad adsı:ad adı:ad adın:ad adız:ad affa:af affı:af afim:afi afin:afi afla:af aflı:af afsa:af afsı:af aftı:aft afça:af afçı:af agum:agu agun:agu ahde:ahit ahim:ahi ahin:ahi ahlı:ah ahsa:ah ahsı:ah ahta:ah ahtı:ah ahum:ahu ahun:ahu ahze:ahiz ahzi:ahiz ahça:ah ahı:ah ahım:ah ahın:ah ahız:ah akam:aka akde:akit akdi:akit akta:ak aktı:akmak akçı:ak aküm:akü akün:akü akıp:akmak akıt:akıtmak akız:ak alam:ala alca:al alcı:al alda:al aldı:almak alge:alg algi:alg alin:ali alna:alın alnı:alın alpa:alp alpı:alp alsa:almak alsı:al alta:alt alı:al alıp:almak alır:almak alız:al amam:ama anam:ana anar:anmak ancı:an anim:ani anin:ani anki:an anlı:an ansa:anmak anıl:anmak anıp:anmak anır:anırmak anış:anmak apar:aparmak aram:ara arar:aramak arat:aramak arca:ar arcı:ar ardı:art arim:ari arin:ari arkı:ark arla:ar arpı:arp arsı:ar arta:artmak arza:arz arzı:arz arıt:arıtmak arşa:arş arşı:arş asam:asa asim:asi asin:asi aska:ask asra:asır asrı:asır assa:asmak assı:as asça:as asçı:as asıp:asmak asız:as asış:asmak atam:ata atat:atamak atem:ate aten:ate atfa:atıf atfı:atıf atim:ati atin:ati atsa:atmak atsı:at atta:at attı:atmak atça:at atı:at atıp:atmak atız:at auta:aut autu:aut ava:av avcu:avuç avda:av avdı:av avlı:av avsa:av avsı:av avun:avunmak avut:avutmak avı:av avım:av avın:av avız:av ayam:aya ayca:ay aycı:ay ayda:ay aydı:aymak ayki:ay aysa:aymak aysı:ay ayır:ayırmak ayız:ay ayış:aymak azal:azalmak azam:aza azcı:az azda:az azdı:azmak azla:az azle:azil azli:azil azlı:az azme:azim azmi:azim azsa:azmak azsı:az azıl:azmak azıp:azmak azıt:azıtmak azız:az açan:açmak açla:aç açlı:aç açsa:açmak açsı:aç açta:aç açtı:açmak açça:aç aççı:aç açıl:açmak açıp:açmak açız:aç ağam:ağa ağca:ağ ağdı:ağmak ağna:ağnamak ağsa:ağmak ağum:ağu ağun:ağu ağza:ağız ağzı:ağız ağıp:ağmak aşan:aşmak aşer:aşermek aşev:aşevi aşka:aşk aşkı:aşk aşlı:aş aşra:aşır aşrı:aşır aşsa:aşmak aşsı:aş aşta:aş aştı:aşmak aşça:aş aşıl:aşmak aşıp:aşmak aşız:aş aşış:aşmak babı:bap bada:bad badı:bad bak:bakmak baka:bakmak balı:bal banı:ban bava:bav bavı:bav bayı:bay baça:baç baçı:baç başa:baş başı:baş bede:bed bedi:bed beje:bej beji:bej beke:bek beki:bek bene:ben beni:ben bert:bertmek bete:bet beye:bey beyi:bey bezi:bez beşe:beş beşi:beş bil:bilmek bire:bir biti:bit bize:biz bizi:biz biç:biçmek biçe:biçmek boam:boa boan:boa bola:bol bole:bol bolu:bol bolü:bol boma:bom bomu:bom bopa:bop bopu:bop bota:bot botu:bot boyu:boy bozu:boz boğ:boğmak boşu:boş buca:bu budu:but bulu:bul bur:burmak burk:burkmak buy:buymak buya:buymak buza:buz buzu:buz böl:bölmek böne:bön bönü:bön bört:börtmek bös:bösmek böse:bösmek böğe:böğ böğü:böğ bükü:bük bürü:bürümek büzü:büz bık:bıkmak bıka:bıkmak bıza:bız bızı:bız cama:cam camı:cam canı:can cara:car carı:car cay:caymak caya:caymak caza:caz cazı:caz cağa:cağ cağı:cağ ccce:cc ccci:cc ccde:cc ccli:cc ccme:cc ccmi:cc ccne:cc ccni:cc ccsi:cc ccye:cc ccyi:cc cebi:cep ceme:cem cifi:cif cime:cim cimi:cim cine:cin cini:cin cipe:cip cipi:cip copa:cop copu:cop coş:coşmak coşa:coşmak cupa:cup cupu:cup cüze:cüz cüzü:cüz cıv:cıvmak cıvı:cıvımak cıza:cız cızı:cız dalı:dal damı:dam davı:dav daya:dayamak daza:daz dazı:daz dağa:dağ dağı:dağ dece:de deci:de dedi:demek defe:def defi:def deke:dek deki:dek del:delmek dele:delmek dese:demek desi:de devi:dev deye:de değ:değmek değe:değmek deş:deşmek deşe:deşmek dibe:dip dibi:dip diki:dik dili:dil dire:diremek dit:ditmek dnam:dna dnan:dna doca:do docu:do doda:do doka:dok dol:dolmak dom:do doma:do domu:do dosu:do doy:doymak doyu:do doza:doz dozu:doz doğ:doğmak duam:dua duan:dua dula:dul dulu:dul duna:dun dunu:dun dur:durmak dura:durmak duta:dut dutu:dut duşa:duş duşu:duş dök:dökmek döke:dökmek döle:döl dölü:döl dön:dönmek döne:dönmek döv:dövmek döve:dövmek döğ:döğmek döğe:döğmek döşü:döş düce:dü dücü:dü düde:dü düke:dük dükü:dük dülü:dü düm:dü düme:dü dümü:dü düom:düo düon:düo dür:dürmek düre:dürmek dürt:dürtmek düsü:dü düye:dü düyü:dü düzü:düz düğ:düğmek düğe:düğmek düşü:düş dışa:dış dışı:dış ebem:ebe eben:ebe ecem:ece ecen:ece ecre:ecir ecri:ecir edam:eda edan:eda edem:ede edil:etmek ediş:etmek efem:efe efen:efe egem:ege egen:ege egom:ego egon:ego ehle:ehil ekem:eke eker:ekmek eki:ek ekil:ekmek ekiz:ek ekiş:ekmek ekom:eko ekon:eko ekse:ekmek ekte:ek ekti:ekmek ekçe:ek ekçi:ek eküm:ekü ekün:ekü elam:ela elce:el eldi:el eler:elemek elet:elemek eli:el elin:el eliz:el else:el elsi:el emce:em emci:em emde:em emdi:emmek emer:emmek emi:em emil:emmek emim:em emip:emmek emiz:em emli:em emre:emir emri:emir emse:emmek emsi:em ence:en enci:en ende:en endi:en ener:enemek enet:enemek eni:en enim:en enin:en eniz:en enle:en ensi:en epem:epe epen:epe epri:eprimek erci:er erde:er erdi:ermek erer:ermek erge:erg erip:ermek erir:erimek eriz:er erki:erk erle:er erli:er ersi:er ersu:ersuyu esi:es esil:esmek esip:esmek esiz:es esiş:esmek esli:es esne:esnemek esri:esrimek esse:esmek essi:es este:es esti:esmek esçe:es esçi:es ete:et eti:et etim:et etin:et etiz:et etle:et etse:etmek etsi:et ette:et etti:etmek etçe:et evde:ev evdi:ev eve:ev ever:evermek evi:ev evim:ev evir:evirmek eviz:ev evle:ev evse:evsemek evsi:ev eyle:eylemek ezam:eza ezdi:ezmek eze:ezmek ezen:ezmek ezer:ezmek ezil:ezmek ezin:ezmek ezip:ezmek eziş:ezmek ezse:ezmek eğdi:eğmek eğem:eğe eğip:eğmek eğit:eğitmek eğle:eğlemek eğne:eğin eğni:eğin eğse:eğmek eşen:eşmek eşer:eşmek eşi:eş eşil:eşmek eşim:eş eşip:eşmek eşiz:eş eşiş:eşmek eşse:eşmek eşsi:eş eşte:eş eşti:eşmek eşçe:eş eşçi:eş faca:fa facı:fa fada:fa faka:fak fakı:fak fala:fal fam:fa fama:fa famı:fa fara:far fası:fa faza:faz fazı:faz faşa:faş faşı:faş fece:fe fede:fe fele:fel fem:fe feme:fe femi:fe fene:fe feni:fe fere:fer fese:fes feye:fe feyi:fe fice:fi fici:fi fim:fi fime:fi fimi:fi fin:fi fine:fi fini:fi fisi:fi fite:fit fiti:fit fiye:fi fiyi:fi fiğe:fiğ fiği:fiğ fişi:fiş flum:flu flun:flu foba:fob fobu:fob foka:fok foku:fok fola:fol folu:fol fona:fon fonu:fon fosa:fos fosu:fos fulü:ful futu:fut föne:fön fönü:fön föye:föy föyü:föy füge:füg fügü:füg fıra:fır fırı:fır fıy:fıymak fıya:fıymak gafa:gaf gafı:gaf gagı:gag gaka:gak gakı:gak galı:gal gamı:gam gara:gar garı:gar gazı:gaz gbce:gb gbci:gb gbde:gb gbli:gb gbme:gb gbmi:gb gbne:gb gbni:gb gbsi:gb gbye:gb gbyi:gb geci:ge ged:gedmek gel:gelmek geli:ge ger:germek gere:germek gesi:ge gev:gevmek geve:gevmek geçi:geç gide:gitmek gir:girmek gire:girmek git:gitmek giy:giymek giye:giymek gize:giz gizi:giz gole:gol golü:gol gra:gr grca:gr grcı:gr grda:gr grdı:gr grim:gri grin:gri grla:gr grlı:gr grsa:gr grsı:gr grı:gr grım:gr grın:gr grız:gr guta:gut gutu:gut göle:göl gölü:göl göm:gömmek göme:gömmek göne:gön gönü:gön gör:görmek göy:göymek göye:göymek gözü:göz göğe:gök göğü:gök güce:güç gücü:güç güde:gütmek gülü:gül gümü:güm güne:gün gürü:gür güt:gütmek güze:güz güzü:güz güçe:güç güçü:güç gıka:gık gıkı:gık gıra:gır gırı:gır haba:hab habı:hab hafa:haf hafı:haf haka:hak hakı:hak hali:hal hama:ham hamı:ham hana:han hanı:han hapa:hap hapı:hap harı:har hası:has havı:hav haça:haç haçı:haç here:her heri:her hine:hin hini:hin hite:hit hiti:hit hiçe:hiç hiçi:hiç hole:hol holü:hol horu:hor hoşa:hoş hoşu:hoş huna:hun hunu:hun hura:hur huru:hur huya:huy huyu:huy huğa:huğ huğu:huğ huşa:huş höle:höl hölü:höl hüre:hür hürü:hür hüte:hüt hütü:hüt hıka:hık hıkı:hık hıma:hım hımı:hım hıra:hır hırı:hır hıza:hız hızı:hız idem:ide iden:ide idi:imek idik:imek idim:imek idin:imek ifam:ifa ifan:ifa ikam:ika ikan:ika ikim:iki ikin:iki ikse:iks iksi:iks ilce:il ilci:il ilde:il ildi:ilmek iler:ilmek ilet:iletmek ili:il ilip:ilmek iliz:il ilki:ilk ilse:ilmek ilsi:il imce:im imci:im imde:im ime:im imi:im imim:im imin:im imiz:im imiş:imek imli:im imse:im imsi:im inde:in inen:inmek iner:inmek inil:inmek inip:inmek iniz:in inli:in inse:inmek insi:in inçe:inç inçi:inç ipe:ip ipi:ip ipim:ip ipin:ip ipiz:ip ipli:ip ipse:ip ipte:ip ipti:ip ipuç:ipucu ipçe:ip irdi:irmek ire:irmek iren:irmek irer:irmek iril:irmek irim:iri irip:irmek irk:irkmek irke:irkmek irme:irmek isek:imek isem:imek isen:imek isi:is isin:is isiz:is isme:isim ismi:isim isse:is issi:is isti:is isçe:is isçi:is itam:ita itan:ita iten:itmek iter:itmek itil:itmek itip:itmek itiz:it itle:it itli:it itse:itmek itsi:it itte:it itti:itmek itçe:it itçi:it ivdi:ivmek ive:ivmek iven:ivmek iver:ivmek ivil:ivmek ivin:ivmek ivip:ivmek iviş:ivmek ivse:ivmek iyem:iye iyen:iye iyim:iyi iyin:iyi izce:iz izde:iz izdi:iz ize:iz izi:iz izim:iz iziz:iz izli:iz izne:izin izni:izin izse:iz izsi:iz içen:içmek içi:iç içil:içmek içip:içmek içir:içirmek içit:içitmek içiz:iç içle:iç içse:içmek içsi:iç içte:iç içti:içmek iççe:iç iççi:iç iğce:iğ iğdi:iğ iğe:iğ iği:iğ iğim:iğ iğin:iğ iğiz:iğ iğle:iğ iğli:iğ iğse:iğ iğsi:iğ işen:işemek işer:işemek işet:işemek işi:iş işim:iş işin:iş işit:işitmek işiz:iş işse:iş işsi:iş işti:iş işçe:iş jaka:jak jakı:jak jece:je jeci:je jede:je jele:jel jem:je jeme:je jemi:je jen:je jene:je jeni:je jesi:je jete:jet jeti:jet jeye:je jeyi:je jige:jig jigi:jig jipe:jip jipi:jip jule:jul julü:jul jöne:jön jönü:jön jüte:jüt jütü:jüt kabı:kap kalk:kalkmak kalı:kal kamı:kam kası:kas kate:kat kava:kav kavı:kav kaçı:kaç kefi:kef keki:kek keli:kel kemi:kem kepi:kep keri:ker kert:kertmek keti:ket keze:kez kezi:kez keşe:keş keşi:keş kgce:kg kgci:kg kgde:kg kgli:kg kgme:kg kgmi:kg kgne:kg kgni:kg kgsi:kg kgye:kg kgyi:kg kike:kik kiki:kik kili:kil kime:kim kine:kin kini:kin kipi:kip kire:kir kiri:kir kite:kit kiti:kit koda:kod kodu:kod kofu:kof kolu:kol komu:kom kon:konmak kona:konmak kop:kopmak kopa:kopmak kork:korkmak kotu:kot kovu:kov kozu:koz koş:koşmak kulu:kul kumu:kum kupu:kup kus:kusmak kusa:kusmak kuta:kut kuza:kuz kuşa:kuş kuşu:kuş köke:kök kökü:kök körü:kör kösü:kös köye:köy köyü:köy köze:köz közü:köz küfü:küf küle:kül külü:kül kümü:küm küpü:küp küte:küt kütü:küt kıha:kıh kıhı:kıh kılı:kıl kını:kın kıp:kıpmak kıpa:kıpmak kırp:kırpmak kırt:kırtmak kırı:kır kıs:kısmak kıtı:kıt kıy:kıymak kızı:kız kıça:kıç kıçı:kıç kığa:kığ kışa:kış kışı:kış laca:la lacı:la lada:la lafa:laf lafı:laf laga:lag lagı:lag lakı:lak lali:lal lana:la lanı:la lası:la lavı:lav laya:la layı:la lebe:leb lebi:leb lece:le leci:le lede:le lehe:leh lehi:leh leli:le lem:le leme:le lemi:le len:le lene:le leni:le lepe:lep lepi:lep lesi:le leşe:leş leşi:leş life:lif lifi:lif lige:lig ligi:lig lime:lim limi:lim lire:lir liri:lir loka:lok loku:lok lopa:lop lopu:lop lora:lor loru:lor losa:los losu:los lotu:lot loğa:loğ loğu:loğ loşa:loş loşu:loş ltce:lt ltci:lt ltde:lt ltli:lt ltme:lt ltmi:lt ltne:lt ltni:lt ltsi:lt ltye:lt ltyi:lt lupa:lup lupu:lup löke:lök lökü:lök löpe:löp löpü:löp löse:lös lösü:lös lüpe:lüp lüpü:lüp lığa:lığ lığı:lığ maha:mah mahı:mah maim:mai malı:mal mamı:mam mata:mat matı:mat maçı:maç mağa:mağ mağı:mağ maşı:maş mefe:mef mefi:mef mele:melemek mene:men mese:mes mesi:mes meye:mey meyi:mey meçe:meç meçi:meç mice:mi mici:mi mile:mil min:mi mire:mir mise:mis mite:mit miti:mit miye:mi miyi:mi modu:mod mole:mol molü:mol mora:mor moru:mor msce:ms msci:ms msde:ms msli:ms msme:ms msmi:ms msne:ms msni:ms mssi:ms msye:ms msyi:ms muma:mum mumu:mum muza:muz muzu:muz muşa:muş muşu:muş mıha:mıh mıhı:mıh mızı:mızımak nala:nal nalı:nal nama:nam namı:nam nana:nan nanı:nan narı:nar naza:naz nazı:naz nede:ne neli:ne nen:ne neni:ne nesi:ne nete:net neti:net neve:nev nime:nim nimi:nim nişe:niş nişi:niş noma:nom nomu:nom notu:not nura:nur nuru:nur nüce:nü nücü:nü nüde:nü nülü:nü nüm:nü nüme:nü nümü:nü nün:nü nüne:nü nünü:nü nüsü:nü nüye:nü nüyü:nü obam:oba oban:oba oca:o ocam:o ocan:o ocuk:o ocum:o ocur:ocumak ocut:ocumak odam:oda odca:od odcu:od odda:od oddu:od odla:od odlu:od odsa:od odsu:od odu:od odum:od odur:o oduz:od ofla:oflamak ohla:ohlamak ohma:ohm ohmu:ohm ojem:oje ojen:oje oka:ok oklu:ok okra:okramak oksa:ok oksu:ok okta:ok oktu:ok okum:ok okut:okumak okuz:ok okça:ok okşa:okşamak ola:olmak olar:o olaş:o oldu:olmak olsa:olmak olu:o olum:o olup:olmak omam:oma oman:oma omca:om omcu:om omlu:om omum:om omza:omuz omzu:omuz onaş:onaşmak oncu:on ondu:onmak onup:onmak onuz:o onuş:onmak oram:ora orga:org orgu:org osal:o osu:o osun:o osur:osurmak osuz:o otan:otamak otat:otamak otom:oto oton:oto otsa:ot otta:ot ottu:ot otu:ot otum:ot otun:ot otur:oturmak otça:ot ovam:ova ovar:ovmak ovdu:ovmak ovsa:ovmak ovul:ovmak ovup:ovmak ovuş:ovmak oyam:oya oyar:oymak oyca:oy oycu:oy oyda:oy oydu:oymak oylu:oy oyna:oynamak oysu:oy oyul:oymak oyup:oymak oğla:oğul oğlu:oğul pahı:pah paka:pak pakı:pak palı:pal parı:par pasa:pas pası:pas patı:pat paya:pay payı:pay pece:pe peci:pe pede:pe peke:pek peli:pe pem:pe peme:pe pemi:pe pen:pe pene:pe pere:per pese:pes pete:pet peti:pet peçi:peç peşe:peş peşi:peş phce:ph phci:ph phde:ph phli:ph phme:ph phmi:ph phne:ph phni:ph phsi:ph phye:ph phyi:ph pice:pi pici:pi piki:pik piri:pir pise:pis piye:pi piyi:pi piş:pişmek pişe:pişmek plim:pli plin:pli pofa:pof pofu:pof popa:pop popu:pop posu:pos potu:pot poya:poy poyu:poy poza:poz pozu:poz poğa:pog poğu:pog puba:pub pubı:pub pufa:puf pufu:puf pula:pul pulu:pul puta:put putu:put pöçe:pöç pöçü:pöç püfe:püf püfü:püf pürü:pür pıs:pısmak pısa:pısmak pıta:pıt pıtı:pıt rafa:raf rafı:raf rama:ram ramı:ram rapa:rap rapı:rap raya:ray rayı:ray rece:re reci:re rede:re reli:re rem:re reme:re ren:re rene:re reni:re resi:re robu:rop role:rol rolü:rol roma:rom romu:rom rotu:rot rufa:ruf rufu:ruf ruha:ruh ruhu:ruh ruja:ruj ruju:ruj ruza:ruz ruzu:ruz rıha:rıh rıhı:rıh saca:sac sacı:sac safı:saf sakı:sak sama:sam samı:sam sanç:sançmak sapı:sap sar:sarmak sark:sarkmak sars:sarsmak sat:satmak sata:satmak savı:sav saza:saz sazı:saz saçı:saç sece:se sede:se seme:se serp:serpmek sese:ses sete:set seti:set sev:sevmek seve:sevmek seye:se seyi:se sez:sezmek seze:sezmek seç:seçmek seçe:seçmek sice:si sici:si side:si sife:sif sifi:sif sil:silmek sile:silmek sili:si silk:silkmek sise:sis siti:sit siy:siymek siyi:si size:siz sizi:siz sok:sokmak soka:sokmak somu:som sona:son sonu:son sopu:sop sor:sormak sora:sormak sosa:sos sosu:sos soyu:soy soğu:soğumak suca:su sudu:sut sula:sulamak sun:sunmak suok:suoku supa:sup supu:sup suru:sur sus:susmak suya:su suyu:su suça:suç suçu:suç syor:sımak sök:sökmek söke:sökmek sön:sönmek söne:sönmek söre:sör sörü:sör söv:sövmek söze:söz sözü:söz sün:sünmek sür:sürmek sürt:sürtmek süsü:süs süte:süt sütü:süt süz:süzmek süze:süzmek sıdı:sımak sısa:sımak sıt:sımak sıta:sımak sıya:sımak sız:sızmak sıza:sızmak sığı:sığ taca:taç tacı:taç tadı:tat tala:tal talı:tal tama:tam tamı:tam tana:tan tap:tapmak tarı:tar tası:tas tavı:tav tayı:tay tece:te teci:te tede:te tefi:tef teki:tek tele:tel tep:tepmek teri:ter tesi:te teye:te teyi:te teze:tez tezi:tez tice:ti tici:ti tide:ti tiki:tik tili:ti tipe:tip tisi:ti tiye:ti tiyi:ti tize:tiz tizi:tiz toku:tok tola:tol tolu:tol tona:ton tonu:ton topa:top tora:tor toru:tor tosa:tos tosu:tos toya:toy toyu:toy tule:tul tulü:tul tuna:tun tunu:tun turu:tur tut:tutmak tuta:tutmak tuza:tuz tuzu:tuz tuğa:tuğ tuğu:tuğ tuşa:tuş tuşu:tuş tvce:tv tvci:tv tvde:tv tvli:tv tvme:tv tvmi:tv tvne:tv tvni:tv tvsi:tv tvye:tv tvyi:tv törü:tör töze:töz tözü:töz tüfe:tüf tüfü:tüf tüke:tük tükü:tük tüle:tül tülü:tül tüme:tüm tünü:tün tüpe:tüp tüpü:tüp türü:tür tüsü:tüs tüt:tütmek tüte:tütmek tüyü:tüy tık:tıkmak tıra:tır tırs:tırsmak tırı:tır tısa:tıs tısı:tıs tığa:tığ tığı:tığ uca:uç ucu:uç ucum:uç ucun:uç uda:ut udim:udi udin:udi udu:ut udum:ut udun:ut uduz:ut ufa:uf ufal:ufalmak ufka:ufuk ufku:ufuk uflu:uf ufom:ufo ufon:ufo ufsa:uf ufsu:uf ufta:uf uftu:uf ufu:uf ufum:uf ufun:uf ufuz:uf ufça:uf ufçu:uf ula:ulamak ular:ulamak ulat:ulamak ulaş:ulaşmak ulur:ulumak ulut:ulumak uluş:uluşmak uma:ummak uman:ummak umdu:ummak umsa:ummak umul:ummak umup:ummak umuş:ummak una:un unca:un unda:un undu:un unlu:un unsa:un unsu:un unu:un unum:un unun:un unut:unutmak unuz:un ura:ur urca:ur urcu:ur urda:ur urdu:ur urla:ur urlu:ur ursa:ur ursu:ur uru:ur urum:ur urun:ur uruz:ur usa:us usan:usanmak usla:us ussa:us ussu:us ustu:us usu:us usum:us usun:us usuz:us usça:us uta:utmak utar:utmak utla:ut utsa:utmak utsu:ut utta:ut uttu:utmak utul:utmak utun:utmak utup:utmak utuş:utmak utça:ut uya:uymak uysa:uymak uyu:uyumak uyul:uymak uyup:uymak uyut:uyumak uzar:uzamak uzca:uz uzcu:uz uzda:uz uzdu:uz uzla:uz uzlu:uz uzom:uzo uzon:uzo uzsa:uz uzsu:uz uzu:uz uzum:uz uzuz:uz uzva:uzuv uzvu:uzuv uçan:uçmak uçla:uç uçsa:uçmak uçsu:uç uçta:uç uçtu:uçmak uçu:uç uçul:uçmak uçum:uç uçup:uçmak uçur:uçurmak uçuz:uç uçça:uç uççu:uç uğun:uğunmak varı:var vata:vat vatı:vat vaza:vaz ver:vermek vipe:vip vipi:vip vsce:vs vsci:vs vsde:vs vsli:vs vsme:vs vsmi:vs vsne:vs vsni:vs vssi:vs vsye:vs vsyi:vs vur:vurmak vura:vurmak vına:vın vını:vın vıza:vız vızı:vız yada:yad yadı:yad yanı:yan yap:yapmak yapa:yapmak yare:yar yari:yar yası:yas yayı:yay yaşı:yaş yed:yedmek yede:yedmek yeki:yek yeli:yel yemi:yem yenç:yençmek yeri:yer yese:yemek yet:yetmek yete:yetmek yeğe:yeğ yeği:yeğ yit:yitmek yite:yitmek yive:yiv yivi:yiv yiye:yemek yoka:yok yoku:yok yolu:yol yomu:yom yon:yonmak yona:yonmak yor:yormak yora:yormak yort:yortmak yoza:yoz yozu:yoz yudu:yumak yum:yummak yur:yumak yusa:yumak yuya:yumak yyor:yumak yöne:yön yönü:yön yüke:yük yükü:yük yülü:yülümek yüne:yün yünü:yün yürü:yürümek yüzü:yüz yık:yıkmak yılı:yıl yırt:yırtmak yırı:yır yığ:yığmak yığa:yığmak zara:zar zarı:zar zata:zat zatı:zat zaça:zaç zaçı:zaç zağa:zağ zağı:zağ zene:zen zeni:zen zere:zer zeri:zer zile:zil zili:zil zire:zir ziri:zir zoma:zom zomu:zom zora:zor zoru:zor zuma:zum zumu:zum zıha:zıh zıhı:zıh zıpa:zıp zıpı:zıp zıra:zır zırı:zır çama:çam çamı:çam çana:çan çanı:çan çapı:çap çara:çar çarp:çarpmak çarı:çar çavı:çav çaya:çay çayı:çay çağı:çağ çel:çelmek çele:çelmek çent:çentmek çeçi:çeç çili:çil çimi:çim çipe:çip çipi:çip çire:çir çiri:çir çisi:çis çiv:çivmek çive:çivmek çiye:çiy çiyi:çiy çiz:çizmek çize:çizmek çiğe:çiğ çiği:çiğ çişe:çiş çişi:çiş çora:çor çoru:çor çoğa:çok çula:çul çulu:çul çök:çökmek çöke:çökmek çöle:çöl çölü:çöl çöm:çömmek çöme:çömmek çöpe:çöp çöpü:çöp çözü:çöz çöğ:çöğmek çöğe:çöğmek çürü:çürümek çıda:çıdamak çık:çıkmak çıka:çıkmak çına:çın çını:çın çırp:çırpmak çırı:çır çıtı:çıt çıv:çıvmak çıva:çıvmak çığı:çığ öce:öç öcüz:öç ödce:öd ödcü:öd ödde:öd öddü:öd öden:ödemek öder:ödemek ödet:ödemek ödeş:ödeşmek ödle:öd ödlü:öd ödse:öd ödsü:öd ödü:öd ödüm:öd ödüz:öd ögem:öge ögen:öge ökem:öke öken:öke öldü:ölmek öle:ölmek ölen:ölmek ölse:ölmek ölç:ölçmek ölçe:ölçmek ölüp:ölmek ölür:ölmek ömre:ömür ömrü:ömür önde:ön öndü:ön önen:önemek önet:önemek önlü:ön önse:ön önsü:ön önü:ön önüm:ön önün:ön önüz:ön öpe:öpmek öpen:öpmek öper:öpmek öpse:öpmek öptü:öpmek öpül:öpmek öpün:öpmek öpüp:öpmek ördü:örmek örfe:örf örfü:örf örke:örk örkü:örk örsü:örs ört:örtmek örte:örtmek örül:örmek örüp:örmek ötem:öte öter:ötmek ötse:ötmek öttü:ötmek ötül:ötmek ötün:ötmek ötüp:ötmek ötür:ötürmek övdü:övmek öve:övmek öven:övmek över:övmek övse:övmek övül:övmek övüp:övmek özce:öz özcü:öz özde:öz özdü:öz özem:öze özer:özemek özre:özür özrü:özür özse:öz özsü:öz özü:öz özüm:öz özün:öz özüz:öz öçle:öç öçse:öç öçsü:öç öçte:öç öçtü:öç öççe:öç öççü:öç öğem:öğe öğen:öğe öşre:öşür öşrü:öşür üfle:üflemek üfür:üfürmek ünce:ün üncü:ün ünde:ün ündü:ün üne:ün ünse:ün ünsü:ün ünü:ün ünüm:ün ünün:ün ünüz:ün ürer:üremek ürk:ürkmek ürke:ürkmek ürü:ürümek ürür:ürümek ürüt:ürümek ürüş:ürüşmek üsle:üs üslü:üs üsse:üs üssü:üs üstü:üst üsçe:üs üsçü:üs üte:ütmek üten:ütmek üter:ütmek ütse:ütmek üttü:ütmek ütül:ütmek ütüm:ütü ütüp:ütmek ütüş:ütmek üyem:üye üyen:üye üzdü:üzmek üze:üzmek üzen:üzmek üzse:üzmek üzün:üzmek üzüp:üzmek üzüş:üzmek üçe:üç üçse:üç üçsü:üç üçte:üç üçtü:üç üççe:üç üççü:üç üçü:üç üçüm:üç üçün:üç üşe:üşmek üşer:üşmek üşse:üşmek üştü:üşmek üşü:üşümek üşül:üşmek üşüp:üşmek üşüt:üşümek ıha:ıhmak ıhan:ıhmak ıhar:ıhmak ıhla:ıhlamak ıhsa:ıhmak ıhtı:ıhmak ıhıl:ıhmak ıhın:ıhmak ıhıp:ıhmak ıhış:ıhmak ıkla:ıklamak ıkın:ıkınmak ılga:ılgamak ılı:ılımak ılır:ılımak ılıt:ılımak ılış:ılışmak ıram:ıra ırar:ıramak ırat:ıramak ırga:ırgamak ırka:ırk ırkı:ırk ırla:ırlamak ırza:ırz ırzı:ırz ısla:ıslamak ısım:ısı ısır:ısırmak ısıt:ısıtmak ışı:ışımak ışır:ışımak ışıt:ışımak şada:şad şadı:şad şaha:şah şahı:şah şakı:şakımak şala:şal şalı:şal şana:şan şanı:şan şapa:şap şapı:şap şata:şat şatı:şat şaza:şaz şazı:şaz şaş:şaşmak şaşa:şaşmak şebe:şeb şebi:şeb şece:şe şede:şe şefe:şef şefi:şef şeli:şe şere:şer şesi:şe şeve:şev şevi:şev şeşe:şeş şeşi:şeş şife:şif şifi:şif şipe:şip şipi:şip şişi:şiş şoka:şok şoku:şok şoma:şom şomu:şom şova:şov şovu:şov şuam:şua şuan:şua şuca:şu şucu:şu şuda:şu şuha:şuh şuhu:şuh şulu:şu şum:şu şuma:şu şumu:şu şun:şu şuna:şu şunu:şu şusu:şu şuta:şut şutu:şut şuya:şu şuyu:şu şıka:şık şıkı:şık şıpa:şıp şıpı:şıp"}},"en":{"alpha":"abcdefghijklmnopqrstuvwxyz","common":{"3":"abs ace act add ado ads aft age ago aha aid aim air ale all alp alt amp and ant any ape apt arc are ark arm art ash ask asp ate awe axe aye bad bag bah bam ban bar bat bay bed bee beg bet bid big bin bio bit biz boa bob bog boo bop bot bow box boy bra bro bud bug bun bus but buy bye cab cad cam can cap car cat chi cob cod cog con coo cop cos cot cow coy cry cub cue cup cut dab dad dal dam day den dew did dig dim din dip doc doe dog don dot dry dub due dug duo dye ear eat eau ebb eel egg ego elf elk elm emu end era ere err eve eye fad fan far fat fax fed fee few fig fin fir fit fix flu fly fob foe fog for fox fro fry fun fur gag gal gap gas gee gel gem gen get gig git gnu goo got gum gut guy gym had hah ham hap has hat hay heh hem hen her hex hey hid him hip his hit hmm hoe hog hop hot how hub hue hug huh hum hun hut ice icy ill imp ink inn ion ire ism its ivy jab jag jam jar jaw jay jet jig job jog joy jug keg key kid kin kip kit koi lab lad lag lam lap law lax lay led leg let lid lie lip lit log loo lot low lug lux mad mag man map mar mat max may men met mew mid mix mob mod mom moo mop mow mud mug mum nab nag nah nap nay net new nib nil nip nit nix nod nor not now nun nut oak odd ode off oft ohm oil old one ooh opt orb orc ore our out ova owe owl own pad pal pan pap par pat paw pay pea peg pen pep per pet pew phi pic pie pig pin pip pit ply pod pop pot pow pox pro pry psi pub pug pun pup pus put rad rag rah raj ram ran rap rat raw ray red ref rep ret rev rib rid rig rim rip rob rod roe rom rot row rub rue rug run rut rye sac sad sag sap sat saw sax say sea see set sew she shh shy sic sin sip sir sis sit six ska ski sky sly sob sod son sos sow sox soy spa spy sub sue sum sun sup tab tad tag taj tan tao tap tar tat tax tea tee ten the thy tic tie tin tip toe tom ton too top tot tow toy try tub tug two ugh umm ups urn use van var vat veg vet via vie vis vow vox wad wag wan war was wax way web wed wee wet who why wig win wit wiz woe won woo wow yah yak yam yay yea yen yep yes yet yew yin you yum yup zee zig zip zoo","4":"able aces ache acid acne acre acts adds afar aged ages ahem aide aids aims airs airy akin alas ally aloe alps also alto alum amen amid amir ammo amps anew anon ante anti ants apes apex aqua arch arcs area aria arid arms army arts asks atom atop aunt aura auto avid away axes axis axle baba baby back bags bail bait bake bald bale ball balm band bane bang bank bans barb bard bare bark barn bars base bash bass bath bats bays bead beak beam bean bear beat beau beck beds beef been beep bees beet begs bell belt bend bent best beta bets bias bids bike bile bill bind bins bios bird bite bits blah bled blew blob bloc blot blow blue blur boar boat bode body boil bold bolt bond bone bony book boom boon boos boot bora bore born boss both bots bout bowl bows boys brag bran bras brat bray bred brew brie brig brim bros brow buck buds buff bugs bulb bulk bull bump bunk buns buoy burn burr bury bush bust busy buys buzz byte cabs cafe cage cake calf call calm came camp cams cane cans cant cape caps carb card care carp cars cart casa case cash cast cats cave cell cent chap char chat chef chew chia chic chin chip chit chop chow cite city clad clam clan clap claw clay clip clot club clue coal coat coco code coil coin cola cold colt coma comb come cone cons cook cool coop cope cops copy cord core cork corn cost cosy coup cove cows cozy crab cram crew crib crop crow crux cube cubs cues cuff cult cups curb cure curl curt cusp cute cuts cyst czar dads daft dale dame damp dams dank dare dark darn dart dash data date davy dawn days deaf deal dean dear debt deck deco deed deem deep deer defy deli dell demo dent deny desk dial dice diet digs dill dime dine ding dips dire dirt disc dish disk diss diva dive dock docs does dogs dole doll dome done dons doom door dork dorm dory dose doth dots dove down drab drag draw drew drip drop drum dual dubs duck duct dude duel dues duet duke dull duly dump dune dung dunk dusk dust duty dyed dyer dyes each earl earn ears ease east easy eats echo eddy edge edgy edit eels eggs egos else emir emit ends envy epic eras eros euro even ever evil exam exec exes exit expo eyed eyes face fact fade fail fair fake fall fame fang fans fare farm fast fate fats faux fave fawn fear feat feds feed feel fees feet fell felt fend fern feud fiat fife figs file fill film find fine fink fins fire firm fish fist fits five flag flak flap flat flaw flax flea fled flee flew flex flip flop flow flux foam foes foil fold folk fond font food fool foot ford fore fork form fort foul four fowl foxy frat fray free fret frog from fuel full fund funk furs fury fuse fuss fuzz gaga gags gain gait gala gale gall gals game gang gaps garb gasp gate gave gaze gear geek geez gems gene gent germ gets gift gigs gill gilt girl giro gist give glad glee glen glow glue goal goat goes gold golf gone gong good goon gosh gout gown grab grad gram gray grew grey grid grim grin grip grit grow grub gulf gull gums guru gust guts guys gyms hack haha hail hair hale half hall halo halt hand hang hank hard hare harm harp hash hast hate hath hats haul have hawk hays haze hazy head heal heap hear heat heck heed heel heir held helm help hemp hens herb herd here hero hers hide high hike hill hind hint hips hire hiss hits hive hoax hobo hogs hold hole holy home hone hood hoof hook hoop hope hops horn hose host hour hove howl hubs hues huff huge hugs hula hulk hull hump hung hunk hunt hurt hush huts hymn hype iced icon idea idle idol ills inch info inks inns into ions iris iron isle itch item jack jade jail jams jars java jaws jays jazz jean jeep jeez jerk jest jets jinx jive jobs join joke jolt joys judo jump junk jury just kale kart keel keen keep kept keto keys khan kick kids kiln kilo kind king kink kiss kite kits kiwi knee knew knit knob knot know labs lace lack lacy lads lady lags laid lair lake lama lamb lame lamp land lane laps lark lash lass last late lava lawn laws lays lazy lead leaf leak lean leap left legs lend lens lent less lest lets levy liar lice lick lids lied lien lies lieu life lift like lily limb lime limo limp line link lion lips lisp list lite live load loaf loan lobe loch lock loco loft logo logs lone long look loom loop loot lord lore lose loss lost lots loud love lows lube luck lull lump lung lure lurk lush lynx mace macs made mage mags maid mail main make male mall malt mama mana mane mans many maps mare mark mars mart mash mask mass mast mate math mats mayo maze mead meal mean meat meek meet melt memo mend menu meow mere mesa mesh mess mice midi mild mile milk mill mime mind mine mini mink mint miss mist mite mitt moan moat mobs mock mode mods mojo mold mole moms monk mono mood moon moor moot more morn moss most moth move much muck mugs mule mums muse musk must mute myth nail name nana naps nave navy near neat neck need neon nerd nest nets news newt next nice nick nigh nine node nods noir none nook noon nope norm nose note noun nova null numb nuns nuts oaks oars oath oats obey odds odor ogre oils oily okay omen omit once ones only onto oops opal open opus oral orcs ouch ours outs oval oven over owed owes owls owns pace pack pact pads page paid pain pair pale palm pals pane pang pans pant papa para park part pass past path pats pave pawn paws pays peak pear peas peat peck peek peel peep peer pens perk perm peso pest pets phew pick pics pied pier pies pigs pike pile pill pine ping pink pins pint pipe pita pits pity plan plat play plea plot plow ploy plug plum plus pods poem poet poke pole poll polo poly pond pong pony pool poor pope pops pore pork port pose posh post pots pour pray prep prey prod prof prog prom prop pros pubs puck puff pull pulp puma pump punk puns punt pups pure push puts putt quad quay quid quit quiz race rack raft rage rags raid rail rain raja rake ramp rams rang rank rant raps rare rash rate rats rave rays read real reap rear redo reds reed reef reel refs rein rely rent repo reps rest ribs rice rich ride rife riff rift rigs rims ring rink riot ripe rips rise risk rite road roam roar robe rock rode rods role roll roof rook room root rope rose rosy rout roux rows rubs ruby rude ruff rugs ruin rule rump rune rung runs ruse rush rust sack safe saga sage said sail sake sale salt same sand sane sang sank sans sari sash save says scam scan scar scum seal seam seas seat sect seed seek seem seen seer sees self sell semi send sent sets sewn shah sham shed shin ship shiv shoe shop shot show shun shut sick side sift sigh sign silk sill silo sine sing sink sins sire site sits size skew skid skim skin skip skis skit slab slag slam slap slay sled slew slid slim slip slit slot slow slug slum slur smog smug snag snap snow snug soak soap soar sobs sock soda sofa soft soil sold sole solo soma some song sons soon soot sore sort soul soup sour sous span spar spat spec sped spin spit spot spun spur stag star stat stay stem step stew stir stop stow stub stud stun subs such sued sues suit sumo sums sung sunk suns sure surf swag swam swan swap swat sway swim sync tabs tack taco tact tags tail take tale talk tall tame tang tank tape taps tart task taxi teal team tear teas teen tees tell temp tend tens tent term test text than that thaw thee them then they thin this thou thru thug thus tick tide tidy tied tier ties tiff tiki tile till tilt time tins tint tiny tips tire toad toes tofu toil told toll tomb tome toms tone tong tons took tool toon toot tops tore torn tort toss tote tots tour tout town toys tram trap tray tree trek trim trio trip trot troy true tsar tube tubs tuck tuna tune turf turn tutu twig twin type typo tyre ugly undo unit unto upon urge used user uses vain vale vane vans vary vase vast veal veer veil vein vent verb very vest veto vets vial vibe vice view vile vine visa void volt vote vows wade wage wait wake walk wall wand want ward ware warm warn warp wars wary wash wasp watt wave wavy ways weak wear webs week weep weir weld well went wept were west what when whew whey whim whip whoa whom wick wide wife wigs wild will wilt wind wing wink wins wipe wire wise wish with wits woes woke wolf womb wont wood woof wool word wore work worm worn wrap wren writ yank yard yarn yawn yeah year yell yelp yeti yoga yogi yoke yolk your yuan yuck zeal zero zest zeta zinc zone zoom zoos"},"rare":{"3":"aah aal aas aba abo aby adz aff aga ail ain ais ait ala alb als ama ami amu ana ane ani arb arf ars att auk ava ave avo awa awl awn ays azo baa bal bap bas bel ben bey bib bis bod bos brr bub bum bur bys caw cay cee cel cep cis col cor cox coz cud cur cwm dag dah dak dap daw deb dee del dev dex dey dib die dis dit dol dom dor dos dow dud dui dun dup ecu edh eff efs eft eke eld ell els eme emf ems eng ens eon erg ern ers ess eta eth ewe fas fay feh fem fen fer fet feu fey fez fib fid fie fil fiz foh fon fop fou foy fub fud fug gab gad gae gam gan gar gat gay ged gey ghi gib gid gie gin gip goa gob god gor gox goy gul gun guv hae hag haj hao haw hep hes het hew hic hie hin hob hod hon hoy hup hyp ich ick ids iff ifs ilk ins irk jee jeu jib jin joe jot jow jun jus jut kab kae kaf kas kat kay kea kef ken kep kex khi kif kir koa kob kop kor kos kue lac lar las lat lav lea lee lei lek leu lev lex ley lez lib lin lis lob lop lox lum luv lye mac mae mas maw med mel mem mho mib mig mil mim mir mis moa moc mog mol mon mor mos mot mun mus mut nae nam nan naw neb nee nim nob nog noh nom noo nos nth nub nus oaf oar oat obe obi oca ods oes oho ohs oka oke ole oms ons oot ope ops ora ors ort ose oud oxo oxy pac pah pam pas pax pec ped pee peh pes pht pia pis piu pix poh poi pol pom pud pul pur pya pye pyx qat qua ras rax reb rec ree reg rei rem res rex rho ria rif rin roc rum rya sab sae sal sau sec seg sei sel sen ser sha sib sim sol sop sot sou sri sty suq syn tae tam tas tau tav taw ted teg tel tet tew tho til tis tod tog tor tsk tui tun tup tut tux twa tye udo uke ulu ump uns upo urb urd uta uts vac vas vau vav vaw vee vex vig vim voe vug wab wae wap wat waw wen wha wis wog wok wos wot wry wud wye wyn xis yap yar yaw yeh yid yip yob yod yok yom yon yow yuk zag zap zax zed zek zin zit zoa","4":"aahs aals abas abba abbe abed abet ably abos abri abut abye abys aced achy acme acta acyl adit ados adze aeon aero aery agar agas agee ager agha agin agio agly agma agog agon ague ahoy ails ains airn airt aits ajar ajee akee alae alan alar alba albs alec alee alef ales alfa alga alif alit alky alls alma alme alms alow alts amah amas ambo amia amie amin amis amok amus amyl anas ands anes anga anil anis ankh anna anoa ansa anta aped aper apod apse arak arbs arco ares arfs aril arks arse arty arum arvo aryl asci asea ashy asps atap ates atma auks auld aver aves avos avow awed awee awes awls awns awny awol awry axal axed axel axil axon ayah ayes ayin azan azon baal baas babe babu bach bade bads baff baht balk bals bams bani baps barf barm bask bast bate batt baud bawd bawl bedu beer bels bema bene bens berg berm beth bevy beys bhut bibb bibs bice bide bier biff bigs bilk bima bine bint birk birl birr bise bisk bitt bize blab blae blam blat blaw bleb blet blin blip blub boas bobs bock bods boff bogs bogy bola bole boll bolo bomb bong bonk boor bops bort bosh bosk bota bott boxy boyo bozo brad brae braw bree bren brin brio bris brit broo brrr brut bubo bubs buhl buhr bumf bums bund bung bunn bunt bura burd burg burl burp burs busk buss bute buts byes byre byrl caca cade cadi cads caff cagy caid cain caky calk calo calx caph capo cark carl carn carr cask cate caul cavy caws cays ceca cede cedi cees ceil cels celt cepe ceps cere cero cess cete chad cham chao chaw chay chez chid chis chon chub chug chum ciao cine cion cire cist clag clef clew clod clog clon clop cloy coax cobb cobs coca coda cods coed coff coft cogs coho coif coir coke cole cols coly comp coni conk conn cony coof coos coot corf corm cory cosh coss cote cots cowl cowy coxa coys crag crap craw cris croc crud crus cuds cued cuif cuke cull culm curd curf curn curr curs cusk cuss cwms cyan cyma cyme dabs dace dada dado daff dags dahl dahs dais daks dals damn dang daps darb dato daub daut dawk daws dawt daze dead debs dees deet defi deft deil deke dele delf dels deme demy dene dens dere derm deva devs dews dewy dexy deys dhak dhal dhow dibs dido didy died diel dies dike dims dink dins dint diol dipt dirk dirl dita dite dits ditz djin doat doby dodo doer doff doge dogy doit dojo dols dolt doms dona dong dopa dope dopy dore dorp dorr dors doss dost dote doty doum dour doux dows doxy doze dozy dram drat dray dree dreg drek drib drub drug drys duad duce duci duds duff dugs duit duma dumb duns dunt duos dupe dups dura dure durn duro durr dyad dyne eath eaux eave ebbs ebon eche ecru ecus eddo edhs eely eery effs efts egad egal eger eggy egis eide eked ekes elan elds elhi elks ells elms elmy emes emeu emfs emic emus emyd engs enol enow eons epee epha epos ergo ergs erne erns errs erst eses espy etas etch eths etic etna etui eves ewer ewes exon eyas eyen eyer eyne eyra eyre eyry fado fads fain falx fane fano fard farl faro fart fash faun fava fays faze feal feck fehs feme fems fens feod fere fess feta fete fets feus fiar fibs fice fico fido fids fief fila filo fils fino firn firs fisc fixt fizz flab flam flan flay fley flic flit floc floe flog flub flue flus foal fobs foci fogs fogy fohn foin fons fops fora forb foss foys fozy frae frag frap frig frit friz froe frow frug fubs fuci fuds fugs fugu fuji fume fumy funs furl futz fuze fyce fyke gabs gaby gadi gads gaed gaen gaes gaff gage gama gamb gamp gams gamy gane gaol gape gapy gars gash gast gats gaud gaum gaun gaur gawk gawp gays geck geds geed gees geld gels gelt gens genu gest geta geum ghat ghee ghis gibe gibs gids gied gien gies giga gild gimp gink gins gips gird girn girt gits gled gleg gley glia glib glim glob glom glop glug glum glut gnar gnat gnaw gnus goad goas gobo gobs goby gods goer gogo goof goop goos gore gorp gory gowd gowk goys gran grat gree grig grog grot grue grum guan guar guck gude guff guid gulp guls gunk guns gush guvs gybe gyre gyri gyro gyve haaf haar habu hade hadj haed haem haen haes haet haft hags hahs haik haji hajj hake halm hame hams hant haps hark harl hart hasp haut haws hebe heft hehs heil hell helo heme hems hent herl herm hern hest heth hets hewn hews hick hied hies hila hili hilt hins hisn hist hoar hobs hock hods hoed hoer hoes hogg hoke holk holm holp hols holt homy hong honk hons hoot hora hots howe howf howk hows hoya hoys huck hued huic hums hunh huns hurl husk hwan hyla hypo hyps hyte iamb ibex ibis ices ichs icky idem ides idly idyl iffy iglu ikat ikon ilea ilex ilia ilka ilks illy imam imid immy impi imps inby inia inky inly inro inti iota ired ires irid irks isba isms iwis ixia izar jabs jagg jags jake jamb jane jape jarl jato jauk jaup jeed jeer jees jefe jehu jell jeon jess jete jeux jiao jibb jibe jibs jiff jigs jill jilt jimp jink jinn jins jock joes joey jogs john joky jole josh joss jota jots jouk jowl jows juba jube juga jugs juju juke jupe jura jute juts kaas kabs kadi kaes kafs kagu kaif kail kain kaka kaki kame kami kana kane kaon kapa kaph karn kata kats kava kayo kays kbar keas keck keef keek keet kefs kegs keir kelp kemp keno kens kent kepi keps kerb kerf kern khaf khat khet khis kibe kief kier kifs kill kilt kina kine kino kins kips kirk kirn kirs kist kith kiva knap knar knop knur koan koas kobo kobs koel kohl kola kolo konk kook koph kops kore kors koss koto kris kudo kudu kues kuru kvas kyak kyar kyat kyte lacs lade laic lain lakh laky lall lams lang lank lard lari lars lase lath lati lats laud lave lavs laze leal lear leas lech leek leer lees leet lehr leis leke leks leku leno lept leud leva levo lewd leys libs lich lido lief lier lilt lima limn limy ling linn lino lins lint liny lira lire liri lits litu loam lobo lobs loca loci lode loge logy loin loll loof loon loos lope lops lorn lory lota loth loti loup lour lout lowe lown luau luce lude lues luff luge lugs lulu lums luna lune lunk lunt luny lust lute lutz luvs luxe lwei lyes lyre lyse maar mabe mach mack mads maes magi maim mair mako malm mano marc marl matt maud maul maun maut mawn maws maxi maya mays mazy meed meld mell mels mems meno meou merk merl meta mete meth mewl mews meze mhos mibs mica mids mien miff migg migs mike milo mils milt mina minx mire miri mirk mirs miry mise miso mity mixt moas mocs modi mogs moil moke mola moll mols molt moly mome momi mons mony mool moos mope mops mopy mora mors mort mosk mote mots mott moue mown mows moxa mozo muds muff mugg mull mumm mump mumu muni muns muon mura mure murk murr mush muss muts mutt myna naan nabe nabs nada nags naif nans naoi naos nape narc nard nark nary nays neap nebs neem neep neif nema nene ness nett neuk neum neve nevi nibs nide nidi nill nils nims nipa nips nisi nite nits nixe nixy nobs nock nodi noel noes nogg nogs noil nolo noma nome noms nona nori nosh nosy nota nous nows nowt nubs nuke nurd nurl oafs oast obes obia obis obit oboe obol ocas odea odes odic odyl ofay offs ogam ogee ogle ohed ohia ohms oink okas okeh okes okra olds oldy olea oleo oles olio olla omer onus onyx oohs oots ooze oozy opah oped opes opts orad orbs orby orca ordo ores orle orra orts oryx orzo osar oses ossa otic otto ouds ouph oust ouzo ovum owse oxen oxes oxid oxim oyer oyes oyez paca pacs padi paik pail pall palp paly pams paps pard pare parr pars pase pash pate paty pawl peag peal pean pech pecs peds peed peen pees pegs pehs pein peke pele pelf pelt pend pent peon pepo peps peri pert pews pfft pfui phat phis phiz phon phot phut pial pian pias pica pice pika piki pili pily pima pimp pina piny pion pips pipy pirn pish piso pith pixy pleb pled plew plie plod plop pock poco pogy pois poky pols pome pomp poms pone pons pood pooh poop posy pouf pout pows pram prao prat prau pree prex prez prig prim proa prow psis psst puce puds pugh pugs puja puke pula pule puli puls puna pung puny pupa puri purl purr purs puss putz pyas pyes pyic pyin pyre qaid qats qoph quag quai quey quin quip quod racy rads raff raga ragi raia raki rale rami rand rani rapt rase rasp rath rato raws raya raze razz ream rebs reck recs redd rede reek rees reft regs reif reis rems rend repp resh rete rets revs rhea rhos rhus rial rias rick rids riel rifs rile rill rime rimy rind rins ritz rive roan robs rocs roes roil rolf romp roms rood ropy rota rote roti rotl roto rots roue roup rove rube ruck rudd rued ruer rues ruga ruly rums runt rusk ruth ruts ryas ryes ryke rynd ryot sabe sabs sacs sade sadi sago sags sagy sain saki sall salp sals samp saps sard sark sass sate sati saul sawn saws scab scad scag scop scot scow scry scud scup scut sear secs seel seep sego segs seif seis sels seme sene sept sera sere serf sers seta sett sews sext shad shag shat shaw shay shea shes shew shim shmo shod shog shoo shri shul sial sibb sibs sice sics sike sild silt sima simp sims sinh sipe sips sirs sith sizy skag skas skat skee skeg skep skua slat slaw slob sloe slog slop slub slue smew smit snaw sned snib snip snit snob snog snot snub snye sods soja soke sola soli sols sone sook soph sops sora sorb sord sori sorn soth sots souk sown sows soya soys spae spas spay spew spik spiv spry spud spue sris stab staw stet stey stoa stob stum stye suba sudd suds suer suet sugh sulk sulu sump sunn supe sups suqs sura surd suss swab swig swob swop swot swum sybo syce syke syli syne syph tabu tace tach tads tael tahr tain taka tala talc tali tamp tams tans taos tapa tare tarn taro tarp tars tass tate tats taus taut tavs taws taxa teak teat teds teed teel teem teff tegs tela tele tels tepa tern teth tets tews thae thew thio thir thro thud tics tike tils tine ting tipi tirl tiro titi tivy toby tods tody toea toed toff toft toga togs toit toke tola tole tolu tony toom tope toph topi tora torc tori toro torr tors tory tosh tost tows towy toyo trad tref tret trey trig trod trop trow trug tsks tuba tufa tuff tuft tugs tuis tule tump tung tuns tups turd tush tusk tuts twae twas twee twit twos tyee tyer tyes tyke tyne typp typy tyro tzar udos ughs ukes ulan ulna ulus ulva umbo umps unai unau unbe unci unco unde undy upas upby updo urbs urds urea uric urns ursa urus utas uvea vacs vagi vail vair vamp vang vara vars vasa vats vatu vaus vavs vaws veep vees vela veld vena vend vera vert vext vide vied vier vies viga vigs vill vims vina vino viny viol virl vise vita viva vive voes vole vrow vugg vugh vugs wabs wack wadi wads wady waes waff waft wags waif wail wain wair wale waly wame wane wans wany waps wark wart wast wats wauk waul waur wawl waws waxy weal wean weds weed weel ween weer wees weet weft weka welt wend wens wert wets wham whap whee whet whid whig whin whir whit whiz whop whys wich wile wily wimp wine wino winy wiry wisp wiss wist wite wive woad wogs woks wold wonk wons woos wort wost wots wove wows wuss wych wyes wyle wynd wynn wyns wyte xyst yack yaff yagi yaks yald yams yang yaps yare yaud yaup yawl yawp yaws yays yean yeas yech yegg yeld yelk yens yerk yett yeuk yews yids yill yins yipe yips yird yirr ylem yobs yock yodh yods yogh yoks yond yoni yore yowe yowl yows yuca yuch yuga yuks yule yups yurt ywis zags zany zaps zarf zebu zeds zees zein zeks zerk zigs zill zing zins zips ziti zits zoea zoic zonk zoon zori zyme"},"serve":{"3":"ace act add age aid aim air ale all alt ant apt arc ark arm art ate awe axe aye bad bag bam ban bar bat bay bed bee beg bet bid big bin bio bit bob boo bot bow box boy bro bud bug bus but buy bye cab cam can cap car cat cod con cop cos cow cry cue cup cut dad dam day den dig dim dip doc doe dog don dot dry dub due dug dye ear eat eye fan far fat fax fed fee few fig fin fit fix fly fog fox fry fun fur gag gal gap gas gee gel gem gen get gig got gum gut ham hat hay hey hid hip hit hop hot how hub hug hut ion jam jar jaw jay jet job joy kid kin kit lab lad lag lap law lay led leg let lid lie lip lit log lot low mad mag man map mar mat max may men met mid mix mob mod mom mud mug mum nap net new nod not now nun nut ore out owe pad pal pan par pat pay pen per pet pic pie pig pin pit pod pop pot pub pup put ram ran rap rat raw ray red ref rep rev rid rig rim rip rob rod rom rot row rub rug run sac sad sap sat saw say sea see set shy sin sip sir sis sit six sky son sox soy spy sub sue sum sun tab tag tan tap tar tax tea tee ten tie tin tip toe tom ton too top tow toy try tub van var vet wan war wax way wed wee wet why wig win wit won woo wow yay yea yen yep yes yet yup zip zoo","4":"ages aide aids aims amid ants arms arts back bags bail bake bald bale ball band bang bank bans bare bark barn bars base bash bass bath bats beam bean bear beat beck beds beef bees bell belt bend bent best bets bias bids bike bill bind bite bits blew blow boat boil bold bolt bond bone book boom boot bore born boss both bout bowl boys brew bros buck buds bugs bulk bull bump burn bury bush bust busy buys cafe cage cake call calm came camp cane cans cape caps card care cars cart case cash cast cats cave cell cent chap chat chew chic chin chip chop cite clan clay clip coal coat code coil coin cold coma come cone cons cook cool cope cops copy cord core cork corn cost cove cows crab crew crop crow cube cubs cups curb cure cute cuts dads dale dame damp dare dark darn dash date dawn days deaf deal dean dear deck deed deep deer dell dent dial dice dime ding dire dish disk dive dock dogs doll dome doom dose dots dove drew dual duck duel dull dump dust earn ears ease east eats face fact fade fail fair fake fall fame fans fare farm fast fate fear feat feed feel fees feet fell felt fiat file fill find fine fire firm fist fits five flag flat flaw fled flee flew flex flip flow foil fold fond font food fool foot ford fork form fort foul four full fund funk gain gala gale game gang gaps gate gave gaze gear geek gift gigs gill give glow goat goes gold gone good grab grad gram gray grew grid grim grip grow guts hack hail hair hale half hall halo halt hand hang hank hard hare harm hash hate hats have head heal hear heat heck heel held help herb herd here hero hide hike hill hint hips hire hits hold hole home hood hook hope horn hose host hour hugs hulk hull hung hunt jack jail jean jeep jets jump junk just keen keep kick kids kind king kiss kits know labs lace lack lads laid lake lamb lame lamp land lane laps last late lawn laws lays lead leaf leak lean leap left legs lend lens lent less lets lick lied lies life lift like limb lime line link lips list live load loan lock logs lone long look loop lord lose loss lost lots love luck lump lung lure made maid mail main make male mall maps mare mark mars mart mask mass mate math maze meal mean meat meet melt mere mess mice mild mile milk mill mind mine mini mint miss mist mock mode mold mole moms mood moon more moss most move must mute nail name near neat neck need nest nets next nice nick nine node none noon nose note null nuts oath outs oven owes pace pack pact pads page paid pain pair pale palm park part pass past path pays peak peas peek peel peer pens pest pets pick pics pier pigs pike pile pill pine ping pink pins pint pipe pits play plot poke pole poll polo poly pond pony pool poor pope pops pork port pose post pots pour pray prof prom prop pros puck pull pump punk pure push puts race rack rage raid rail rain ramp rams rang rank rant rare rash rate rats rays read real rear reds reed reel rent reps rest ribs rice ride rift ring ripe rise rite road roar rock rode role roll roof room root rope rose rows rude rule runs rush rust sack safe sage sail sake sale same sand sane sang sank save scam scan scar seal seas seat seed seek seem seen sees sell send sent sets shed shin ship shop shot show sick side silk sing sink sins site sits size skin skip slam slap slim slip slot slow snap snow soap sock soft soil sold sole solo some song sons soon sore sort soul soup sour span spin spit spot spun spur star stat stay stem stop subs sued suit sums sung sunk sure swan swap sway tabs tags tail take tale talk tall tank tape task team tear teen tell tend tens tent test tick tide tied ties tile till tilt time tips tire toes told toll tomb tone tons took tool tops tore torn toss tour town toys trap tray tree trim trip tube tune type vain vale vast vent vest vice vile vine vows wade wage wait wake wall want ward warm warn warp wars wash wave ways weak wear week well went west wide wife wild will wind wing wins wipe wire wise wish woke wood wool word wore work worm worn yard yarn year yell zone zoom"}}};
 
-// Kelime Tenisi: sözlük, kurallar ve bot. DOM'suz; tarayıcıda ve Node testlerinde aynı dosya.
-// Oyun: kelime merdiveni rallisi. Her vuruşta gelen kelimenin tek harfini değiştirip geri gönderirsin.
-// Kullanılan kelime yanar; süresinde dönemeyen sayıyı kaybeder; dönüşü hiç olmayan kelime = smaç.
+// Kelime Düellosu: sözlük, kurallar ve bot. DOM'suz; tarayıcıda ve Node testlerinde aynı dosya.
+// Oyun: kelime merdiveni karşılıklı oynanır. Gelen kelimenin tek harfini değiştirip geri gönderirsin.
+// Kullanılan kelime o sayıda yanar; süresinde cevap veremeyen sayıyı kaybeder; hiç çıkışı olmayan kelime = çıkmaz.
 'use strict';
 
 const KT = (function () {
@@ -396,15 +395,14 @@ const KT = (function () {
   const upper = (w, lang) => String(w).toLocaleUpperCase(LOCALE[lang] || 'en-US');
   const lower = (w, lang) => String(w).toLocaleLowerCase(LOCALE[lang] || 'en-US');
 
-  // Shot clock in seconds: first return, shrink per shot, floor.
+  // Clock in seconds for each answer: first answer, shrink per word, floor.
   const PACES = {
     rahat: { start: 10, step: 0.5, min: 5 },
     normal: { start: 7, step: 0.4, min: 3.5 },
     hizli: { start: 5, step: 0.3, min: 2.5 },
   };
-  const SERVE_TIME = 10;      // seconds to pick a serve word (then one is picked for you)
-  const POINTS_TO_GAME = 4;   // 15, 30, 40, game; at 40-40 the next point wins ("altın sayı")
-  const TENNIS = ['0', '15', '30', '40'];
+  const START_TIME = 10;              // seconds to pick the starting word (then one is picked for you)
+  const TARGET = { 1: 5, 2: 9 };      // points to win: short match, long match
 
   function seeded(seed) { // mulberry32
     let a = seed >>> 0;
@@ -422,18 +420,27 @@ const KT = (function () {
     return a;
   }
 
+  // opts.ekli (Turkish): inflected forms count too (evde, aldı, bana), from words.tr.x.
   class Lexicon {
-    constructor(words, lang, len) {
+    constructor(words, lang, len, opts) {
       const d = words[lang];
       if (!d || !d.common[len]) throw new Error('no words for ' + lang + '/' + len);
+      const x = opts && opts.ekli && d.x ? d.x : null;
       this.lang = lang;
       this.len = len;
+      this.ekli = !!x;
       this.alpha = d.alpha;
-      const common = d.common[len].split(' ');
-      const rare = d.rare[len] ? d.rare[len].split(' ') : [];
+      const split = s => (s ? s.split(' ') : []);
+      const common = split(d.common[len]).concat(x ? split(x.common[len]) : []);
+      const rare = split(d.rare[len]).concat(x ? split(x.rare[len]) : []);
       this.commonSet = new Set(common);
       this.validSet = new Set(common.concat(rare));
-      this.serves = d.serve[len].split(' ');
+      this.serves = split((x || d).serve[len]);
+      this.roots = null;
+      if (x) {
+        if (!x._roots) x._roots = new Map(split(x.root).map(p => p.split(':')));
+        this.roots = x._roots;
+      }
       this.buckets = new Map();
       for (const w of this.validSet) {
         for (let i = 0; i < len; i++) {
@@ -446,6 +453,8 @@ const KT = (function () {
     }
     has(w) { return this.validSet.has(w); }
     isCommon(w) { return this.commonSet.has(w); }
+    // The dictionary word an inflected form comes from (aldı -> almak), or null.
+    root(w) { return (this.roots && this.validSet.has(w) && this.roots.get(w)) || null; }
     // Words one letter away from w, not in `used`. onlyCommon: the ones most people know.
     neighbours(w, used, onlyCommon) {
       const out = [];
@@ -469,11 +478,11 @@ const KT = (function () {
       }
       return at;
     }
-    pickServes(n, r, avoid) {
+    pickStarts(n, r, avoid) {
       const pool = avoid ? this.serves.filter(w => !avoid.has(w)) : this.serves;
       return shuffle(pool.length >= n ? pool : this.serves, r).slice(0, n);
     }
-    // Sort for showing: common words first, each group by fewest letters changed from `w`? keep A-Z.
+    // For showing: common words first, each group A-Z.
     split(words) {
       const c = [], r = [];
       for (const w of words) (this.commonSet.has(w) ? c : r).push(w);
@@ -484,45 +493,43 @@ const KT = (function () {
   }
 
   class Match {
-    // opts: { lex, players: [{ name, bonus }], gamesToWin, pace, firstServer, random }
+    // opts: { lex, players: [{ name, bonus }], target, pace, firstStarter, random }
     constructor(opts) {
       this.lex = opts.lex;
       this.players = opts.players.map(p => Object.assign({ bonus: 0 }, p));
-      this.gamesToWin = opts.gamesToWin || 2;
+      this.target = opts.target || TARGET[1];
       this.paceName = PACES[opts.pace] ? opts.pace : 'normal';
       this.pace = PACES[this.paceName];
       this.r = opts.random || Math.random;
-      this.games = [0, 0];
       this.points = [0, 0];
-      this.server = opts.firstServer === 1 ? 1 : 0;
-      this.phase = 'serve';         // serve | rally | pointOver | matchOver
+      this.starter = opts.firstStarter === 1 ? 1 : 0;   // picks the first word of the point; alternates every point
+      this.phase = 'start';         // start | rally | pointOver | matchOver
       this.winner = -1;
       this.pointsPlayed = 0;
       this.history = [];
-      this.served = new Set();      // serve words already used in this match
-      this.stats = { smashes: [0, 0], misses: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
+      this.openers = new Set();     // starting words already used in this match
+      this.stats = { deadEnds: [0, 0], misses: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
       this.point = null;
       this.newPoint();
     }
-    get receiver() { return 1 - this.server; }
     newPoint() {
-      const opts = this.lex.pickServes(3, this.r, this.served);
-      this.point = { word: null, used: new Set(), shots: [], turn: this.server, serveOptions: opts };
-      this.phase = 'serve';
+      const opts = this.lex.pickStarts(3, this.r, this.openers);
+      this.point = { word: null, used: new Set(), shots: [], turn: this.starter, options: opts };
+      this.phase = 'start';
     }
-    serve(word) {
-      if (this.phase !== 'serve') return { ok: false, reason: 'phase' };
-      if (!this.point.serveOptions.includes(word)) return { ok: false, reason: 'not-offered' };
+    start(word) {
+      if (this.phase !== 'start') return { ok: false, reason: 'phase' };
+      if (!this.point.options.includes(word)) return { ok: false, reason: 'not-offered' };
       const pt = this.point;
       pt.word = word;
       pt.used.add(word);
-      pt.shots.push({ by: this.server, word });
-      this.served.add(word);
-      pt.turn = this.receiver;
+      pt.shots.push({ by: this.starter, word });
+      this.openers.add(word);
+      pt.turn = 1 - this.starter;
       this.phase = 'rally';
       return { ok: true };
     }
-    // Seconds the player to move has for this shot.
+    // Seconds the player to move has for this answer.
     shotTime(player) {
       const p = player === undefined ? this.point.turn : player;
       const n = Math.max(0, this.point.shots.length - 1);
@@ -548,7 +555,7 @@ const KT = (function () {
       pt.shots.push({ by: p, word });
       this.stats.words[p]++;
       if (this.lex.neighbours(word, pt.used).length === 0) {
-        return Object.assign({ ok: true, at: c.at }, this.endPoint(p, 'smash'));
+        return Object.assign({ ok: true, at: c.at }, this.endPoint(p, 'dead'));
       }
       pt.turn = 1 - p;
       return { ok: true, at: c.at };
@@ -561,46 +568,30 @@ const KT = (function () {
     endPoint(winner, how) {
       const pt = this.point, loser = 1 - winner;
       const left = how === 'time' ? this.lex.split(this.lex.neighbours(pt.word, pt.used)) : { common: [], rare: [] };
-      const rally = pt.shots.length;            // words played in the point, serve included
-      if (rally > this.stats.longest) { this.stats.longest = rally; this.stats.longestWords = pt.shots.map(s => s.word); }
-      if (how === 'smash') this.stats.smashes[winner]++;
+      const chain = pt.shots.length;            // words played in the point, the starting word included
+      if (chain > this.stats.longest) { this.stats.longest = chain; this.stats.longestWords = pt.shots.map(s => s.word); }
+      if (how === 'dead') this.stats.deadEnds[winner]++;
       if (how === 'time') this.stats.misses[loser]++;
       this.points[winner]++;
       this.pointsPlayed++;
-      const res = { winner, how, word: pt.word, rally, shots: pt.shots.slice(), left, gameOver: false, matchOver: false };
-      if (this.points[winner] >= POINTS_TO_GAME) {
-        this.games[winner]++;
-        res.gameOver = true;
-        res.gamePoints = this.points.slice();
-        this.points = [0, 0];
-        this.server = 1 - this.server;          // serve changes every game
-        if (this.games[winner] >= this.gamesToWin) {
-          res.matchOver = true;
-          this.winner = winner;
-        }
-      }
-      res.games = this.games.slice();
+      const res = { winner, how, word: pt.word, chain, shots: pt.shots.slice(), left, points: this.points.slice(), matchOver: false };
+      if (this.points[winner] >= this.target) { res.matchOver = true; this.winner = winner; }
+      this.starter = 1 - this.starter;
       this.phase = res.matchOver ? 'matchOver' : 'pointOver';
       this.history.push(res);
       return res;
     }
     next() { if (this.phase === 'pointOver') this.newPoint(); }
-    // "15", "30", "40"; at 40-40 both are "40" and goldenPoint() is true.
-    scoreText(i) { return TENNIS[Math.min(3, this.points[i])]; }
-    goldenPoint() { return this.points[0] === 3 && this.points[1] === 3; }
-    // Game point / match point for player i (one point from it).
-    pointFor(i) {
-      if (this.points[i] < POINTS_TO_GAME - 1) return null;
-      return this.games[i] + 1 >= this.gamesToWin ? 'match' : 'game';
-    }
+    // 'match' when player i is one point from winning.
+    pointFor(i) { return this.points[i] === this.target - 1 ? 'match' : null; }
   }
 
   // Bot. see: chance of spotting each word a person would know; think: seconds (min, max);
-  // smart: chance of choosing the word that leaves the opponent the fewest returns.
+  // smart: chance of choosing the word that leaves the opponent the fewest answers.
   const LEVELS = {
-    kolay: { see: 0.5, think: [2.4, 4.6], smart: 0.0, serve: [1.8, 3.0] },
-    orta: { see: 0.72, think: [1.6, 3.6], smart: 0.5, serve: [1.4, 2.4] },
-    zor: { see: 0.9, think: [1.0, 2.5], smart: 0.85, serve: [1.0, 1.8] },
+    kolay: { see: 0.5, think: [2.4, 4.6], smart: 0.0, open: [1.8, 3.0] },
+    orta: { see: 0.72, think: [1.6, 3.6], smart: 0.5, open: [1.4, 2.4] },
+    zor: { see: 0.9, think: [1.0, 2.5], smart: 0.85, open: [1.0, 1.8] },
   };
   class Bot {
     constructor(level, random) {
@@ -609,13 +600,13 @@ const KT = (function () {
       this.r = random || Math.random;
     }
     between([a, b]) { return a + (b - a) * this.r(); }
-    // Opponent's returns (words people know) after we play w.
+    // Opponent's answers (words people know) after we play w.
     pressure(lex, w, used) {
       const u = new Set(used); u.add(w);
       return lex.neighbours(w, u, true).length;
     }
-    serve(match) {
-      const opts = match.point.serveOptions;
+    open(match) {
+      const opts = match.point.options;
       let word = pick(opts, this.r);
       if (this.r() < this.cfg.smart) {
         let best = Infinity;
@@ -624,7 +615,7 @@ const KT = (function () {
           if (p < best) { best = p; word = w; }
         }
       }
-      return { word, delay: this.between(this.cfg.serve) };
+      return { word, delay: this.between(this.cfg.open) };
     }
     // { word, delay } or { word: null } when it does not find anything (then it runs out of time).
     reply(match) {
@@ -646,12 +637,12 @@ const KT = (function () {
     }
   }
 
-  return { KEYS, LOCALE, PACES, SERVE_TIME, POINTS_TO_GAME, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
+  return { KEYS, LOCALE, PACES, START_TIME, TARGET, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
 })();
 
 if (typeof module !== 'undefined') module.exports = KT;
 
-// Kelime Tenisi sesleri: hepsi WebAudio ile üretilir, ses dosyası yok.
+// Kelime Düellosu sesleri: hepsi WebAudio ile üretilir, ses dosyası yok.
 const Sfx = (function () {
   let ctx = null, master = null, noiseBuf = null, enabled = true;
 
@@ -706,23 +697,23 @@ const Sfx = (function () {
     unlock() { ensure(); },
     setEnabled(v) { enabled = !!v; if (!enabled && ctx) ctx.suspend(); else if (enabled) ensure(); },
     get enabled() { return enabled; },
-    // racket on ball: short pitched "pok" + a little string noise
-    hit(strength) {
+    // the word leaves: a soft swish and a "pop"
+    send() {
       const t = now(); if (t === null) return;
-      const s = strength || 1;
-      tone(520 * (0.9 + 0.2 * Math.random()), t, 0.08, 'sine', 0.42 * s, 170);
-      tone(1250, t, 0.03, 'triangle', 0.08 * s, 900);
-      noise(t, 0.04, 0.22 * s, 'bandpass', 3200, 1800, 1.2);
+      noise(t, 0.12, 0.07, 'bandpass', 1200, 3200, 1.4, 0.03);
+      tone(560 * (0.92 + 0.16 * Math.random()), t + 0.04, 0.09, 'sine', 0.32, 260);
     },
-    bounce() {
+    // the word lands in front of the other player
+    land() {
       const t = now(); if (t === null) return;
-      tone(300, t, 0.07, 'sine', 0.18, 140);
-      noise(t, 0.03, 0.06, 'lowpass', 900, 500, 0.7);
+      tone(420, t, 0.06, 'triangle', 0.1, 300);
     },
-    serve() {
+    // the first word of a point
+    start() {
       const t = now(); if (t === null) return;
-      noise(t, 0.18, 0.08, 'bandpass', 900, 2400, 1.5, 0.05);
-      tone(560, t + 0.12, 0.08, 'sine', 0.38, 180);
+      noise(t, 0.18, 0.07, 'bandpass', 900, 2400, 1.5, 0.05);
+      tone(523, t + 0.1, 0.1, 'triangle', 0.16);
+      tone(659, t + 0.18, 0.14, 'triangle', 0.14);
     },
     tap() { const t = now(); if (t === null) return; tone(880, t, 0.035, 'triangle', 0.06); },
     key() { const t = now(); if (t === null) return; tone(620 + Math.random() * 60, t, 0.03, 'triangle', 0.05); },
@@ -732,38 +723,35 @@ const Sfx = (function () {
       tone(150, t + 0.09, 0.16, 'square', 0.05, 110);
     },
     tick(urgent) { const t = now(); if (t === null) return; tone(urgent ? 1500 : 1150, t, 0.035, 'square', urgent ? 0.05 : 0.03); },
-    smash() {
+    // a word with no way out
+    deadEnd() {
       const t = now(); if (t === null) return;
-      noise(t, 0.22, 0.16, 'bandpass', 600, 3800, 1.2, 0.08);
-      tone(420, t + 0.16, 0.12, 'sine', 0.6, 120);
-      noise(t + 0.16, 0.06, 0.3, 'bandpass', 2600, 1400, 1);
-      tone(784, t + 0.32, 0.18, 'triangle', 0.12);
-      tone(1175, t + 0.42, 0.28, 'triangle', 0.1);
+      noise(t, 0.2, 0.12, 'bandpass', 600, 3800, 1.2, 0.06);
+      tone(392, t + 0.12, 0.12, 'triangle', 0.2);
+      tone(587, t + 0.22, 0.14, 'triangle', 0.18);
+      tone(784, t + 0.32, 0.18, 'triangle', 0.14);
+      tone(1175, t + 0.44, 0.3, 'triangle', 0.1);
     },
-    miss() {
+    timeUp() {
       const t = now(); if (t === null) return;
-      tone(140, t, 0.22, 'sine', 0.3, 70);
-      noise(t, 0.5, 0.05, 'lowpass', 700, 300, 0.7, 0.12);   // crowd "ooh"
+      tone(196, t, 0.18, 'triangle', 0.22, 130);
+      tone(147, t + 0.16, 0.26, 'triangle', 0.18, 98);
     },
     point(good) {
       const t = now(); if (t === null) return;
-      noise(t, 0.9, 0.06, 'bandpass', 700, 1100, 0.6, 0.25); // crowd
       if (good) { tone(659, t + 0.05, 0.16, 'triangle', 0.12); tone(988, t + 0.17, 0.26, 'triangle', 0.1); }
+      else tone(440, t + 0.05, 0.2, 'triangle', 0.08, 392);
     },
-    game() {
-      const t = now(); if (t === null) return;
-      [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.09, 0.22, 'triangle', 0.12));
-      noise(t + 0.1, 1.1, 0.07, 'bandpass', 900, 1300, 0.5, 0.3);
-    },
-    match() {
+    win() {
       const t = now(); if (t === null) return;
       [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.11, 0.3, 'triangle', 0.12));
-      for (let i = 0; i < 26; i++) noise(t + 0.2 + i * 0.055 + Math.random() * 0.03, 0.05, 0.08 + Math.random() * 0.05, 'bandpass', 1500 + Math.random() * 1500, null, 0.8);
+      for (let i = 0; i < 10; i++) tone(1568 + Math.random() * 1200, t + 0.8 + i * 0.07, 0.08, 'sine', 0.03);
     },
   };
 })();
 
-// Kelime Tenisi arayüzü: menü, iki kişi tek ekran (karşılıklı), bota karşı, kayıt ve Lab bağlantıları.
+// Kelime Düellosu arayüzü: menü, iki kişi tek ekran (karşılıklı), bota karşı, kayıt ve Lab bağlantıları.
+// Adres ve kayıt anahtarları ilk adla (kelime-tenisi) kalıyor: paylaşılan link ve kayıtlar bozulmasın.
 (function () {
   'use strict';
 
@@ -777,66 +765,66 @@ const Sfx = (function () {
   // ---------- texts ----------
   const T = {
     tr: {
-      title: 'Kelime Tenisi', tagline: 'Tek harfini değiştir, geri gönder.',
+      title: 'Kelime Düellosu', tagline: 'Tek harfini değiştir, geri gönder.',
       duo: 'İki kişi', duoSub: 'Tek ekran, karşılıklı otur', bot: 'Bota karşı', botSub: 'Tek başına antrenman',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
       word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı',
-      format: 'Maç', short: 'Kısa · 1 oyun', long: "Uzun · 3'te 2", start: 'Başla', how: 'Nasıl oynanır?',
+      ekli: 'Ekli kelimeler', ekliOn: 'Geçer', ekliOff: 'Geçmez', ekliHint: 'EVDE, ALDI, BANA gibi',
+      format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
       soundOn: 'Ses açık', soundOff: 'Ses kapalı', paused: 'Mola', resume: 'Devam', quit: 'Ana menü',
       nasildi: 'Nasıldı?', again: 'Rövanş', menu: 'Ana menü', gotIt: 'Anladım',
       rotate: 'Oyun dik ekran için. Telefonu dik tut.',
       p1: 'Oyuncu 1', p2: 'Oyuncu 2', botName: 'Bot', you: 'Sen',
-      serveYou: 'Servis sende: bir kelime seç', serveWait: '{name} servis atıyor',
+      startYou: 'Sen başlıyorsun: bir kelime seç', startWait: '{name} kelime seçiyor',
       firstTurn: 'Önce değiştireceğin harfe, sonra yeni harfe dokun', yourTurn: 'Bir harfini değiştir',
       pickKey: 'Şimdi yeni harfi seç', pickTile: 'Önce değiştireceğin harfe dokun',
-      thinking: '{name} düşünüyor', sentBy: '{name} gönderdi',
+      thinking: '{name} düşünüyor', sentBy: '{name} gönderdi', sentYou: 'Gönderdin',
       errUsed: '{w} bu sayıda oynandı', errUnknown: '{w} sözlükte yok',
-      point: 'Sayı {name}!', pointYou: 'Sayı senin!', smash: 'SMAÇ!', smashYou: 'Smaç! {w} kelimesinin dönüşü yok.',
-      smashThem: '{w} kelimesinin dönüşü yoktu.', timeUp: 'Süre bitti.',
-      could: 'Şunları yazabilirdin:', couldRare: 'Sözlükte bir de:', none: 'Bu kelimenin dönüşü yoktu.',
-      game: 'Oyun {name}!', golden: 'Altın sayı', gamePoint: 'Oyun sayısı · {name}', matchPoint: 'Maç sayısı · {name}',
-      servesFirst: 'Yazı tura: {name} başlıyor', serving: 'Servis: {name}',
+      point: 'Sayı {name}!', pointYou: 'Sayı senin!', dead: 'ÇIKMAZ!', deadYou: 'Çıkmaz! {w} kelimesinden çıkış yok.',
+      deadThem: '{w} kelimesinden çıkış yoktu.', timeUp: 'Süre bitti.',
+      could: 'Şunları yazabilirdin:', couldRare: 'Sözlükte bir de:', none: 'Bu kelimeden çıkış yoktu.',
+      matchPoint: 'Maç sayısı · {name}', firstPick: 'Yazı tura: {name} başlıyor', starting: 'Başlayan: {name}',
       winTitle: '{name} kazandı!', youWin: 'Kazandın!', botWins: 'Bot kazandı',
-      score: 'Skor', games: 'Oyunlar',
-      statLongest: 'En uzun ralli: <b>{n} kelime</b>', statSmash: 'Smaç: <b>{a}</b>', statWords: 'Gönderilen kelime: <b>{a}</b>',
-      record: 'Bota karşı: {w} galibiyet, {l} yenilgi', recordRally: 'En uzun ralli: {n} kelime',
-      how1: '<b>Servis:</b> üç kelimeden birini seç, karşıya gönder.',
-      how2: '<b>Dönüş:</b> gelen kelimenin <b>tek harfini</b> değiştir. Önce harfe, sonra yeni harfe dokun.',
-      how3: '<b>Süre</b> her vuruşta biraz kısalır; süresinde dönemeyen sayıyı kaybeder. Bir kelime bir sayıda bir kez oynanır.',
-      how4: '<b>Smaç:</b> dönüşü hiç olmayan bir kelime gönderirsen sayı hemen senin.',
-      how5: '<b>Sayı</b> tenisteki gibi: 15, 30, 40, oyun. 40-40\'ta sıradaki sayı oyunu alır.',
-      demo: ['kasa', 'kara', 'kare'],
+      statLongest: 'En uzun zincir: <b>{n} kelime</b>', statDead: 'Çıkmaz: <b>{a}</b>', statWords: 'Gönderilen kelime: <b>{a}</b>',
+      record: 'Bota karşı: {w} galibiyet, {l} yenilgi', recordChain: 'En uzun zincir: {n} kelime',
+      how1: '<b>Başla:</b> üç kelimeden birini seç, karşıya gönder.',
+      how2: '<b>Cevap ver:</b> gelen kelimenin <b>tek harfini</b> değiştir. Önce harfe, sonra yeni harfe dokun.',
+      how3: '<b>Süre</b> her kelimede biraz kısalır; süresinde cevap veremeyen sayıyı kaybeder. Bir kelime bir sayıda bir kez oynanır.',
+      how4: '<b>Çıkmaz:</b> hiç çıkışı olmayan bir kelime gönderirsen sayı hemen senin.',
+      howEkli: '<b>Ekli kelimeler de geçer:</b> EVDE, ALDI, BANA. Kökü belli olan kelimenin kökü yanında küçük yazar.',
+      howWin: '<b>{n} sayıya</b> ilk ulaşan kazanır. Her sayıda başlayan değişir.',
+      demo: ['kasa', 'kara', 'kare'], logo: ['kasa', 'kara'],
     },
     en: {
-      title: 'Word Tennis', tagline: 'Change one letter, send it back.',
+      title: 'Word Duel', tagline: 'Change one letter, send it back.',
       duo: 'Two players', duoSub: 'One screen, face to face', bot: 'Against the bot', botSub: 'Practice on your own',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
       word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast',
-      format: 'Match', short: 'Short · 1 game', long: 'Long · best of 3', start: 'Play', how: 'How to play',
+      ekli: 'Inflected words', ekliOn: 'Allowed', ekliOff: 'Not allowed', ekliHint: '',
+      format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
       soundOn: 'Sound on', soundOff: 'Sound off', paused: 'Paused', resume: 'Resume', quit: 'Main menu',
       nasildi: 'How was it?', again: 'Rematch', menu: 'Main menu', gotIt: 'Got it',
       rotate: 'This game is played upright. Turn your phone.',
       p1: 'Player 1', p2: 'Player 2', botName: 'Bot', you: 'You',
-      serveYou: 'Your serve: pick a word', serveWait: '{name} is serving',
+      startYou: 'You start: pick a word', startWait: '{name} is picking a word',
       firstTurn: 'Tap the letter to change, then the new letter', yourTurn: 'Change one letter',
       pickKey: 'Now pick the new letter', pickTile: 'First tap the letter you want to change',
-      thinking: '{name} is thinking', sentBy: '{name} sent',
+      thinking: '{name} is thinking', sentBy: '{name} sent', sentYou: 'You sent',
       errUsed: '{w} was already played this point', errUnknown: '{w} is not in the dictionary',
-      point: 'Point {name}!', pointYou: 'Your point!', smash: 'SMASH!', smashYou: 'Smash! There is no way back from {w}.',
-      smashThem: 'There was no way back from {w}.', timeUp: 'Out of time.',
-      could: 'You could have played:', couldRare: 'The dictionary also has:', none: 'There was no way back from that word.',
-      game: 'Game {name}!', golden: 'Golden point', gamePoint: 'Game point · {name}', matchPoint: 'Match point · {name}',
-      servesFirst: 'Coin toss: {name} serves', serving: 'Serving: {name}',
+      point: 'Point {name}!', pointYou: 'Your point!', dead: 'DEAD END!', deadYou: 'Dead end! There is no way out of {w}.',
+      deadThem: 'There was no way out of {w}.', timeUp: 'Out of time.',
+      could: 'You could have played:', couldRare: 'The dictionary also has:', none: 'There was no way out of that word.',
+      matchPoint: 'Match point · {name}', firstPick: 'Coin toss: {name} starts', starting: 'Starting: {name}',
       winTitle: '{name} wins!', youWin: 'You win!', botWins: 'The bot wins',
-      score: 'Score', games: 'Games',
-      statLongest: 'Longest rally: <b>{n} words</b>', statSmash: 'Smashes: <b>{a}</b>', statWords: 'Words sent: <b>{a}</b>',
-      record: 'Against the bot: {w} won, {l} lost', recordRally: 'Longest rally: {n} words',
-      how1: '<b>Serve:</b> pick one of three words and send it over.',
-      how2: '<b>Return:</b> change <b>one letter</b> of the word that comes to you. Tap the letter, then the new letter.',
-      how3: '<b>Time</b> gets a little shorter every shot; miss it and you lose the point. A word can be played once per point.',
-      how4: '<b>Smash:</b> send a word that has no way back and the point is yours at once.',
-      how5: '<b>Scoring</b> as in tennis: 15, 30, 40, game. At 40-40 the next point wins the game.',
-      demo: ['cold', 'cord', 'word'],
+      statLongest: 'Longest chain: <b>{n} words</b>', statDead: 'Dead ends: <b>{a}</b>', statWords: 'Words sent: <b>{a}</b>',
+      record: 'Against the bot: {w} won, {l} lost', recordChain: 'Longest chain: {n} words',
+      how1: '<b>Start:</b> pick one of three words and send it over.',
+      how2: '<b>Answer:</b> change <b>one letter</b> of the word that comes to you. Tap the letter, then the new letter.',
+      how3: '<b>Time</b> gets a little shorter with every word; miss it and you lose the point. A word can be played once per point.',
+      how4: '<b>Dead end:</b> send a word with no way out and the point is yours at once.',
+      howEkli: '',
+      howWin: 'First to <b>{n} points</b> wins. The starting player changes every point.',
+      demo: ['cold', 'cord', 'word'], logo: ['cold', 'cord'],
     },
   };
   const t = (k, vars) => {
@@ -850,13 +838,13 @@ const Sfx = (function () {
   // Turkish first, whatever the device language. English only once someone taps it
   // (langPicked); older saves picked 'en' from navigator.language, so they reset.
   const S = Object.assign({
-    lang: 'tr', langPicked: false,
+    lang: 'tr', langPicked: false, ekli: true,
     mode: 'duo', level: 'orta', len: 4, pace: 'normal', format: 1,
     names: ['', ''], bonus: [0, 0], sound: true, seenHow: false,
   }, readJSON(DEVICE_KEY) || {});
   if (!S.langPicked || !T[S.lang]) S.lang = 'tr';
   if (![3, 4].includes(+S.len)) S.len = 4;
-  S.len = +S.len; S.format = +S.format === 2 ? 2 : 1;
+  S.len = +S.len; S.format = +S.format === 2 ? 2 : 1; S.ekli = S.ekli !== false;
   function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function saveDevice() { try { localStorage.setItem(DEVICE_KEY, JSON.stringify(S)); } catch (e) {} }
   function loadSave() {
@@ -864,9 +852,12 @@ const Sfx = (function () {
     d.v = 1;
     d.bot = d.bot || {};
     for (const l of ['kolay', 'orta', 'zor']) d.bot[l] = Object.assign({ w: 0, l: 0 }, d.bot[l] || {});
-    d.duo = d.duo || 0; d.longest = d.longest || 0; d.longestWords = d.longestWords || []; d.smashes = d.smashes || 0;
+    d.duo = d.duo || 0; d.longest = d.longest || 0; d.longestWords = d.longestWords || [];
+    d.deadEnds = d.deadEnds || d.smashes || 0;   // "smashes" in the first version
+    delete d.smashes;
     return d;
   }
+  const ekliOn = () => S.lang === 'tr' && S.ekli;
   Sfx.setEnabled(S.sound);
 
   // ---------- Lab ----------
@@ -884,30 +875,46 @@ const Sfx = (function () {
 
   // ---------- lexicons ----------
   const lexCache = {};
-  const lexFor = (lang, len) => lexCache[lang + len] || (lexCache[lang + len] = new KT.Lexicon(WORDS, lang, len));
+  const lexFor = (lang, len, ekli) => {
+    const k = lang + len + (ekli ? 'x' : '');
+    return lexCache[k] || (lexCache[k] = new KT.Lexicon(WORDS, lang, len, { ekli }));
+  };
 
   // ---------- menu ----------
+  function renderLogo() {
+    const [a, b] = t('logo'), at = [...a].findIndex((c, i) => c !== b[i]);
+    $('#logo').innerHTML = [...a].map((c, i) => i === at
+      ? `<span class="lt swap"><b>${esc(U(c))}</b><b>${esc(U(b[i]))}</b></span>`
+      : `<span class="lt">${esc(U(c))}</span>`).join('');
+  }
   function applyTexts() {
     document.documentElement.lang = S.lang;
     document.title = t('title');
     $$('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+    $('[data-set=format] [data-v="1"]').textContent = t('short', { n: KT.TARGET[1] });
+    $('[data-set=format] [data-v="2"]').textContent = t('long', { n: KT.TARGET[2] });
     $('#name1').placeholder = t('p1');
     $('#name2').placeholder = t('p2');
     $('#soundBtn').textContent = S.sound ? t('soundOn') : t('soundOff');
+    renderLogo();
     const save = loadSave();
     const w = save.bot.kolay.w + save.bot.orta.w + save.bot.zor.w, l = save.bot.kolay.l + save.bot.orta.l + save.bot.zor.l;
     const parts = [];
     if (w + l) parts.push(t('record', { w, l }));
-    if (save.longest) parts.push(t('recordRally', { n: save.longest }));
+    if (save.longest) parts.push(t('recordChain', { n: save.longest }));
     $('#record').textContent = parts.join(' · ');
-    $('#howList').innerHTML = ['how1', 'how2', 'how3', 'how4', 'how5'].map(k => '<li>' + t(k) + '</li>').join('');
+    const how = ['how1', 'how2', 'how3', 'how4'].map(k => t(k));
+    if (ekliOn()) how.push(t('howEkli'));
+    how.push(t('howWin', { n: KT.TARGET[S.format] }));
+    $('#howList').innerHTML = how.map(h => '<li>' + h + '</li>').join('');
   }
   function syncMenu() {
     $$('[data-lang]').forEach(b => b.classList.toggle('on', b.dataset.lang === S.lang));
     $$('.mode').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
     $('#setupBot').classList.toggle('on', S.mode === 'bot');
     $('#setupDuo').classList.toggle('on', S.mode === 'duo');
-    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
+    $('#ekliOpt').hidden = S.lang !== 'tr';
+    const val = { level: S.level, len: String(S.len), pace: S.pace, format: String(S.format), ekli: S.ekli ? '1' : '0', bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
     $$('[data-set]').forEach(g => $$('.chip', g).forEach(c => c.classList.toggle('on', c.dataset.v === val[g.dataset.set])));
     $('#name1').value = S.names[0] || '';
     $('#name2').value = S.names[1] || '';
@@ -921,6 +928,7 @@ const Sfx = (function () {
     else if (k === 'len') S.len = +v;
     else if (k === 'pace') S.pace = v;
     else if (k === 'format') S.format = +v;
+    else if (k === 'ekli') S.ekli = v === '1';
     else if (k === 'bonus0') S.bonus[0] = +v;
     else if (k === 'bonus1') S.bonus[1] = +v;
     saveDevice(); syncMenu(); Sfx.tap();
@@ -965,21 +973,22 @@ const Sfx = (function () {
   const isBot = i => !!(G && G.bots[i]);
   const panelOf = i => G.panels[i];
 
-  function startMatch(firstServer) {
+  function startMatch(firstStarter) {
     stopGame();
-    const lex = lexFor(S.lang, S.len);
+    const ekli = ekliOn();
+    const lex = lexFor(S.lang, S.len, ekli);
     const mode = S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
-    const fs = firstServer !== undefined ? firstServer : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
-    const m = new KT.Match({ lex, players, gamesToWin: S.format, pace: S.pace, firstServer: fs });
+    const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
+    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs });
     G = {
-      m, lex, mode, firstServer: fs,
+      m, lex, mode, firstStarter: fs,
       bots: [null, mode === 'bot' ? new KT.Bot(S.level) : null],
       panels: [$('#panel0'), $('#panel1')],
       sel: [-1, -1], typed: '',
       clock: { owner: -1, total: 1, left: 0, elapsed: 0, running: false, onEnd: null },
       plan: null, waits: [], paused: false, speed: 1, lastTs: performance.now(), raf: 0, lastTick: -1,
-      ballAt: null, firstShot: [true, true], started: Date.now(), pointBusy: false,
+      firstShot: [true, true], started: Date.now(), pointBusy: false,
     };
     m.players[0].name = playerName(0);
     m.players[1].name = playerName(1);
@@ -993,12 +1002,12 @@ const Sfx = (function () {
     renderScore();
     layout();
     G.raf = requestAnimationFrame(frame);
-    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${S.format === 1 ? 'tek oyun' : "3'te 2"}`);
+    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}${S.lang === 'tr' ? (ekli ? ', ekliler geçer' : ', yalnız sözlük') : ''}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
     if (mode === 'duo') {
-      banner(t('servesFirst', { name: playerName(fs) }));
-      wait(1.6, () => { hideBanner(); enterServe(); });
+      banner(t('firstPick', { name: playerName(fs) }));
+      wait(1.6, () => { hideBanner(); enterStart(); });
     } else {
-      enterServe();
+      enterStart();
     }
   }
 
@@ -1013,10 +1022,10 @@ const Sfx = (function () {
     const p = panelOf(i);
     p.className = 'panel ' + (i === 0 ? 'bottom' : 'top') + ' ' + (isBot(i) ? 'cbot' : 'c' + i);
     if (isBot(i)) {
-      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="games"></span><span class="pscore"></span></div>
+      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="tiles small"></div><div class="clock idle"><i></i></div>`;
     } else {
-      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="games"></span><span class="pscore"></span></div>
+      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="msg"></div><div class="tiles"></div><div class="clock idle"><i></i></div><div class="kbd off"></div>`;
       const kbd = $('.kbd', p);
       kbd.innerHTML = KT.KEYS[S.lang].map(row => '<div class="krow">' + [...row].map(c =>
@@ -1031,9 +1040,9 @@ const Sfx = (function () {
     for (const i of [0, 1]) {
       const p = panelOf(i);
       const sc = $('.pscore', p);
-      sc.textContent = m.scoreText(i) + '–' + m.scoreText(1 - i);
+      sc.textContent = m.points[i] + '–' + m.points[1 - i];
       sc.classList.toggle('hot', !!m.pointFor(i));
-      $('.games', p).innerHTML = Array.from({ length: m.gamesToWin }, (_, k) => `<i class="${k < m.games[i] ? 'won' : ''}"></i>`).join('');
+      $('.dots', p).innerHTML = Array.from({ length: m.target }, (_, k) => `<i class="${k < m.points[i] ? 'won' : ''}"></i>`).join('');
     }
   }
 
@@ -1043,6 +1052,10 @@ const Sfx = (function () {
     el.className = 'msg' + (cls ? ' ' + cls : '');
     el.innerHTML = html;
   }
+
+  const sentText = i => (G.mode === 'bot' && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
+  // "ALDI (almak)": the dictionary word an inflected form comes from, when it is clear.
+  const rootTag = w => { const r = G.lex.root(w); return r ? ` <span class="root">(${esc(r)})</span>` : ''; };
 
   function renderTiles(i, word, opts) {
     const o = opts || {};
@@ -1062,14 +1075,14 @@ const Sfx = (function () {
     }
   }
 
-  function renderServeCards(i, words) {
+  function renderStartCards(i, words) {
     const el = $('.tiles', panelOf(i));
     el.className = 'tiles';
-    el.innerHTML = '<div class="serve-cards">' + words.map(w => `<button type="button" class="serve-card" data-w="${esc(w)}">${esc(U(w))}</button>`).join('') + '</div>';
-    $$('.serve-card', el).forEach(b => b.addEventListener('click', () => {
-      if (G.m.phase !== 'serve' || G.m.server !== i || G.pointBusy) return;
+    el.innerHTML = '<div class="start-cards">' + words.map(w => `<button type="button" class="start-card" data-w="${esc(w)}">${esc(U(w))}</button>`).join('') + '</div>';
+    $$('.start-card', el).forEach(b => b.addEventListener('click', () => {
+      if (G.m.phase !== 'start' || G.m.starter !== i || G.pointBusy) return;
       b.classList.add('pick');
-      doServe(b.dataset.w);
+      doStart(b.dataset.w);
     }));
   }
 
@@ -1078,20 +1091,16 @@ const Sfx = (function () {
     $('.kbd', panelOf(i)).classList.toggle('off', !on);
   }
 
-  function courtInfo() {
+  // Middle strip: who starts / match point, or the last words of the chain.
+  function boardInfo() {
     const m = G.m, pt = m.point;
     let txt = '';
-    if (m.phase === 'serve') {
-      if (m.goldenPoint()) txt = t('golden');
-      else {
-        const gp = [0, 1].find(i => m.pointFor(i));
-        if (gp !== undefined) txt = t(m.pointFor(gp) === 'match' ? 'matchPoint' : 'gamePoint', { name: playerName(gp) });
-        else txt = t('serving', { name: playerName(m.server) });
-      }
-      txt = esc(txt);
+    if (m.phase === 'start') {
+      const mp = [0, 1].find(i => m.pointFor(i));
+      txt = esc(mp !== undefined ? t('matchPoint', { name: playerName(mp) }) : t('starting', { name: playerName(m.starter) }));
     } else if (pt && pt.shots.length) {
       const words = pt.shots.slice(-3).map(s => s.word);
-      txt = '<span class="chain">' + words.map((w, k) => `<span class="${k === words.length - 1 ? 'last' : ''}">${esc(U(w))}</span>`).join('') +
+      txt = '<span class="chain">' + words.map((w, k) => `<span class="${k === words.length - 1 ? 'last' : ''}">${esc(U(w))}${k === words.length - 1 ? rootTag(w) : ''}</span>`).join('') +
         `</span> · ${pt.shots.length}`;
     }
     $('#info0').innerHTML = txt;
@@ -1144,84 +1153,95 @@ const Sfx = (function () {
     if (G) G.raf = requestAnimationFrame(frame);
   }
 
-  // ---------- ball ----------
-  function courtPoint(side) { // side 0 = bottom (player 0), 1 = top
-    const r = $('#court').getBoundingClientRect();
-    const x = r.width * (0.3 + Math.random() * 0.4);
-    const y = side === 0 ? r.height - 22 : 22;
-    return { x, y };
+  // ---------- the word crossing the board ----------
+  function boardPoint(side) { // side 0 = bottom (player 0), 1 = top
+    const r = $('#board').getBoundingClientRect();
+    return { x: r.width / 2, y: side === 0 ? r.height - 24 : 24 };
   }
-  function flyBall(toSide, done, opts) {
+  // A player's facing: the top player sits across the table in duo mode.
+  const facing = side => (G.mode === 'duo' && side === 1 ? 180 : 0);
+  function flyWord(fromSide, word, done, opts) {
     const o = opts || {};
-    const ball = $('#ball');
-    const from = G.ballAt || courtPoint(1 - toSide);
-    const to = o.out ? { x: from.x + (Math.random() - 0.5) * 80, y: toSide === 0 ? $('#court').clientHeight + 40 : -40 } : courtPoint(toSide);
-    const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-    const dur = (o.fast ? 340 : 520) / G.speed;
-    ball.style.opacity = 1;
-    const anim = ball.animate([
-      { transform: `translate(${from.x}px, ${from.y}px) scale(1) rotate(0deg)` },
-      { transform: `translate(${mid.x}px, ${mid.y}px) scale(${o.fast ? 1.25 : 1.55}) rotate(180deg)` },
-      { transform: `translate(${to.x}px, ${to.y}px) scale(1) rotate(360deg)` },
-    ], { duration: dur, easing: 'cubic-bezier(.35,.1,.45,1)', fill: 'forwards' });
-    G.ballAt = o.out ? null : to;
+    const el = $('#flyer');
+    el.innerHTML = [...word].map(c => `<span>${esc(U(c))}</span>`).join('');
+    el.classList.toggle('dead', !!o.dead);
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const at = (p, rot, s) => `translate(${p.x - w / 2}px, ${p.y - h / 2}px) rotate(${rot}deg) scale(${s})`;
+    const from = boardPoint(fromSide);
+    const dur = (o.fast ? 380 : 560) / G.speed;
+    el.style.opacity = 1;
+    let frames;
+    if (o.out) {   // time ran out: the word stays with the player who could not answer, and fades
+      const away = { x: from.x, y: from.y + (fromSide === 0 ? 30 : -30) };
+      frames = [{ transform: at(from, facing(fromSide), 1), opacity: 1 }, { transform: at(away, facing(fromSide), 0.8), opacity: 0 }];
+    } else {
+      const to = boardPoint(1 - fromSide), mid = { x: from.x, y: (from.y + to.y) / 2 };
+      const r0 = facing(fromSide), r1 = facing(1 - fromSide);
+      frames = [
+        { transform: at(from, r0, 0.85), opacity: 1 },
+        { transform: at(mid, (r0 + r1) / 2, o.dead ? 1.35 : 1.15), opacity: 1 },
+        { transform: at(to, r1, 0.95), opacity: 1 },
+      ];
+    }
+    const anim = el.animate(frames, { duration: dur, easing: 'cubic-bezier(.3,.1,.3,1)', fill: 'forwards' });
     anim.onfinish = () => {
       if (!G) return;
-      if (o.out) ball.style.opacity = 0; else Sfx.bounce();
+      el.style.opacity = 0;
+      anim.cancel();
+      if (!o.out) Sfx.land();
       if (done) done();
     };
   }
-  function hideBall() { $('#ball').style.opacity = 0; G.ballAt = null; }
+  function hideFlyer() { $('#flyer').style.opacity = 0; }
 
   function banner(text, cls) {
     const b = $('#banner');
     b.innerHTML = `<div class="b b1 ${cls || ''}">${esc(text)}</div><div class="b b0 ${cls || ''}">${esc(text)}</div>`;
     void b.offsetWidth;
     b.classList.add('on');
-    $('#court').classList.add('banner-on');
+    $('#board').classList.add('banner-on');
   }
-  function hideBanner() { $('#banner').classList.remove('on'); $('#court').classList.remove('banner-on'); }
+  function hideBanner() { $('#banner').classList.remove('on'); $('#board').classList.remove('banner-on'); }
 
-  // ---------- serve ----------
-  function enterServe() {
-    const m = G.m, s = m.server, r = 1 - s;
+  // ---------- starting word ----------
+  function enterStart() {
+    const m = G.m, s = m.starter, r = 1 - s;
     G.pointBusy = false;
     G.sel = [-1, -1]; G.typed = '';
-    hideBanner(); hideBall();
-    renderScore(); courtInfo();
+    hideBanner(); hideFlyer();
+    renderScore(); boardInfo();
     for (const i of [0, 1]) setKeyboard(i, false);
     renderTiles(r, null);
-    setMsg(r, esc(t('serveWait', { name: playerName(s) })));
+    setMsg(r, esc(t('startWait', { name: playerName(s) })));
     if (isBot(s)) {
       renderTiles(s, null);
       $('.bot-think', panelOf(s)).hidden = false;
-      const choice = G.bots[s].serve(m);
-      startClock(s, KT.SERVE_TIME, () => doServe(choice.word), false);
-      G.plan = { at: choice.delay, fn: () => doServe(choice.word) };
+      const choice = G.bots[s].open(m);
+      startClock(s, KT.START_TIME, () => doStart(choice.word), false);
+      G.plan = { at: choice.delay, fn: () => doStart(choice.word) };
     } else {
-      setMsg(s, esc(t('serveYou')), 'turn');
-      renderServeCards(s, m.point.serveOptions);
-      startClock(s, KT.SERVE_TIME, () => doServe(m.point.serveOptions[Math.floor(Math.random() * 3)]));
+      setMsg(s, esc(t('startYou')), 'turn');
+      renderStartCards(s, m.point.options);
+      startClock(s, KT.START_TIME, () => doStart(m.point.options[Math.floor(Math.random() * 3)]));
     }
   }
 
-  function doServe(word) {
+  function doStart(word) {
     const m = G.m;
-    if (m.phase !== 'serve' || G.pointBusy) return;
-    const s = m.server;
-    if (!m.serve(word).ok) return;
+    if (m.phase !== 'start' || G.pointBusy) return;
+    const s = m.starter;
+    if (!m.start(word).ok) return;
     stopClock();
     G.pointBusy = true;
     if (isBot(s)) $('.bot-think', panelOf(s)).hidden = true;
     renderTiles(s, word, { wait: true });
-    setMsg(s, esc(t('sentBy', { name: playerName(s) })) + ' <b>' + esc(U(word)) + '</b>');
-    Sfx.serve();
-    courtInfo();
-    G.ballAt = courtPoint(s);
-    flyBall(1 - s, () => { G.pointBusy = false; enterTurn(); });
+    setMsg(s, esc(sentText(s)) + ' <b>' + esc(U(word)) + '</b>');
+    Sfx.start();
+    boardInfo();
+    flyWord(s, word, () => { G.pointBusy = false; enterTurn(); });
   }
 
-  // ---------- rally ----------
+  // ---------- answers ----------
   function enterTurn() {
     const m = G.m;
     if (m.phase !== 'rally') return;
@@ -1280,7 +1300,8 @@ const Sfx = (function () {
     if (!c.ok) {
       if (c.reason === 'used' || c.reason === 'unknown') {
         Sfx.err();
-        setMsg(i, esc(t(c.reason === 'used' ? 'errUsed' : 'errUnknown', { w: U(word) })), 'err');
+        const key = c.reason === 'used' ? 'errUsed' : 'errUnknown';
+        setMsg(i, esc(t(key, { w: U(word) })), 'err');
         const tiles = $('.tiles', panelOf(i));
         const tile = tiles.children[at];
         if (tile) {
@@ -1307,27 +1328,27 @@ const Sfx = (function () {
     const at = G.lex.diff(before, word);
     renderTiles(p, word, { mark: at, wait: true });
     setKeyboard(p, false);
-    setMsg(p, esc(t('sentBy', { name: playerName(p) })) + ' <b>' + esc(U(word)) + '</b>');
-    courtInfo();
-    if (r.how === 'smash') {
-      Sfx.smash();
-      flyBall(1 - p, () => pointOver(r), { fast: true });
+    setMsg(p, esc(sentText(p)) + ' <b>' + esc(U(word)) + '</b>' + rootTag(word));
+    boardInfo();
+    if (r.how === 'dead') {
+      Sfx.deadEnd();
+      flyWord(p, word, () => pointOver(r), { fast: true, dead: true });
     } else {
-      Sfx.hit(1);
-      flyBall(1 - p, () => { G.pointBusy = false; enterTurn(); });
+      Sfx.send();
+      flyWord(p, word, () => { G.pointBusy = false; enterTurn(); });
     }
   }
 
   function onTimeout() {
     const m = G.m;
     if (m.phase !== 'rally' || G.pointBusy) return;
-    const loser = m.point.turn;
+    const loser = m.point.turn, word = m.point.word;
     const r = m.timeout();
     if (!r) return;
     G.pointBusy = true;
     setKeyboard(loser, false);
-    Sfx.miss();
-    flyBall(loser, () => pointOver(r), { out: true });
+    Sfx.timeUp();
+    flyWord(loser, word, () => pointOver(r), { out: true });
   }
 
   function altsHtml(left) {
@@ -1344,10 +1365,10 @@ const Sfx = (function () {
     stopClock();
     renderScore();
     for (const i of [0, 1]) setKeyboard(i, false);
-    if (r.how === 'smash') {
-      banner(t('smash'), 'smash');
-      setMsg(w, esc(t('smashYou', { w: U(r.word) })), 'turn');
-      setMsg(l, esc(t('smashThem', { w: U(r.word) })));
+    if (r.how === 'dead') {
+      banner(t('dead'), 'dead');
+      setMsg(w, esc(t('deadYou', { w: U(r.word) })), 'turn');
+      setMsg(l, esc(t('deadThem', { w: U(r.word) })));
     } else {
       banner(G.mode === 'bot' && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
       setMsg(w, esc(t('pointYou')), 'turn');
@@ -1356,20 +1377,15 @@ const Sfx = (function () {
     }
     Sfx.point(G.mode === 'duo' || w === 0);
     if (r.matchOver) {
-      wait(2.4, () => { banner(t('game', { name: playerName(w) })); Sfx.match(); });
+      wait(2.4, () => { banner(G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) })); Sfx.win(); });
       wait(4.2, () => endMatch(r));
       return;
     }
-    if (r.gameOver) {
-      wait(2.4, () => { banner(t('game', { name: playerName(w) })); Sfx.game(); renderScore(); });
-      wait(4.4, () => { m.next(); enterServe(); });
-      return;
-    }
     const delay = r.how === 'time' && !isBot(l) ? 4.6 : 2.8;
-    G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterServe(); } };
+    G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterStart(); } };
     wait(delay, () => { if (G.skipTo) G.skipTo(); });
   }
-  $('#court').addEventListener('pointerdown', e => {
+  $('#board').addEventListener('pointerdown', e => {
     if (e.target.closest('#pauseBtn')) return;
     if (G && G.skipTo && G.m.phase === 'pointOver' && !G.paused) G.skipTo();
   });
@@ -1379,7 +1395,7 @@ const Sfx = (function () {
     if (!G || G.paused || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Escape') { pause(); return; }
     const m = G.m;
-    if (m.phase === 'serve' && !isBot(m.server) && /^[1-3]$/.test(e.key)) { doServe(m.point.serveOptions[+e.key - 1]); return; }
+    if (m.phase === 'start' && !isBot(m.starter) && /^[1-3]$/.test(e.key)) { doStart(m.point.options[+e.key - 1]); return; }
     if (m.phase !== 'rally' || G.pointBusy) return;
     const p = m.point.turn;
     if (isBot(p)) return;
@@ -1433,39 +1449,40 @@ const Sfx = (function () {
   }
 
   // ---------- end ----------
-  function endMatch(r) {
+  function endMatch() {
     const m = G.m, w = m.winner;
     stopClock();
     const save = loadSave();
     if (G.mode === 'bot') {
       if (w === 0) save.bot[S.level].w++; else save.bot[S.level].l++;
-      save.smashes += m.stats.smashes[0];
+      save.deadEnds += m.stats.deadEnds[0];
     } else {
       save.duo++;
-      save.smashes += m.stats.smashes[0] + m.stats.smashes[1];
+      save.deadEnds += m.stats.deadEnds[0] + m.stats.deadEnds[1];
     }
     if (m.stats.longest > save.longest) { save.longest = m.stats.longest; save.longestWords = m.stats.longestWords; }
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
-    const scoreLine = S.format === 1 ? `${r.gamePoints[0]}–${r.gamePoints[1]}` : `${m.games[0]}–${m.games[1]}`;
+    const scoreLine = `${m.points[0]}–${m.points[1]}`;
     const mins = Math.max(1, Math.round((Date.now() - G.started) / 60000));
     labNote(G.mode === 'bot'
-      ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun ralli ${m.stats.longest} · ${m.stats.smashes[0]} smaç · ${mins} dk`
-      : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun ralli ${m.stats.longest} · smaç ${m.stats.smashes[0]}–${m.stats.smashes[1]} · ${mins} dk`);
+      ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun zincir ${m.stats.longest} · ${m.stats.deadEnds[0]} çıkmaz · ${mins} dk`
+      : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
 
     const title = G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) });
+    $('#trophy').innerHTML = `<div class="tile gold">${esc(U([...playerName(w)][0] || '★'))}</div>`;
     $('#endTitle').textContent = title;
     $('#endScore').textContent = `${playerName(0)} ${scoreLine} ${playerName(1)}`;
     const items = [];
     if (m.stats.longestWords.length) items.push(t('statLongest', { n: m.stats.longest }) + '<br>' + m.stats.longestWords.map(x => esc(U(x))).join(' → '));
-    items.push(t('statSmash', { a: G.mode === 'bot' ? m.stats.smashes[0] + '–' + m.stats.smashes[1] : `${esc(playerName(0))} ${m.stats.smashes[0]} · ${esc(playerName(1))} ${m.stats.smashes[1]}` }));
+    items.push(t('statDead', { a: G.mode === 'bot' ? m.stats.deadEnds[0] + '–' + m.stats.deadEnds[1] : `${esc(playerName(0))} ${m.stats.deadEnds[0]} · ${esc(playerName(1))} ${m.stats.deadEnds[1]}` }));
     if (G.mode === 'duo') items.push(t('statWords', { a: `${esc(playerName(0))} ${m.stats.words[0]} · ${esc(playerName(1))} ${m.stats.words[1]}` }));
     $('#endStats').innerHTML = items.map(x => '<li>' + x + '</li>').join('');
     const sheet = $('#endSheet');
     sheet.classList.toggle('duo', G.mode === 'duo');
-    $('#endMirror').innerHTML = `<h2>${esc(title)}</h2><p class="end-score">${esc(playerName(1))} ${scoreLine.split('–').reverse().join('–')} ${esc(playerName(0))}</p>`;
+    $('#endMirror').innerHTML = `<h2>${esc(title)}</h2><p class="end-score">${esc(playerName(1))} ${m.points[1]}–${m.points[0]} ${esc(playerName(0))}</p>`;
     sheet.hidden = false;
   }
-  $('#againBtn').addEventListener('click', () => { const fs = G ? 1 - G.firstServer : 0; startMatch(S.mode === 'bot' ? 0 : fs); });
+  $('#againBtn').addEventListener('click', () => { const fs = G ? 1 - G.firstStarter : 0; startMatch(S.mode === 'bot' ? 0 : fs); });
   $('#menuBtn').addEventListener('click', toMenu);
 
   // ---------- layout ----------

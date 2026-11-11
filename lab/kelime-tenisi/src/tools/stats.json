@@ -21,6 +21,30 @@
    "common_with_5_plus": 149
   }
  },
+ "tr-x": {
+  "3": {
+   "valid": 992,
+   "common": 412,
+   "serve": 241,
+   "avg_common_neighbours": 7.87,
+   "common_with_0_common_neighbours": 7,
+   "common_with_0_valid_neighbours": 0,
+   "common_with_1_2": 26,
+   "common_with_5_plus": 328,
+   "forms": 226
+  },
+  "4": {
+   "valid": 4381,
+   "common": 1220,
+   "serve": 284,
+   "avg_common_neighbours": 4.12,
+   "common_with_0_common_neighbours": 120,
+   "common_with_0_valid_neighbours": 21,
+   "common_with_1_2": 340,
+   "common_with_5_plus": 453,
+   "forms": 2339
+  }
+ },
  "en": {
   "3": {
    "valid": 964,

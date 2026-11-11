@@ -1,4 +1,4 @@
-# Paylaşım görseli (1200x630) ve ana ekran simgesi (180x180).
+# Kelime Düellosu paylaşım görseli (1200x630) ve ana ekran simgesi (180x180).
 # Önce: node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
 # Sonra: python3 lab/kelime-tenisi/src/tools/cover.py   -> lab/kelime-tenisi/cover.png, icon.png
 import os, subprocess, sys, time
@@ -14,28 +14,26 @@ def tiles(word, mark, color):
     return '<div class="tiles" style="--tw:74px;--pc:%s">%s</div>' % (color, ''.join(
         '<div class="tile%s">%s</div>' % (' new' if i == mark else '', c) for i, c in enumerate(word)))
 
+ARROW = '<div style="color:#fffaf0;opacity:.5;font-size:28px;line-height:1">↓</div>'
+
 COVER = """
-<div style="position:fixed;inset:0;background:#c4633a;overflow:hidden;font-family:Nunito">
-  <div style="position:absolute;left:640px;top:-40px;width:700px;height:720px;border:6px solid rgba(255,246,232,.75)"></div>
-  <div style="position:absolute;left:760px;top:-40px;width:460px;height:720px;border-left:6px solid rgba(255,246,232,.75);border-right:6px solid rgba(255,246,232,.75)"></div>
-  <div style="position:absolute;left:600px;right:-20px;top:309px;height:12px;background:repeating-linear-gradient(90deg,rgba(31,38,51,.55) 0 3px,transparent 3px 10px),rgba(255,255,255,.2);border-top:5px solid #fff"></div>
-  <div style="position:absolute;left:70px;top:150px;width:520px;color:#fff">
-    <div style="font-size:92px;font-weight:800;line-height:1;text-shadow:0 5px 0 rgba(0,0,0,.18)">Kelime<br>Tenisi</div>
-    <div style="font-size:34px;font-weight:500;margin-top:26px;color:#fff3e4;line-height:1.25">Tek harfini değiştir,<br>geri gönder.</div>
-    <div style="font-size:24px;font-weight:500;margin-top:26px;color:#ffe2cf">İki kişi tek ekranda · bota karşı</div>
+<div style="position:fixed;inset:0;background:#f6f0e4;overflow:hidden;font-family:Nunito">
+  <div style="position:absolute;left:66px;top:150px;width:600px;color:#1f2633">
+    <div style="font-size:96px;font-weight:800;line-height:1;color:#b2552f">Kelime<br>Düellosu</div>
+    <div style="font-size:36px;font-weight:500;margin-top:28px;color:#1f2633;line-height:1.25">Tek harfini değiştir,<br>geri gönder.</div>
+    <div style="font-size:25px;font-weight:500;margin-top:26px;color:#6c707a">İki kişi tek ekranda · bota karşı</div>
   </div>
-  <div style="position:absolute;left:760px;top:58px;display:flex;flex-direction:column;gap:30px;align-items:center;width:460px">
-    %s%s%s%s
+  <div style="position:absolute;left:720px;top:34px;width:420px;height:562px;border-radius:28px;background-color:#2b3344;background-image:radial-gradient(rgba(255,255,255,.08) 1.6px,transparent 1.8px);background-size:22px 22px"></div>
+  <div style="position:absolute;left:720px;top:62px;width:420px;display:flex;flex-direction:column;gap:13px;align-items:center">
+    %s%s%s%s%s%s%s
   </div>
-  <span class="ball" style="position:absolute;left:676px;top:272px;width:80px;height:80px"></span>
 </div>
-""" % (tiles('KASA', -1, '#2563eb'), tiles('KARA', 2, '#d63a78'), tiles('KARE', 3, '#2563eb'), tiles('KÜRE', 1, '#d63a78'))
+""" % (tiles('KASA', -1, '#2563eb'), ARROW, tiles('KARA', 2, '#d63a78'), ARROW, tiles('KARE', 3, '#2563eb'), ARROW, tiles('KÜRE', 1, '#d63a78'))
 
 ICON = """
-<div style="position:fixed;inset:0;background:#c4633a;display:flex;align-items:center;justify-content:center">
-  <div style="position:absolute;inset:14px;border:5px solid rgba(255,246,232,.7);border-radius:8px"></div>
-  <div class="tile" style="--tw:96px;font-size:66px;transform:rotate(-6deg)">K</div>
-  <span class="ball" style="position:absolute;right:16px;top:14px;width:52px;height:52px"></span>
+<div style="position:fixed;inset:0;background-color:#2b3344;background-image:radial-gradient(rgba(255,255,255,.09) 1.4px,transparent 1.6px);background-size:16px 16px">
+  <div class="tile" style="--tw:84px;position:absolute;left:22px;top:26px;font-size:58px;transform:rotate(-8deg)">A</div>
+  <div class="tile" style="--tw:84px;position:absolute;right:20px;bottom:22px;font-size:58px;color:#d63a78;transform:rotate(7deg)">E</div>
 </div>
 """
 
