@@ -261,6 +261,86 @@ with sync_playwright() as p:
     pg.screenshot(path=f'{OUT}/ipad-clock-end.png')
     ctx.close()
 
+    print('Telefon · uzat / kısalt, bota karşı')
+    ctx, pg = new_page(b, {'width': 390, 'height': 844}, True, True, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'bot', level:'orta'}))")
+    check(not pg.is_visible('#resizeHint'), 'uzat/kısalt kapalıyken açıklama yok')
+    pg.tap('[data-set=resize] .chip[data-v="2"]')
+    check(pg.is_visible('#resizeHint') and 'KALEM' in pg.inner_text('#resizeHint'), 'Maçta 2 hak seçilince açıklama: KALE → KALEM')
+    pg.tap('#howBtn')
+    check('Ekle +' in pg.inner_text('#howList'), 'Nasıl oynanır uzat/kısalt kuralını anlatıyor')
+    pg.tap('#howOk')
+    pg.tap('#startBtn')
+    pg.wait_for_function('__kt.G.m.phase === "start" && document.querySelector("#panel0 .start-card")', timeout=8000)
+    check(pg.evaluate('__kt.G.m.resize === 2 && __kt.G.lex.maxLen === 5 && __kt.G.lex.minLen === 3'), 'maçta 2 hak, kelimeler 3–5 harf')
+    check(pg.is_visible('#panel0 .edit.add') and pg.inner_text('#panel0 .rights') == '2 hak', 'altta "Ekle +", "− Çıkar" ve "2 hak"')
+    pg.screenshot(path=f'{OUT}/phone-resize-start.png')
+    # find a turn where adding a letter works (the bot starts words in between)
+    RES = """((kind) => { const G = __kt.G, m = G.m, w = m.point.word;
+      const r = G.lex.resizes(w, m.point.used, true).filter(x => kind === 'add' ? x.length > w.length : x.length < w.length);
+      for (const x of r) { const st = G.lex.step(w, x); if (st) return { x, at: st.at, kind: st.kind, w }; }
+      return null; })"""
+    def my_turn():
+        for _ in range(300):
+            s = st(pg)
+            if s['phase'] == 'matchOver': return False
+            if s['phase'] == 'rally' and s['turn'] == 0 and s['running'] and not s['busy']: return True
+            if s['phase'] == 'start' and s['starter'] == 0 and not s['busy'] and pg.is_visible('#panel0 .start-card'): pg.tap('#panel0 .start-card >> nth=0')
+            pg.wait_for_timeout(120)
+        return False
+    def resize_turn(kind, tries=12):
+        for _ in range(tries):
+            if not my_turn(): return None
+            r = pg.evaluate(RES + f"('{kind}')")
+            if r: return r
+            play_turn(pg, 0, True)
+            pg.wait_for_timeout(200)
+        return None
+    pg.tap('#panel0 .start-card >> nth=0')
+    r = resize_turn('add')
+    check(r is not None, 'uzatılabilen bir kelime geldi: %s' % (r and r['w'].upper()))
+    if r:
+        pg.tap('#panel0 .edit.add')
+        n = pg.locator('#panel0 .tiles .slot').count()
+        check(n == len(r['w']) + 1 and 'gireceği yere' in pg.inner_text('#panel0 .msg'), 'Ekle +: harflerin arasında ve iki ucunda yer seçme kutuları')
+        pg.tap(f'#panel0 .tiles .slot >> nth={r["at"]}')
+        pg.screenshot(path=f'{OUT}/phone-resize-add.png')
+        pg.tap(f'#panel0 .key[data-k="{r["x"][r["at"]]}"]')
+        pg.wait_for_timeout(150)
+        s = st(pg)
+        check(s['word'] == r['x'] and pg.evaluate('__kt.G.m.rights[0]') == 1, f'{r["w"].upper()} → {r["x"].upper()} gitti, 1 hak kaldı')
+        pg.wait_for_timeout(400)
+        check(pg.inner_text('#panel0 .rights') == '1 hak', 'altta "1 hak"')
+    r = resize_turn('del')
+    if r:
+        pg.tap('#panel0 .edit.del')
+        check('Çıkaracağın' in pg.inner_text('#panel0 .msg'), '− Çıkar: "Çıkaracağın harfe dokun"')
+        pg.screenshot(path=f'{OUT}/phone-resize-del.png')
+        pg.tap(f'#panel0 .tiles .tile >> nth={r["at"]}')
+        pg.wait_for_timeout(150)
+        check(st(pg)['word'] == r['x'] and pg.evaluate('__kt.G.m.rights[0]') == 0, f'{r["w"].upper()} → {r["x"].upper()} gitti, hak kalmadı')
+        check(my_turn() is False or pg.is_disabled('#panel0 .edit.add'), 'hak bitince "Ekle +" kapalı')
+    else:
+        print('  (kısaltılabilen kelime gelmedi; çıkar atlandı)')
+    pg.evaluate('__kt.speed = 4')
+    done = play_match(pg, True, {0}, tag='phone-resize')
+    check(done, 'uzat/kısalt açık bota karşı maç bitti: %s, bot %s kez' % (st(pg)['points'], pg.evaluate('__kt.G.m.stats.resizes[1]')))
+    check('Uzat/kısalt' in pg.inner_text('#endStats'), 'sonuçta uzat/kısalt sayıları')
+    pg.screenshot(path=f'{OUT}/phone-resize-end.png')
+    ctx.close()
+
+    print('iPad dik · iki kişi, uzat/kısalt her zaman')
+    ctx, pg = new_page(b, {'width': 820, 'height': 1180}, True, False, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'duo', resize:'all'}))")
+    pg.tap('#startBtn')
+    pg.wait_for_function('__kt.G.m.phase === "start" && document.querySelector(".start-card")', timeout=8000)
+    check(pg.is_visible('#panel1 .edit.add') and pg.inner_text('#panel0 .rights') == '', 'iki tarafta da düğmeler; her zaman: hak sayısı yok')
+    keys_ok = pg.evaluate("[...document.querySelectorAll('.key')].every(k => { const r = k.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })")
+    check(keys_ok, 'uzat/kısalt satırıyla bütün tuşlar ekranda')
+    pg.screenshot(path=f'{OUT}/ipad-resize.png')
+    pg.evaluate('__kt.speed = 3')
+    done = play_match(pg, True, {0, 1}, max_s=300, tag='ipad-resize')
+    check(done, 'iki kişilik maç bitti: %s' % st(pg)['points'])
+    ctx.close()
+
     print('iPad dik · iki kişi')
     ctx, pg = new_page(b, {'width': 820, 'height': 1180}, True, False, "localStorage.setItem('kelime-tenisi.device', JSON.stringify({seenHow:true, mode:'duo', names:['Umut','Eşi']}))")
     pg.tap('#startBtn')

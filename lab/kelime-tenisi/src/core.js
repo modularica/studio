@@ -1,6 +1,7 @@
 // Kelime Düellosu: sözlük, kurallar ve bot. DOM'suz; tarayıcıda ve Node testlerinde aynı dosya.
 // Oyun: kelime merdiveni karşılıklı oynanır. Gelen kelimenin tek harfini değiştirip geri gönderirsin.
 // Kullanılan kelime o sayıda yanar; süresinde cevap veremeyen sayıyı kaybeder; hiç çıkışı olmayan kelime = çıkmaz.
+// Uzat/kısalt (seçilirse): maçta birkaç kez (ya da her zaman) bir harf ekleyip ya da çıkarıp gönderebilirsin, 3–5 harf.
 'use strict';
 
 const KT = (function () {
@@ -23,6 +24,8 @@ const KT = (function () {
   // own turn; every word played adds `inc` (+ the player's handicap). Out of time = the match is lost.
   // A player who is stuck can give the point away (pass) and keep the time that is left.
   const CLOCK = { banks: [20, 30, 45, 60], bank: 30, inc: 2 };
+  // Uzat/kısalt: add or remove one letter instead of changing one, within these lengths.
+  const RESIZE = { lens: [3, 4, 5], rights: { off: 0, '2': 2, all: Infinity } };
   const START_TIME = 10;              // seconds to pick the starting word (then one is picked for you); not on the clock
   const TARGET = { 1: 5, 2: 9 };      // points to win: short match, long match
   const round2 = x => Math.round(x * 100) / 100;
@@ -44,32 +47,46 @@ const KT = (function () {
   }
 
   // Turkish: dictionary words and the roots of well-known verbs (gel, anla); inflected forms (evde, aldı) do not count.
+  // len: the length a game starts with (serves). lens: every length in play (uzat/kısalt: 3, 4 and 5).
   class Lexicon {
-    constructor(words, lang, len) {
+    constructor(words, lang, len, lens) {
       const d = words[lang];
       if (!d || !d.common[len]) throw new Error('no words for ' + lang + '/' + len);
       this.lang = lang;
       this.len = len;
+      this.lens = (lens && lens.length ? lens : [len]).filter(n => d.common[n] !== undefined);
+      if (!this.lens.includes(len)) this.lens.push(len);
+      this.minLen = Math.min(...this.lens);
+      this.maxLen = Math.max(...this.lens);
       this.alpha = d.alpha;
       const split = s => (s ? s.split(' ') : []);
-      const common = split(d.common[len]), rare = split(d.rare[len]);
+      let common = [], rare = [];
+      for (const n of this.lens) { common = common.concat(split(d.common[n])); rare = rare.concat(split(d.rare[n])); }
       this.commonSet = new Set(common);
       this.validSet = new Set(common.concat(rare));
       this.serves = split(d.serve[len]);
       this.buckets = new Map();
+      this.longer = new Map();   // uzat: a word with one letter left out -> the longer words (kale -> kalem, ...)
       for (const w of this.validSet) {
-        for (let i = 0; i < len; i++) {
+        for (let i = 0; i < w.length; i++) {
           const k = w.slice(0, i) + '_' + w.slice(i + 1);
           let b = this.buckets.get(k);
           if (!b) this.buckets.set(k, (b = []));
           b.push(w);
+          if (w.length > this.minLen) {
+            const s = w.slice(0, i) + w.slice(i + 1);
+            let l = this.longer.get(s);
+            if (!l) this.longer.set(s, (l = []));
+            if (!l.includes(w)) l.push(w);
+          }
         }
       }
     }
     has(w) { return this.validSet.has(w); }
     isCommon(w) { return this.commonSet.has(w); }
     // Words one letter away from w, not in `used`. onlyCommon: the ones most people know.
-    neighbours(w, used, onlyCommon) {
+    // resize: also the words with one letter more or less (uzat/kısalt).
+    neighbours(w, used, onlyCommon, resize) {
       const out = [];
       for (let i = 0; i < w.length; i++) {
         const b = this.buckets.get(w.slice(0, i) + '_' + w.slice(i + 1));
@@ -80,7 +97,20 @@ const KT = (function () {
           out.push(x);
         }
       }
-      return out;
+      return resize ? out.concat(this.resizes(w, used, onlyCommon)) : out;
+    }
+    // Uzat/kısalt: the words with one letter added or taken out (3–5 letters), not in `used`.
+    resizes(w, used, onlyCommon) {
+      const out = new Set();
+      const ok = x => !(used && used.has(x)) && (!onlyCommon || this.commonSet.has(x));
+      for (const x of this.longer.get(w) || []) if (x.length <= this.maxLen && ok(x)) out.add(x);
+      if (w.length > this.minLen) {
+        for (let i = 0; i < w.length; i++) {
+          const x = w.slice(0, i) + w.slice(i + 1);
+          if (this.validSet.has(x) && ok(x)) out.add(x);
+        }
+      }
+      return [...out];
     }
     // Index of the single differing letter, or -1.
     diff(a, b) {
@@ -90,6 +120,15 @@ const KT = (function () {
         if (a[i] !== b[i]) { if (at >= 0) return -1; at = i; }
       }
       return at;
+    }
+    // How b comes from a: { kind: 'swap' | 'add' | 'del', at } (the letter changed, added or taken out), or null.
+    step(a, b) {
+      if (a.length === b.length) { const at = this.diff(a, b); return at < 0 ? null : { kind: 'swap', at }; }
+      const [s, l, kind] = b.length === a.length + 1 ? [a, b, 'add'] : a.length === b.length + 1 ? [b, a, 'del'] : [];
+      if (!kind) return null;
+      let i = 0;
+      while (i < s.length && s[i] === l[i]) i++;
+      return l.slice(0, i) + l.slice(i + 1) === s ? { kind, at: i } : null;
     }
     pickStarts(n, r, avoid) {
       const pool = avoid ? this.serves.filter(w => !avoid.has(w)) : this.serves;
@@ -106,7 +145,8 @@ const KT = (function () {
   }
 
   class Match {
-    // opts: { lex, players: [{ name, bonus }], target, pace, bank, inc, firstStarter, random }
+    // opts: { lex, players: [{ name, bonus }], target, pace, bank, inc, resize, firstStarter, random }
+    // resize: uzat/kısalt a player may use in the match (0: off, Infinity: always); lex needs lens 3–5 for it
     // bonus: seconds added to every answer (pace 'saat': to every word's increment)
     constructor(opts) {
       this.lex = opts.lex;
@@ -118,6 +158,8 @@ const KT = (function () {
       this.bank = this.clockMode ? (+opts.bank > 0 ? +opts.bank : CLOCK.bank) : 0;
       this.inc = opts.inc !== undefined ? +opts.inc : CLOCK.inc;
       this.banks = [this.bank, this.bank];   // seconds left on each clock (pace 'saat')
+      this.resize = Math.max(0, +opts.resize || 0);
+      this.rights = [this.resize, this.resize];   // uzat/kısalt left
       this.r = opts.random || Math.random;
       this.points = [0, 0];
       this.starter = opts.firstStarter === 1 ? 1 : 0;   // picks the first word of the point; alternates every point
@@ -126,7 +168,7 @@ const KT = (function () {
       this.pointsPlayed = 0;
       this.history = [];
       this.openers = new Set();     // starting words already used in this match
-      this.stats = { deadEnds: [0, 0], misses: [0, 0], passes: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
+      this.stats = { deadEnds: [0, 0], misses: [0, 0], passes: [0, 0], resizes: [0, 0], words: [0, 0], longest: 0, longestWords: [] };
       this.point = null;
       this.newPoint();
     }
@@ -161,15 +203,22 @@ const KT = (function () {
       if (!this.clockMode) return;
       this.banks[p] = round2(Math.max(0, this.banks[p] - Math.max(0, +used || 0)) + (word ? this.gain(p) : 0));
     }
+    // Can player p add or take out a letter (uzat/kısalt)?
+    canResize(p) { return this.rights[p] > 0; }
     check(word) {
       if (this.phase !== 'rally') return { ok: false, reason: 'phase' };
       const cur = this.point.word;
       if (word === cur) return { ok: false, reason: 'same' };
-      const at = this.lex.diff(cur, word);
-      if (at < 0) return { ok: false, reason: 'one-letter' };
-      if (this.point.used.has(word)) return { ok: false, reason: 'used', at };
-      if (!this.lex.has(word)) return { ok: false, reason: 'unknown', at };
-      return { ok: true, at };
+      const st = this.lex.step(cur, word);
+      if (!st) return { ok: false, reason: 'one-letter' };
+      const { kind, at } = st;
+      if (kind !== 'swap') {
+        if (!this.canResize(this.point.turn)) return { ok: false, reason: 'no-resize', kind, at };
+        if (word.length < this.lex.minLen || word.length > this.lex.maxLen) return { ok: false, reason: 'length', kind, at };
+      }
+      if (this.point.used.has(word)) return { ok: false, reason: 'used', kind, at };
+      if (!this.lex.has(word)) return { ok: false, reason: 'unknown', kind, at };
+      return { ok: true, kind, at };
     }
     // The player whose turn it is plays `word`; used: seconds it took (pace 'saat').
     shot(word, used) {
@@ -180,12 +229,14 @@ const KT = (function () {
       pt.used.add(word);
       pt.shots.push({ by: p, word });
       this.stats.words[p]++;
+      if (c.kind !== 'swap') { this.rights[p]--; this.stats.resizes[p]++; }
       this.spend(p, used, true);
-      if (this.lex.neighbours(word, pt.used).length === 0) {
-        return Object.assign({ ok: true, at: c.at }, this.endPoint(p, 'dead'));
+      // a dead end: nothing the other player could send back (uzat/kısalt counts while they have it)
+      if (this.lex.neighbours(word, pt.used, false, this.canResize(1 - p)).length === 0) {
+        return Object.assign({ ok: true, at: c.at, kind: c.kind }, this.endPoint(p, 'dead'));
       }
       pt.turn = 1 - p;
-      return { ok: true, at: c.at };
+      return { ok: true, at: c.at, kind: c.kind };
     }
     // The player to move ran out of time (pace 'saat': out of time for the match, which is lost).
     timeout() {
@@ -203,7 +254,7 @@ const KT = (function () {
     }
     endPoint(winner, how) {
       const pt = this.point, loser = 1 - winner;
-      const left = how === 'time' || how === 'pass' ? this.lex.split(this.lex.neighbours(pt.word, pt.used)) : { common: [], rare: [] };
+      const left = how === 'time' || how === 'pass' ? this.lex.split(this.lex.neighbours(pt.word, pt.used, false, this.canResize(loser))) : { common: [], rare: [] };
       const chain = pt.shots.length;            // words played in the point, the starting word included
       if (chain > this.stats.longest) { this.stats.longest = chain; this.stats.longestWords = pt.shots.map(s => s.word); }
       if (how === 'dead') this.stats.deadEnds[winner]++;
@@ -239,10 +290,10 @@ const KT = (function () {
       this.r = random || Math.random;
     }
     between([a, b]) { return a + (b - a) * this.r(); }
-    // Opponent's answers (words people know) after we play w.
-    pressure(lex, w, used) {
+    // Opponent's answers (words people know) after we play w. oppResize: they can add or take out a letter.
+    pressure(lex, w, used, oppResize) {
       const u = new Set(used); u.add(w);
-      return lex.neighbours(w, u, true).length;
+      return lex.neighbours(w, u, true, oppResize).length;
     }
     open(match) {
       const opts = match.point.options;
@@ -250,7 +301,7 @@ const KT = (function () {
       if (this.r() < this.cfg.smart) {
         let best = Infinity;
         for (const w of opts) {
-          const p = this.pressure(match.lex, w, new Set()) + this.r() * 0.5;
+          const p = this.pressure(match.lex, w, new Set(), match.canResize(1 - match.starter)) + this.r() * 0.5;
           if (p < best) { best = p; word = w; }
         }
       }
@@ -258,11 +309,25 @@ const KT = (function () {
     }
     // { word, delay } or { word: null } when it does not find anything (then it runs out of time;
     // pace 'saat': { word: null, pass: true, delay }, it gives the point away after a while).
+    // Uzat/kısalt: harder to see (0.6 of the usual chance) and slower to think of; with only a few rights left the
+    // bot keeps them for when it finds nothing else, or for a trap that leaves the other player no answer.
     reply(match) {
-      const lex = match.lex, pt = match.point;
-      const opts = lex.neighbours(pt.word, pt.used, true);
-      const seen = opts.filter(() => this.r() < this.cfg.see);
-      const bank = match.clockMode ? match.banks[pt.turn] : Infinity;
+      const lex = match.lex, pt = match.point, me = pt.turn;
+      const same = lex.neighbours(pt.word, pt.used, true);
+      const canR = match.canResize(me), oppR = match.canResize(1 - me);
+      const resizes = canR ? lex.resizes(pt.word, pt.used, true) : [];
+      const opts = same.concat(resizes);
+      const seenSame = same.filter(() => this.r() < this.cfg.see);
+      const seenR = resizes.filter(() => this.r() < this.cfg.see * 0.6);
+      let seen = seenSame;
+      if (seenR.length) {
+        if (match.rights[me] === Infinity || !seenSame.length) seen = seenSame.concat(seenR);
+        else if (this.r() < this.cfg.smart) {
+          const trap = seenR.find(w => this.pressure(lex, w, pt.used, oppR) === 0);
+          if (trap) seen = [trap];
+        }
+      }
+      const bank = match.clockMode ? match.banks[me] : Infinity;
       if (!seen.length) {
         if (!match.clockMode) return { word: null, delay: Infinity, options: opts.length };
         // looks for a while, gives up sooner when its clock is low
@@ -272,12 +337,13 @@ const KT = (function () {
       if (this.r() < this.cfg.smart) {
         let best = Infinity;
         for (const w of seen) {
-          const p = this.pressure(lex, w, pt.used) + this.r() * 0.5;
+          const p = this.pressure(lex, w, pt.used, oppR) + this.r() * 0.5;
           if (p < best) { best = p; word = w; }
         }
       }
       let delay = this.between(this.cfg.think);
       if (opts.length <= 2) delay += 0.6 + this.r() * 0.8;   // harder to find when there are few
+      if (word.length !== pt.word.length) delay += 0.5 + this.r() * 0.6;   // uzat/kısalt takes a moment more
       if (delay > bank * 0.75) {   // pace 'saat': hurries when its clock is low, and misses more
         const f = bank * 0.75 / delay;
         if (this.r() > f) return { word: null, pass: true, delay: Math.max(0.5, bank * 0.4), options: opts.length };
@@ -287,7 +353,7 @@ const KT = (function () {
     }
   }
 
-  return { KEYS, LOCALE, PACES, CLOCK, START_TIME, TARGET, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
+  return { KEYS, LOCALE, PACES, CLOCK, RESIZE, START_TIME, TARGET, LEVELS, upper, lower, seeded, shuffle, Lexicon, Match, Bot };
 })();
 
 if (typeof module !== 'undefined') module.exports = KT;

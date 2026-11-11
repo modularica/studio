@@ -28,6 +28,13 @@
       give: 'Sayıyı ver', gaveYou: 'Sayıyı verdin.', gaveThem: '{name} sayıyı verdi.',
       flagYou: 'Süren bitti!', flagThem: '{name}: süre bitti!', flagWin: 'Rakibinin süresi bitti!', byFlag: 'süre bitti',
       statClock: 'Kalan süre: <b>{a}</b>',
+      resize: 'Uzat / Kısalt', resizeOff: 'Kapalı', resize2: 'Maçta 2 hak', resizeAll: 'Her zaman',
+      resizeHint: 'Bir harf ekleyip (KALE → KALEM) ya da çıkarıp (KALEM → KALE) gönder. Kelime 3–5 harf olur.',
+      addBtn: 'Ekle +', delBtn: '− Çıkar', rights: '{n} hak', noRights: 'hak kalmadı',
+      pickSlot: 'Yeni harfin gireceği yere dokun', pickDel: 'Çıkaracağın harfe dokun',
+      errNoResize: 'Uzat/kısalt hakkın kalmadı', errLength: 'Kelime 3–5 harf olur',
+      howResize: '<b>Uzat / Kısalt:</b> {when} kelimeye bir harf ekleyebilir (KALE → KALEM) ya da çıkarabilirsin (KALEM → KALE); kelime 3–5 harf olur. <b>Ekle +</b>, sonra harfin gireceği yer ve yeni harf; <b>− Çıkar</b>, sonra çıkacak harf.',
+      when2: 'maçta 2 kez', whenAll: 'istediğin zaman', statResize: 'Uzat/kısalt: <b>{a}</b>',
       format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
       soundOn: 'Ses açık', soundOff: 'Ses kapalı', paused: 'Mola', resume: 'Devam', quit: 'Ana menü',
       nasildi: 'Nasıldı?', again: 'Rövanş', menu: 'Ana menü', gotIt: 'Anladım',
@@ -70,6 +77,13 @@
       give: 'Give up point', gaveYou: 'You gave the point away.', gaveThem: '{name} gave the point away.',
       flagYou: 'Your time is up!', flagThem: '{name} is out of time!', flagWin: 'Your opponent is out of time!', byFlag: 'out of time',
       statClock: 'Time left: <b>{a}</b>',
+      resize: 'Add / Take out', resizeOff: 'Off', resize2: '2 per match', resizeAll: 'Always',
+      resizeHint: 'Add a letter (CARD → CARDS) or take one out (CARDS → CARD). Words stay 3–5 letters.',
+      addBtn: 'Add +', delBtn: '− Take out', rights: '{n} left', noRights: 'none left',
+      pickSlot: 'Tap where the new letter goes', pickDel: 'Tap the letter to take out',
+      errNoResize: 'No adds or take-outs left', errLength: 'Words are 3–5 letters',
+      howResize: '<b>Add / Take out:</b> {when} you can add a letter (CARD → CARDS) or take one out (CARDS → CARD); words stay 3–5 letters. <b>Add +</b>, then where it goes and the letter; <b>− Take out</b>, then the letter.',
+      when2: 'twice a match', whenAll: 'any time', statResize: 'Add / take out: <b>{a}</b>',
       format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
       soundOn: 'Sound on', soundOff: 'Sound off', paused: 'Paused', resume: 'Resume', quit: 'Main menu',
       nasildi: 'How was it?', again: 'Rematch', menu: 'Main menu', gotIt: 'Got it',
@@ -109,7 +123,7 @@
   // (langPicked); older saves picked 'en' from navigator.language, so they reset.
   const S = Object.assign({
     lang: 'tr', langPicked: false,
-    mode: 'duo', level: 'orta', len: 4, pace: 'normal', bank: KT.CLOCK.bank, format: 1,
+    mode: 'duo', level: 'orta', len: 4, pace: 'normal', bank: KT.CLOCK.bank, resize: 'off', format: 1,
     names: ['', ''], bonus: [0, 0], sound: true, seenHow: false,
   }, readJSON(DEVICE_KEY) || {});
   if (!S.langPicked || !T[S.lang]) S.lang = 'tr';
@@ -118,6 +132,8 @@
   if (!KT.PACES[S.pace] && S.pace !== 'saat') S.pace = 'normal';
   if (!KT.CLOCK.banks.includes(+S.bank)) S.bank = KT.CLOCK.bank;
   S.bank = +S.bank;
+  if (!(S.resize in KT.RESIZE.rights)) S.resize = 'off';
+  const resizeRights = () => KT.RESIZE.rights[S.resize] || 0;
   delete S.ekli;   // "inflected words count" setting, 11 Nov 2026 only
   function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function saveDevice() { try { localStorage.setItem(DEVICE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -150,7 +166,11 @@
 
   // ---------- lexicons ----------
   const lexCache = {};
-  const lexFor = (lang, len) => lexCache[lang + len] || (lexCache[lang + len] = new KT.Lexicon(WORDS, lang, len));
+  // resize: uzat/kısalt is on, so 3-5 letter words are in play
+  const lexFor = (lang, len, resize) => {
+    const k = lang + len + (resize ? 'r' : '');
+    return lexCache[k] || (lexCache[k] = new KT.Lexicon(WORDS, lang, len, resize ? KT.RESIZE.lens : null));
+  };
 
   // ---------- menu ----------
   function renderLogo() {
@@ -168,6 +188,7 @@
     $$('[data-set=bank] .chip').forEach(c => { c.textContent = t('secs', { n: c.dataset.v }); });
     $('#bankHint').textContent = t('bankHint', { inc: KT.CLOCK.inc });
     $('#bonusLabel').textContent = t(S.pace === 'saat' ? 'bonusClock' : 'bonus');
+    $('#resizeHint').textContent = t('resizeHint');
     $('#name1').placeholder = t('p1');
     $('#name2').placeholder = t('p2');
     $('#soundBtn').textContent = S.sound ? t('soundOn') : t('soundOff');
@@ -179,7 +200,8 @@
     if (save.longest) parts.push(t('recordChain', { n: save.longest }));
     $('#record').textContent = parts.join(' · ');
     renderRooms();
-    const how = ['how1', 'how2', S.pace === 'saat' ? 'howClock' : 'how3', 'how4', 'howWords'].map(k => t(k, { n: S.bank, inc: KT.CLOCK.inc }));
+    const how = ['how1', 'how2', ...(S.resize !== 'off' ? ['howResize'] : []), S.pace === 'saat' ? 'howClock' : 'how3', 'how4', 'howWords']
+      .map(k => t(k, { n: S.bank, inc: KT.CLOCK.inc, when: t(S.resize === 'all' ? 'whenAll' : 'when2') }));
     how.push(t('howWin', { n: KT.TARGET[S.format] }));
     $('#howList').innerHTML = how.map(h => '<li>' + h + '</li>').join('');
   }
@@ -188,8 +210,9 @@
     $$('.mode').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
     $('#setupBot').classList.toggle('on', S.mode === 'bot');
     $('#setupDuo').classList.toggle('on', S.mode === 'duo');
-    const val = { level: S.level, len: String(S.len), pace: S.pace, bank: String(S.bank), format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
+    const val = { level: S.level, len: String(S.len), pace: S.pace, bank: String(S.bank), resize: S.resize, format: String(S.format), bonus0: String(S.bonus[0]), bonus1: String(S.bonus[1]) };
     $('#bankOpt').hidden = S.pace !== 'saat';
+    $('#resizeHint').hidden = S.resize === 'off';
     $$('[data-set]').forEach(g => $$('.chip', g).forEach(c => c.classList.toggle('on', c.dataset.v === val[g.dataset.set])));
     $('#name1').value = S.names[0] || '';
     $('#name2').value = S.names[1] || '';
@@ -203,6 +226,7 @@
     else if (k === 'len') S.len = +v;
     else if (k === 'pace') S.pace = v;
     else if (k === 'bank') S.bank = +v;
+    else if (k === 'resize') S.resize = v;
     else if (k === 'format') S.format = +v;
     else if (k === 'bonus0') S.bonus[0] = +v;
     else if (k === 'bonus1') S.bonus[1] = +v;
@@ -259,18 +283,19 @@
   function startMatch(firstStarter, online) {
     stopGame();
     watchRooms(false);
-    const lex = lexFor(S.lang, S.len);
+    const rz = resizeRights();
+    const lex = lexFor(S.lang, S.len, rz > 0);
     const mode = online ? 'online' : S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
     const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
     // online: both phones draw the same starting words from the room's seed
-    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, bank: S.bank, firstStarter: fs, random: online ? KT.seeded(online.tohum) : undefined });
+    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, bank: S.bank, resize: rz, firstStarter: fs, random: online ? KT.seeded(online.tohum) : undefined });
     G = {
       m, lex, mode, firstStarter: fs,
       bots: [null, mode === 'bot' ? new KT.Bot(S.level) : null],
       net: online ? { seat: online.seat, me: online.me, opp: online.opp, done: 0, queue: [], sent: [] } : null,
       panels: [$('#panel0'), $('#panel1')],
-      sel: [-1, -1], typed: '',
+      sel: [-1, -1], typed: '', edit: [null, null],   // edit: uzat/kısalt mode of each player ('add' | 'del')
       clock: { owner: -1, total: 1, limit: 1, left: 0, elapsed: 0, running: false, onEnd: null, bank: false },
       shown: ['', ''],
       plan: null, waits: [], paused: false, speed: 1, lastTs: performance.now(), raf: 0, lastTick: -1,
@@ -282,6 +307,7 @@
     game.classList.toggle('duo', mode === 'duo');
     game.classList.toggle('bot', mode === 'bot' || mode === 'online');
     game.classList.toggle('clockmode', m.clockMode);
+    game.classList.toggle('resize', m.resize > 0);
     $('#menu').classList.remove('on');
     game.classList.add('on');
     $('#endSheet').hidden = true;
@@ -303,7 +329,8 @@
     }
   }
 
-  const paceNote = () => (S.pace === 'saat' ? `saat ${S.bank} sn +${KT.CLOCK.inc}` : S.pace);
+  const paceNote = () => (S.pace === 'saat' ? `saat ${S.bank} sn +${KT.CLOCK.inc}` : S.pace) +
+    (S.resize === 'off' ? '' : S.resize === 'all' ? ', uzat/kısalt her zaman' : ', uzat/kısalt maçta 2');
 
   function stopGame() {
     if (!G) return;
@@ -318,16 +345,21 @@
     p.style.removeProperty('--pc');
     if (isRemote(i) && /^#[0-9a-f]{6}$/i.test(G.net.opp.renk || '')) p.style.setProperty('--pc', G.net.opp.renk);
     if (small(i)) {
-      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="ptime"></span><span class="pscore"></span></div>
+      p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="prz"></span><span class="ptime"></span><span class="pscore"></span></div>
         <div class="tiles small"></div><div class="clock idle"><i></i></div>`;
     } else {
       p.innerHTML = `<div class="phead"><span class="pname"></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="msg"></div><div class="tiles"></div>
+        <div class="editrow"><button type="button" class="edit del" disabled></button><span class="rights"></span><button type="button" class="edit add" disabled></button></div>
         <div class="clockrow"><div class="clock idle"><i></i></div><span class="ptime"></span><button type="button" class="give" disabled></button></div>
         <div class="kbd off"></div>`;
       const give = $('.give', p);
       give.textContent = t('give');
       give.addEventListener('click', e => { e.preventDefault(); onPass(i); });
+      const add = $('.edit.add', p), del = $('.edit.del', p);
+      add.textContent = t('addBtn'); del.textContent = t('delBtn');
+      add.addEventListener('click', e => { e.preventDefault(); setEdit(i, 'add'); });
+      del.addEventListener('click', e => { e.preventDefault(); setEdit(i, 'del'); });
       const kbd = $('.kbd', p);
       kbd.innerHTML = KT.KEYS[S.lang].map(row => '<div class="krow">' + [...row].map(c =>
         `<button type="button" class="key" data-k="${c}">${esc(U(c))}</button>`).join('') + '</div>').join('');
@@ -346,6 +378,17 @@
       $('.dots', p).innerHTML = Array.from({ length: m.target }, (_, k) => `<i class="${k < m.points[i] ? 'won' : ''}"></i>`).join('');
     }
     drawBanks();
+    drawRights();
+  }
+  // uzat/kısalt: what each player has left (the bot / other phone: in the head of its strip)
+  function drawRights() {
+    const m = G.m;
+    if (!m.resize) return;
+    for (const i of [0, 1]) {
+      const p = panelOf(i), n = m.rights[i], txt = n === Infinity ? '' : n > 0 ? t('rights', { n }) : t('noRights');
+      if (small(i)) { const el = $('.prz', p); el.textContent = n === Infinity ? '' : '±' + n; el.classList.toggle('none', n === 0); }
+      else { const el = $('.rights', p); el.textContent = txt; el.classList.toggle('none', n === 0); }
+    }
   }
   // pace 'saat': both clocks; the one of the player to move counts down
   function fmtTime(s) {
@@ -387,17 +430,25 @@
     const el = $('.tiles', panelOf(i));
     if (!word) { el.innerHTML = ''; el.className = 'tiles' + (small(i) ? ' small' : ''); return; }
     const letters = [...word];
-    el.className = 'tiles' + (small(i) ? ' small' : '') + (o.wait ? ' wait' : '') + (o.land ? ' land' : '');
+    // o.slots: uzat, the places a new letter can go (o.slot: the one picked); o.del: kısalt, tap a letter to take it out
+    el.className = 'tiles' + (small(i) ? ' small' : '') + (o.wait ? ' wait' : '') + (o.land ? ' land' : '') + (o.slots ? ' slots' : '') + (o.del ? ' deling' : '');
+    const slot = k => `<div class="slot${o.slot === k ? ' sel' : ''}" data-s="${k}">+</div>`;
     el.innerHTML = letters.map((c, k) => {
       const cls = ['tile'];
       if (o.sel === k) cls.push('sel');
       if (o.mark === k) cls.push('new');
       if (o.typed !== undefined && k >= o.typed) cls.push('dim');
-      return `<div class="${cls.join(' ')}" data-i="${k}">${esc(U(c))}</div>`;
-    }).join('');
+      return (o.slots ? slot(k) : '') + `<div class="${cls.join(' ')}" data-i="${k}">${esc(U(c))}</div>`;
+    }).join('') + (o.slots ? slot(letters.length) : '');
     if (!small(i) && o.active) {
       $$('.tile', el).forEach(tile => tile.addEventListener('pointerdown', e => { e.preventDefault(); onTile(i, +tile.dataset.i); }));
+      $$('.slot', el).forEach(s => s.addEventListener('pointerdown', e => { e.preventDefault(); onSlot(i, +s.dataset.s); }));
     }
+  }
+  // The word of the player to move, as their edit mode shows it.
+  function renderActive(i, extra) {
+    const e = G.edit[i];
+    renderTiles(i, G.m.point.word, Object.assign({ active: true, sel: e ? -1 : G.sel[i], slots: e === 'add', slot: e === 'add' ? G.sel[i] : -1, del: e === 'del' }, extra || {}));
   }
 
   function renderStartCards(i, words) {
@@ -413,7 +464,15 @@
 
   function setKeyboard(i, on) {
     if (small(i)) return;
-    $('.kbd', panelOf(i)).classList.toggle('off', !on);
+    $('.kbd', panelOf(i)).classList.toggle('off', !on || G.edit[i] === 'del');   // kısalt: a letter is tapped, not typed
+    const p = panelOf(i), m = G.m;
+    if (!m.resize) return;
+    const len = m.point && m.point.word ? m.point.word.length : 0, can = on && m.canResize(i);
+    $('.edit.add', p).disabled = !(can && len < G.lex.maxLen);
+    $('.edit.del', p).disabled = !(can && len > G.lex.minLen);
+    if (!on) G.edit[i] = null;
+    $('.edit.add', p).classList.toggle('on', G.edit[i] === 'add');
+    $('.edit.del', p).classList.toggle('on', G.edit[i] === 'del');
   }
 
   // Middle strip: who starts / match point, or the last words of the chain.
@@ -598,7 +657,7 @@
     if (m.phase !== 'rally') return;
     const p = m.point.turn, o = 1 - p, word = m.point.word;
     const secs = m.shotTime(p), co = { bank: m.clockMode };
-    G.sel[p] = -1; G.typed = '';
+    G.sel[p] = -1; G.typed = ''; G.edit[p] = null;
     setKeyboard(o, false); setGive(o, false);
     if (isBot(p)) {
       renderTiles(p, word, { land: true });
@@ -626,14 +685,39 @@
     pump();
   }
 
+  const myTurn = i => { const m = G && G.m; return !!m && !G.paused && m.phase === 'rally' && m.point.turn === i && !G.pointBusy; };
   function onTile(i, k, viaKey) {
-    const m = G && G.m;
-    if (!m || G.paused || m.phase !== 'rally' || m.point.turn !== i || G.pointBusy) return;
+    if (!myTurn(i)) return;
+    const m = G.m, cur = m.point.word;
+    if (G.edit[i] === 'del') { Sfx.tap(); attempt(i, cur.slice(0, k) + cur.slice(k + 1), k); return; }   // kısalt
+    if (G.edit[i] === 'add') { onSlot(i, k, viaKey); return; }
     G.sel[i] = G.sel[i] === k ? -1 : k;
     G.kbdSel = !!viaKey && G.sel[i] >= 0;
     G.typed = '';
-    renderTiles(i, m.point.word, { sel: G.sel[i], active: true });
+    renderActive(i);
     setMsg(i, esc(G.sel[i] >= 0 ? t('pickKey') : t('yourTurn')), 'turn');
+    Sfx.tap();
+  }
+  // uzat: where the new letter goes (0 = before the first letter)
+  function onSlot(i, k, viaKey) {
+    if (!myTurn(i) || G.edit[i] !== 'add') return;
+    G.sel[i] = G.sel[i] === k ? -1 : k;
+    G.kbdSel = !!viaKey && G.sel[i] >= 0;
+    G.typed = '';
+    renderActive(i);
+    setMsg(i, esc(G.sel[i] >= 0 ? t('pickKey') : t('pickSlot')), 'turn');
+    Sfx.tap();
+  }
+  // uzat/kısalt buttons: 'add' or 'del'; the same again goes back to changing a letter
+  function setEdit(i, mode) {
+    if (!myTurn(i) || !G.m.canResize(i)) return;
+    const len = G.m.point.word.length;
+    if ((mode === 'add' && len >= G.lex.maxLen) || (mode === 'del' && len <= G.lex.minLen)) return;
+    G.edit[i] = G.edit[i] === mode ? null : mode;
+    G.sel[i] = -1; G.typed = '';
+    renderActive(i);
+    setKeyboard(i, true);
+    setMsg(i, esc(G.edit[i] === 'add' ? t('pickSlot') : G.edit[i] === 'del' ? t('pickDel') : t('yourTurn')), 'turn');
     Sfx.tap();
   }
 
@@ -642,14 +726,15 @@
     if (!m || G.paused || m.phase !== 'rally' || m.point.turn !== i || G.pointBusy) return;
     Sfx.key();
     if (keyEl) { keyEl.classList.add('down'); setTimeout(() => keyEl.classList.remove('down'), 120); }
-    const k = G.sel[i];
-    if (k < 0) {
-      setMsg(i, esc(t('pickTile')), 'err');
+    const k = G.sel[i], e = G.edit[i];
+    if (e === 'del' || k < 0) {
+      setMsg(i, esc(t(e === 'del' ? 'pickDel' : e === 'add' ? 'pickSlot' : 'pickTile')), 'err');
       const tiles = $('.tiles', panelOf(i));
       tiles.classList.remove('land'); void tiles.offsetWidth; tiles.classList.add('land');
       return;
     }
     const cur = m.point.word;
+    if (e === 'add') { attempt(i, cur.slice(0, k) + ch + cur.slice(k), k); return; }   // uzat
     if (cur[k] === ch) return;
     attempt(i, cur.slice(0, k) + ch + cur.slice(k + 1), k);
   }
@@ -659,12 +744,16 @@
     const m = G.m;
     const c = m.check(word);
     if (!c.ok) {
-      if (c.reason === 'used' || c.reason === 'unknown') {
+      if (c.reason === 'no-resize' || c.reason === 'length') {
+        Sfx.err();
+        setMsg(i, esc(t(c.reason === 'length' ? 'errLength' : 'errNoResize')), 'err');
+      } else if (c.reason === 'used' || c.reason === 'unknown') {
         Sfx.err();
         const key = c.reason === 'used' ? 'errUsed' : 'errUnknown';
         setMsg(i, esc(t(key, { w: U(word) })), 'err');
         const tiles = $('.tiles', panelOf(i));
-        const tile = tiles.children[at];
+        const tile = c.kind === 'swap' ? tiles.children[at] : null;
+        if (!tile) { tiles.classList.remove('shake'); void tiles.offsetWidth; tiles.classList.add('shake'); }   // a letter added or taken out
         if (tile) {
           tile.textContent = U(word[at]);
           tile.classList.remove('bad'); void tile.offsetWidth; tile.classList.add('bad');
@@ -693,9 +782,11 @@
     stopClock();
     G.pointBusy = true;
     if (small(p)) $('.bot-think', panelOf(p)).hidden = true;
-    const at = G.lex.diff(before, word);
-    renderTiles(p, word, { mark: at, wait: true });
+    const st = G.lex.step(before, word);
+    G.edit[p] = null;
+    renderTiles(p, word, { mark: st && st.kind !== 'del' ? st.at : -1, wait: true });
     setKeyboard(p, false); setGive(p, false);
+    if (st && st.kind !== 'swap') { drawRights(); layout(); }
     setMsg(p, esc(sentText(p)) + ' <b>' + esc(U(word)) + '</b>');
     boardInfo();
     if (r.how === 'dead') {
@@ -809,23 +900,30 @@
     if (small(p)) return;
     const word = m.point.word;
     if (e.key === 'Backspace') { G.typed = G.typed.slice(0, -1); showTyped(p); e.preventDefault(); return; }
-    if (/^[1-9]$/.test(e.key) && +e.key <= word.length) { onTile(p, +e.key - 1, true); return; }
+    if (e.key === '+' || e.key === '=') { setEdit(p, 'add'); return; }   // uzat/kısalt
+    if (e.key === '-') { setEdit(p, 'del'); return; }
+    if (e.key === 'Enter' && G.typed) { submitTyped(p); e.preventDefault(); return; }   // a word one letter shorter
+    if (/^[1-9]$/.test(e.key) && +e.key <= word.length + (G.edit[p] === 'add' ? 1 : 0)) { onTile(p, +e.key - 1, true); return; }
     const ch = KT.lower(e.key, S.lang);
     if (ch.length !== 1 || !G.lex.alpha.includes(ch)) return;
     e.preventDefault();
     // 1-4 then a letter: change that letter. Otherwise type the whole new word.
     if (G.sel[p] >= 0 && G.kbdSel && !G.typed) { G.kbdSel = false; onKey(p, ch); return; }
-    G.sel[p] = -1; G.kbdSel = false;
+    G.sel[p] = -1; G.kbdSel = false; G.edit[p] = null;
     G.typed += ch;
-    if (G.typed.length >= word.length) {
-      const typed = G.typed; G.typed = '';
-      const at = G.lex.diff(word, typed);
-      if (at < 0) { Sfx.err(); setMsg(p, esc(t('yourTurn')), 'err'); renderTiles(p, word, { active: true, land: true }); return; }
-      if (!attempt(p, typed, at)) renderTiles(p, word, { active: true });
-      return;
-    }
+    // the whole word: sent when it has the length of the word (or one more with uzat/kısalt);
+    // with uzat/kısalt a word as long as the old one waits if it is not an answer (more may come), Enter sends a shorter one
+    const L = word.length, canR = m.canResize(p);
+    if (G.typed.length > L || (G.typed.length === L && (!canR || m.check(G.typed).ok))) { submitTyped(p); return; }
     showTyped(p);
   });
+  function submitTyped(p) {
+    const word = G.m.point.word, typed = G.typed;
+    G.typed = '';
+    const st = G.lex.step(word, typed);
+    if (!st) { Sfx.err(); setMsg(p, esc(t('yourTurn')), 'err'); renderTiles(p, word, { active: true, land: true }); return; }
+    if (!attempt(p, typed, st.at)) renderTiles(p, word, { active: true });
+  }
   function showTyped(p) {
     const word = G.m.point.word, ty = G.typed;
     renderTiles(p, ty + word.slice(ty.length), { active: true, typed: ty.length || undefined });
@@ -930,6 +1028,7 @@
     if (m.stats.longestWords.length) items.push(t('statLongest', { n: m.stats.longest }) + '<br>' + m.stats.longestWords.map(x => esc(U(x))).join(' → '));
     items.push(t('statDead', { a: G.mode === 'bot' ? m.stats.deadEnds[0] + '–' + m.stats.deadEnds[1] : `${esc(playerName(0))} ${m.stats.deadEnds[0]} · ${esc(playerName(1))} ${m.stats.deadEnds[1]}` }));
     if (G.mode === 'duo') items.push(t('statWords', { a: `${esc(playerName(0))} ${m.stats.words[0]} · ${esc(playerName(1))} ${m.stats.words[1]}` }));
+    if (m.resize) items.push(t('statResize', { a: `${esc(playerName(0))} ${m.stats.resizes[0]} · ${esc(playerName(1))} ${m.stats.resizes[1]}` }));
     if (m.clockMode) items.push(t('statClock', { a: `${esc(playerName(0))} ${fmtTime(m.banks[0])} · ${esc(playerName(1))} ${fmtTime(m.banks[1])}` }));
     $('#endStats').innerHTML = items.map(x => '<li>' + x + '</li>').join('');
     const sheet = $('#endSheet');
@@ -939,11 +1038,12 @@
   }
   // pace 'saat': the clocks at the end, for the Lab note
   function clockNote(m) {
-    if (!m.clockMode) return '';
+    const rz = m.resize ? ` · uzat/kısalt ${m.stats.resizes[0]}–${m.stats.resizes[1]}` : '';
+    if (!m.clockMode) return rz;
     const last = m.history[m.history.length - 1];
     return ` · saat ${m.bank} sn, kalan ${fmtTime(m.banks[0])}–${fmtTime(m.banks[1])}` +
       (m.stats.passes[0] + m.stats.passes[1] ? `, verilen sayı ${m.stats.passes[0]}–${m.stats.passes[1]}` : '') +
-      (last && last.flag ? `, ${playerName(1 - last.winner)} süresini bitirdi` : '');
+      (last && last.flag ? `, ${playerName(1 - last.winner)} süresini bitirdi` : '') + rz;
   }
   $('#againBtn').addEventListener('click', () => { const fs = G ? 1 - G.firstStarter : 0; startMatch(S.mode === 'bot' ? 0 : fs); });
   $('#menuBtn').addEventListener('click', toMenu);
@@ -951,7 +1051,7 @@
   // ---------- layout ----------
   function layout() {
     if (!G) return;
-    const n = S.len;
+    const n = G.lex.maxLen + (G.m.resize ? 1.2 : 0);   // uzat/kısalt: up to 5 letters, and the places between them
     for (const i of [0, 1]) {
       const p = panelOf(i);
       if (small(i)) { p.style.removeProperty('--tw'); continue; }
@@ -960,7 +1060,7 @@
       const kw = Math.max(22, Math.min(58, Math.floor(W / (rowMax + (rowMax - 1) * 0.16))));
       let tw = Math.min(104, Math.floor(W / (n + (n - 1) * 0.12)) - 4, Math.floor(Hh * 0.22));
       tw = Math.max(36, tw);
-      const fixed = 30 + 46 + (G.m.clockMode ? 30 : 9) + 8 * 4 + tw * 1.14 + 8;    // head, two-line message, clock, gaps, tiles
+      const fixed = 30 + 46 + (G.m.clockMode ? 30 : 9) + (G.m.resize ? 42 : 0) + 8 * 4 + tw * 1.14 + 8;    // head, two-line message, uzat/kısalt, clock, gaps, tiles
       const kh = Math.max(30, Math.min(Math.round(kw * 1.5), Math.floor((Hh - fixed - kw * 0.36) / 3)));
       p.style.setProperty('--tw', tw + 'px');
       p.style.setProperty('--kw', kw + 'px');
@@ -976,7 +1076,7 @@
   // with pace 'saat' u = the seconds the move took (both phones work out the same clocks from it).
   // The room keeps the moves, so a phone that lost the connection catches up (oda geri) and a reopened page
   // replays the match (basla with log).
-  const NET_VERSION = 2;   // 2: pace 'saat'
+  const NET_VERSION = 3;   // 2: pace 'saat', 3: uzat/kısalt
   const MOVE = /^[shtp]$/;
   let netPrev = null;   // this phone's own settings; the room's are used while in it
   function netSurum() {  // phones play together only with the same word lists
@@ -1084,12 +1184,13 @@
       $('#record').textContent = t('netFull');
       return;
     }
-    if (!netPrev) netPrev = { lang: S.lang, len: S.len, pace: S.pace, bank: S.bank, format: S.format };
+    if (!netPrev) netPrev = { lang: S.lang, len: S.len, pace: S.pace, bank: S.bank, resize: S.resize, format: S.format };
     const a = m.ayar || {};
     if (T[a.dil]) S.lang = a.dil;
     if ([3, 4].includes(+a.len)) S.len = +a.len;
     if (KT.PACES[a.pace] || a.pace === 'saat') S.pace = a.pace;
     S.bank = KT.CLOCK.banks.includes(+a.bank) ? +a.bank : KT.CLOCK.bank;
+    S.resize = a.resize in KT.RESIZE.rights ? a.resize : 'off';
     S.format = +a.format === 2 ? 2 : 1;
     applyTexts();
     const first = ((m.tohum >>> 0) % 2) === seat ? 0 : 1;   // the seed tosses the coin, the same on both phones
@@ -1111,6 +1212,7 @@
         { k: 'len', ad: t('word'), secenek: [{ d: 4, ad: t('len4') }, { d: 3, ad: t('len3') }], v: S.len },
         { k: 'pace', ad: t('pace'), secenek: ['rahat', 'normal', 'hizli', 'saat'].map(d => ({ d, ad: t(d) })), v: S.pace },
         { k: 'bank', ad: t('bankLabel'), secenek: KT.CLOCK.banks.map(d => ({ d, ad: t('secs', { n: d }) })), v: S.bank, goster: a => a.pace === 'saat' },
+        { k: 'resize', ad: t('resize'), secenek: ['off', '2', 'all'].map(d => ({ d, ad: t({ off: 'resizeOff', '2': 'resize2', all: 'resizeAll' }[d]) })), v: S.resize },
         { k: 'format', ad: t('format'), secenek: [1, 2].map(d => ({ d, ad: t(d === 1 ? 'short' : 'long', { n: KT.TARGET[d] }) })), v: S.format },
       ],
       puanYazi: p => t('pts', { n: Math.round(p) }),
@@ -1133,7 +1235,7 @@
 
   if (DEBUG) {
     window.__kt = {
-      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot, onPass, netReceive,
+      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot, onPass, setEdit, netReceive,
       get G() { return G; },
       get oda() { return oda; },
       set speed(v) { if (G) G.speed = v; },

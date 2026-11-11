@@ -12,7 +12,8 @@
 #                                         only used here to drop words; nothing from them is shipped
 # and `pip install wordfreq` (frequencies, data CC-BY-SA 4.0) decides which words are "common".
 # Turkish verb roots need `pip install zemberek-python` (Zemberek's analyzer, Apache-2.0); the first run
-# checks every 3-4 letter string (~4 min) and caches the result as tr-forms-v2.json in the cache dir.
+# checks every 3-4 letter string (~4 min) and caches the result as tr-forms-v2.json in the cache dir; 5-letter
+# roots come from the dictionary's -mek verbs (tr-forms5-v1.json).
 #
 # Output per language and word length (3, 4, 5):
 #   common  words most people know: the bot plays these, serves come from these, the end-of-point
@@ -36,7 +37,9 @@ ALPHA = {
     'tr': 'abcçdefgğhıijklmnoöprsştuüvyz',
     'en': 'abcdefghijklmnopqrstuvwxyz',
 }
-LENGTHS = (3, 4)            # 5 letters is too sparse in Turkish (avg 1.6 common neighbours)
+LENGTHS = (3, 4, 5)         # games start with 3 or 4 letters; 5 is only reached with "uzat" (add a letter)
+SERVE_LENGTHS = (3, 4)      # 5 letters is too sparse in Turkish to start on (avg 1.8 neighbours)
+FORM_LENGTHS = (3, 4)       # every string of these lengths goes through Zemberek's analyzer (5: 20M, too many)
 COMMON_ZIPF = {'tr': 3.0, 'en': 3.0}     # wordfreq Zipf scale: 3 = once per million words
 SERVE_ZIPF = {'tr': 3.6, 'en': 3.6}      # serves: well-known words only
 SERVE_MIN_NEIGHBOURS = 4                 # common one-letter neighbours a serve word needs
@@ -46,11 +49,13 @@ SERVE_MIN_NEIGHBOURS = 4                 # common one-letter neighbours a serve 
 BLOCK = {
     'tr': '''piç piçi ibne puşt puşta gavat kahpe kevaşe zenci kıro bok boklu yarak sikik siktir amcı çük seks
              chat food fuel homo klüp knot mode rand traş yaaa aaa haa ooo yoo yaa hmm hah idea fast oil run
-             ski meal main mesh mail bold done''',
+             ski meal main mesh mail bold done
+             seviş porno fuhuş''',
     'en': '''fags fagot dicks cunts twats sluts whore whores rapes raped raper rapist porns tits titty
              poofs spics kikes coons gook gooks chink wop wops dago dagos dyke dykes homo homos jap japs gyp gyps
              gypsy spaz tard tards wank wanks jism jizz piss pissy prick cocks dildo bitch nazi nazis
-             negro sexed sexes sexy horny jew jews turk turks mick micks''',
+             negro sexed sexes sexy horny jew jews turk turks mick micks
+             fucks shits asses queer''',
 }
 # Valid, but not "common": the bot never plays them and serves never use them. Archaic, technical,
 # religious or ethnic terms, interjections, abbreviations, words whose frequency comes from another
@@ -83,7 +88,36 @@ NOT_COMMON = {
              taka tali tart topu toto trap tutu türe ulak ulan ulvi umar umre umum umur utku uyur uçar uğra vaaz
              vaiz vere vira vuku yatı yağı yaşa zati zina ziya zona çağa çeki çita ören özge üste üzme üzre ısın
              ışıl şark şems şerh şeyh şile şirk şule şura talk slip
-             eriş eşme ilme itiş otsu''',
+             eriş eşme ilme itiş otsu
+             abaza abdal adamı adedi adına afife agora ahkam ahlat akabe akbaş akkor akkuş akman aksam akçıl alevi
+             alkan amade ameli amino anemi apaçi april arefe arter arşın atfen avşar ayvaz azize aşure aşkın bahri
+             balat barak baran barda basar basil bastı batar batur bazal bazan bağıl bağım bağın başta bedii bedir
+             begüm belen bengi berat beril bilir bindi biner bitap bitik bitti bloke bobin bohem boran boyar buğra
+             burcu burma bükük büküm camii canan cebel celal celil cemal cemil cenap cenin ceren cicim cihan cihat
+             cinsi civan cubur cunta cübbe dalan dekar denek devri deşik dinar dinci dinen dişil dobra donör düşes
+             düzce efsun ejder ekber ekler elden elele elvan elyaf elzem emevi ensar erbaş erden ergin erika erkan
+             erkin ertem ester etmen etnik evgin eşref fahri fanta fasıl fatih fazıl fedai fehim felek ferda ferdi
+             fesih fetva fevri fiili fikri flama flört fonda forza frank fulya funda füsun fıkıh fırka gafil gamma
+             gayri gayrı gazap gedik gelen genom geren giray gotik guard gurup gusül gücün gönen güleç gülle gürel
+             güruh gıcır habis hacet haciz hadis hafız haham hakan halef halim halis haliç haluk hande haram harbe
+             harbi harem hassa hasıl hatim hatun havai hazan hazar hazım haşin helak helal hicaz hicri hidra hiper
+             hippi hodri horst hudut humus husus hutbe hülya iblis idame ihdas ihlas ihsan ihtar ihvan ikame ikbal
+             ikmal ilahe ilahi ilhak ilhan illet infak inşaa irfan iskan ismen ismet isnat ister izzet içiçe içkin
+             kabil kabir kacak kadem kadim kadir kahin kalbi kamer kamil kanka kanık kargı kasık kavmi kayan kayar
+             kayra kağan kaçar kaçta kaşif kebir kelam keleş kelle kemal kepez kerem kerim keşiş kinci kinin kiril
+             kondu konur koyar koçak krank kulun kutsi kösem külot kıble kıyam küsur küsür
+             lahit lando lanse largo latif lağım light mabet mahal malik mambo manas manen manga manik maral maruf
+             masör masöz matem mecra medet mehdi melih melik memnu menfi meral merci metan metil mevzi meyan meyil
+             meyva mezar milis miraç mitoz molla mouse mösyö mukus murat muska müfit müftü mülki mümin mübah nafiz
+             nakli nalan namaz necip nedim nefer neler neşet nezih nicel nifak nihan nispi nitel niyaz nizam nöral
+             nüfuz nüsha ofset oksit ongun ortaç pagan palas pampa papaz polat pound print punto pusat rahip rakım
+             ramak recep refik rekat resul revan rumuz rızık sabuk sahih sahra sahur sakat salah salat salık salvo
+             sanem sarpa sağır sebil secde selen selim semih serim seren sevap sever seyit seçik siyer sosyo sorum
+             sudan sufle sırat sıhhi sınai takim takva tanrı tapan tarik tatar tavaf tayip tefek tekke telin terme
+             tokyo tolga tonla topal tortu tufan tuğra tuzla türbe türel tümen tövbe ulema umman umumi uymaz vacip
+             vahit vahiy varan varda vefat verdi yahşi yakin yaran yarda yaren yatsı yaver yekta yokum yunak yurdu
+             yüzer zabit zabıt zekat zeval zihni zikir zuhur çakar çakra çalar çayan çeker çolak çorlu çünki öncel
+             ölmez örgün özden ümmet ümran şaban şaire şakir şamil şayan şefik şemsi şurda şöför ılgın''',
     'en': '''aba aga ain ais ala als ama ani ars att bal bas bey bis bod bos cis col cor cox coz dah dak daw dey dis
              dos dow dui dup ecu eff ems eng ers eta eth fas fer fil goa hae haw hes het hon hoy ich ids ifs ins jin
              jun jus kos lac las lat lei lex lis luv mas med mig mir mis mol mon mor mos mot mun mus nam naw nee nom
@@ -102,7 +136,14 @@ NOT_COMMON = {
              emery erica ester fanny fritz garth hogan jenny jerry jesse jimmy judas kelly kerry lacey laird laura
              lefty leone levin logan louie louis marge maria merle missy moira monte morse nancy natal nelly paddy
              patsy patty pedro perry peter ralph randy riley roger romeo sally serge shawn silva sissy sonny tammy
-             terra terry tommy wally weber welch willy''',
+             terra terry tommy wally weber welch willy
+             abbas alamo argus avant banco barre bates bible brill brits butte calif carte chang chile china chino
+             cisco coles coney congo conte creme crore dolce dutch femme firth fitch footy gemma genoa gimme greek
+             hades hanks harry haute henry heres honda hurst hydro inter japan johns jones kanji kappa kraft kyrie
+             lakhs lewis liang lipid locus lumen macon mamma massa masse mater mayan mecca monde nitro padre papal
+             paris pasha playa popes prima psalm psych rabbi recon roman roper rondo sahib santo savoy scots seine
+             shalt shiva sigma stead supra swain swami swede swiss sykes synod takin tesla texas thine theta tonga
+             torah trans twain wales welsh whats wight wigan xerox yahoo yanks amour petit deity vicar''',
 }
 # Never served (function words, archaic or abstract ones that make a dull first shot).
 SERVE_SKIP = {
@@ -116,12 +157,19 @@ SERVE_SKIP = {
 SOFT = {
     'tr': '''ölü ölüm ölmek ölme ölüş kan kanlı silah bomba ceset katil şarap rakı bira votka esrar eroin kokain
              salak aptal ahmak enayi ebleh avanak dangalak hıyar öküz domuz geber gebe gebeş leş kusmuk
-             kusmak sıçan sıçmak osur osuruk işemek çiş kaka bok götür dövmek boğmak''',
+             kusmak sıçan sıçmak osur osuruk işemek çiş kaka bok götür dövmek boğmak
+             öldür afyon alkol likör viski kadeh ayyaş matiz kumar angut herif bunak şişko moruk velet yobaz ucube
+             gavur kafir küfür lanet mafya terör taciz infaz kısas kefen tabut mermi namlu tüfek mayın süngü fünye
+             savaş kavga dayak dövüş tokat şamar penis sperm seksi sapık azgın fetiş bakir hadım idrar ishal dışkı
+             kabız sidik sümük''',
     'en': '''kill kills dead die died dies dying gun guns bomb bombs stab stabs blood bloody gore murder
              drug drugs beer beers wine wines rum gin vodka booze drunk weed crack meth stupid idiot moron
              dumb dumbo puke pukes vomit poop poops pee pees fart farts crap shag hell damn butt butts suck
              sucks nude nudes anal gay gays pimp pimps turd turds arse lewd lust nuke nukes dope puss peed babe
-             babes coke coca bong dong bum bums''',
+             babes coke coca bong dong bum bums
+             abort abuse arson bigot bleed brawl death drown filth gangs knife lager liars loser lousy lynch mafia
+             nasty opium poker rifle riots slain slave slurs stink thugs felon heist freak obese fatty swine cigar
+             cider pinot potty hells spank pubic thong booty sperm feces urine bowel groin naked jihad fight''',
 }
 
 # Derived words Zemberek's lexicon does not list because its morphology builds them from the root:
@@ -191,39 +239,66 @@ VERB_ZIPF = 3.0   # wordfreq Zipf of the verb (gelmek) a root needs
 NOT_ROOTS = 'taşı dile akla arın'
 # Roots that count but the bot never plays: frequency from another word (sun, kon, öner), or not nice as a
 # command (sok, göm).
-NOT_COMMON_ROOTS = 'sok göm sun kon kop yor yala öner sına'
+NOT_COMMON_ROOTS = 'sok göm sun kon kop yor yala öner sına becer'
+
+_MORPH = None
+def morphology():
+    global _MORPH
+    if _MORPH is None:
+        import types, typing, logging
+        shim = types.ModuleType('typing.io')
+        shim.TextIO, shim.IO, shim.BinaryIO = typing.TextIO, typing.IO, typing.BinaryIO
+        sys.modules.setdefault('typing.io', shim)   # antlr4 4.8, pinned by zemberek-python, imports typing.io (gone in 3.13)
+        logging.disable(logging.INFO)
+        from zemberek import TurkishMorphology
+        _MORPH = TurkishMorphology.create_with_defaults()
+    return _MORPH
+
+def analyses(w):
+    """Zemberek's analyses of w: [pos, secondary pos, lemma, root, copula] (copula: a noun or adjective used
+    as a verb, kar-dı)."""
+    res = []
+    for r in morphology().analyze(w).analysis_results:
+        if r.is_unknown() or r.is_runtime():
+            continue
+        it = r.item
+        if it.primary_pos.name in SKIP_POS or it.secondary_pos.name in SKIP_SEC:
+            continue
+        copula = 1 if 'Zero→Verb' in r.format_string() else 0
+        res.append([it.primary_pos.name, it.secondary_pos.name, it.lemma, it.root, copula])
+    return res
 
 def zemberek_forms():
-    """Every 3-4 letter string Zemberek accepts as a Turkish word form, with its analyses
-    [pos, secondary pos, lemma, root, copula] (copula: a noun or adjective used as a verb, kar-dı).
-    Cached as tr-forms-v2.json in the cache dir."""
+    """Every 3-4 letter string Zemberek accepts as a Turkish word form, with its analyses. Cached as
+    tr-forms-v2.json in the cache dir."""
     path = os.path.join(CACHE, 'tr-forms-v2.json')
     if os.path.exists(path):
         return json.load(open(path, encoding='utf-8'))
-    import types, typing, logging
-    shim = types.ModuleType('typing.io')
-    shim.TextIO, shim.IO, shim.BinaryIO = typing.TextIO, typing.IO, typing.BinaryIO
-    sys.modules.setdefault('typing.io', shim)   # antlr4 4.8, pinned by zemberek-python, imports typing.io (gone in 3.13)
-    logging.disable(logging.INFO)
-    from zemberek import TurkishMorphology
-    morph = TurkishMorphology.create_with_defaults()
     out = {}
-    for n in LENGTHS:
+    for n in FORM_LENGTHS:
         for t in itertools.product(ALPHA['tr'], repeat=n):
             if not VOWELS_TR.intersection(t):
                 continue
             w = ''.join(t)
-            res = []
-            for r in morph.analyze(w).analysis_results:
-                if r.is_unknown() or r.is_runtime():
-                    continue
-                it = r.item
-                if it.primary_pos.name in SKIP_POS or it.secondary_pos.name in SKIP_SEC:
-                    continue
-                copula = 1 if 'Zero→Verb' in r.format_string() else 0
-                res.append([it.primary_pos.name, it.secondary_pos.name, it.lemma, it.root, copula])
+            res = analyses(w)
             if res:
                 out[w] = res
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(out, f, ensure_ascii=False)
+    return out
+
+def zemberek_forms5(dictionary):
+    """5 letters: only the roots of the dictionary's verbs (başlamak -> başla), with their analyses.
+    Cached as tr-forms5-v1.json in the cache dir."""
+    path = os.path.join(CACHE, 'tr-forms5-v1.json')
+    if os.path.exists(path):
+        return json.load(open(path, encoding='utf-8'))
+    cands = sorted({w[:-3] for w in dictionary if len(w) == 8 and w[-3:] in ('mak', 'mek')})
+    out = {}
+    for w in cands:
+        res = analyses(w)
+        if res:
+            out[w] = res
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False)
     return out
@@ -234,7 +309,9 @@ def verb_roots_tr(dictionary, bad):
     fold = lambda x: fold_tr(x.lower())
     skip = set(NOT_ROOTS.split())
     out = {}
-    for w, res in zemberek_forms().items():
+    forms = dict(zemberek_forms())
+    forms.update(zemberek_forms5(dictionary))
+    for w, res in forms.items():
         if w in dictionary or w in bad or w in skip:
             continue
         verbs = [r[2] for r in res if r[0] == 'Verb' and r[3] == w and not r[4]]
@@ -268,7 +345,7 @@ def lists(valid, allw, lang, soft, notc, serve_from=None):
     skip = set(SERVE_SKIP[lang].split())
     pool = serve_from if serve_from is not None else common
     serve = [w for w in pool if allw[w] >= SERVE_ZIPF[lang] and ncount.get(w, 0) >= SERVE_MIN_NEIGHBOURS
-             and w not in skip]
+             and w not in skip and len(w) in SERVE_LENGTHS]
     st = {
         'valid': len(valid), 'common': len(common), 'serve': len(serve),
         'avg_common_neighbours': round(sum(ncount.values()) / max(1, len(common)), 2),

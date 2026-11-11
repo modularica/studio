@@ -1,7 +1,8 @@
 {
  "tr-roots": {
   "3": "bak bil bo\u011f b\u00f6l doy do\u011f dur d\u00f6k d\u00f6n d\u00f6v gel gir git giy g\u00f6m g\u00f6r kon kop ko\u015f kus oku sar sat sev se\u00e7 sil sok sor sun sus s\u00fcr tut uyu ver vur yap yor yut y\u0131k \u00e7iz \u00e7\u0131k \u00f6de \u00f6l\u00e7 \u00f6rt",
-  "4": "anla atla avla ay\u0131r a\u011fla dene edin ekle e\u011fit ilet iste izle i\u015fle kalk kapa kork otur oyna s\u0131na ula\u015f unut uyan uyar uzan uzat yala y\u00fcr\u00fc y\u0131ka \u00f6ner \u00f6nle \u00f6v\u00fcn \u00fcret \u00fcz\u00fcl \u0131s\u0131r \u0131s\u0131t"
+  "4": "anla atla avla ay\u0131r a\u011fla dene edin ekle e\u011fit ilet iste izle i\u015fle kalk kapa kork otur oyna s\u0131na ula\u015f unut uyan uyar uzan uzat yala y\u00fcr\u00fc y\u0131ka \u00f6ner \u00f6nle \u00f6v\u00fcn \u00fcret \u00fcz\u00fcl \u0131s\u0131r \u0131s\u0131t",
+  "5": "affet aldat ald\u0131r anlat anla\u015f art\u0131r atlat avlan ayr\u0131l azalt ba\u011fla ba\u015far ba\u015fla becer bekle benze besle be\u011fen bitir bo\u015fal bo\u015fan bulun b\u00fcy\u00fct b\u0131rak dan\u0131\u015f dayan da\u011f\u0131t delir de\u011fi\u015f dinle dokun dola\u015f doyur do\u011fur duyur d\u00f6n\u00fc\u015f d\u00fc\u015f\u00fcr evlen e\u011flen getir ge\u00e7in ge\u00e7ir giyin gizle g\u00f6r\u00fcn g\u00f6t\u00fcr g\u00f6z\u00fck harca incit indir kapat kat\u0131l kavra kavu\u015f ka\u00e7\u0131n ka\u00e7\u0131r kokla kolla konu\u015f kopar kutla oynat pi\u015fir sakla salla sapta savun sa\u011fla se\u00e7il so\u011fut su\u00e7la s\u00f6yle s\u00fcsle s\u0131\u011f\u0131n tak\u0131l ta\u015f\u0131n topla tutul tutun t\u00fcken t\u00fcket uydur u\u011frat yarat yetin yeti\u015f yolla y\u00f6net y\u00fckle y\u00fcr\u00fct \u00e7al\u0131\u015f \u00e7a\u011f\u0131r \u00e7ekil \u00e7evir \u00e7i\u011fne \u00f6ld\u00fcr \u00f6\u011fren \u00f6\u011fret"
  },
  "tr": {
   "3": {
@@ -23,6 +24,16 @@
    "common_with_0_valid_neighbours": 44,
    "common_with_1_2": 344,
    "common_with_5_plus": 168
+  },
+  "5": {
+   "valid": 5007,
+   "common": 1854,
+   "serve": 0,
+   "avg_common_neighbours": 1.39,
+   "common_with_0_common_neighbours": 703,
+   "common_with_0_valid_neighbours": 307,
+   "common_with_1_2": 787,
+   "common_with_5_plus": 111
   }
  },
  "en": {
@@ -45,6 +56,16 @@
    "common_with_0_valid_neighbours": 13,
    "common_with_1_2": 273,
    "common_with_5_plus": 1044
+  },
+  "5": {
+   "valid": 8584,
+   "common": 2394,
+   "serve": 0,
+   "avg_common_neighbours": 2.65,
+   "common_with_0_common_neighbours": 513,
+   "common_with_0_valid_neighbours": 125,
+   "common_with_1_2": 851,
+   "common_with_5_plus": 512
   }
  }
 }

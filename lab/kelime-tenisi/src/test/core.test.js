@@ -277,12 +277,91 @@ test('saat: aynı hamleler iki telefonda aynı süreleri verir', () => {
   for (const x of a.banks) assert.strictEqual(x, Math.round(x * 100) / 100);
 });
 
+console.log('Uzat / kısalt');
+function resizeMatch(seed, rights, opts) {
+  const lex = new KT.Lexicon(WORDS, 'tr', 4, KT.RESIZE.lens);
+  return new KT.Match(Object.assign({ lex, players: [{ name: 'A' }, { name: 'B' }], random: KT.seeded(seed), resize: rights }, opts || {}));
+}
+test('sözlükte 5 harfliler: ELMAS, KALEM, fiil kökleri (BAŞLA, KONUŞ); ekli haller ve kaba kelimeler yok', () => {
+  const lex = new KT.Lexicon(WORDS, 'tr', 4, KT.RESIZE.lens);
+  for (const w of ['elmas', 'kalem', 'masal', 'kasap', 'başla', 'konuş', 'çalış', 'öğren']) assert.ok(lex.has(w) && lex.isCommon(w), w);
+  for (const w of ['evden', 'aldım', 'seviş', 'porno', 'fuhuş']) assert.ok(!lex.has(w), w);
+  for (const w of ['öldür', 'savaş', 'alkol', 'bitti', 'namaz', 'becer']) assert.ok(lex.has(w) && !lex.isCommon(w), w);
+  assert.deepStrictEqual([lex.minLen, lex.maxLen], [3, 5]);
+  assert.ok(new KT.Lexicon(WORDS, 'tr', 4).maxLen === 4, 'without resize only 4 letters');
+  const en = new KT.Lexicon(WORDS, 'en', 4, KT.RESIZE.lens);
+  for (const w of ['words', 'cards', 'heart']) assert.ok(en.isCommon(w), w);
+  for (const w of ['texas', 'paris', 'fucks']) assert.ok(!en.isCommon(w), w);
+});
+test('uzat ve kısalt: KASA → KASAP → KASA olmaz (yandı), ELMA → ELMAS, KALEM → KALE; haklar düşer', () => {
+  const lex = new KT.Lexicon(WORDS, 'tr', 4, KT.RESIZE.lens);
+  assert.deepStrictEqual(lex.step('elma', 'elmas'), { kind: 'add', at: 4 });
+  assert.deepStrictEqual(lex.step('kalem', 'kale'), { kind: 'del', at: 4 });
+  assert.deepStrictEqual(lex.step('kasa', 'akasa'), { kind: 'add', at: 0 });
+  assert.strictEqual(lex.step('kasa', 'kasapp'), null);
+  assert.deepStrictEqual(lex.step('masa', 'mas'), { kind: 'del', at: 3 });
+  assert.strictEqual(lex.step('masa', 'kaya'), null);
+  const m = resizeMatch(21, 2, { firstStarter: 0 });
+  m.point.options = ['kasa', 'x', 'y'];
+  m.start('kasa');
+  const r = m.shot('kasap');                        // B adds a letter
+  assert.ok(r.ok && r.kind === 'add', JSON.stringify(r));
+  assert.deepStrictEqual(m.rights, [2, 1]);
+  assert.strictEqual(m.check('kasa').reason, 'used'); // A takes it out: KASA was played this point
+  assert.strictEqual(m.check('kasp').reason, 'unknown'); // KASAP without its second A: not a word
+  assert.strictEqual(m.stats.resizes[1], 1);
+});
+test('hak bitince uzat/kısalt yok; kapalıyken hiç yok; en çok 5, en az 3 harf', () => {
+  const m = resizeMatch(22, 1, { firstStarter: 0 });
+  m.point.options = ['elma', 'x', 'y'];
+  m.start('elma');
+  assert.ok(m.shot('elmas').ok);                   // B's only right
+  m.shot(m.lex.neighbours('elmas', m.point.used).find(w => w.length === 5) || 'elmas');
+  if (m.phase === 'rally' && m.point.turn === 1) {
+    const add = m.lex.resizes(m.point.word, m.point.used)[0];
+    if (add) assert.strictEqual(m.check(add).reason, 'no-resize');
+  }
+  const off = new KT.Match({ lex: new KT.Lexicon(WORDS, 'tr', 4), players: [{ name: 'A' }, { name: 'B' }], random: KT.seeded(23), firstStarter: 0 });
+  off.point.options = ['elma', 'x', 'y'];
+  off.start('elma');
+  assert.strictEqual(off.check('elmas').reason, 'no-resize');
+  const all = resizeMatch(24, Infinity, { firstStarter: 0 });
+  all.point.options = ['kale', 'x', 'y'];
+  all.start('kale');
+  assert.ok(all.shot('kalem').ok);
+  assert.strictEqual(all.rights[1], Infinity);
+  assert.ok(all.lex.resizes('kalem').every(w => w.length >= 3 && w.length <= 5));
+});
+test('çıkmaz: rakibin uzat/kısalt hakkı varsa onunla çıkış da sayılır', () => {
+  const lex = new KT.Lexicon(WORDS, 'tr', 4, KT.RESIZE.lens);
+  // a 4-letter word with no same-length way out but a way out by adding or taking out a letter
+  let found = null;
+  for (const s of lex.serves) {
+    for (const v of lex.neighbours(s)) {
+      if (v.length !== 4) continue;
+      const u = new Set([s, v]);
+      if (lex.neighbours(v, u).length === 0 && lex.resizes(v, u).length > 0) { found = [s, v]; break; }
+    }
+    if (found) break;
+  }
+  assert.ok(found, 'no such pair');
+  const on = resizeMatch(25, 2, { firstStarter: 0 });
+  on.point.options = [found[0], 'x', 'y'];
+  on.start(found[0]);
+  const r = on.shot(found[1]);
+  assert.ok(r.ok && !r.how, 'not a dead end: A can still add or take out a letter');
+  const off = resizeMatch(26, 0, { firstStarter: 0 });
+  off.point.options = [found[0], 'x', 'y'];
+  off.start(found[0]);
+  assert.strictEqual(off.shot(found[1]).how, 'dead');
+});
+
 console.log('Bot');
 function botMatch(lang, len, levels, seed, opts) {
   const o = opts || {};
-  const lex = new KT.Lexicon(WORDS, lang, len);
+  const lex = new KT.Lexicon(WORDS, lang, len, o.resize ? KT.RESIZE.lens : undefined);
   const r = KT.seeded(seed);
-  const m = new KT.Match({ lex, players: [{ name: 'A' }, { name: 'B' }], random: r, pace: o.pace || 'normal', bank: o.bank, target: o.target || KT.TARGET[1] });
+  const m = new KT.Match({ lex, players: [{ name: 'A' }, { name: 'B' }], random: r, pace: o.pace || 'normal', bank: o.bank, resize: o.resize, target: o.target || KT.TARGET[1] });
   const bots = levels.map(l => new KT.Bot(l, r));
   let seconds = 0, guard = 0;
   while (m.phase !== 'matchOver' && guard++ < 5000) {
@@ -296,7 +375,7 @@ function botMatch(lang, len, levels, seed, opts) {
     assert.ok(!m.point.used.has(rep.word), 'bot replayed ' + rep.word);
     seconds += rep.delay + 0.6;
     const res = m.shot(rep.word, rep.delay);
-    assert.ok(res.ok, JSON.stringify(res));
+    assert.ok(res.ok, JSON.stringify(res) + ' ' + rep.word);
   }
   assert.strictEqual(m.phase, 'matchOver');
   return { m, seconds };
@@ -355,9 +434,43 @@ for (const bank of KT.CLOCK.banks) {
   });
 }
 
+// uzat/kısalt: how the rallies change (bots of the same level, normal time, tr/4)
+const resizeReport = {};
+for (const [name, rights] of [['kapalı', 0], ['maçta 2', 2], ['her zaman', Infinity]]) {
+  test(`uzat/kısalt ${name} (tr/4): bot maçları biter`, () => {
+    for (const lv of ['orta', 'zor']) {
+      let chain = 0, points = 0, dead = 0, secs = 0, resizes = 0, five = 0, three = 0, played = 0;
+      const words = new Map();
+      const N = 60;
+      for (let i = 0; i < N; i++) {
+        const { m, seconds } = botMatch('tr', 4, [lv, lv], 11000 + i, { resize: rights });
+        for (const h of m.history) {
+          chain += h.chain; points++;
+          for (const s of h.shots) { words.set(s.word, (words.get(s.word) || 0) + 1); played++; if (s.word.length === 5) five++; if (s.word.length === 3) three++; }
+        }
+        dead += m.stats.deadEnds[0] + m.stats.deadEnds[1];
+        resizes += m.stats.resizes[0] + m.stats.resizes[1];
+        secs += seconds;
+      }
+      const top = [...words.values()].sort((a, b) => b - a).slice(0, 100).reduce((a, b) => a + b, 0);
+      resizeReport[`${name} · ${lv}`] = {
+        'zincir (kelime)': +(chain / points).toFixed(1),
+        'çıkmaz': Math.round(100 * dead / points) + '%',
+        'maçta uzat/kısalt': +(resizes / N).toFixed(1),
+        '5 / 3 harf': Math.round(100 * five / played) + '% / ' + Math.round(100 * three / played) + '%',
+        'farklı kelime': words.size,
+        'sık 100': Math.round(100 * top / played) + '%',
+        'maç ~dk': +(secs / 60 / N).toFixed(1),
+      };
+    }
+  });
+}
+
 console.log(`\nÖzet (bot maçları, normal süre; dakikalar orta-orta, kısa ${KT.TARGET[1]}, uzun ${KT.TARGET[2]} sayı):`);
 console.table(report);
 console.log(`\nSaat modu (tr/4, kısa maç, iki bot aynı seviyede, her kelime +${KT.CLOCK.inc} sn):`);
 console.table(clockReport);
+console.log('\nUzat/kısalt (tr/4, kısa maç, normal süre, iki bot aynı seviyede, 60 maç):');
+console.table(resizeReport);
 console.log(`\n${passed} geçti, ${failed} kaldı`);
 process.exit(failed ? 1 : 0);

@@ -1,7 +1,7 @@
 # İki telefondan oyun denemesi: iki tarayıcı, yerel oda sunucusu, hesap yerine taklit (Hesap).
 # Oda kurma, menüdeki "Açık odalar"dan linksiz katılma, davet linki, iki telefonda aynı maç, süre biterse sayı, bağlantı kopunca yetişme,
 # sayfa yeniden açılınca maçın kaldığı yerden sürmesi, maç sonu sonuç ekranı ve rövanş, saat modu (aynı süreler,
-# sayıyı verme, süresi biten kaybeder).
+# sayıyı verme, süresi biten kaybeder), uzat/kısalt (iki telefonda aynı kelime ve haklar).
 # Önce:  node lab/kelime-tenisi/src/build.js /tmp/kt/kt.html
 #        cd fish/sunucu && npx wrangler dev --var AUTH_YOK:1 --port 8787 --ip 127.0.0.1
 # Sonra: python3 lab/kelime-tenisi/src/test/online.py      (görüntüler /tmp/kt-shots/)
@@ -183,7 +183,7 @@ with sync_playwright() as p:
     B.evaluate('__kt.speed = 2')
 
     print('Maç sonu ve rövanş')
-    done = play(A, B, lambda a, b: a and b and a['over'] and b['over'], max_s=420, smash=0.5)
+    done = play(A, B, lambda a, b: a and b and a['over'] and b['over'], max_s=540, smash=0.8)
     check(done, 'maç iki telefonda da bitti: %s' % (st(A) or {}).get('points'))
     res = "(() => { const h = document.querySelector('[data-oda]'); return h ? h.shadowRoot.textContent : ''; })"
     A.wait_for_function(res + "().includes('Devam')", timeout=10000)
@@ -255,6 +255,36 @@ with sync_playwright() as p:
     check('Birinci oldun' in B.evaluate(res + '()') and 'kazandı' in A.evaluate(res + '()'),
           'oda sonucu maçı kazananı birinci gösteriyor' + (' (sayıda önde olan kaybetti)' if pa[0] > pa[1] else ''))
     A.screenshot(path=f'{OUT}/online-clock-end-A.png'); B.screenshot(path=f'{OUT}/online-clock-end-B.png')
+
+    print('Uzat / kısalt, iki telefon')
+    room(A).get_by_role('button', name='Devam').tap()
+    room(B).get_by_role('button', name='Devam').tap()
+    room(A).get_by_role('button', name='Rahat').tap()
+    room(A).get_by_role('button', name='Maçta 2 hak').tap()
+    room(A).get_by_role('button', name='Oyunu başlat').tap()
+    for pg in (A, B):
+        pg.wait_for_function("__kt.G && __kt.G.mode === 'online' && !__kt.G.over && __kt.G.m.resize === 2", timeout=8000)
+        pg.evaluate('__kt.speed = 2')
+    check(A.evaluate('__kt.G.lex.maxLen') == 5 and B.evaluate('__kt.G.lex.maxLen') == 5, 'iki telefonda da uzat/kısalt: maçta 2 hak')
+    RES = """(() => { const G = __kt.G, m = G.m, w = m.point.word;
+      for (const x of G.lex.resizes(w, m.point.used, true)) { const st = G.lex.step(w, x); if (st) return { x, at: st.at }; }
+      return null; })()"""
+    done_r, t0 = False, time.time()
+    while not done_r and time.time() - t0 < 120:
+        s_ = st(A)
+        if s_ and s_['phase'] == 'rally' and s_['turn'] == 0 and s_['stage'] == 'turn' and s_['running'] and not s_['busy']:
+            r = A.evaluate(RES)
+            if r:
+                A.evaluate(f"__kt.attempt(0, '{r['x']}', {r['at']})")
+                done_r = r
+                continue
+        act(A); act(B)
+        time.sleep(0.12)
+    check(bool(done_r) and settle(A, B), 'Umut bir harf ekleyip/çıkarıp gönderdi: %s' % (done_r and done_r['x'].upper()))
+    check(A.evaluate('__kt.G.m.rights') == B.evaluate('__kt.G.m.rights')[::-1] == [1, 2], 'iki telefonda da Umut\'un 1 hakkı kaldı')
+    B.wait_for_function("document.querySelector('#panel1 .prz').textContent === '±1'", timeout=5000)
+    check(True, 'Zeynep\'in ekranında Umut\'un yanında ±1')
+    B.screenshot(path=f'{OUT}/online-resize-B.png')
     ca.close(); cb.close(); br.close()
 
 srv.terminate()
