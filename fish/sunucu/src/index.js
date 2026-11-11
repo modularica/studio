@@ -6,7 +6,7 @@
 //   WS  /tank/oda/<id>   Tank Arenası: one room (rules shared with the page: lab/tank/oyun.js)
 //   WS  /kar/lobi        Kar Savaşı: the room list
 //   WS  /kar/oda/<id>    Kar Savaşı: one room (rules shared with the page: lab/kar-savasi/oyun.js)
-//   WS  /<oyun>/lobi     the other games (balon, kanyon, yelken, sekme, sur, songbox): the room list
+//   WS  /<oyun>/lobi     the other games (balon, kanyon, yelken, sekme, sur, songbox, kelime): the room list
 //   WS  /<oyun>/oda/<id> one room of theirs (src/genel-oda.js; the page side is hesap/oda.js)
 import { Lobi } from './lobi.js';
 import { Oda } from './oda.js';

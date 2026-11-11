@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Kelime Düellosu</title>
-<meta name="description" content="Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe ve İngilizce.">
+<meta name="description" content="Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı, iki telefondan ya da bota karşı; Türkçe ve İngilizce.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Kelime Düellosu">
-<meta property="og:description" content="Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı ya da bota karşı; Türkçe ve İngilizce.">
+<meta property="og:description" content="Gelen kelimenin tek harfini değiştir, geri gönder. Süresinde cevap veremeyen sayıyı kaybeder. İki kişi tek ekranda karşılıklı, iki telefondan ya da bota karşı; Türkçe ve İngilizce.">
 <meta property="og:image" content="https://uzigames.com/lab/kelime-tenisi/cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -19,6 +19,7 @@
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
 <script src="/hesap/hesap.js" data-oyun="kelime-tenisi" data-kayit="kelime-tenisi.v1"></script>
+<script src="/hesap/oda.js"></script>
 <link rel="icon" type="image/png" href="/lab/kelime-tenisi/icon.png">
 <style>
 @font-face{font-family:'Nunito';font-style:normal;font-weight:500;font-display:swap;src:url(data:font/woff2;base64,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) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
@@ -76,6 +77,14 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
 .mode-t { font-size: 19px; font-weight: 700; }
 .mode-s { font-size: 13.5px; color: var(--muted); line-height: 1.2; }
 .mode-ico { width: 56px; height: 40px; position: relative; display: block; }
+.mode-online { grid-column: 1 / -1; background: #fff; border-radius: 18px; padding: 10px 14px; box-shadow: inset 0 0 0 2px #e6dccb, 0 3px 0 #e2d6c2; display: flex; align-items: center; justify-content: center; gap: 12px; text-align: left; transition: transform .12s; }
+.mode-online[hidden] { display: none; }
+.mode-online:active { transform: translateY(2px); }
+.mode-txt { display: flex; flex-direction: column; gap: 2px; }
+.mode-ico.phones { flex: 0 0 auto; width: 52px; }
+.mode-ico.phones::before, .mode-ico.phones::after { content: ''; position: absolute; top: 3px; width: 20px; height: 34px; border-radius: 6px; box-sizing: border-box; border: 3px solid var(--p0); }
+.mode-ico.phones::before { left: 3px; }
+.mode-ico.phones::after { right: 3px; border-color: var(--p1); }
 .mode-ico.duo::before, .mode-ico.duo::after { content: ''; position: absolute; width: 22px; height: 22px; border-radius: 50%; top: 9px; }
 .mode-ico.duo::before { left: 4px; background: var(--p0); }
 .mode-ico.duo::after { right: 4px; background: var(--p1); }
@@ -256,6 +265,10 @@ h1 { font-weight: 800; font-size: 40px; margin: 4px 0 0; letter-spacing: .5px; c
           <span class="mode-ico bot" aria-hidden="true"></span>
           <span class="mode-t" data-t="bot">Bota karşı</span>
           <span class="mode-s" data-t="botSub">Tek başına antrenman</span>
+        </button>
+        <button type="button" class="mode-online" id="onlineBtn" hidden>
+          <span class="mode-ico phones" aria-hidden="true"></span>
+          <span class="mode-txt"><span class="mode-t" data-t="online">İki telefondan</span><span class="mode-s" data-t="onlineSub">Oda kur, rakibine link gönder</span></span>
         </button>
       </div>
 
@@ -745,6 +758,10 @@ const Sfx = (function () {
     tr: {
       title: 'Kelime Düellosu', tagline: 'Tek harfini değiştir, geri gönder.',
       duo: 'İki kişi', duoSub: 'Tek ekran, karşılıklı otur', bot: 'Bota karşı', botSub: 'Tek başına antrenman',
+      online: 'İki telefondan', onlineSub: 'Oda kur, rakibine link gönder',
+      roomLead: 'Bir oda kur, “Arkadaşını çağır” ile linki rakibine gönder. Herkes kendi telefonundan oynar; bir odada iki kişi olur.',
+      roomAlone: 'Rakibine “Arkadaşını çağır” ile link gönder ya da oyunda “İki telefondan”a bassın.',
+      roomLang: 'Dil', pts: '{n} sayı', netWait: '{name} bekleniyor…', netFull: 'Bu odada maç sürüyor.',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
       word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı',
       format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
@@ -775,6 +792,10 @@ const Sfx = (function () {
     en: {
       title: 'Word Duel', tagline: 'Change one letter, send it back.',
       duo: 'Two players', duoSub: 'One screen, face to face', bot: 'Against the bot', botSub: 'Practice on your own',
+      online: 'Two phones', onlineSub: 'Start a room, send the link',
+      roomLead: 'Start a room and send the link with “Invite a friend”. Each of you plays on your own phone; two players per room.',
+      roomAlone: 'Send your opponent the link with “Invite a friend”, or they can tap “Two phones” in the game.',
+      roomLang: 'Language', pts: '{n} points', netWait: 'Waiting for {name}…', netFull: 'A match is on in this room.',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
       word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast',
       format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
@@ -938,41 +959,56 @@ const Sfx = (function () {
 
   function playerName(i) {
     if (G && G.mode === 'bot') return i === 0 ? (S.names[0] || t('you')) : t('botName');
+    if (G && G.mode === 'online') return (i === 0 ? G.net.me.ad : G.net.opp.ad) || (i === 0 ? t('you') : t('p2'));
     return S.names[i] || (i === 0 ? t('p1') : t('p2'));
   }
   const isBot = i => !!(G && G.bots[i]);
+  // online: player 0 is this phone, player 1 the other one
+  const isRemote = i => !!(G && G.mode === 'online' && i === 1);
+  // a player without keys on this screen (the bot, or the other phone): a small strip at the top
+  const small = i => isBot(i) || isRemote(i);
+  // one person on this screen: "you" in the texts
+  const solo = () => G.mode === 'bot' || G.mode === 'online';
   const panelOf = i => G.panels[i];
 
-  function startMatch(firstStarter) {
+  // online: { seat, me, opp, tohum, log } from the room (startOnline)
+  function startMatch(firstStarter, online) {
     stopGame();
     const lex = lexFor(S.lang, S.len);
-    const mode = S.mode;
+    const mode = online ? 'online' : S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
     const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
-    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs });
+    // online: both phones draw the same starting words from the room's seed
+    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs, random: online ? KT.seeded(online.tohum) : undefined });
     G = {
       m, lex, mode, firstStarter: fs,
       bots: [null, mode === 'bot' ? new KT.Bot(S.level) : null],
+      net: online ? { seat: online.seat, me: online.me, opp: online.opp, done: 0, queue: [], sent: [] } : null,
       panels: [$('#panel0'), $('#panel1')],
       sel: [-1, -1], typed: '',
       clock: { owner: -1, total: 1, left: 0, elapsed: 0, running: false, onEnd: null },
       plan: null, waits: [], paused: false, speed: 1, lastTs: performance.now(), raf: 0, lastTick: -1,
-      firstShot: [true, true], started: Date.now(), pointBusy: false,
+      firstShot: [true, true], started: Date.now(), pointBusy: false, stage: null, over: false,
     };
     m.players[0].name = playerName(0);
     m.players[1].name = playerName(1);
     const game = $('#game');
     game.classList.toggle('duo', mode === 'duo');
-    game.classList.toggle('bot', mode === 'bot');
+    game.classList.toggle('bot', mode === 'bot' || mode === 'online');
     $('#menu').classList.remove('on');
     game.classList.add('on');
     $('#endSheet').hidden = true;
+    $('#pauseSheet').hidden = true;
+    $('#howSheet').hidden = true;
     buildPanel(0); buildPanel(1);
     renderScore();
     layout();
     G.raf = requestAnimationFrame(frame);
-    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
-    if (mode === 'duo') {
+    const who = mode === 'bot' ? 'bota karşı (' + S.level + ')' : mode === 'online' ? 'iki telefon, ' + playerName(1) + ' ile' : 'iki kişi';
+    if (!(online && online.log.length)) labNote(`Maç başladı: ${who}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
+    if (online && online.log.length) {
+      netReplay(online.log);   // back in a match that was already going
+    } else if (mode === 'duo' || mode === 'online') {
       banner(t('firstPick', { name: playerName(fs) }));
       wait(1.6, () => { hideBanner(); enterStart(); });
     } else {
@@ -989,8 +1025,10 @@ const Sfx = (function () {
   // ---------- panels ----------
   function buildPanel(i) {
     const p = panelOf(i);
-    p.className = 'panel ' + (i === 0 ? 'bottom' : 'top') + ' ' + (isBot(i) ? 'cbot' : 'c' + i);
-    if (isBot(i)) {
+    p.className = 'panel ' + (i === 0 ? 'bottom' : 'top') + ' ' + (small(i) ? 'cbot' : 'c' + i);
+    p.style.removeProperty('--pc');
+    if (isRemote(i) && /^#[0-9a-f]{6}$/i.test(G.net.opp.renk || '')) p.style.setProperty('--pc', G.net.opp.renk);
+    if (small(i)) {
       p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="tiles small"></div><div class="clock idle"><i></i></div>`;
     } else {
@@ -1016,20 +1054,20 @@ const Sfx = (function () {
   }
 
   function setMsg(i, html, cls) {
-    if (isBot(i)) return;
+    if (small(i)) return;
     const el = $('.msg', panelOf(i));
     el.className = 'msg' + (cls ? ' ' + cls : '');
     el.innerHTML = html;
   }
 
-  const sentText = i => (G.mode === 'bot' && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
+  const sentText = i => (solo() && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
 
   function renderTiles(i, word, opts) {
     const o = opts || {};
     const el = $('.tiles', panelOf(i));
-    if (!word) { el.innerHTML = ''; el.className = 'tiles' + (isBot(i) ? ' small' : ''); return; }
+    if (!word) { el.innerHTML = ''; el.className = 'tiles' + (small(i) ? ' small' : ''); return; }
     const letters = [...word];
-    el.className = 'tiles' + (isBot(i) ? ' small' : '') + (o.wait ? ' wait' : '') + (o.land ? ' land' : '');
+    el.className = 'tiles' + (small(i) ? ' small' : '') + (o.wait ? ' wait' : '') + (o.land ? ' land' : '');
     el.innerHTML = letters.map((c, k) => {
       const cls = ['tile'];
       if (o.sel === k) cls.push('sel');
@@ -1037,7 +1075,7 @@ const Sfx = (function () {
       if (o.typed !== undefined && k >= o.typed) cls.push('dim');
       return `<div class="${cls.join(' ')}" data-i="${k}">${esc(U(c))}</div>`;
     }).join('');
-    if (!isBot(i) && o.active) {
+    if (!small(i) && o.active) {
       $$('.tile', el).forEach(tile => tile.addEventListener('pointerdown', e => { e.preventDefault(); onTile(i, +tile.dataset.i); }));
     }
   }
@@ -1054,7 +1092,7 @@ const Sfx = (function () {
   }
 
   function setKeyboard(i, on) {
-    if (isBot(i)) return;
+    if (small(i)) return;
     $('.kbd', panelOf(i)).classList.toggle('off', !on);
   }
 
@@ -1186,21 +1224,33 @@ const Sfx = (function () {
       const choice = G.bots[s].open(m);
       startClock(s, KT.START_TIME, () => doStart(choice.word), false);
       G.plan = { at: choice.delay, fn: () => doStart(choice.word) };
+    } else if (isRemote(s)) {
+      // the other phone picks (and keeps its own start clock)
+      renderTiles(s, null);
+      $('.bot-think', panelOf(s)).hidden = false;
+      stopClock();
     } else {
       setMsg(s, esc(t('startYou')), 'turn');
       renderStartCards(s, m.point.options);
       startClock(s, KT.START_TIME, () => doStart(m.point.options[Math.floor(Math.random() * 3)]));
     }
+    G.stage = 'start';
+    pump();
   }
 
-  function doStart(word) {
+  // remote: the other phone's move (online)
+  function doStart(word, remote) {
     const m = G.m;
-    if (m.phase !== 'start' || G.pointBusy) return;
+    if (m.phase !== 'start' || G.pointBusy || G.over) return;
     const s = m.starter;
+    if (isRemote(s) !== !!remote) return;
+    if (remote && !m.point.options.includes(word)) m.point.options[0] = word;   // the same seed draws the same words; just in case
     if (!m.start(word).ok) return;
+    netSent('s', word, s);
+    G.stage = null;
     stopClock();
     G.pointBusy = true;
-    if (isBot(s)) $('.bot-think', panelOf(s)).hidden = true;
+    if (small(s)) $('.bot-think', panelOf(s)).hidden = true;
     renderTiles(s, word, { wait: true });
     setMsg(s, esc(sentText(s)) + ' <b>' + esc(U(word)) + '</b>');
     Sfx.start();
@@ -1223,13 +1273,21 @@ const Sfx = (function () {
       const rep = G.bots[p].reply(m);
       startClock(p, secs, onTimeout);
       if (rep.word && rep.delay < secs) G.plan = { at: rep.delay, fn: () => playShot(p, rep.word) };
+    } else if (isRemote(p)) {
+      renderTiles(p, word, { land: true });
+      $('.bot-think', panelOf(p)).hidden = false;
+      setMsg(o, esc(t('thinking', { name: playerName(p) })));
+      // the other phone keeps the time and says when it ran out; this clock only shows it
+      startClock(p, secs, () => setMsg(o, esc(t('netWait', { name: playerName(p) }))));
     } else {
       renderTiles(p, word, { land: true, active: true });
       setKeyboard(p, true);
       setMsg(p, esc(G.firstShot[p] ? t('firstTurn') : t('yourTurn')), 'turn');
-      if (!isBot(o)) setMsg(o, esc(t('thinking', { name: playerName(p) })));
+      if (!small(o)) setMsg(o, esc(t('thinking', { name: playerName(p) })));
       startClock(p, secs, onTimeout);
     }
+    G.stage = 'turn';
+    pump();
   }
 
   function onTile(i, k, viaKey) {
@@ -1279,19 +1337,25 @@ const Sfx = (function () {
       }
       return false;
     }
-    playShot(i, word, c.at);
+    playShot(i, word);
     return true;
   }
 
-  function playShot(p, word) {
+  // remote: the other phone's answer (online)
+  function playShot(p, word, remote) {
     const m = G.m;
+    if (G.over || isRemote(p) !== !!remote) return;
     const before = m.point.word;
+    // the other phone's word list said yes (the room only joins pages with the same lists; just in case)
+    if (remote && m.check(word).reason === 'unknown') G.lex.validSet.add(word);
     const r = m.shot(word);
     if (!r.ok) return;
+    netSent('h', word, p);
+    G.stage = null;
     G.firstShot[p] = false;
     stopClock();
     G.pointBusy = true;
-    if (isBot(p)) $('.bot-think', panelOf(p)).hidden = true;
+    if (small(p)) $('.bot-think', panelOf(p)).hidden = true;
     const at = G.lex.diff(before, word);
     renderTiles(p, word, { mark: at, wait: true });
     setKeyboard(p, false);
@@ -1306,12 +1370,17 @@ const Sfx = (function () {
     }
   }
 
-  function onTimeout() {
+  // remote: the other phone ran out of time (online). Otherwise the clock of the player to move ran out.
+  function onTimeout(remote) {
     const m = G.m;
-    if (m.phase !== 'rally' || G.pointBusy) return;
+    if (m.phase !== 'rally' || G.pointBusy || G.over) return;
     const loser = m.point.turn, word = m.point.word;
+    if (isRemote(loser) !== (remote === true)) return;
     const r = m.timeout();
     if (!r) return;
+    netSent('t', null, loser);
+    G.stage = null;
+    if (small(loser)) $('.bot-think', panelOf(loser)).hidden = true;
     G.pointBusy = true;
     setKeyboard(loser, false);
     Sfx.timeUp();
@@ -1337,20 +1406,27 @@ const Sfx = (function () {
       setMsg(w, esc(t('deadYou', { w: U(r.word) })), 'turn');
       setMsg(l, esc(t('deadThem', { w: U(r.word) })));
     } else {
-      banner(G.mode === 'bot' && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
+      banner(solo() && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
       setMsg(w, esc(t('pointYou')), 'turn');
       setMsg(l, esc(t('timeUp')) + ' ' + altsHtml(r.left));
-      if (isBot(l)) setMsg(w, esc(t('pointYou')) + ' ' + esc(t('timeUp')), 'turn');
+      if (small(l)) setMsg(w, esc(t('pointYou')) + ' ' + esc(t('timeUp')), 'turn');
     }
     Sfx.point(G.mode === 'duo' || w === 0);
+    if (G.mode === 'online' && oda) oda.gonder(m.points[0]);   // the score, in case the round is cut short
     if (r.matchOver) {
-      wait(2.4, () => { banner(G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) })); Sfx.win(); });
-      wait(4.2, () => endMatch(r));
+      wait(2.4, () => { banner(winText(w)); Sfx.win(); });
+      wait(4.2, () => endMatch());
       return;
     }
-    const delay = r.how === 'time' && !isBot(l) ? 4.6 : 2.8;
+    const delay = r.how === 'time' && !small(l) ? 4.6 : 2.8;
     G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterStart(); } };
     wait(delay, () => { if (G.skipTo) G.skipTo(); });
+    if (G.mode === 'online') pump();   // the other phone may have started the next point already
+  }
+  function winText(w) {
+    if (G.mode === 'duo') return t('winTitle', { name: playerName(w) });
+    if (w === 0) return t('youWin');
+    return G.mode === 'bot' ? t('botWins') : t('winTitle', { name: playerName(w) });
   }
   $('#board').addEventListener('pointerdown', e => {
     if (e.target.closest('#pauseBtn')) return;
@@ -1362,10 +1438,10 @@ const Sfx = (function () {
     if (!G || G.paused || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Escape') { pause(); return; }
     const m = G.m;
-    if (m.phase === 'start' && !isBot(m.starter) && /^[1-3]$/.test(e.key)) { doStart(m.point.options[+e.key - 1]); return; }
+    if (m.phase === 'start' && !small(m.starter) && /^[1-3]$/.test(e.key)) { doStart(m.point.options[+e.key - 1]); return; }
     if (m.phase !== 'rally' || G.pointBusy) return;
     const p = m.point.turn;
-    if (isBot(p)) return;
+    if (small(p)) return;
     const word = m.point.word;
     if (e.key === 'Backspace') { G.typed = G.typed.slice(0, -1); showTyped(p); e.preventDefault(); return; }
     if (/^[1-9]$/.test(e.key) && +e.key <= word.length) { onTile(p, +e.key - 1, true); return; }
@@ -1393,6 +1469,7 @@ const Sfx = (function () {
   // ---------- pause ----------
   function pause() {
     if (!G || G.paused || G.m.phase === 'matchOver') return;
+    if (G.mode === 'online') { if (oda) oda.menu(); return; }   // two phones: no pause, the room's menu
     G.paused = true;
     $('#pauseSheet').hidden = false;
   }
@@ -1405,9 +1482,13 @@ const Sfx = (function () {
   $('#pauseBtn').addEventListener('click', e => { e.stopPropagation(); pause(); });
   $('#resumeBtn').addEventListener('click', resume);
   $('#quitBtn').addEventListener('click', () => { $('#pauseSheet').hidden = true; toMenu(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && G && G.mode !== 'online') pause(); });
 
   function toMenu() {
+    if (G && G.mode === 'online' && oda && oda.odada) { oda.cik(); return; }   // leaving the room brings the menu back
+    showMenu();
+  }
+  function showMenu() {
     stopGame();
     $('#game').classList.remove('on');
     $('#menu').classList.add('on');
@@ -1416,9 +1497,24 @@ const Sfx = (function () {
   }
 
   // ---------- end ----------
-  function endMatch() {
+  // replayed: a phone coming back to a match that had already ended (nothing to save again)
+  function endMatch(replayed) {
     const m = G.m, w = m.winner;
     stopClock();
+    if (G.mode === 'online') {
+      G.over = true;
+      if (!replayed) {
+        const save = loadSave();
+        save.online = (save.online || 0) + 1;
+        save.deadEnds += m.stats.deadEnds[0];
+        if (m.stats.longest > save.longest) { save.longest = m.stats.longest; save.longestWords = m.stats.longestWords; }
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+        const mins = Math.max(1, Math.round((Date.now() - G.started) / 60000));
+        labNote(`İki telefon: ${playerName(0)} ${m.points[0]}–${m.points[1]} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
+      }
+      if (oda) oda.bitir(m.points[0], undefined, undefined, winText(w));   // the room shows who won
+      return;
+    }
     const save = loadSave();
     if (G.mode === 'bot') {
       if (w === 0) save.bot[S.level].w++; else save.bot[S.level].l++;
@@ -1435,7 +1531,7 @@ const Sfx = (function () {
       ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun zincir ${m.stats.longest} · ${m.stats.deadEnds[0]} çıkmaz · ${mins} dk`
       : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
 
-    const title = G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) });
+    const title = winText(w);
     $('#trophy').innerHTML = `<div class="tile gold">${esc(U([...playerName(w)][0] || '★'))}</div>`;
     $('#endTitle').textContent = title;
     $('#endScore').textContent = `${playerName(0)} ${scoreLine} ${playerName(1)}`;
@@ -1458,7 +1554,7 @@ const Sfx = (function () {
     const n = S.len;
     for (const i of [0, 1]) {
       const p = panelOf(i);
-      if (isBot(i)) { p.style.removeProperty('--tw'); continue; }
+      if (small(i)) { p.style.removeProperty('--tw'); continue; }
       const W = Math.min(p.clientWidth - 20, 640), Hh = p.clientHeight - 20;
       const rowMax = Math.max(...KT.KEYS[S.lang].map(r => r.length));
       const kw = Math.max(22, Math.min(58, Math.floor(W / (rowMax + (rowMax - 1) * 0.16))));
@@ -1473,6 +1569,153 @@ const Sfx = (function () {
   }
   window.addEventListener('resize', layout);
 
+  // ---------- two phones (hesap/oda.js rooms; server fish/sunucu/src/genel-oda.js, game "kelime") ----------
+  // Both phones run the same match from the room's seed; on each, player 0 is this phone and player 1 the other.
+  // Only the player whose turn it is moves, and tells the other phone: s (starting word), h (answer),
+  // t (out of time), each with n = how many moves came before it. The room keeps the moves, so a phone that
+  // lost the connection catches up (oda geri) and a reopened page replays the match (basla with log).
+  const NET_VERSION = 1;
+  let oda = null;
+  let netPrev = null;   // this phone's own settings; the room's are used while in it
+  function netSurum() {  // phones play together only with the same word lists
+    let h = 2166136261;
+    for (const l of Object.keys(WORDS)) for (const k of ['common', 'rare', 'serve']) for (const n of Object.keys(WORDS[l][k] || {})) {
+      const s = WORDS[l][k][n];
+      for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    }
+    return NET_VERSION + '.' + (h >>> 0).toString(36);
+  }
+  // A move was made (p: who). This phone's own moves go to the other phone.
+  function netSent(k, w, p) {
+    if (!G || !G.net) return;
+    if (p === 0) {
+      const e = { k, n: G.net.done };
+      if (w) e.w = w;
+      G.net.sent.push(e);
+      if (oda) oda.olay(e);   // if the connection is down, the catch-up sends it again
+    }
+    G.net.done++;
+  }
+  // [[no, e], ...] from the room: the moves in order, each once
+  function netMoves(log) {
+    const seen = new Set(), out = [];
+    for (const x of log || []) {
+      const e = x && x[1];
+      if (!e || typeof e.n !== 'number' || !/^[sht]$/.test(e.k) || seen.has(e.n)) continue;
+      seen.add(e.n);
+      out.push({ no: x[0], e });
+    }
+    return out.sort((a, b) => a.e.n - b.e.n);
+  }
+  function netReceive(no, e) {
+    if (!G || G.mode !== 'online' || G.over || !e || typeof e.n !== 'number' || !/^[sht]$/.test(e.k)) return;
+    if (oda && no === oda.ben) return;
+    G.net.queue.push(e);
+    pump();
+  }
+  // The other phone's next move, as soon as this one is ready for it.
+  function pump() {
+    if (!G || G.mode !== 'online' || G.over) return;
+    const q = G.net.queue, m = G.m;
+    q.sort((a, b) => a.n - b.n);
+    while (q.length && q[0].n < G.net.done) q.shift();
+    if (!q.length || q[0].n > G.net.done || G.pointBusy) return;   // a move missing: the catch-up brings it
+    const e = q[0];
+    if (e.k === 's') {
+      if (m.phase === 'pointOver' && G.skipTo) { G.skipTo(); return; }   // the other phone went on already
+      if (G.stage !== 'start' || m.phase !== 'start' || m.starter !== 1) return;
+      q.shift();
+      doStart(e.w, true);
+    } else {
+      if (G.stage !== 'turn' || m.phase !== 'rally' || m.point.turn !== 1) return;
+      q.shift();
+      if (e.k === 'h') playShot(1, e.w, true); else onTimeout(true);
+    }
+  }
+  // Back after a dropped connection: moves the other phone made meanwhile, and ours the room never got.
+  function netCatchUp(log) {
+    if (!G || G.mode !== 'online' || G.over || !oda) return;
+    const moves = netMoves(log), have = new Set(moves.map(x => x.e.n));
+    for (const e of G.net.sent) if (!have.has(e.n)) oda.olay(e);
+    for (const x of moves) if (x.no !== oda.ben && x.e.n >= G.net.done) G.net.queue.push(x.e);
+    pump();
+  }
+  // A page opened in the middle of a match: play the moves so far without the show, then carry on.
+  function netReplay(log) {
+    const m = G.m, ben = oda ? oda.ben : 0;
+    for (const { no, e } of netMoves(log)) {
+      if (e.n !== G.net.done) break;
+      const p = no === ben ? 0 : 1;
+      let ok = false;
+      if (e.k === 's') {
+        if (m.phase === 'pointOver') m.next();
+        if (m.phase === 'start' && m.starter === p) {
+          if (!m.point.options.includes(e.w)) m.point.options[0] = e.w;
+          ok = m.start(e.w).ok;
+        }
+      } else if (m.phase === 'rally' && m.point.turn === p) {
+        if (e.k === 'h') { if (!m.lex.has(e.w)) m.lex.validSet.add(e.w); ok = m.shot(e.w).ok; G.firstShot[p] = false; }
+        else ok = !!m.timeout();
+      }
+      if (!ok) break;
+      if (p === 0) G.net.sent.push(e);
+      G.net.done++;
+    }
+    renderScore();
+    if (m.phase === 'matchOver') { banner(winText(m.winner)); endMatch(true); return; }
+    if (m.phase === 'pointOver') m.next();
+    if (m.phase === 'start') { enterStart(); return; }
+    const last = m.point.shots[m.point.shots.length - 1];
+    if (last) renderTiles(last.by, last.word, { wait: true });
+    boardInfo();
+    enterTurn();
+  }
+  // The room started a match (or a reopened page came back to one).
+  function startOnline(m) {
+    const kadro = (m.kadro || []).slice(0, 2), seat = kadro.findIndex(k => k.no === oda.ben);
+    if (seat < 0 || kadro.length < 2) {   // not one of the two players (came in late)
+      oda.cik();
+      $('#record').textContent = t('netFull');
+      return;
+    }
+    if (!netPrev) netPrev = { lang: S.lang, len: S.len, pace: S.pace, format: S.format };
+    const a = m.ayar || {};
+    if (T[a.dil]) S.lang = a.dil;
+    if ([3, 4].includes(+a.len)) S.len = +a.len;
+    if (KT.PACES[a.pace]) S.pace = a.pace;
+    S.format = +a.format === 2 ? 2 : 1;
+    applyTexts();
+    const first = ((m.tohum >>> 0) % 2) === seat ? 0 : 1;   // the seed tosses the coin, the same on both phones
+    startMatch(first, { seat, me: kadro[seat], opp: kadro[1 - seat], tohum: m.tohum >>> 0, log: m.log || [] });
+  }
+  function leaveOnline() {
+    if (netPrev) { Object.assign(S, netPrev); netPrev = null; }
+    showMenu();
+  }
+  if (window.Oda && H()) {
+    oda = Oda.kur({
+      oyun: 'kelime', ad: t('title'), surum: netSurum(), skor: 'kelime-tenisi-oda', sira: 'puan', dil: S.lang,
+      canli: false, izle: false, enAz: 2,
+      tema: { zemin: '#f6f0e4', yazi: '#1f2633', ana: '#c4633a', anaYazi: '#fff', baslik: "'Nunito',system-ui,sans-serif", govde: "'Nunito',system-ui,sans-serif" },
+      aciklama: t('roomLead'),
+      yazi: { notTek: t('roomAlone'), gecGelen: '' },
+      ayarlar: [
+        { k: 'dil', ad: t('roomLang'), secenek: [{ d: 'tr', ad: 'Türkçe' }, { d: 'en', ad: 'English' }], v: S.lang },
+        { k: 'len', ad: t('word'), secenek: [{ d: 4, ad: t('len4') }, { d: 3, ad: t('len3') }], v: S.len },
+        { k: 'pace', ad: t('pace'), secenek: ['rahat', 'normal', 'hizli'].map(d => ({ d, ad: t(d) })), v: S.pace },
+        { k: 'format', ad: t('format'), secenek: [1, 2].map(d => ({ d, ad: t(d === 1 ? 'short' : 'long', { n: KT.TARGET[d] }) })), v: S.format },
+      ],
+      puanYazi: p => t('pts', { n: Math.round(p) }),
+      skorAyrinti: () => (G && G.mode === 'online' ? { zincir: G.m.stats.longest, hedef: G.m.target } : {}),
+      basla: m => startOnline(m),
+      geri: m => netCatchUp(m.log),
+      olay: (no, e) => netReceive(no, e),
+      bitti() { if (G && G.mode === 'online') { G.over = true; G.skipTo = null; G.waits = []; stopClock(); } },
+      cikti() { if (netPrev || (G && G.mode === 'online')) leaveOnline(); },
+    });
+    oda.dugme($('#onlineBtn'));
+  }
+
   // ---------- start ----------
   $('#rotateNote').classList.add('need');
   syncMenu();
@@ -1480,8 +1723,9 @@ const Sfx = (function () {
 
   if (DEBUG) {
     window.__kt = {
-      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot,
+      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot, netReceive,
       get G() { return G; },
+      get oda() { return oda; },
       set speed(v) { if (G) G.speed = v; },
       timeout() { if (G && G.clock.running) G.clock.left = 0.001; },
     };

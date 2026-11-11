@@ -15,6 +15,10 @@
     tr: {
       title: 'Kelime Düellosu', tagline: 'Tek harfini değiştir, geri gönder.',
       duo: 'İki kişi', duoSub: 'Tek ekran, karşılıklı otur', bot: 'Bota karşı', botSub: 'Tek başına antrenman',
+      online: 'İki telefondan', onlineSub: 'Oda kur, rakibine link gönder',
+      roomLead: 'Bir oda kur, “Arkadaşını çağır” ile linki rakibine gönder. Herkes kendi telefonundan oynar; bir odada iki kişi olur.',
+      roomAlone: 'Rakibine “Arkadaşını çağır” ile link gönder ya da oyunda “İki telefondan”a bassın.',
+      roomLang: 'Dil', pts: '{n} sayı', netWait: '{name} bekleniyor…', netFull: 'Bu odada maç sürüyor.',
       level: 'Bot', kolay: 'Kolay', orta: 'Orta', zor: 'Zor', bonus: 'Ek süre (handikap)',
       word: 'Kelime', len3: '3 harf', len4: '4 harf', pace: 'Süre', rahat: 'Rahat', normal: 'Normal', hizli: 'Hızlı',
       format: 'Maç', short: 'Kısa · {n} sayı', long: 'Uzun · {n} sayı', start: 'Başla', how: 'Nasıl oynanır?',
@@ -45,6 +49,10 @@
     en: {
       title: 'Word Duel', tagline: 'Change one letter, send it back.',
       duo: 'Two players', duoSub: 'One screen, face to face', bot: 'Against the bot', botSub: 'Practice on your own',
+      online: 'Two phones', onlineSub: 'Start a room, send the link',
+      roomLead: 'Start a room and send the link with “Invite a friend”. Each of you plays on your own phone; two players per room.',
+      roomAlone: 'Send your opponent the link with “Invite a friend”, or they can tap “Two phones” in the game.',
+      roomLang: 'Language', pts: '{n} points', netWait: 'Waiting for {name}…', netFull: 'A match is on in this room.',
       level: 'Bot', kolay: 'Easy', orta: 'Medium', zor: 'Hard', bonus: 'Extra time (handicap)',
       word: 'Words', len3: '3 letters', len4: '4 letters', pace: 'Time', rahat: 'Relaxed', normal: 'Normal', hizli: 'Fast',
       format: 'Match', short: 'Short · {n} points', long: 'Long · {n} points', start: 'Play', how: 'How to play',
@@ -208,41 +216,56 @@
 
   function playerName(i) {
     if (G && G.mode === 'bot') return i === 0 ? (S.names[0] || t('you')) : t('botName');
+    if (G && G.mode === 'online') return (i === 0 ? G.net.me.ad : G.net.opp.ad) || (i === 0 ? t('you') : t('p2'));
     return S.names[i] || (i === 0 ? t('p1') : t('p2'));
   }
   const isBot = i => !!(G && G.bots[i]);
+  // online: player 0 is this phone, player 1 the other one
+  const isRemote = i => !!(G && G.mode === 'online' && i === 1);
+  // a player without keys on this screen (the bot, or the other phone): a small strip at the top
+  const small = i => isBot(i) || isRemote(i);
+  // one person on this screen: "you" in the texts
+  const solo = () => G.mode === 'bot' || G.mode === 'online';
   const panelOf = i => G.panels[i];
 
-  function startMatch(firstStarter) {
+  // online: { seat, me, opp, tohum, log } from the room (startOnline)
+  function startMatch(firstStarter, online) {
     stopGame();
     const lex = lexFor(S.lang, S.len);
-    const mode = S.mode;
+    const mode = online ? 'online' : S.mode;
     const players = [0, 1].map(i => ({ name: '', bonus: mode === 'duo' ? S.bonus[i] : 0 }));
     const fs = firstStarter !== undefined ? firstStarter : (mode === 'bot' ? 0 : (Math.random() < 0.5 ? 0 : 1));
-    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs });
+    // online: both phones draw the same starting words from the room's seed
+    const m = new KT.Match({ lex, players, target: KT.TARGET[S.format], pace: S.pace, firstStarter: fs, random: online ? KT.seeded(online.tohum) : undefined });
     G = {
       m, lex, mode, firstStarter: fs,
       bots: [null, mode === 'bot' ? new KT.Bot(S.level) : null],
+      net: online ? { seat: online.seat, me: online.me, opp: online.opp, done: 0, queue: [], sent: [] } : null,
       panels: [$('#panel0'), $('#panel1')],
       sel: [-1, -1], typed: '',
       clock: { owner: -1, total: 1, left: 0, elapsed: 0, running: false, onEnd: null },
       plan: null, waits: [], paused: false, speed: 1, lastTs: performance.now(), raf: 0, lastTick: -1,
-      firstShot: [true, true], started: Date.now(), pointBusy: false,
+      firstShot: [true, true], started: Date.now(), pointBusy: false, stage: null, over: false,
     };
     m.players[0].name = playerName(0);
     m.players[1].name = playerName(1);
     const game = $('#game');
     game.classList.toggle('duo', mode === 'duo');
-    game.classList.toggle('bot', mode === 'bot');
+    game.classList.toggle('bot', mode === 'bot' || mode === 'online');
     $('#menu').classList.remove('on');
     game.classList.add('on');
     $('#endSheet').hidden = true;
+    $('#pauseSheet').hidden = true;
+    $('#howSheet').hidden = true;
     buildPanel(0); buildPanel(1);
     renderScore();
     layout();
     G.raf = requestAnimationFrame(frame);
-    labNote(`Maç başladı: ${mode === 'bot' ? 'bota karşı (' + S.level + ')' : 'iki kişi'}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
-    if (mode === 'duo') {
+    const who = mode === 'bot' ? 'bota karşı (' + S.level + ')' : mode === 'online' ? 'iki telefon, ' + playerName(1) + ' ile' : 'iki kişi';
+    if (!(online && online.log.length)) labNote(`Maç başladı: ${who}, ${S.lang === 'tr' ? 'Türkçe' : 'İngilizce'}, ${S.len} harf, ${S.pace}, ${KT.TARGET[S.format]} sayı`);
+    if (online && online.log.length) {
+      netReplay(online.log);   // back in a match that was already going
+    } else if (mode === 'duo' || mode === 'online') {
       banner(t('firstPick', { name: playerName(fs) }));
       wait(1.6, () => { hideBanner(); enterStart(); });
     } else {
@@ -259,8 +282,10 @@
   // ---------- panels ----------
   function buildPanel(i) {
     const p = panelOf(i);
-    p.className = 'panel ' + (i === 0 ? 'bottom' : 'top') + ' ' + (isBot(i) ? 'cbot' : 'c' + i);
-    if (isBot(i)) {
+    p.className = 'panel ' + (i === 0 ? 'bottom' : 'top') + ' ' + (small(i) ? 'cbot' : 'c' + i);
+    p.style.removeProperty('--pc');
+    if (isRemote(i) && /^#[0-9a-f]{6}$/i.test(G.net.opp.renk || '')) p.style.setProperty('--pc', G.net.opp.renk);
+    if (small(i)) {
       p.innerHTML = `<div class="phead"><span class="pname"></span><span class="bot-think" hidden><i></i><i></i><i></i></span><span class="dots"></span><span class="pscore"></span></div>
         <div class="tiles small"></div><div class="clock idle"><i></i></div>`;
     } else {
@@ -286,20 +311,20 @@
   }
 
   function setMsg(i, html, cls) {
-    if (isBot(i)) return;
+    if (small(i)) return;
     const el = $('.msg', panelOf(i));
     el.className = 'msg' + (cls ? ' ' + cls : '');
     el.innerHTML = html;
   }
 
-  const sentText = i => (G.mode === 'bot' && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
+  const sentText = i => (solo() && i === 0 ? t('sentYou') : t('sentBy', { name: playerName(i) }));
 
   function renderTiles(i, word, opts) {
     const o = opts || {};
     const el = $('.tiles', panelOf(i));
-    if (!word) { el.innerHTML = ''; el.className = 'tiles' + (isBot(i) ? ' small' : ''); return; }
+    if (!word) { el.innerHTML = ''; el.className = 'tiles' + (small(i) ? ' small' : ''); return; }
     const letters = [...word];
-    el.className = 'tiles' + (isBot(i) ? ' small' : '') + (o.wait ? ' wait' : '') + (o.land ? ' land' : '');
+    el.className = 'tiles' + (small(i) ? ' small' : '') + (o.wait ? ' wait' : '') + (o.land ? ' land' : '');
     el.innerHTML = letters.map((c, k) => {
       const cls = ['tile'];
       if (o.sel === k) cls.push('sel');
@@ -307,7 +332,7 @@
       if (o.typed !== undefined && k >= o.typed) cls.push('dim');
       return `<div class="${cls.join(' ')}" data-i="${k}">${esc(U(c))}</div>`;
     }).join('');
-    if (!isBot(i) && o.active) {
+    if (!small(i) && o.active) {
       $$('.tile', el).forEach(tile => tile.addEventListener('pointerdown', e => { e.preventDefault(); onTile(i, +tile.dataset.i); }));
     }
   }
@@ -324,7 +349,7 @@
   }
 
   function setKeyboard(i, on) {
-    if (isBot(i)) return;
+    if (small(i)) return;
     $('.kbd', panelOf(i)).classList.toggle('off', !on);
   }
 
@@ -456,21 +481,33 @@
       const choice = G.bots[s].open(m);
       startClock(s, KT.START_TIME, () => doStart(choice.word), false);
       G.plan = { at: choice.delay, fn: () => doStart(choice.word) };
+    } else if (isRemote(s)) {
+      // the other phone picks (and keeps its own start clock)
+      renderTiles(s, null);
+      $('.bot-think', panelOf(s)).hidden = false;
+      stopClock();
     } else {
       setMsg(s, esc(t('startYou')), 'turn');
       renderStartCards(s, m.point.options);
       startClock(s, KT.START_TIME, () => doStart(m.point.options[Math.floor(Math.random() * 3)]));
     }
+    G.stage = 'start';
+    pump();
   }
 
-  function doStart(word) {
+  // remote: the other phone's move (online)
+  function doStart(word, remote) {
     const m = G.m;
-    if (m.phase !== 'start' || G.pointBusy) return;
+    if (m.phase !== 'start' || G.pointBusy || G.over) return;
     const s = m.starter;
+    if (isRemote(s) !== !!remote) return;
+    if (remote && !m.point.options.includes(word)) m.point.options[0] = word;   // the same seed draws the same words; just in case
     if (!m.start(word).ok) return;
+    netSent('s', word, s);
+    G.stage = null;
     stopClock();
     G.pointBusy = true;
-    if (isBot(s)) $('.bot-think', panelOf(s)).hidden = true;
+    if (small(s)) $('.bot-think', panelOf(s)).hidden = true;
     renderTiles(s, word, { wait: true });
     setMsg(s, esc(sentText(s)) + ' <b>' + esc(U(word)) + '</b>');
     Sfx.start();
@@ -493,13 +530,21 @@
       const rep = G.bots[p].reply(m);
       startClock(p, secs, onTimeout);
       if (rep.word && rep.delay < secs) G.plan = { at: rep.delay, fn: () => playShot(p, rep.word) };
+    } else if (isRemote(p)) {
+      renderTiles(p, word, { land: true });
+      $('.bot-think', panelOf(p)).hidden = false;
+      setMsg(o, esc(t('thinking', { name: playerName(p) })));
+      // the other phone keeps the time and says when it ran out; this clock only shows it
+      startClock(p, secs, () => setMsg(o, esc(t('netWait', { name: playerName(p) }))));
     } else {
       renderTiles(p, word, { land: true, active: true });
       setKeyboard(p, true);
       setMsg(p, esc(G.firstShot[p] ? t('firstTurn') : t('yourTurn')), 'turn');
-      if (!isBot(o)) setMsg(o, esc(t('thinking', { name: playerName(p) })));
+      if (!small(o)) setMsg(o, esc(t('thinking', { name: playerName(p) })));
       startClock(p, secs, onTimeout);
     }
+    G.stage = 'turn';
+    pump();
   }
 
   function onTile(i, k, viaKey) {
@@ -549,19 +594,25 @@
       }
       return false;
     }
-    playShot(i, word, c.at);
+    playShot(i, word);
     return true;
   }
 
-  function playShot(p, word) {
+  // remote: the other phone's answer (online)
+  function playShot(p, word, remote) {
     const m = G.m;
+    if (G.over || isRemote(p) !== !!remote) return;
     const before = m.point.word;
+    // the other phone's word list said yes (the room only joins pages with the same lists; just in case)
+    if (remote && m.check(word).reason === 'unknown') G.lex.validSet.add(word);
     const r = m.shot(word);
     if (!r.ok) return;
+    netSent('h', word, p);
+    G.stage = null;
     G.firstShot[p] = false;
     stopClock();
     G.pointBusy = true;
-    if (isBot(p)) $('.bot-think', panelOf(p)).hidden = true;
+    if (small(p)) $('.bot-think', panelOf(p)).hidden = true;
     const at = G.lex.diff(before, word);
     renderTiles(p, word, { mark: at, wait: true });
     setKeyboard(p, false);
@@ -576,12 +627,17 @@
     }
   }
 
-  function onTimeout() {
+  // remote: the other phone ran out of time (online). Otherwise the clock of the player to move ran out.
+  function onTimeout(remote) {
     const m = G.m;
-    if (m.phase !== 'rally' || G.pointBusy) return;
+    if (m.phase !== 'rally' || G.pointBusy || G.over) return;
     const loser = m.point.turn, word = m.point.word;
+    if (isRemote(loser) !== (remote === true)) return;
     const r = m.timeout();
     if (!r) return;
+    netSent('t', null, loser);
+    G.stage = null;
+    if (small(loser)) $('.bot-think', panelOf(loser)).hidden = true;
     G.pointBusy = true;
     setKeyboard(loser, false);
     Sfx.timeUp();
@@ -607,20 +663,27 @@
       setMsg(w, esc(t('deadYou', { w: U(r.word) })), 'turn');
       setMsg(l, esc(t('deadThem', { w: U(r.word) })));
     } else {
-      banner(G.mode === 'bot' && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
+      banner(solo() && w === 0 ? t('pointYou') : t('point', { name: playerName(w) }));
       setMsg(w, esc(t('pointYou')), 'turn');
       setMsg(l, esc(t('timeUp')) + ' ' + altsHtml(r.left));
-      if (isBot(l)) setMsg(w, esc(t('pointYou')) + ' ' + esc(t('timeUp')), 'turn');
+      if (small(l)) setMsg(w, esc(t('pointYou')) + ' ' + esc(t('timeUp')), 'turn');
     }
     Sfx.point(G.mode === 'duo' || w === 0);
+    if (G.mode === 'online' && oda) oda.gonder(m.points[0]);   // the score, in case the round is cut short
     if (r.matchOver) {
-      wait(2.4, () => { banner(G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) })); Sfx.win(); });
-      wait(4.2, () => endMatch(r));
+      wait(2.4, () => { banner(winText(w)); Sfx.win(); });
+      wait(4.2, () => endMatch());
       return;
     }
-    const delay = r.how === 'time' && !isBot(l) ? 4.6 : 2.8;
+    const delay = r.how === 'time' && !small(l) ? 4.6 : 2.8;
     G.skipTo = () => { if (G.skipTo) { G.skipTo = null; G.waits = []; m.next(); enterStart(); } };
     wait(delay, () => { if (G.skipTo) G.skipTo(); });
+    if (G.mode === 'online') pump();   // the other phone may have started the next point already
+  }
+  function winText(w) {
+    if (G.mode === 'duo') return t('winTitle', { name: playerName(w) });
+    if (w === 0) return t('youWin');
+    return G.mode === 'bot' ? t('botWins') : t('winTitle', { name: playerName(w) });
   }
   $('#board').addEventListener('pointerdown', e => {
     if (e.target.closest('#pauseBtn')) return;
@@ -632,10 +695,10 @@
     if (!G || G.paused || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Escape') { pause(); return; }
     const m = G.m;
-    if (m.phase === 'start' && !isBot(m.starter) && /^[1-3]$/.test(e.key)) { doStart(m.point.options[+e.key - 1]); return; }
+    if (m.phase === 'start' && !small(m.starter) && /^[1-3]$/.test(e.key)) { doStart(m.point.options[+e.key - 1]); return; }
     if (m.phase !== 'rally' || G.pointBusy) return;
     const p = m.point.turn;
-    if (isBot(p)) return;
+    if (small(p)) return;
     const word = m.point.word;
     if (e.key === 'Backspace') { G.typed = G.typed.slice(0, -1); showTyped(p); e.preventDefault(); return; }
     if (/^[1-9]$/.test(e.key) && +e.key <= word.length) { onTile(p, +e.key - 1, true); return; }
@@ -663,6 +726,7 @@
   // ---------- pause ----------
   function pause() {
     if (!G || G.paused || G.m.phase === 'matchOver') return;
+    if (G.mode === 'online') { if (oda) oda.menu(); return; }   // two phones: no pause, the room's menu
     G.paused = true;
     $('#pauseSheet').hidden = false;
   }
@@ -675,9 +739,13 @@
   $('#pauseBtn').addEventListener('click', e => { e.stopPropagation(); pause(); });
   $('#resumeBtn').addEventListener('click', resume);
   $('#quitBtn').addEventListener('click', () => { $('#pauseSheet').hidden = true; toMenu(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && G && G.mode !== 'online') pause(); });
 
   function toMenu() {
+    if (G && G.mode === 'online' && oda && oda.odada) { oda.cik(); return; }   // leaving the room brings the menu back
+    showMenu();
+  }
+  function showMenu() {
     stopGame();
     $('#game').classList.remove('on');
     $('#menu').classList.add('on');
@@ -686,9 +754,24 @@
   }
 
   // ---------- end ----------
-  function endMatch() {
+  // replayed: a phone coming back to a match that had already ended (nothing to save again)
+  function endMatch(replayed) {
     const m = G.m, w = m.winner;
     stopClock();
+    if (G.mode === 'online') {
+      G.over = true;
+      if (!replayed) {
+        const save = loadSave();
+        save.online = (save.online || 0) + 1;
+        save.deadEnds += m.stats.deadEnds[0];
+        if (m.stats.longest > save.longest) { save.longest = m.stats.longest; save.longestWords = m.stats.longestWords; }
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+        const mins = Math.max(1, Math.round((Date.now() - G.started) / 60000));
+        labNote(`İki telefon: ${playerName(0)} ${m.points[0]}–${m.points[1]} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
+      }
+      if (oda) oda.bitir(m.points[0], undefined, undefined, winText(w));   // the room shows who won
+      return;
+    }
     const save = loadSave();
     if (G.mode === 'bot') {
       if (w === 0) save.bot[S.level].w++; else save.bot[S.level].l++;
@@ -705,7 +788,7 @@
       ? `Bota karşı (${S.level}): ${w === 0 ? 'kazandı' : 'kaybetti'} ${scoreLine} · en uzun zincir ${m.stats.longest} · ${m.stats.deadEnds[0]} çıkmaz · ${mins} dk`
       : `Maç bitti: ${playerName(0)} ${scoreLine} ${playerName(1)} · en uzun zincir ${m.stats.longest} · çıkmaz ${m.stats.deadEnds[0]}–${m.stats.deadEnds[1]} · ${mins} dk`);
 
-    const title = G.mode === 'bot' ? (w === 0 ? t('youWin') : t('botWins')) : t('winTitle', { name: playerName(w) });
+    const title = winText(w);
     $('#trophy').innerHTML = `<div class="tile gold">${esc(U([...playerName(w)][0] || '★'))}</div>`;
     $('#endTitle').textContent = title;
     $('#endScore').textContent = `${playerName(0)} ${scoreLine} ${playerName(1)}`;
@@ -728,7 +811,7 @@
     const n = S.len;
     for (const i of [0, 1]) {
       const p = panelOf(i);
-      if (isBot(i)) { p.style.removeProperty('--tw'); continue; }
+      if (small(i)) { p.style.removeProperty('--tw'); continue; }
       const W = Math.min(p.clientWidth - 20, 640), Hh = p.clientHeight - 20;
       const rowMax = Math.max(...KT.KEYS[S.lang].map(r => r.length));
       const kw = Math.max(22, Math.min(58, Math.floor(W / (rowMax + (rowMax - 1) * 0.16))));
@@ -743,6 +826,153 @@
   }
   window.addEventListener('resize', layout);
 
+  // ---------- two phones (hesap/oda.js rooms; server fish/sunucu/src/genel-oda.js, game "kelime") ----------
+  // Both phones run the same match from the room's seed; on each, player 0 is this phone and player 1 the other.
+  // Only the player whose turn it is moves, and tells the other phone: s (starting word), h (answer),
+  // t (out of time), each with n = how many moves came before it. The room keeps the moves, so a phone that
+  // lost the connection catches up (oda geri) and a reopened page replays the match (basla with log).
+  const NET_VERSION = 1;
+  let oda = null;
+  let netPrev = null;   // this phone's own settings; the room's are used while in it
+  function netSurum() {  // phones play together only with the same word lists
+    let h = 2166136261;
+    for (const l of Object.keys(WORDS)) for (const k of ['common', 'rare', 'serve']) for (const n of Object.keys(WORDS[l][k] || {})) {
+      const s = WORDS[l][k][n];
+      for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    }
+    return NET_VERSION + '.' + (h >>> 0).toString(36);
+  }
+  // A move was made (p: who). This phone's own moves go to the other phone.
+  function netSent(k, w, p) {
+    if (!G || !G.net) return;
+    if (p === 0) {
+      const e = { k, n: G.net.done };
+      if (w) e.w = w;
+      G.net.sent.push(e);
+      if (oda) oda.olay(e);   // if the connection is down, the catch-up sends it again
+    }
+    G.net.done++;
+  }
+  // [[no, e], ...] from the room: the moves in order, each once
+  function netMoves(log) {
+    const seen = new Set(), out = [];
+    for (const x of log || []) {
+      const e = x && x[1];
+      if (!e || typeof e.n !== 'number' || !/^[sht]$/.test(e.k) || seen.has(e.n)) continue;
+      seen.add(e.n);
+      out.push({ no: x[0], e });
+    }
+    return out.sort((a, b) => a.e.n - b.e.n);
+  }
+  function netReceive(no, e) {
+    if (!G || G.mode !== 'online' || G.over || !e || typeof e.n !== 'number' || !/^[sht]$/.test(e.k)) return;
+    if (oda && no === oda.ben) return;
+    G.net.queue.push(e);
+    pump();
+  }
+  // The other phone's next move, as soon as this one is ready for it.
+  function pump() {
+    if (!G || G.mode !== 'online' || G.over) return;
+    const q = G.net.queue, m = G.m;
+    q.sort((a, b) => a.n - b.n);
+    while (q.length && q[0].n < G.net.done) q.shift();
+    if (!q.length || q[0].n > G.net.done || G.pointBusy) return;   // a move missing: the catch-up brings it
+    const e = q[0];
+    if (e.k === 's') {
+      if (m.phase === 'pointOver' && G.skipTo) { G.skipTo(); return; }   // the other phone went on already
+      if (G.stage !== 'start' || m.phase !== 'start' || m.starter !== 1) return;
+      q.shift();
+      doStart(e.w, true);
+    } else {
+      if (G.stage !== 'turn' || m.phase !== 'rally' || m.point.turn !== 1) return;
+      q.shift();
+      if (e.k === 'h') playShot(1, e.w, true); else onTimeout(true);
+    }
+  }
+  // Back after a dropped connection: moves the other phone made meanwhile, and ours the room never got.
+  function netCatchUp(log) {
+    if (!G || G.mode !== 'online' || G.over || !oda) return;
+    const moves = netMoves(log), have = new Set(moves.map(x => x.e.n));
+    for (const e of G.net.sent) if (!have.has(e.n)) oda.olay(e);
+    for (const x of moves) if (x.no !== oda.ben && x.e.n >= G.net.done) G.net.queue.push(x.e);
+    pump();
+  }
+  // A page opened in the middle of a match: play the moves so far without the show, then carry on.
+  function netReplay(log) {
+    const m = G.m, ben = oda ? oda.ben : 0;
+    for (const { no, e } of netMoves(log)) {
+      if (e.n !== G.net.done) break;
+      const p = no === ben ? 0 : 1;
+      let ok = false;
+      if (e.k === 's') {
+        if (m.phase === 'pointOver') m.next();
+        if (m.phase === 'start' && m.starter === p) {
+          if (!m.point.options.includes(e.w)) m.point.options[0] = e.w;
+          ok = m.start(e.w).ok;
+        }
+      } else if (m.phase === 'rally' && m.point.turn === p) {
+        if (e.k === 'h') { if (!m.lex.has(e.w)) m.lex.validSet.add(e.w); ok = m.shot(e.w).ok; G.firstShot[p] = false; }
+        else ok = !!m.timeout();
+      }
+      if (!ok) break;
+      if (p === 0) G.net.sent.push(e);
+      G.net.done++;
+    }
+    renderScore();
+    if (m.phase === 'matchOver') { banner(winText(m.winner)); endMatch(true); return; }
+    if (m.phase === 'pointOver') m.next();
+    if (m.phase === 'start') { enterStart(); return; }
+    const last = m.point.shots[m.point.shots.length - 1];
+    if (last) renderTiles(last.by, last.word, { wait: true });
+    boardInfo();
+    enterTurn();
+  }
+  // The room started a match (or a reopened page came back to one).
+  function startOnline(m) {
+    const kadro = (m.kadro || []).slice(0, 2), seat = kadro.findIndex(k => k.no === oda.ben);
+    if (seat < 0 || kadro.length < 2) {   // not one of the two players (came in late)
+      oda.cik();
+      $('#record').textContent = t('netFull');
+      return;
+    }
+    if (!netPrev) netPrev = { lang: S.lang, len: S.len, pace: S.pace, format: S.format };
+    const a = m.ayar || {};
+    if (T[a.dil]) S.lang = a.dil;
+    if ([3, 4].includes(+a.len)) S.len = +a.len;
+    if (KT.PACES[a.pace]) S.pace = a.pace;
+    S.format = +a.format === 2 ? 2 : 1;
+    applyTexts();
+    const first = ((m.tohum >>> 0) % 2) === seat ? 0 : 1;   // the seed tosses the coin, the same on both phones
+    startMatch(first, { seat, me: kadro[seat], opp: kadro[1 - seat], tohum: m.tohum >>> 0, log: m.log || [] });
+  }
+  function leaveOnline() {
+    if (netPrev) { Object.assign(S, netPrev); netPrev = null; }
+    showMenu();
+  }
+  if (window.Oda && H()) {
+    oda = Oda.kur({
+      oyun: 'kelime', ad: t('title'), surum: netSurum(), skor: 'kelime-tenisi-oda', sira: 'puan', dil: S.lang,
+      canli: false, izle: false, enAz: 2,
+      tema: { zemin: '#f6f0e4', yazi: '#1f2633', ana: '#c4633a', anaYazi: '#fff', baslik: "'Nunito',system-ui,sans-serif", govde: "'Nunito',system-ui,sans-serif" },
+      aciklama: t('roomLead'),
+      yazi: { notTek: t('roomAlone'), gecGelen: '' },
+      ayarlar: [
+        { k: 'dil', ad: t('roomLang'), secenek: [{ d: 'tr', ad: 'Türkçe' }, { d: 'en', ad: 'English' }], v: S.lang },
+        { k: 'len', ad: t('word'), secenek: [{ d: 4, ad: t('len4') }, { d: 3, ad: t('len3') }], v: S.len },
+        { k: 'pace', ad: t('pace'), secenek: ['rahat', 'normal', 'hizli'].map(d => ({ d, ad: t(d) })), v: S.pace },
+        { k: 'format', ad: t('format'), secenek: [1, 2].map(d => ({ d, ad: t(d === 1 ? 'short' : 'long', { n: KT.TARGET[d] }) })), v: S.format },
+      ],
+      puanYazi: p => t('pts', { n: Math.round(p) }),
+      skorAyrinti: () => (G && G.mode === 'online' ? { zincir: G.m.stats.longest, hedef: G.m.target } : {}),
+      basla: m => startOnline(m),
+      geri: m => netCatchUp(m.log),
+      olay: (no, e) => netReceive(no, e),
+      bitti() { if (G && G.mode === 'online') { G.over = true; G.skipTo = null; G.waits = []; stopClock(); } },
+      cikti() { if (netPrev || (G && G.mode === 'online')) leaveOnline(); },
+    });
+    oda.dugme($('#onlineBtn'));
+  }
+
   // ---------- start ----------
   $('#rotateNote').classList.add('need');
   syncMenu();
@@ -750,8 +980,9 @@
 
   if (DEBUG) {
     window.__kt = {
-      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot,
+      KT, S, T, lexFor, startMatch, toMenu, pause, resume, attempt, playShot, netReceive,
       get G() { return G; },
+      get oda() { return oda; },
       set speed(v) { if (G) G.speed = v; },
       timeout() { if (G && G.clock.running) G.clock.left = 0.001; },
     };

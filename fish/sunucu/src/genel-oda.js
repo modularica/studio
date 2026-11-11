@@ -1,17 +1,21 @@
 // One room for the Lab games that don't need the server to run the game itself: Balon Yarışı,
-// Kanyon, Rüzgâr Kaptanı, Sekme, Sur Muhafızı and SONGbox. The page side is hesap/oda.js.
+// Kanyon, Rüzgâr Kaptanı, Sekme, Sur Muhafızı, SONGbox and Kelime Düellosu. The page side is hesap/oda.js.
 //
 // Every page plays its own game (the same seed for everyone) and tells the room how it's doing:
 // a score, a small live state the other pages draw (a ghost jet, a balloon's height, a boat), and
 // when it's done. The room keeps the waiting room, starts the round, passes the states around,
 // ends the round and ranks everyone.
 //
+// A turn-based game (kayit) sends its moves as one-off events: the room also keeps them in the round's
+// log and hands the log to a page that comes back, so it can catch up (Kelime Düellosu: two phones,
+// one word at a time). Such a room keeps a lost player's place longer (geri).
+//
 // Page -> server:  merhaba {token, profil, kur, surum}   ayar {ayar} (host, waiting room)   basla (host)
 //                  d {p, v} (my score and live state, up to 15 a second)   o {e} (a one-off event for the others)
 //                  bitir {p, eser} (I'm done; eser = a finished piece of work to show at the end, e.g. a song)
 //                  son (host: end the round now)   and the text 'ping'
 // Server -> page:  hos {ben}   oda {id, durum, kurucu, oyuncular, ayar, en, tur, sira, sonra}
-//                  basla {tohum, tur, ayar, kadro, gecen, sure}   s {g, k, p: [[no, puan, bitti, v], ...]}
+//                  basla {tohum, tur, ayar, kadro, gecen, sure, log (kayit: [[no, e], ...])}   s {g, k, p: [[no, puan, bitti, v], ...]}
 //                  o {no, e}   son {sonuc, tur}   hata {neden}
 import { DurableObject } from 'cloudflare:workers';
 import { oyuncu as kimlik } from './dogrula.js';
@@ -19,13 +23,15 @@ import { oyuncu as kimlik } from './dogrula.js';
 // en: players per room. sure: the longest a round can last (seconds; the host may choose shorter).
 // sonra: when the first player is done, the others get this many seconds more (0: no hurry).
 // sira: 'sure' ranks who finished first, then the score; 'puan' ranks by the score.
+// kayit: keep up to this many events (moves) in the round's log. geri: seconds a lost player keeps their place.
 export const OYUNLAR = {
   balon: { en: 8, sure: 10 * 60, sonra: 45, sira: 'sure' },
   kanyon: { en: 8, sure: 15 * 60, sonra: 0, sira: 'puan' },
   yelken: { en: 8, sure: 10 * 60, sonra: 60, sira: 'sure' },
   sekme: { en: 8, sure: 15 * 60, sonra: 0, sira: 'puan' },
   sur: { en: 8, sure: 40 * 60, sonra: 0, sira: 'puan' },
-  songbox: { en: 8, sure: 15 * 60, sonra: 0, sira: 'puan' }
+  songbox: { en: 8, sure: 15 * 60, sonra: 0, sira: 'puan' },
+  kelime: { en: 2, sure: 30 * 60, sonra: 0, sira: 'puan', kayit: 800, geri: 5 * 60 }
 };
 
 const TICK_MS = 100;             // the round's clock: 10 steps a second
@@ -76,6 +82,8 @@ export class GenelOda extends DurableObject {
   }
 
   get ayarlar() { return OYUNLAR[this.meta && this.meta.oyun] || OYUNLAR.balon; }
+  // how long a player who lost the connection keeps their place in a round
+  get geriMs() { return this.ayarlar.geri ? this.ayarlar.geri * 1000 : GERI_DONUS; }
 
   async fetch(req) {
     const m = new URL(req.url).pathname.match(/^\/([a-z]+)\/oda\/([a-z0-9]{8})$/);
@@ -170,7 +178,8 @@ export class GenelOda extends DurableObject {
     else this.oyuncular.delete(a.pid);
     if (!this.meta) return;
     this.kurucuSec();
-    if (!this.bagliSayisi()) await this.ctx.storage.setAlarm(Date.now() + BOS_KAPAT);
+    // an empty room closes soon, unless a round is on and the players may come back
+    if (!this.bagliSayisi()) await this.ctx.storage.setAlarm(Date.now() + (this.r && this.ayarlar.geri ? this.geriMs : BOS_KAPAT));
     this.odaYayinla();
     await this.lobiyeBildir();
   }
@@ -261,10 +270,12 @@ export class GenelOda extends DurableObject {
 
   baslaMesaji(o) {
     const k = this.r.kadro.get(o.no);
-    return {
+    const m = {
       t: 'basla', tohum: this.r.tohum, tur: this.meta.tur, ayar: this.meta.ayar, kadro: this.kadro(),
       gecen: Date.now() - this.r.t0, sure: this.r.sure, ben: k ? { p: k.p, b: k.b, v: k.v } : null
     };
+    if (this.ayarlar.kayit) m.log = this.r.log;
+    return m;
   }
 
   basla(o) {
@@ -276,7 +287,7 @@ export class GenelOda extends DurableObject {
     const enUzun = this.ayarlar.sure;
     const sure = clamp(Math.round(+ayar.sure) || enUzun, 20, enUzun);
     const simdi = Date.now();
-    this.r = { t0: simdi, sure, bitis: simdi + sure * 1000, ilk: 0, tohum: (Math.random() * 4294967296) >>> 0, kadro: new Map() };
+    this.r = { t0: simdi, sure, bitis: simdi + sure * 1000, ilk: 0, tohum: (Math.random() * 4294967296) >>> 0, kadro: new Map(), log: [] };
     for (const k of bagli) this.kadroya(k);
     this.meta.durum = 'oyunda';
     this.meta.tur = (this.meta.tur || 0) + 1;
@@ -314,6 +325,7 @@ export class GenelOda extends DurableObject {
     k.olay = k.olay.filter((t) => simdi - t < 1000);
     if (k.olay.length >= 8) return; // at most 8 a second
     k.olay.push(simdi);
+    if (this.ayarlar.kayit && this.r.log.length < this.ayarlar.kayit) this.r.log.push([o.no, JSON.parse(s)]);
     this.yayinla('{"t":"o","no":' + o.no + ',"e":' + s + '}', o);
   }
 
@@ -397,7 +409,7 @@ export class GenelOda extends DurableObject {
     const simdi = Date.now();
     // players who lost the connection for good leave the round
     for (const o of [...this.oyuncular.values()]) {
-      if (o.ws || !o.gitti || simdi - o.gitti < GERI_DONUS) continue;
+      if (o.ws || !o.gitti || simdi - o.gitti < this.geriMs) continue;
       this.oyuncular.delete(o.pid);
       this.degisti = true;
     }

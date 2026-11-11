@@ -1,5 +1,5 @@
 /* Odalar — "Arkadaşlarla oyna" for the Lab games that share one kind of room:
- * Balon Yarışı, Kanyon, Rüzgâr Kaptanı, Sekme, Sur Muhafızı, SONGbox.
+ * Balon Yarışı, Kanyon, Rüzgâr Kaptanı, Sekme, Sur Muhafızı, SONGbox, Kelime Düellosu.
  * Server: fish/sunucu/src/genel-oda.js (routes /<oyun>/lobi and /<oyun>/oda/<id>).
  *
  * Every page plays its own game, from the same seed, and tells the room its score and a small live
@@ -23,9 +23,14 @@
  *     canli: { top: '60px', right: '8px' },   // where the live ranking goes (false: none); oda.canliYer() moves it
  *     saat: false,                   // true: always show the round's clock under the live ranking
  *     izle: true,                    // after oda.bitir(), show "you're done, waiting for the others"
+ *     enAz: 1,                       // the host can start once this many players are in the room
+ *     yazi: { notTek: '…' },         // this game's own wording for some of the texts below (YAZI)
  *     basla(m) {},                   // a round starts: { tohum, tur, ayar, kadro, gecen (ms since it started), sure, ben }
  *     durum(liste, m) {},            // ~10 a second: [{ no, ad, renk, p, b (ms when done, 0 still playing), v, ben }]
  *     olay(no, e) {},                // someone sent oda.olay(e)
+ *     geri(m) {},                    // back in the same round after a dropped connection: m as in basla. In a
+ *                                    // game whose room keeps a log (kayit in genel-oda.js), m.log = [[no, e], ...]
+ *                                    // is every event of the round so far, so the game can catch up
  *     bitti(sonuc) {},               // the round is over (sonuc null: it was cut off); stop playing
  *     girdi() {},                    // we're in a room now (e.g. hide the game's own start button)
  *     cikti() {}                     // we left the room: back to the game's menu
@@ -34,7 +39,7 @@
  *   oda.ac()             the room list
  *   oda.menu(f)          the in-game room menu (the game goes on); f runs on "Oyuna dön" (e.g. to unpause)
  *   oda.gonder(p, v)     my score and live state (sent at most 10 times a second)
- *   oda.olay(e)          a one-off event for the others
+ *   oda.olay(e)          a one-off event for the others (false: not sent, the connection is down)
  *   oda.bitir(p, eser, v, ust)   I'm done (ust: the waiting sheet's small title instead of "Bitirdin!")
  *   oda.aktif            a round is on and I'm in it        oda.ben   my number in the room
  *   oda.isim(no)         { ad, renk }
@@ -245,7 +250,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
   /* ---------- one game's rooms ---------- */
   function kur(cfg) {
     cfg = Object.assign({ dil: 'tr', sira: 'puan', izle: true, canli: { top: '64px', right: '8px' }, ayarlar: [] }, cfg || {});
-    const Y = YAZI[cfg.dil] || YAZI.tr;
+    const Y = Object.assign({}, YAZI[cfg.dil] || YAZI.tr, cfg.yazi || {});
     const tema = Object.assign({
       zemin: '#fffaf0', yazi: '#1d2433', ana: '#e4472d', anaYazi: '#fff', satir: '#fff', cizgi: 'rgba(29,36,51,.12)', kotu: '#c2362b',
       bildirimUst: '64px',
@@ -577,11 +582,15 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
           } else if (a && a.yazi) k.append(mk('p', 'ozet', a.yazi));
         }
         const d = mk('p', 'durum'); d.setAttribute('role', 'status');
-        if (benKurucu) d.textContent = (n < 2 ? Y.notTek : Y.notHazir(n)) + ' ' + Y.gecGelen;
+        if (benKurucu) d.textContent = ((n < 2 ? Y.notTek : Y.notHazir(n)) + ' ' + Y.gecGelen).trim();
         else { d.append(Y.notBekle(kurucuAd)); d.append(mk('span', 'nokta')); }
         const davetNot = mk('p', 'durum'); davetNot.hidden = true;
         const sira = mk('div', 'sira');
-        if (benKurucu) sira.append(dugme(Y.baslat, 'ana', () => yolla({ t: 'basla' })));
+        if (benKurucu) {
+          const b = dugme(Y.baslat, 'ana', () => yolla({ t: 'basla' }));
+          b.disabled = n < (cfg.enAz || 1);
+          sira.append(b);
+        }
         sira.append(dugme(Y.cagir, '', () => davet(davetNot)), dugme(Y.cik, '', cik));
         k.append(d, sira, davetNot);
       });
@@ -600,7 +609,10 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
     /* ---------- the round ---------- */
     function basla(m) {
       for (const x of m.kadro || []) o.adlar.set(x.no, { ad: x.ad, renk: x.renk });
-      if (o.aktif && o.tur === m.tur) return; // back after a dropped connection, same round: carry on
+      if (o.aktif && o.tur === m.tur) { // back after a dropped connection, same round: carry on
+        try { if (cfg.geri) cfg.geri(m); } catch (e) { console.error(e); }
+        return;
+      }
       o.tur = m.tur; o.aktif = true; o.bittiBen = !!(m.ben && m.ben.b); o.son = null; o.sonucBen = null;
       o.bitenler = new Set(); o.canliListe = []; o.kalan = 0;
       if (m.ayar) o.ayar = m.ayar;
@@ -659,7 +671,7 @@ button:focus-visible{outline:3px solid var(--ana);outline-offset:2px}
         o.bekleyen = null;
       }, bekle);
     }
-    function olay(e) { if (o.aktif) yolla({ t: 'o', e }); }
+    function olay(e) { return o.aktif ? yolla({ t: 'o', e }) : false; }
     function bitir(p, eser, v, ust) {
       if (!o.aktif || o.bittiBen) return;
       clearTimeout(o.gonderT); o.gonderT = 0; o.bekleyen = null;
