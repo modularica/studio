@@ -2417,7 +2417,7 @@ function update(dt) {
     }
     P.phase += dt * (3 + P.speed / P.lShow * 4.2);
     updateSpine(P, P.lShow);
-    if (solo) for (let i = 2; i < 10; i++) engeldenCik(P.spine[i], P.lShow * .09 * (1 - i / 14)); // the body slides around rocks too
+    if (solo) for (let i = 2; i < 10; i++) engeldenCik(P.spine[i], P.lShow * .13 * (1 - i / 12)); // the body slides around rocks too (about its own width)
     P.invuln = Math.max(0, P.invuln - dt); P.grace = Math.max(0, P.grace - dt); P.gulp = Math.max(0, P.gulp - dt * 3);
   }
   // camera with a little look-ahead
