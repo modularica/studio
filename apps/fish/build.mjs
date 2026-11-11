@@ -1,0 +1,72 @@
+// Builds www/ for the iOS app from the web game in lab/fish/.
+// The game stays the single source: fix things there, then run `npm run sync`.
+// The app version is the solo game without the Lab account system: no login gate,
+// no leaderboard, no rooms (the game hides those itself when window.Hesap is missing).
+// Fonts are bundled so the app works with no internet.
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+const src = join(here, '../../lab/fish/index.html');
+const out = join(here, 'www');
+
+let html = readFileSync(src, 'utf8');
+
+// Every edit must match exactly once, so a change in lab/fish/index.html can't silently break the app.
+function edit(pattern, replacement, what) {
+  const hits = html.match(new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g'));
+  if (!hits || hits.length !== 1) {
+    throw new Error(`build: expected exactly one match for ${what}, found ${hits ? hits.length : 0}`);
+  }
+  html = html.replace(pattern, replacement);
+}
+
+edit(/[ \t]*<script src="\/hesap\/supabase\.js"><\/script>\n/, '', 'supabase.js script');
+edit(/[ \t]*<script src="\/hesap\/hesap\.js"[^>]*><\/script>\n/, '', 'hesap.js script');
+edit(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">\n/, '', 'fonts.googleapis preconnect');
+edit(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>\n/, '', 'fonts.gstatic preconnect');
+edit(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2[^"]*">/, '<link rel="stylesheet" href="fonts/fonts.css">', 'Google Fonts stylesheet');
+html = html.replace(/[ \t]*<meta name="robots"[^>]*>\n/, '');
+// The App Store name is "Little Koi" (the Lab still calls the game Fish): two-line bobbing title, page title.
+edit(/<title>Fish<\/title>/, '<title>Little Koi</title>', '<title>');
+edit(/<h1 class="title" aria-label="Fish">.*?<\/h1>/, '<h1 class="title iki" aria-label="Little Koi"><b>' + [...'Little'].map(c => `<span>${c}</span>`).join('') + '</b><b>' + [...'Koi'].map(c => `<span>${c}</span>`).join('') + '</b></h1>', 'start screen title');
+// "Nasıldı?" buttons talk to the Lab account system, which the app doesn't have.
+// capacitor.js (Capacitor core, no bundler) + uygulama.js (haptics etc.) load before the game.
+edit(/<\/head>/, '<style>[data-nasildi]{display:none!important}'
+  + '.title.iki{flex-direction:column;align-items:center;line-height:.8}.title.iki b{display:flex;font-weight:inherit}'
+  + '.title.iki b:first-child{font-size:.42em;color:var(--ink);margin-bottom:.06em}.title.iki b:last-child{font-size:1.08em}'
+  + '.title.iki span:nth-child(5){animation-delay:-.35s}.title.iki span:nth-child(6){animation-delay:-1.75s}</style>\n<script src="capacitor.js"></script>\n<script src="uygulama.js"></script>\n</head>', '</head>');
+
+if (/https?:\/\/(?!www\.w3\.org)/.test(html.replace(/<meta property="og:[^>]*>/g, '').replace(/wss:\/\/[^'"]+/g, ''))) {
+  console.warn('build: warning, the game still references an outside address; check that it works offline.');
+}
+
+// Fonts: the weights the game asks Google for, latin + latin-ext only, woff2 only.
+const FONTS = [
+  ['@fontsource/bagel-fat-one', ['400']],
+  ['@fontsource/figtree', ['500', '600', '700', '800']],
+];
+rmSync(out, { recursive: true, force: true });
+mkdirSync(join(out, 'fonts/files'), { recursive: true });
+let css = '';
+for (const [pkg, weights] of FONTS) {
+  const pkgDir = dirname(require.resolve(`${pkg}/package.json`));
+  for (const w of weights) {
+    const blocks = readFileSync(join(pkgDir, `${w}.css`), 'utf8').match(/\/\*[^*]*\*\/\s*@font-face\s*{[^}]*}/g) || [];
+    for (const block of blocks) {
+      if (!/\/\* [\w-]+-(latin|latin-ext)-/.test(block)) continue;
+      const file = block.match(/url\(\.\/files\/([^)]+\.woff2)\)/)[1];
+      copyFileSync(join(pkgDir, 'files', file), join(out, 'fonts/files', file));
+      css += block.replace(/,\s*url\([^)]+\.woff\)\s*format\('woff'\)/, '') + '\n';
+    }
+  }
+}
+if (!css) throw new Error('build: no fonts were copied');
+writeFileSync(join(out, 'fonts/fonts.css'), css);
+copyFileSync(join(dirname(require.resolve('@capacitor/core/package.json')), 'dist/capacitor.js'), join(out, 'capacitor.js'));
+copyFileSync(join(here, 'uygulama.js'), join(out, 'uygulama.js'));
+writeFileSync(join(out, 'index.html'), html);
+console.log('build: www/ ready (' + Math.round(html.length / 1024) + ' KB game, fonts bundled)');

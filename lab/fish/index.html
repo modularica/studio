@@ -420,6 +420,7 @@ body:not(.odada) #cikBtn{display:none}
     <div class="xp-son" id="overXp" hidden></div>
     <button class="btn" id="againBtn" type="button">Swim again</button>
     <button class="btn ghost" id="overMenuBtn" type="button">Menu</button>
+    <button class="btn ghost" id="gcBtn" type="button" hidden>Leaderboard</button>
     <button class="btn ghost" type="button" data-nasildi="oyun-sonu">Nasıldı?</button>
   </div>
 </section>
@@ -906,10 +907,20 @@ function tone(type, f0, f1, dur, vol, delay) {
     o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .03);
   } catch (e) {}
 }
-const sfxGulp = r => { const f = 640 - clamp(r, 0, 1) * 320; tone('sine', f, f * .38, .13, .3); tone('sine', f * 1.9, f * 1.6, .05, .07, .09); };
-const sfxBite = () => { tone('triangle', 150, 48, .28, .45); tone('square', 90, 40, .12, .05); };
-const sfxOver = () => { tone('sine', 392, 380, .22, .22); tone('sine', 311, 300, .22, .22, .2); tone('sine', 233, 140, .55, .25, .4); };
-const sfxLevel = () => { tone('sine', 523, 523, .1, .14); tone('sine', 784, 784, .18, .14, .09); };
+/* Haptics ride along with the sounds but don't depend on the sound switch.
+   The iOS app (apps/fish) sets window.uygulama.titret and uses the iPhone's Taptic Engine
+   (iPads have no vibration motor). Android browsers have navigator.vibrate; iOS Safari has nothing. */
+const TITRESIM = { yut: 12, isir: [35, 40, 35], olum: 140, seviye: [15, 50, 15], inci: 8 };
+function titret(tur, guc) {
+  try {
+    if (window.uygulama && window.uygulama.titret) window.uygulama.titret(tur, guc);
+    else if (navigator.vibrate) navigator.vibrate(TITRESIM[tur] || 10);
+  } catch (e) {}
+}
+const sfxGulp = r => { titret('yut', r); const f = 640 - clamp(r, 0, 1) * 320; tone('sine', f, f * .38, .13, .3); tone('sine', f * 1.9, f * 1.6, .05, .07, .09); };
+const sfxBite = () => { titret('isir'); tone('triangle', 150, 48, .28, .45); tone('square', 90, 40, .12, .05); };
+const sfxOver = () => { titret('olum'); tone('sine', 392, 380, .22, .22); tone('sine', 311, 300, .22, .22, .2); tone('sine', 233, 140, .55, .25, .4); };
+const sfxLevel = () => { titret('seviye'); tone('sine', 523, 523, .1, .14); tone('sine', 784, 784, .18, .14, .09); };
 function sfxAt() { // a whinny, then two snorts
   if (!AC || !soundOn) return;
   try {
@@ -978,7 +989,7 @@ function kilikDegistir(k) {
   else { sfxGulp(.3); showToast('Back to koi 🐟'); }
   if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'desen', d: kilik || seciliDesen }));
 }
-const sfxInci = () => { tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
+const sfxInci = () => { titret('inci'); tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
 
 const SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const SOUND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
@@ -1168,7 +1179,7 @@ function koiCiz() {
   }));
   const not = $('koiNot'), al = $('koiAl');
   al.hidden = true;
-  if (sahip) not.textContent = d.id === seciliDesen ? 'Your koi wears this pattern, alone and in rooms.' : '';
+  if (sahip) not.textContent = d.id === seciliDesen ? (window.Hesap ? 'Your koi wears this pattern, alone and in rooms.' : 'Your koi is wearing this pattern.') : ''; // no rooms without the Lab account system (iOS app)
   else if (d.level) not.textContent = `Opens at level ${d.level}. You’re level ${L}.`;
   else {
     al.hidden = false;
@@ -1287,6 +1298,7 @@ function gameOver(f) {
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
     : null;
+  if (window.uygulama && uygulama.skor) uygulama.skor(P.l, isBest); // iOS app: Game Center, rating prompt
   setTimeout(() => showOver(isBest), 1100);
 }
 function showOver(isBest) {
@@ -1358,6 +1370,16 @@ function lbYukle() {
     rows => { if (no === lbIstek) lbCiz($('lbList'), $('lbRank'), rows, 10, hafta, bos); },
     () => { if (no === lbIstek) $('lbList').replaceChildren(mk('li', 'lb-empty', "Couldn't load the leaderboard.")); }
   );
+}
+// iOS app (no player accounts): the Leaderboard buttons open Game Center instead (apps/fish/uygulama.js).
+// uygulama.liderlik() resolves false when the player isn't signed in to Game Center; the button says where to sign in.
+if (!window.Hesap && window.uygulama && uygulama.liderlik) {
+  const gcAc = btn => uygulama.liderlik().then(acildi => {
+    if (acildi || btn.dataset.yazi) return;
+    btn.dataset.yazi = btn.textContent; btn.textContent = 'Sign in to Game Center in Settings';
+    setTimeout(() => { btn.textContent = btn.dataset.yazi; delete btn.dataset.yazi; }, 3500);
+  });
+  for (const id of ['lbBtn', 'gcBtn']) { $(id).hidden = false; $(id).addEventListener('click', () => gcAc($(id))); }
 }
 if (window.Hesap) {
   $('lbBtn').hidden = false;
@@ -2024,14 +2046,14 @@ function updateFish(dt) {
     const tr = clamp(4.6 * Math.pow(8 / f.l, .25), 1.5, 6);
     let ta = f.angle, ts = f.cruise, turn = tr;
     f.cool -= dt;
-    if (fleeOn && rel < .9 && dp < P.lShow * 2.4 + f.l * 2) {
+    if (fleeOn && rel < .9 && dp < P.lShow * 2 + f.l * 1.6) { // kids said small fish kept getting away: they notice you later and swim slower
       f.jukeT -= dt; if (f.jukeT <= 0) { f.juke = rand(-.75, .75); f.jukeT = rand(.3, .8); }
-      ta = Math.atan2(-dyp, -dxp) + f.juke; ts = f.l * 3.1 * hizCarpani(f.l); turn = tr * 1.3; f.mode = 'flee';
+      ta = Math.atan2(-dyp, -dxp) + f.juke; ts = f.l * 2.6 * hizCarpani(f.l); turn = tr * 1.2; f.mode = 'flee';
     } else if (live && rel > 1.1 && f.hungry && f.cool <= 0 && P.invuln <= 0 && P.grace <= 0 && !P.gizli && dp < f.l * 2.2 + P.lShow * 3) {
       const lead = Math.min(.5, dp / (f.l * 4));
       ta = Math.atan2(dyp + Math.sin(P.angle) * P.speed * lead, dxp + Math.cos(P.angle) * P.speed * lead);
-      ts = Math.min(f.l * 2.6 * hizCarpani(f.l), 3.6 * P.lShow * hizCarpani(P.lShow) * .86); f.mode = 'chase';
-      f.chaseT += dt; if (f.chaseT > 3.8) { f.cool = rand(3.5, 6); f.chaseT = 0; }
+      ts = Math.min(f.l * 2.4 * hizCarpani(f.l), 3.6 * P.lShow * hizCarpani(P.lShow) * .78); f.mode = 'chase'; // "big fish are too fast": slower and they give up sooner
+      f.chaseT += dt; if (f.chaseT > 3) { f.cool = rand(3.5, 6); f.chaseT = 0; }
     } else {
       f.wanderT -= dt; if (f.wanderT <= 0) { f.wander = f.angle + rand(-1.1, 1.1); f.wanderT = rand(1.5, 4); }
       ta = f.wander; f.mode = 'wander';
@@ -2862,6 +2884,9 @@ function frame(now) {
 function boot(data) {
   data = data || {};
   resize(); addEventListener('resize', resize);
+  // In the iOS app the web view can get its real size after the game has started, with no resize event:
+  // the canvas then keeps its first size and the pond looks stretched. Watch the canvas box itself too.
+  if (window.ResizeObserver) new ResizeObserver(() => { if (cv.clientWidth !== W || cv.clientHeight !== H) resize(); }).observe(cv);
   makeCaustics();
   chainKur();
   renderSound(); renderStartBest();

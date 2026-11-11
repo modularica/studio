@@ -27,13 +27,14 @@ Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir
 
 ## Tek kişilik sürümün yapısı
 
-- Büyük balık daha yavaş: bütün hızlar (oyuncu, kaçan, kovalayan, gezinen) boy/saniye × `hizCarpani(boy)` = (boy/10)^-0.3. 10 cm'de 1, 30 cm'de 0.72, 1 m'de 0.5, 3 m'de 0.36. Avcının kovalama hızı yine oyuncunun en yüksek hızının %86'sını geçmez, yani kaçmak her zaman mümkün.
+- Büyük balık daha yavaş: bütün hızlar (oyuncu, kaçan, kovalayan, gezinen) boy/saniye × `hizCarpani(boy)` = (boy/10)^-0.3. 10 cm'de 1, 30 cm'de 0.72, 1 m'de 0.5, 3 m'de 0.36. Avcının kovalama hızı oyuncunun en yüksek hızının %78'ini geçmez ve 3 saniye kovalayıp vazgeçer; kaçan balıklar oyuncuyu daha yakından fark eder ve boy/sn × 2.6 ile kaçar (çocukların "büyükler çok hızlı, küçükler kaçıp duruyor" yorumlarından sonra, Kasım 2026). Bu ayarlar sadece tek kişilik; odalarda balıkları sunucu yönetir.
 
 - Her balık 10 noktalı bir "omurga" zinciridir (follow-the-leader). Kafa hareket eder, diğer noktalar sabit aralıkla izler; bükülme açısı sınırlıdır. Kuyruk dalgalanması sadece çizimde eklenir.
 - Çarpışma, omurganın 1., 3. ve 5. noktalarındaki dairelerle yapılır. Yeme kontrolü oyuncunun ağız dairesine göre yapılır.
 - Kamera ölçeği `targetScale(L)` ile belirlenir. Balıklar ekran kenarının hemen dışında doğar ve görüş alanının epey dışına çıkınca silinir.
 - Nilüferler dünya hücrelerine göre hash'lenir; havuz sonsuzdur ama her yer hep aynı görünür.
 - Sesler WebAudio ile üretilir; ses dosyası yoktur.
+- Titreşim: ses efektleri (`sfxGulp`, `sfxBite`, `sfxOver`, `sfxLevel`, `sfxInci`) `titret()`'i de çağırır; ses kapalıyken de çalışır. iOS uygulamasında `window.uygulama.titret` (`apps/fish/uygulama.js`), Android tarayıcılarda `navigator.vibrate`. iPad ve iOS Safari titremez.
 
 ## Odalar (index.html içinde "rooms" bölümü)
 

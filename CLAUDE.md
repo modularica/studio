@@ -42,6 +42,7 @@ lab/vagon-defteri/ Vagon Defteri (oyun değil, araç; sadece linkle): Umut'un tr
 godot/             Godot projeleri (siteye çıkmaz). godot/kis-uykusu-oteli/: Kış Uykusu Oteli'nin iPad sürümü; kurallar web sürümüyle birebir aynı, testi ve dışa aktarma adımları kendi CLAUDE.md'sinde
 fish/sunucu/       Lab'ın oda sunucusu: Fish, Tank Arenası, Kar Savaşı ve ortak odalar (Cloudflare Worker, Durable Objects). Yeri değişmesin: Cloudflare buradan kuruyor
 supabase/          veritabanı migration'ları
+apps/fish/         Fish'in iOS uygulaması (Capacitor). Oyunu lab/fish/'ten alır; ayrıntı apps/fish/CLAUDE.md
 ```
 
 Her oyun klasörünün kendi `CLAUDE.md` dosyası olabilir; o oyunda çalışırken onu da oku.
@@ -141,7 +142,8 @@ Yeni oyunlar önce Lab'a girer.
     Odalar (menüde "İki telefondan"; açık odalar menüde "Açık odalar"da canlı görünür, linksiz katılınır): iki kişi kendi telefonundan aynı maçı oynar; kurucu dil, harf, süre (Saat seçilirse herkesin süresi), uzat/kısalt ve maç uzunluğunu seçer. Skor `kelime-tenisi-oda` (kazanılan sayı; ayrıntı: en uzun zincir, hedef, saat modunda başlangıç ve kalan süre). Oda sonucu maçı kazananı birinci gösterir (`sk`): süresi biten sayıda önde olsa da kaybeder. İki telefonlu maçlar `kelime-tenisi.v1`'de `online` sayısına eklenir. Not: iki telefonlu maç sonu (skor, rakip, zincir, çıkmaz). Deneme: `kelime-tenisi.debug` = `1` → `window.__kt`. Sayfa `src/`'den derlenir, elle düzenleme: ayrıntı `lab/kelime-tenisi/CLAUDE.md`.
   - Kış Uykusu Oteli · yeni görünüm (`otel-yeni`, Godot): görünüm denemesi, kayıt yok (`data-kayit` yok), not yazmaz. Sağ üstteki "Nasıldı?" `Hesap.nasildi({ oyun: 'otel-yeni', yer: 'gorunum' })` çağırır (Godot'tan `JavaScriptBridge`). Odası yok. Dışa aktarma ve test: `godot/kis-uykusu-oteli/CLAUDE.md`.
   - Vagon Defteri: hesaba eşitlenen kayıt yok (`data-kayit` yok). Sayfalar cihazda IndexedDB'de; ayarlar (`vagon.ayar`), yolculuk (`vagon.yolculuk`), açık sayfa (`vagon.sayfa`) localStorage'da. Sensör kaydı da cihazda kalır, kullanıcı "Kaydı paylaş"la dosya olarak verir. Not: yolculuk başı, biten sayfa (başlık, çizgi, sarsıntı düzeltmesi, kalem modu). "Nasıldı?" defter ekranında. Odası yok. Sayfa `src/`'den derlenir, elle düzenleme: ayrıntı `lab/vagon-defteri/CLAUDE.md`.
-- Bir oyun ayrıca (App Store ya da başka bir adres) yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
+- App Store sürümleri `apps/<oyun>/` altında (şimdilik Fish). İlk sürüm hesapsız, tek kişilik ve internetsiz çalışır.
+- Bir oyun ayrıca (App Store ya da başka bir adres) hesaplarla yayınlanırsa aynı Supabase projesine bağlanır; hesaplar ve kayıtlar her yerde aynı kalır. O zaman `/hesap/...` yolları ve giriş sayfası o yayına göre ayarlanmalı.
 
 ## Paylaşım görselleri
 
