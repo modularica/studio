@@ -231,7 +231,19 @@ body{
 .hk::before{content:"";position:absolute;left:50%;top:7px;width:30px;height:18px;margin-left:-15px;background:var(--hi) center/contain no-repeat}
 .hk small{font-size:10.5px;font-weight:700;color:var(--ink-dim);white-space:nowrap}
 .hk.ejder-kart{color:#f6d36a}
-.hk.ejder-kart[aria-checked="true"]{border-color:#f2c43a;box-shadow:0 0 0 2px #f2c43a}
+/* the journey on the menu: every round starts in the pond; waters you haven't swum to yet are dim */
+.yolculuk{list-style:none;margin:0;padding:0}
+.yolculuk .hk{cursor:default}
+.yolculuk .hk.yok{filter:saturate(.35) brightness(.75)}
+/* "Level 2 · River" as you swim into a new water */
+.bolum{position:fixed;left:0;right:0;top:28%;z-index:6;display:grid;justify-items:center;gap:8px;padding:0 20px;pointer-events:none;text-align:center;text-shadow:0 2px 10px rgba(3,20,22,.75)}
+.bolum[hidden]{display:none}
+.bolum b{font:400 clamp(34px,10vw,56px)/1.05 var(--font-display);color:#ffe7a0}
+.bolum span{font-size:15px;font-weight:800;color:var(--ink)}
+.bolum.oyna{animation:bolumGir 2.4s ease both}
+@keyframes bolumGir{0%{opacity:0;transform:translateY(10px) scale(.96)}12%{opacity:1;transform:none}78%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.bolum.oyna{animation:bolumSade 2.4s linear both}}
+@keyframes bolumSade{0%,85%{opacity:1}100%{opacity:0}}
 .hk[aria-checked="true"]{border-color:var(--koi);box-shadow:0 0 0 2px var(--koi)}
 .hk:disabled{cursor:default;filter:saturate(.35) brightness(.75)}
 .hk.goster{cursor:default}
@@ -390,6 +402,7 @@ body:not(.odada) #cikBtn{display:none}
 </header>
 
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="bolum" id="bolumYazi" role="status" hidden><b id="bolumAd"></b><span id="bolumAlt"></span></div>
 
 <aside class="odapanel" id="odaPanel" hidden aria-label="This pond">
   <div class="op-kart">
@@ -428,14 +441,14 @@ body:not(.odada) #cikBtn{display:none}
       <div class="sv-ust"><span class="sv-lv" id="svLv">Level 1</span><span class="sv-xp" id="svXp"></span></div>
       <div class="sv-bar" aria-hidden="true"><i id="svBar"></i></div>
     </div>
-    <div class="haritalar" id="haritalar" role="radiogroup" aria-label="Where to swim"></div>
+    <ol class="haritalar yolculuk" id="haritalar" aria-label="Your journey"></ol>
     <p class="harita-not" id="haritaNot"></p>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
     <button class="btn ghost koi-btn" id="koiBtn" type="button"><span>My koi</span><span class="inci-say"><i class="inci-ikon" aria-hidden="true"></i><b id="inciBtn">0</b></span></button>
     <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
     <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
     <p class="best" id="startBest" hidden></p>
-    <p class="test-not" id="testNot" hidden>Test mode: every water and koi is open, nothing is saved, N grows your koi to the next way on. <button type="button" id="testKapat">Turn off</button></p>
+    <p class="test-not" id="testNot" hidden>Test mode: every koi pattern is open, nothing is saved, N grows your koi to the next way on. <button type="button" id="testKapat">Turn off</button></p>
   </div>
 </section>
 
@@ -675,7 +688,7 @@ let parilti = 0;     // the golden flash when the koi turns into a dragon
 // One round's journey: the way on (gecit; in the Ocean the Dragon Gate), the fade into the next water, the leap,
 // what the round opened, and a toast waiting to be shown (sonraki, after sonrakiT seconds).
 const YOL_BOS = { gecit: null, gecis: 0, gecisYer: '', sicrama: null, buzKayma: 0, gelgitT: 0, gelgitUyari: -1, gelgitYon: -1, tavanDedi: '', yakinDedi: '', aclikDedi: false,
-  ejderOldu: false, ejderBoy: 0, yeniDesen: false, yeniSular: [], yeniBicim: [], nehirT: 0, nehirIpucu: false, sonraki: '', sonrakiT: 0 };
+  ejderOldu: false, ejderBoy: 0, yeniDesen: false, rekorDedi: false, yeniSular: [], yeniBicim: [], nehirT: 0, nehirIpucu: false, sonraki: '', sonrakiT: 0 };
 const yol = Object.assign({ carpT: 0 }, YOL_BOS, { yeniSular: [], yeniBicim: [] });
 function gelgitDeger(t) { return clamp(1.6 * Math.sin(TAU * (t == null ? yol.gelgitT : t) / GELGIT_DONGU), -1, 1); }
 function akintiSolo(x, y) {
@@ -868,11 +881,11 @@ function ejderStili() { return ejderSt || (ejderSt = Object.assign({}, koiStili(
 const BICIMLER = ['golet', 'nehir', 'deniz', 'okyanus', 'ejder'];
 const birAd = ad => (/^[aeiou]/i.test(ad) ? 'an ' : 'a ') + ad; // "a River koi", "an Ocean koi"
 const BICIM = {
-  golet: { ad: 'Pond koi', kisa: 'Pond', not: 'Where every koi starts: short fins, a plain body.' },
-  nehir: { ad: 'River koi', kisa: 'River', not: 'Long, strong fins and whiskers for the current.', yol: 'Reach the River', st: { finSize: .13, tailLen: 1.45, barbels: .2, biyik: 'rgba(244,232,206,.92)', w: .118 } },
-  deniz: { ad: 'Sea koi', kisa: 'Sea', not: 'Pearl scales and long, flowing veil fins.', yol: 'Reach the Sea', st: { finSize: .15, tailLen: 1.8, fin: 'rgba(226,240,252,.62)', inci: true } },
-  okyanus: { ad: 'Ocean koi', kisa: 'Ocean', not: 'Spots that glow in the dark deep.', yol: 'Reach the Ocean', st: { finSize: .11, tailLen: 1.35, parla: true } },
-  ejder: { ad: 'Dragon', kisa: 'Dragon', not: 'The end of the journey: your koi leapt the Dragon Gate in the Ocean.', yol: 'Leap the Dragon Gate at 6 m in the Ocean' }
+  golet: { ad: 'Pond koi', kisa: 'Pond', not: 'Where every koi starts: short fins, quick to turn.' },
+  nehir: { ad: 'River koi', kisa: 'River', not: 'Long, strong fins and whiskers: fast on the straight.', yol: 'Reach the River', st: { finSize: .13, tailLen: 1.45, barbels: .2, biyik: 'rgba(244,232,206,.92)', w: .118 } },
+  deniz: { ad: 'Sea koi', kisa: 'Sea', not: 'Pearl scales and veil fins: glides on when you let go.', yol: 'Reach the Sea', st: { finSize: .15, tailLen: 1.8, fin: 'rgba(226,240,252,.62)', inci: true } },
+  okyanus: { ad: 'Ocean koi', kisa: 'Ocean', not: 'Spots that glow in the dark deep, and a wide mouth.', yol: 'Reach the Ocean', st: { finSize: .11, tailLen: 1.35, parla: true } },
+  ejder: { ad: 'Dragon', kisa: 'Dragon', not: 'Your koi leapt the Dragon Gate in the Ocean: now there is no size limit.', yol: 'Leap the Dragon Gate at 6 m in the Ocean' }
 };
 function bicimlerim() {
   if (TEST) return BICIMLER.slice();
@@ -1043,7 +1056,7 @@ function viewDiag() { return Math.hypot(W, H) / cam.scale; }
 function spawnLength() {
   const L = P.l;
   if (mode === 'play' && P.grace > 0) return L * rand(.3, .8);
-  const dangerP = .22 + Math.min(.12, L / 1200), u = Math.random();
+  const dangerP = (.22 + Math.min(.12, L / 1200)) * zorluk().avci, u = Math.random();
   let r;
   if (u < dangerP) r = rand(1.15, 2.3);
   else if (u < dangerP + .1) r = rand(.9, 1.1);
@@ -1315,6 +1328,7 @@ function testBuyut() {
   initSpine(P, P.l); cam.scale = targetScale(P.l);
   fish = fish.filter(f => f.l > P.l * .25); // the little ones from before would be specks now
   labels.push({ x: P.x, y: P.y, text: `Test: ${fmtLenStr(P.l)}`, life: 1.4 });
+  rekorBak();
 }
 function updateHud() {
   const L = yol.sicrama ? P.l : P.lShow; // a leaping koi looks bigger (closer to you): say how long it really is
@@ -1347,12 +1361,13 @@ const MAP_ICON = {
   okyanus: svgUrl('<circle cx="15" cy="9" r="8" fill="#8fd8ff" opacity=".28"/><circle cx="12" cy="9" r="1.6" fill="#ff6a50"/><circle cx="18" cy="9" r="1.6" fill="#ff6a50"/>'),
   ejder: svgUrl('<path d="M3 14q4-9 9-4.5t9-1.5q3-2 4.5-5" stroke="#f2c43a" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M8 9.5l-1.5-3M13.5 11l-.5-3.2M19 9.6l.4-3.2" stroke="#e2502b" stroke-width="1.6" stroke-linecap="round"/><circle cx="25.8" cy="3.4" r="2" fill="#f2c43a"/>')
 };
-// The menu's fifth card, after the four waters: start as a dragon in the Ocean (open once your koi has become one).
+// Has this koi ever become a dragon (the journey on the menu lights the dragon up)? The biggest dragon so far, cm.
 const ejderAcik = () => TEST || bicimlerim().includes('ejder');
-const ejderRekor = () => Math.max(0, +store.get('fish.ejder', 0) || 0); // the biggest dragon so far, cm
-const EJDER_KART = { id: 'ejder', name: 'Dragon', water: ['#5c4210', '#0d2c52'] };
-let soloEjder = store.get('fish.harita', 'golet') === 'ejder' && ejderAcik(); // the Dragon card is picked: a round starts as a dragon
-let soloHarita = (() => { const h = store.get('fish.harita', 'golet'); return soloEjder ? 'okyanus' : MAPS[h] ? h : 'golet'; })();
+const ejderRekor = () => Math.max(0, +store.get('fish.ejder', 0) || 0);
+const EJDER_RENK = ['#5c4210', '#0d2c52'];
+// Every round alone starts in the pond, 10 cm (Umut, 12 Nov: "her seferinde en baştan"); the waters are its levels.
+// Rooms still let the host pick a water.
+const soloHarita = 'golet';
 let xpBasla = 0, svGosterilen = 0;
 const xpToplam = () => xpOf(toplamOku());
 /* koi patterns and pearls (kept with the player's account) */
@@ -1365,45 +1380,42 @@ let inciTur = 0, turInci = 0; // pearls picked up in this round, pearls the roun
 let turBas = 10; // how long the koi was when this round started (the water's start)
 function seviyeBilgi(xp) { const L = levelOf(xp), a = XP_FOR(L), b = XP_FOR(L + 1); return { L, a, b, k: clamp((xp - a) / (b - a), 0, 1) }; }
 const seviyem = () => levelOf(xpToplam());
-// Map cards; maps not open yet say at which level they open. The menu's own row (ejderle) ends with the Dragon card.
-function haritaKartlari(box, secili, L, sec, ejderle) {
+// Map cards for picking a room's water; maps not open yet say at which level they open.
+function haritaKartlari(box, secili, L, sec) {
   const kartlar = MAP_IDS.map(id => {
     const m = MAPS[id], acik = mapOpen(id, L), b = mk('button', 'hk');
     b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(id === secili));
     b.style.setProperty('--h1', m.water[0]); b.style.setProperty('--h2', m.water[1]); b.style.setProperty('--hi', `url("${MAP_ICON[id]}")`);
-    b.append(m.name, mk('small', null, acik ? m.tag : `Level ${m.level}`));
-    b.setAttribute('aria-label', acik ? `${m.name}: ${m.blurb}` : `${m.name}: opens at level ${m.level}`);
+    b.append(m.name, mk('small', null, acik ? m.tag : 'not yet'));
+    b.setAttribute('aria-label', acik ? `${m.name}: ${m.blurb}` : `${m.name}: opens when your koi swims there`);
     if (sec) { b.disabled = !acik; b.addEventListener('click', () => sec(id)); }
     else { b.classList.add('goster'); b.tabIndex = -1; } // just showing the room's water
     return b;
   });
-  if (ejderle) {
-    const acik = ejderAcik(), r = ejderRekor(), b = mk('button', 'hk ejder-kart');
-    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(secili === 'ejder'));
-    b.style.setProperty('--h1', EJDER_KART.water[0]); b.style.setProperty('--h2', EJDER_KART.water[1]); b.style.setProperty('--hi', `url("${MAP_ICON.ejder}")`);
-    b.append(EJDER_KART.name, mk('small', null, !acik ? 'Ocean 6 m' : r ? fmtLenStr(r) : 'legend'));
-    b.setAttribute('aria-label', acik ? `Dragon: start as a dragon in the Ocean${r ? `, your biggest is ${fmtLenStr(r)}` : ''}` : 'Dragon: leap the Dragon Gate at 6 m in the Ocean to open');
-    b.disabled = !acik; b.addEventListener('click', () => sec('ejder'));
-    kartlar.push(b);
-  }
   box.replaceChildren(...kartlar);
 }
+// The menu: the next koi pattern your XP opens (no "level" here: the waters are the levels), and the journey,
+// Level 1 Pond to Level 4 Ocean and the dragon, lit where your koi has been.
 function seviyeCiz() {
-  const xp = xpToplam(), sv = seviyeBilgi(xp);
-  if (soloEjder && !ejderAcik()) { soloEjder = false; soloHarita = 'golet'; }
-  if (!mapOpen(soloHarita, sv.L)) { soloHarita = 'golet'; soloEjder = false; }
-  $('svLv').textContent = `Level ${sv.L}`;
-  $('svXp').textContent = `${xp - sv.a} / ${sv.b - sv.a} XP to level ${sv.L + 1}`;
-  $('svBar').style.width = (sv.k * 100).toFixed(1) + '%';
-  haritaKartlari($('haritalar'), soloEjder ? 'ejder' : soloHarita, sv.L, id => {
-    soloEjder = id === 'ejder'; soloHarita = soloEjder ? 'okyanus' : id; store.set('fish.harita', id);
-    if (mode === 'attract' || mode === 'over') haritaKur(soloHarita);
-    if (mode === 'attract') { P.ejder = soloEjder; P.speed = P.lShow * 1.2; } // the koi behind the menu shows what you'll start as
-    seviyeCiz();
-  }, true);
-  const next = MAP_IDS.map(id => MAPS[id]).find(m => !mapOpen(m.id, sv.L)), r = ejderRekor();
-  $('haritaNot').textContent = soloEjder ? `You start as a 6 m dragon in the Ocean. Grow the biggest dragon you can${r ? ` (yours: ${fmtLenStr(r)})` : ''}.`
-    : MAPS[soloHarita].blurb + '.' + (next ? ` The ${next.name} opens at level ${next.level}, or when you swim there.` : '');
+  const xp = xpToplam(), sv = seviyeBilgi(xp), next = DESENLER.find(d => d.level === sv.L + 1);
+  $('svLv').textContent = next ? `Next koi: ${next.name}` : 'Every koi is yours';
+  $('svXp').textContent = next ? `${sv.b - xp} XP to go` : '';
+  $('svBar').style.width = (next ? sv.k * 100 : 100).toFixed(1) + '%';
+  yolCiz();
+}
+function yolCiz() {
+  const sular = ulasilan();
+  const parca = (ad, alt, renk, ikon, gitti, cls) => {
+    const li = mk('li', 'hk' + (gitti ? '' : ' yok') + (cls ? ' ' + cls : ''));
+    li.style.setProperty('--h1', renk[0]); li.style.setProperty('--h2', renk[1]); li.style.setProperty('--hi', `url("${ikon}")`);
+    li.append(ad, mk('small', null, alt));
+    li.setAttribute('aria-label', `${ad}, ${alt}${gitti ? '' : ', not reached yet'}`);
+    return li;
+  };
+  $('haritalar').replaceChildren(
+    ...MAP_IDS.map((id, i) => parca(MAPS[id].name, `Level ${i + 1}`, MAPS[id].water, MAP_ICON[id], id === 'golet' || TEST || sular.includes(id))),
+    parca('Dragon', 'no limit', EJDER_RENK, MAP_ICON.ejder, ejderAcik(), 'ejder-kart'));
+  $('haritaNot').textContent = 'Every round starts in the Pond. River at 1\u00a0m, Sea at 2\u00a0m, Ocean at 4\u00a0m, then the Dragon Gate at 6\u00a0m.';
 }
 // Switches the water: its fish, colours and food chain.
 function haritaKur(id) {
@@ -1421,14 +1433,13 @@ function haritaKur(id) {
 function xpSonCiz(box, once, sonra, inci) {
   const s0 = seviyeBilgi(once), s1 = seviyeBilgi(sonra);
   box.replaceChildren();
-  const line = mk('p', 'stat'); line.append(mk('b', null, `+${sonra - once} XP`), ` · Level ${s1.L}`);
+  const line = mk('p', 'stat'); line.append(mk('b', null, `+${sonra - once} XP`));
   if (inci > 0) { const ik = mk('i', 'inci-ikon'); line.append('  ·  ', ik, mk('b', null, `+${inci}`), ' pearls'); }
   const bar = mk('div', 'sv-bar'), i = mk('i'); i.style.width = (s1.k * 100).toFixed(1) + '%'; bar.append(i);
   box.append(line, bar);
   if (s1.L > s0.L) {
-    box.append(mk('p', 'yeni', `Level up! You’re level ${s1.L}`));
-    for (const id of MAP_IDS) if (MAPS[id].level > s0.L && MAPS[id].level <= s1.L) box.append(mk('p', 'yeni', `New water: the ${MAPS[id].name} is open`));
     for (const d of DESENLER) if (d.level > s0.L && d.level <= s1.L) box.append(mk('p', 'yeni', `New koi pattern: ${d.name} (in My koi)`));
+    for (const id of MAP_IDS) if (MAPS[id].level > s0.L && MAPS[id].level <= s1.L) box.append(mk('p', 'yeni', `New water for rooms: the ${MAPS[id].name}`));
   }
   box.hidden = false;
 }
@@ -1438,9 +1449,8 @@ function seviyeKontrol(t, sayildi) {
   for (const k in t) { const d = t[k] - ((sayildi && sayildi[k]) || 0); if (d > 0) eksik[k] = d; }
   const L = levelOf(xpToplam() + xpOf(eksik));
   if (svGosterilen && L > svGosterilen) {
-    const yeni = MAP_IDS.find(id => MAPS[id].level === L), desen = DESENLER.find(d => d.level === L);
-    showToast(`Level ${L}!` + (yeni ? ` The ${MAPS[yeni].name} is open` : desen ? ` New koi: ${desen.name}` : ''));
-    sfxLevel();
+    const desen = DESENLER.find(d => d.level === L);
+    if (desen) { showToast(`New koi: ${desen.name}! (My koi)`); sfxLevel(); }
   }
   svGosterilen = L;
 }
@@ -1504,11 +1514,11 @@ function koiCiz() {
     const own = sahipMi(x.id, L), b = mk('button', 'dk' + (own ? '' : x.price ? ' dukkan' : ' kilit'));
     b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(x.id === koiSecim));
     const cv2 = resimKopya(koiResmi(x.id));
-    const alt = x.id === seciliDesen ? '✓ wearing' : own ? (x.level ? `level ${x.level}` : 'yours') : x.price ? '' : `Level ${x.level}`;
+    const alt = x.id === seciliDesen ? '✓ wearing' : own ? 'yours' : x.price ? '' : `${XP_FOR(x.level)} XP`;
     const sm = mk('small', null, alt);
     if (!own && x.price) { sm.append(mk('i', 'inci-ikon'), String(x.price)); }
     b.append(cv2, x.name, sm);
-    b.setAttribute('aria-label', `${x.name}: ${own ? (x.id === seciliDesen ? 'wearing' : 'yours') : x.price ? `${x.price} pearls` : `opens at level ${x.level}`}`);
+    b.setAttribute('aria-label', `${x.name}: ${own ? (x.id === seciliDesen ? 'wearing' : 'yours') : x.price ? `${x.price} pearls` : `opens at ${XP_FOR(x.level)} XP`}`);
     b.addEventListener('click', () => {
       koiSecim = x.id;
       if (own) { seciliDesen = x.id; store.set('fish.desen', x.id); sfxGulp(.3); }
@@ -1519,7 +1529,7 @@ function koiCiz() {
   const not = $('koiNot'), al = $('koiAl');
   al.hidden = true;
   if (sahip) not.textContent = d.id === seciliDesen ? (window.Hesap ? 'Your koi wears this pattern, alone and in rooms.' : 'Your koi is wearing this pattern.') : ''; // no rooms without the Lab account system (iOS app)
-  else if (d.level) not.textContent = `Opens at level ${d.level}. You’re level ${L}.`;
+  else if (d.level) not.textContent = `Opens at ${XP_FOR(d.level)} XP. You have ${xpToplam()}: every fish you eat counts.`;
   else {
     al.hidden = false;
     al.disabled = inci < d.price;
@@ -1550,7 +1560,7 @@ function renderStartBest() {
   const el = $('startBest');
   const n = toplamSayi();
   if (best > 0) {
-    el.textContent = `Your best: ${fmtLenStr(best)}` + (n ? ` · ${n} fish eaten so far` : '');
+    el.textContent = `Your record: ${fmtLenStr(best)}` + (n ? ` · ${n} fish eaten so far` : '');
     el.hidden = false;
   } else el.hidden = true;
 }
@@ -1571,19 +1581,18 @@ function yolSifirla() {
 function startGame(fromAttract) {
   ensureAudio();
   yolSifirla();
-  if (HARITA.id !== soloHarita) haritaKur(soloHarita); // after a journey, a round starts again in the water picked on the menu
-  // each water starts where the one before it stops: pond 10 cm, river 1 m, sea 2 m, ocean 4 m; the Dragon card, a 6 m dragon
-  turBas = soloEjder ? EJDER_BOY : HARITA.bas || 10;
+  if (HARITA.id !== soloHarita) haritaKur(soloHarita); // every round starts again in the pond
+  turBas = HARITA.bas || 10;
   if (!fromAttract) resetPlayer();
   else { P.lives = 3; P.alive = true; P.invuln = 0; }
   P.l = P.lShow = P.zirve = turBas; P.speed = P.l * 1.2;
   P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length;
-  P.tok = 0; P.ac = false; P.ejder = soloEjder; P.ejderZirve = soloEjder ? turBas : 0;
+  P.tok = 0; P.ac = false; P.ejder = false; P.ejderZirve = 0;
   engeldenCik(P, P.l * .12); initSpine(P, P.l);
   tally = {}; eatenCount = 0; killer = null; sayilan = {};
   xpBasla = xpToplam(); svGosterilen = levelOf(xpBasla);
   inciTur = 0; inciler.length = 0; inciT = 8;
-  P.grace = 2.5;
+  P.grace = 4; // a calm start: for the first seconds every fish that comes is food and nothing bites
   cam.scale = targetScale(P.l);
   if (turBas > 10) { fish = []; for (let i = 0; i < 5; i++) spawnGroup(true, false); } // the menu's little fish are no match for a 1 m koi
   else fish = fish.filter(f => f.l < P.l * .85);
@@ -1593,11 +1602,9 @@ function startGame(fromAttract) {
   startOv.hidden = true; overOv.hidden = true; pauseOv.hidden = true; document.body.classList.remove('lb-acik');
   hud.hidden = false; toast.hidden = true;
   renderLives(); shownLen = ''; shownHedef = '-'; chainKey = ''; updateHud();
-  // what this water is for; the very first round on this device tells the whole story once
-  const ilk = soloEjder ? 'Grow the biggest dragon!' : { nehir: 'At 2 m the river mouth opens to the sea', deniz: 'At 4 m the deep opens to the ocean', okyanus: 'At 6 m the Dragon Gate opens' }[HARITA.id];
-  if (ilk) showToast(ilk);
-  else if (!store.get('fish.hikaye', false)) { store.set('fish.hikaye', true); showToast('Every koi dreams of becoming a dragon. Grow, and swim on to the Ocean!', false, 5); }
-  hesapNotu(`Yeni tur · ${soloEjder ? 'Ejder' : SU_TR[HARITA.id]} · ${fmtLenStr(P.l)}`);
+  bolumGoster(HARITA.id); // "Level 1 · Pond"; the very first round on this device tells the whole story once
+  if (!store.get('fish.hikaye', false)) { store.set('fish.hikaye', true); showToast('Every koi dreams of becoming a dragon. Grow, and swim on to the Ocean!', false, 5); }
+  hesapNotu(`Yeni tur · ${SU_TR[HARITA.id]} · ${fmtLenStr(P.l)}`);
   lockOn();
 }
 function pause() {
@@ -1629,6 +1636,12 @@ function eat(f) { // (alone only: in rooms the server decides who eats)
   if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); }
   hesapNotu(`${fmtLenStr(P.l)} · ${eatenCount} balık yedi`);
   seviyeKontrol(tally, sayilan);
+  rekorBak();
+}
+// Passing your record (the biggest fish you've ever grown) in the middle of a round: said once a round.
+function rekorBak() {
+  if (yol.rekorDedi || mode !== 'play' || best < 15 || P.zirve <= best + .05) return;
+  yol.rekorDedi = true; showToast(`New record! You passed ${fmtLenStr(best)}`); sfxLevel();
 }
 function bitten(f) {
   P.lives--; renderLives();
@@ -1663,7 +1676,7 @@ function ejderRekorYaz() {
 function turBitir(gecikme, ayrinti) {
   const boy = P.zirve, isBest = boy > best + .001;
   if (isBest) { best = boy; store.set('fish.best', best); }
-  const ejderBest = ejderRekorYaz();
+  ejderRekorYaz(); // the biggest dragon is still kept (fish.ejder), for a dragon table later
   sayilmayaniEkle();
   // pearls for the round: one for every two fish, one for every 10 cm it grew (the 50 for becoming a dragon came at the leap);
   // from 10 cm in the pond this is one for every 10 cm of its length, as before
@@ -1672,39 +1685,45 @@ function turBitir(gecikme, ayrinti) {
   renderStartBest();
   // Post the round to the leaderboard, then read this week's table for the end screen.
   // v: 2 marked rounds played with slower growth and size limits (from 11 November 2026); v: 3 the one journey
-  // with the Dragon Gate at the end of the Ocean (from 12 November 2026). ejder: the round ended as a dragon.
+  // with the Dragon Gate at the end of the Ocean (12 November 2026); v: 4 every round from the pond, the waters
+  // as levels with their own difficulty, each koi form with its own physics (12 November, afternoon).
+  // ejder: the round ended as a dragon.
   lbSonuc = window.Hesap
-    ? (TEST ? Promise.resolve() : Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, bas: turBas, v: 3 }, P.ejder ? { ejder: true, ejderBoy: Math.round(P.ejderZirve * 10) / 10 } : null, ayrinti)))
+    ? (TEST ? Promise.resolve() : Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, bas: turBas, v: 4 }, P.ejder ? { ejder: true, ejderBoy: Math.round(P.ejderZirve * 10) / 10 } : null, ayrinti)))
         .catch(() => {})
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
     : null;
   if (!TEST && window.uygulama && uygulama.skor) uygulama.skor(boy, isBest); // iOS app: Game Center, rating prompt
-  setTimeout(() => showOver(isBest, ejderBest), gecikme);
+  setTimeout(() => showOver(isBest), gecikme);
 }
 const tumTurler = () => MAP_IDS.flatMap(id => MAPS[id].species);
-function showOver(isBest, ejderBest) {
+function showOver(isBest) {
   if (mode !== 'over') return;
   const yakalayan = killer ? killer.name : 'bigger fish';
   if (P.ejder) { // a dragon's round: how big the dragon got
-    $('overTitle').innerHTML = `Your <em class="altin">dragon</em> grew to ${fmtLenStr(P.ejderZirve).replace(' ', '\u00a0')}`;
+    $('overTitle').innerHTML = `Your <em class="altin">dragon</em> grew to ${fmtLenStr(P.zirve).replace(' ', '\u00a0')}`;
     $('overStat').textContent = (yol.ejderOldu ? `Your koi leapt the Dragon Gate at ${fmtLenStr(yol.ejderBoy)}. ` : '') + `${birAd(yakalayan).replace(/^a/, 'A')} caught it in the end.`;
-  } else {
+  } else { // how big it got, and how far: the waters are the levels
     $('overTitle').innerHTML = `Eaten by a <em>${yakalayan}</em>`;
-    $('overStat').textContent = `Your koi grew to ${fmtLenStr(P.zirve)}.`;
+    $('overStat').textContent = `Your koi grew to ${fmtLenStr(P.zirve)} · Level ${MAP_IDS.indexOf(HARITA.id) + 1}, the ${MAPS[HARITA.id].name}.`;
   }
   const eaten = tumTurler().filter(s => tally[s.name]); // a round can cross from the pond into the river
   $('notes').innerHTML = eaten.length
     ? eaten.map(s => `<li><span class="sw" style="background:${s.body}"></span>${tally[s.name]} ${tally[s.name] === 1 ? s.name : s.plural}</li>`).join('')
     : '<li>Nothing eaten this time</li>';
-  const b = $('overBest'), yeni = P.ejder ? ejderBest : isBest;
-  b.textContent = P.ejder ? (ejderBest ? 'New biggest dragon' : `Biggest dragon: ${fmtLenStr(ejderRekor())}`) : isBest ? 'New best length' : `Best: ${fmtLenStr(best)}`;
-  b.classList.toggle('new', yeni);
+  const b = $('overBest'); // the record: the biggest fish you've ever grown, koi or dragon
+  b.textContent = isBest ? 'New record!' : `Your record: ${fmtLenStr(best)}`;
+  b.classList.toggle('new', isBest);
   lbGoster(lbSonuc);
   xpSonCiz($('overXp'), xpBasla, xpToplam(), turInci + inciTur);
   if (yol.yeniDesen) $('overXp').append(mk('p', 'yeni', 'New koi pattern: Gold Dragon (in My koi)'));
-  for (const id of yol.yeniSular) $('overXp').append(mk('p', 'yeni', `New water: the ${MAPS[id].name} (you start there at ${MAPS[id].bas / 100}\u00a0m)`));
-  for (const id of yol.yeniBicim) $('overXp').append(mk('p', 'yeni', id === 'ejder' ? 'New on the menu: Dragon (start as a dragon)' : `Your koi grew into ${birAd(BICIM[id].ad)} (see My koi)`));
+  // News from the journey, short: the furthest new level, the new koi forms on one line, the first dragon
+  const yeniSu = yol.yeniSular.slice().sort((x, y) => MAP_IDS.indexOf(y) - MAP_IDS.indexOf(x))[0];
+  if (yeniSu) $('overXp').append(mk('p', 'yeni', `You reached Level ${MAP_IDS.indexOf(yeniSu) + 1}: the ${MAPS[yeniSu].name}!`));
+  const yeniKoi = yol.yeniBicim.filter(id => id !== 'ejder');
+  if (yeniKoi.length) $('overXp').append(mk('p', 'yeni', `New koi form${yeniKoi.length > 1 ? 's' : ''}: ${yeniKoi.map(id => BICIM[id].ad).join(', ')} (see My koi)`));
+  if (yol.yeniBicim.includes('ejder')) $('overXp').append(mk('p', 'yeni', 'Your koi became a dragon for the first time!'));
   overOv.hidden = false; document.body.classList.add('lb-acik');
   $('againBtn').focus({ preventScroll: true });
 }
@@ -2056,7 +2075,7 @@ function odaOyunu(m) {
   lockOn();
   hesapNotu(`Odada: ${pondName(oda.kurucu)} · ${HARITA.name}`);
 }
-function kendiSuyum() { haritaKur(mapOpen(soloHarita, seviyem()) ? soloHarita : 'golet'); P.ejder = soloEjder && HARITA.id === 'okyanus'; }
+function kendiSuyum() { haritaKur(soloHarita); P.ejder = false; }
 function odaModundanCik() {
   if (mode !== 'oda') return;
   mode = 'attract';
@@ -2390,7 +2409,7 @@ function menuyeDon() {
   if (mode === 'paused') { if (P.zirve > best) { best = P.zirve; store.set('fish.best', best); } ejderRekorYaz(); sayilmayaniEkle(); }
   mode = 'attract'; lockOff(); inciler.length = 0;
   yolSifirla(); haritaKur(soloHarita);
-  resetPlayer(); P.speed = P.l * 1.2; P.grace = 0; P.ejder = soloEjder;
+  resetPlayer(); P.speed = P.l * 1.2; P.grace = 0; $('bolumYazi').hidden = true;
   for (const o of [overOv, pauseOv]) o.hidden = true;
   hud.hidden = true; toast.hidden = true; document.body.classList.remove('lb-acik');
   renderStartBest();
@@ -2421,9 +2440,10 @@ function steerPlayer(dt) {
     const dx = ptr.x - sx, dy = ptr.y - sy, d = Math.hypot(dx, dy);
     if (d > 4) { ang = Math.atan2(dy, dx); mag = clamp(d / (minDim * .2), 0, 1); }
   }
-  if (mag > 0) { turnToward(P, ang, 7.5 * dt); mag *= .55 + .45 * Math.cos(wrapA(ang - P.angle)); }
-  const ts = Math.max(0, mag) * 3.6 * P.lShow * hiz(P.lShow);
-  P.speed += (ts - P.speed) * (1 - Math.exp(-dt * (ts > P.speed ? 4.5 : 1.4)));
+  const F = fizik();
+  if (mag > 0) { turnToward(P, ang, 7.5 * F.don * dt); mag *= .55 + .45 * Math.cos(wrapA(ang - P.angle)); }
+  const ts = Math.max(0, mag) * 3.6 * P.lShow * hiz(P.lShow) * F.hiz;
+  P.speed += (ts - P.speed) * (1 - Math.exp(-dt * (ts > P.speed ? 4.5 * F.ivme : 1.4 * F.suz)));
 }
 function autopilot(dt) {
   P.autoT -= dt;
@@ -2432,7 +2452,7 @@ function autopilot(dt) {
   P.speed += (P.lShow * 1.3 * hiz(P.lShow) - P.speed) * Math.min(1, dt);
 }
 function updateFish(dt) {
-  const live = mode === 'play' && P.alive;
+  const live = mode === 'play' && P.alive, Z = zorluk();
   const fleeOn = mode === 'play' || mode === 'attract';
   for (const f of fish) {
     if (f.dead) continue;
@@ -2446,8 +2466,8 @@ function updateFish(dt) {
     } else if (live && rel > 1.1 && f.hungry && f.cool <= 0 && P.invuln <= 0 && P.grace <= 0 && !P.gizli && dp < f.l * 2.2 + P.lShow * 3) {
       const lead = Math.min(.5, dp / (f.l * 4));
       ta = Math.atan2(dyp + Math.sin(P.angle) * P.speed * lead, dxp + Math.cos(P.angle) * P.speed * lead);
-      ts = Math.min(f.l * 2.4 * hiz(f.l), 3.6 * P.lShow * hiz(P.lShow) * .78); f.mode = 'chase'; // "big fish are too fast": slower and they give up sooner
-      f.chaseT += dt; if (f.chaseT > 3) { f.cool = rand(3.5, 6); f.chaseT = 0; }
+      ts = Math.min(f.l * 2.4 * hiz(f.l), 3.6 * P.lShow * hiz(P.lShow) * Z.kovala); f.mode = 'chase'; // "big fish are too fast": slower and they give up sooner
+      f.chaseT += dt; if (f.chaseT > Z.sure) { f.cool = rand(3.5, 6); f.chaseT = 0; }
     } else {
       f.wanderT -= dt; if (f.wanderT <= 0) { f.wander = f.angle + rand(-1.1, 1.1); f.wanderT = rand(1.5, 4); }
       ta = f.wander; f.mode = 'wander';
@@ -2465,7 +2485,7 @@ function updateFish(dt) {
 function collide() {
   if (!P.alive) return;
   const ps = P.spine, L = P.lShow, pw = KOI.w * L;
-  const hx = P.x + Math.cos(P.angle) * L * .03, hy = P.y + Math.sin(P.angle) * L * .03, hr = L * .13;
+  const hx = P.x + Math.cos(P.angle) * L * .03, hy = P.y + Math.sin(P.angle) * L * .03, hr = L * .13 * fizik().agiz;
   for (const f of fish) {
     if (f.dead) continue;
     const ddx = f.x - P.x, ddy = f.y - P.y, reach = (f.l + L) * 1.2;
@@ -2543,9 +2563,40 @@ function gecitAc() {
   engeldenCik(o, G.r * 1.7);
   yol.gecit = { tur: G.tur, hedef: G.hedef, ad: G.ad, x: o.x, y: o.y, r: G.r, a: Math.atan2(o.y - P.y, o.x - P.x) };
 }
+// Each water is a level, easy to hard (alone): of the fish that come, how many are hunters (a share of the usual),
+// how fast a hunter may chase you (a share of your top speed) and for how many seconds before it gives up.
+// The pond is gentle so a first round lasts (in the Lab a quarter of rounds ended with three fish eaten or fewer).
+const ZORLUK = {
+  golet: { avci: .6, kovala: .66, sure: 2.2 },
+  nehir: { avci: .85, kovala: .74, sure: 2.7 },
+  deniz: { avci: 1, kovala: .78, sure: 3 },
+  okyanus: { avci: 1.15, kovala: .82, sure: 3.4 }
+};
+const zorluk = () => ZORLUK[HARITA.id] || ZORLUK.deniz;
+// Each form of the koi moves its own way (alone; the skin is only a look, the form is how it swims): how fast it
+// turns, its top speed, how quickly it gets going, how long it glides on when you let go (lower is longer), how
+// wide its mouth is. It changes how each water feels, not how hard it is.
+const FIZIK = {
+  golet: { don: 1.3, hiz: 1, ivme: 1, suz: 1, agiz: 1, not: 'Pond koi: quick to turn' },
+  nehir: { don: .85, hiz: 1.1, ivme: 1.6, suz: 1, agiz: 1, not: 'River koi: fast on the straight' },
+  deniz: { don: .8, hiz: 1, ivme: 1, suz: .3, agiz: 1, not: 'Sea koi: glides on when you let go' },
+  okyanus: { don: .9, hiz: .95, ivme: .9, suz: 1, agiz: 1.35, not: 'Ocean koi: a wide mouth' },
+  ejder: { don: 1.1, hiz: 1.15, ivme: 1.3, suz: .6, agiz: 1.15, not: 'No size limit now' }
+};
+const FIZIK_YOK = { don: 1, hiz: 1, ivme: 1, suz: 1, agiz: 1 };
+function fizik() { return mode === 'oda' ? FIZIK_YOK : P.ejder ? FIZIK.ejder : FIZIK[HARITA.id] || FIZIK_YOK; }
+// "Level 2 · River" across the middle of the screen as the koi swims into a water (and "Dragon" after the gate).
+let bolumT = 0;
+function bolumGoster(id) {
+  const el = $('bolumYazi'), i = MAP_IDS.indexOf(id);
+  $('bolumAd').textContent = id === 'ejder' ? 'Dragon' : `Level ${i + 1} · ${MAPS[id].name}`;
+  $('bolumAlt').textContent = (FIZIK[id] || {}).not || '';
+  el.hidden = false; el.classList.remove('oyna'); void el.offsetWidth; el.classList.add('oyna');
+  clearTimeout(bolumT); bolumT = setTimeout(() => { el.hidden = true; }, 2450);
+}
 // A water the koi swam to opens on the menu; the end screen says so.
 function suyaUlas(id) {
-  if (mapOpen(id, seviyem())) return;
+  if (ulasilan().includes(id)) return;
   store.set('fish.sular', ulasilan().concat(id));
   yol.yeniSular.push(id);
 }
@@ -2560,6 +2611,7 @@ function suyaGec(id) {
   suyaUlas(id); bicimAc(id);
   parilti = Math.max(parilti, .5); sfxLevel(); // the koi grows into this water's form
   for (let i = 0; i < 3; i++) ripples.push({ x: P.x, y: P.y, r: P.lShow * (.2 + i * .25), max: P.lShow * (1.6 + i * .5), life: 1 - i * .15 });
+  bolumGoster(id);
   showToast({ nehir: 'You’re a River koi now! At 2 m the sea opens', deniz: 'You’re a Sea koi now! At 4 m the deep opens', okyanus: 'You’re an Ocean koi now! At 6 m the Dragon Gate opens' }[id]);
   hesapNotu(`${SU_TR_E[id]} geçti · ${fmtLenStr(P.l)}`);
 }
@@ -2573,11 +2625,8 @@ function hedefDurum() {
     case 'nehir': return acik ? { yazi: 'Swim on to the sea!', oran: 1, tamam: true } : { yazi: 'Sea at 2 m', oran: (L - 100) / 100 };
     case 'deniz': return acik ? { yazi: 'Find the deep!', oran: 1, tamam: true } : { yazi: 'Ocean at 4 m', oran: (L - 200) / 200 };
     default:
-      if (P.ejder) { // past the gate: the biggest dragon
-        const r = ejderRekor();
-        if (!r) return { yazi: 'Grow your dragon big!', oran: 1, tamam: true };
-        return L < r ? { yazi: `Biggest dragon: ${fmtLenStr(r)}`, oran: (L - EJDER_BOY) / Math.max(1, r - EJDER_BOY) } : { yazi: 'New biggest dragon!', oran: 1, tamam: true };
-      }
+      if (P.ejder) // past the gate there is no limit: the goal is your record, the biggest fish you've ever grown
+        return L <= best + .05 ? { yazi: `Your record: ${fmtLenStr(best)}`, oran: (L - EJDER_BOY) / Math.max(1, best - EJDER_BOY) } : { yazi: 'New record!', oran: 1, tamam: true };
       return acik ? { yazi: 'Find the Dragon Gate!', oran: 1, tamam: true } : { yazi: 'Dragon Gate at 6 m', oran: (L - 400) / (EJDER_BOY - 400) };
   }
 }
@@ -2626,8 +2675,9 @@ function ejderOl() {
   P.lives = 3; renderLives(); // like a new water: all lives back
   labels.push({ x: P.x, y: P.y, text: '+50 pearls', life: 1.6 });
   showToast('Your koi became a dragon! +50 pearls', false, 3.2);
+  bolumGoster('ejder');
   if (yol.gecit) yol.gecit.son = 0; // the spout falls back into the sea
-  yol.sonraki = 'Now grow the biggest dragon!'; yol.sonrakiT = 3.4;
+  yol.sonraki = 'Now grow the biggest fish you can!'; yol.sonrakiT = 3.4;
   hesapNotu(`Ejder oldu · ${fmtLenStr(P.l)} · ${eatenCount} balık`);
 }
 // A big koi that goes hungry shrinks, slowly, but never below 70% of the biggest it got this round.
@@ -3788,7 +3838,6 @@ function boot(data) {
   chainKur();
   renderSound(); renderStartBest();
   HARITA = MAPS[soloHarita]; SPECIES = HARITA.species; suBoya(); chainKur();
-  P.ejder = soloEjder; // the Dragon card is picked: a dragon swims behind the menu
   cam.x = 0; cam.y = 0; cam.scale = targetScale(10);
   P.x = 0; P.y = 0; koiIzleri(P); initSpine(P, P.l); P.speed = P.l * 1.2;
   const vw = W / cam.scale * 1.2, vh = H / cam.scale * 1.2;
@@ -3825,10 +3874,9 @@ try { if (localStorage.getItem('fish.debug') === '1') window.__fish = { P, get m
   }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally,
     // alone (Nov 2026): the journey, rocks, currents
     yol, buyume, akinti, gelgitDeger, engellerYakin, engelHucre, engeldenCik, gecitAc, suyaGec, sicramaBasla, ejderOl, hedefDurum, ulasilan, ejderRekor, EJDER_BOY,
-    hiz, TEST, testBuyut,
-    get soloEjder() { return soloEjder; },
+    hiz, TEST, testBuyut, ZORLUK, zorluk, FIZIK, fizik, bolumGoster, rekorBak,
     get akintiOlcek() { return akintiOlcek; }, get parilti() { return parilti; }, bicimStili, bicimlerim, BICIM, koiResmi, seritSolo,
-    boyYap: l => { P.l = P.lShow = l; P.zirve = Math.max(P.zirve, l); P.topIdx = SPECIES.filter(s => s.max <= l * .9).length; initSpine(P, l); cam.scale = targetScale(l); } }; } catch (e) {}
+    boyYap: l => { P.l = P.lShow = l; P.zirve = Math.max(P.zirve, l); if (P.ejder) P.ejderZirve = Math.max(P.ejderZirve, l); P.topIdx = SPECIES.filter(s => s.max <= l * .9).length; initSpine(P, l); cam.scale = targetScale(l); } }; } catch (e) {}
 const hot = window.claude && window.claude.hot;
 try { if (hot && hot.snapshot) hot.snapshot(() => ({ mode, l: P.l, lives: P.lives, tally, eaten: eatenCount })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
