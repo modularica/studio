@@ -3,7 +3,7 @@
 ## Şu an
 
 - **Tek kişilik:** `lab/fish/index.html`, `/lab/fish/` adresinde. Sonsuz gölet, 3 can, leaderboard (`scores`, oyun `fish`).
-  - Kasım 2026 (`fish-ejder` dalı): büyüme yavaşlar, hafif açlık, kayalar ve buz, akıntıda girdap ve şelale altı hızlı su, denizde gelgit. Her su bir bölüm (gölet 10 cm, nehir 1 m, deniz 2 m, okyanus 4 m'den başlar); sınırda sonraki suya geçit açılır, oraya yüzülen su menüde de açılır; boyun altında hedef çubuğu. Nehirdeki Ejder Kapısı'nı 1,5 m'de geçen koi ejder olur ve tur zaferle biter; 2 m'ye büyüyen akıntıyla denize de gidebilir. Ayrıntı `CLAUDE.md`. Odalar eski kurallarla.
+  - Kasım 2026 (`fish-ejder` dalı): büyüme yavaşlar, hafif açlık, kayalar ve buz, akıntıda girdap ve şelale altı hızlı su, denizde gelgit. Her su bir bölüm (gölet 10 cm, nehir 1 m, deniz 2 m, okyanus 4 m'den başlar); sınırda sonraki suya geçit açılır, oraya yüzülen su menüde de açılır; boyun altında hedef çubuğu. Nehirdeki Ejder Kapısı'nı 1,5 m'de geçen koi ejder olur ve tur zaferle biter; 2 m'ye büyüyen akıntıyla denize de gidebilir. Koi her suda o suyun biçimine döner (nehir, deniz, okyanus koisi; sadece görünüş) ve "My koi"de gelişim sırası var. Ayrıntı `CLAUDE.md`. Odalar eski kurallarla.
 - **Odalar (arkadaşlarla):** Başlangıç ekranında "Play with friends".
   - Odalar bir listede görünür, kod yok. Biri oda kurar, arkadaşları listeden katılır, kurucu "Start the round" der.
   - Tur 5 dakika sürer, odaya en çok 8 koi girer. Tur sürerken de katılınabilir.
