@@ -39,6 +39,6 @@
 - [x] Leaderboard ve bölümler: okyanus 4 m'den başladığı için en büyük boy tablosunu okyanus turları dolduruyordu. 12 Kasım'dan beri her tur gölette başladığı için tablo yine adil (`v: 4`).
 - [ ] Leaderboard: haftalık tablo ve ödül; formül değişti (`v: 2`, sonra tek yol `v: 3`), tüm zamanlar tablosunda eski turlar karışık. "En büyük ejder" tablosu bir seçenek (skorda `ejder` ve `ejderBoy` var). Plan proje dokümanında (Little Koi oyun tasarımı, bölüm 6), henüz yapılmadı.
 - [ ] Odalara da gelsin mi? Gelirse sunucu (`fish/sunucu/src/kurallar.js`) da değişmeli.
-- [x] Shop (12 Kasım): incilerle desenler (Butterfly, Rainbow, Galaxy, Gold Dragon ve Little Dragon yolculukta kazanılır), kalıcı geliştirmeler (Extra life, Faster growth, Slower hunger, Pearl magnet) ve bir sonraki tur için boostlar (Shield, Head start, Second chance). Sadece kazanılan inciyle. Ayrıntı `CLAUDE.md` → "Shop".
-- [ ] Shop fiyatlarını Lab'daki turlara göre ayarla: `scores` ayrıntısında `v: 5`, `gel`, `yardim`; takip notlarında "Dükkân: …". Upgrades leaderboard'u kolaylaştırıyor: gerekirse tabloyu geliştirmesiz turlarla ayır.
+- [x] Shop (12 Kasım): desenler, Upgrades ve Boosts; aynı gece kalktı (Umut: oyunun basitliğini karıştırıyordu). Desenler "My koi"de inciyle kaldı, harcanan inciler geri verildi.
+- [ ] Desen fiyatlarını Lab'daki turlara göre ayarla (`scores` ayrıntısında `v: 6`; takip notlarında "… deseni alındı").
 - [ ] Biçimlerin fiziğini ve suların zorluğunu (`FIZIK`, `ZORLUK`) Lab'daki turlara ve notlara göre ayarla: `scores` ayrıntısında `v: 4` ve `harita` (turun bittiği level).

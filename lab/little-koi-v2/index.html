@@ -267,7 +267,7 @@ body{
 .bekle-harita .hk{width:74px;padding-top:28px}
 .bekle-harita p{margin:0;font-size:15px;font-weight:700}
 
-/* the Shop: patterns and pearls */
+/* My koi: patterns and pearls */
 .inci-ikon{display:inline-block;width:.95em;height:.95em;border-radius:50%;vertical-align:-.12em;margin-right:.3em;
   background:radial-gradient(circle at 35% 30%,#fff 0 18%,#f3e9f2 40%,#c9b8d6 80%,#a693b8);box-shadow:0 0 6px rgba(255,240,255,.5)}
 .inci-say{margin:0;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -284,33 +284,6 @@ body{
 .dk.dukkan small{color:#e8d8f2}
 .dk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .koi-not{font-size:15px;min-height:1.4em;text-wrap:balance}
-/* the Shop: Koi, Upgrades, Boosts */
-.sekmeler{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:-4px}
-.sekme{font:800 14px/1 var(--font-ui);color:var(--ink-dim);background:transparent;border:1.5px solid var(--glass-line);border-radius:999px;padding:10px 16px;min-height:42px;cursor:pointer}
-.sekme[aria-selected="true"]{color:var(--ink);background:var(--glass);border-color:var(--koi);box-shadow:inset 0 0 0 1px var(--koi)}
-.sekme:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.sekme-pan{width:100%;display:grid;justify-items:center;gap:14px}
-.sekme-pan[hidden]{display:none}
-.koi-ad{font-size:clamp(32px,9.5vw,46px)}
-.dukkan-liste{list-style:none;margin:0;padding:0;width:100%;max-width:400px;display:grid;gap:8px}
-.dr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;border:1.5px solid var(--glass-line);border-radius:14px;background:var(--glass);text-align:left}
-.dr.hazir{border-color:#e9c46a}
-.dr-ikon{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:rgba(3,20,22,.4)}
-.dr-ikon svg{width:22px;height:22px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.dr-yazi{display:grid;gap:3px;min-width:0}
-.dr-yazi b{font-size:15px;font-weight:800}
-.dr-yazi small{font-size:12.5px;font-weight:600;color:var(--ink-dim);line-height:1.3}
-.adim{display:flex;gap:4px;margin-top:3px}
-.adim i{width:18px;height:5px;border-radius:3px;background:rgba(214,236,226,.2)}
-.adim i.on{background:var(--koi)}
-.al{font:800 14px/1 var(--font-ui);color:#fff;background:var(--koi);border:0;border-radius:999px;padding:10px 13px;min-height:42px;display:inline-flex;align-items:center;cursor:pointer;box-shadow:0 3px 0 var(--koi-deep);white-space:nowrap;font-variant-numeric:tabular-nums}
-.al.az{background:rgba(214,236,226,.12);color:var(--ink-dim);box-shadow:none}
-.al:active{transform:translateY(2px);box-shadow:0 1px 0 var(--koi-deep)}
-.al:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.dr-tam{font-size:13px;font-weight:800;color:#ffe7a0;padding:0 4px;white-space:nowrap}
-.dukkan-not{margin:0;font-size:13.5px;font-weight:600;color:var(--ink-dim);text-wrap:balance;max-width:360px}
-.dukkan-not.iyi{color:var(--ink);font-weight:800}
-.yardim-not{margin:-8px 0 0;font-size:13px;font-weight:800;color:#ffe7a0}
 /* the line of forms your koi has grown into */
 .bicim-baslik{margin:2px 0 -4px}
 .bicimler{width:100%;max-width:400px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
@@ -480,8 +453,7 @@ body:not(.odada) #cikBtn{display:none}
     <ol class="haritalar yolculuk" id="haritalar" aria-label="Your journey"></ol>
     <p class="harita-not" id="haritaNot"></p>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
-    <p class="yardim-not" id="yardimNot" hidden></p>
-    <button class="btn ghost koi-btn" id="koiBtn" type="button"><span>Shop</span><span class="inci-say"><i class="inci-ikon" aria-hidden="true"></i><b id="inciBtn">0</b></span></button>
+    <button class="btn ghost koi-btn" id="koiBtn" type="button"><span>My koi</span><span class="inci-say"><i class="inci-ikon" aria-hidden="true"></i><b id="inciBtn">0</b></span></button>
     <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
     <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
     <p class="best" id="startBest" hidden></p>
@@ -522,32 +494,15 @@ body:not(.odada) #cikBtn{display:none}
 
 <section class="overlay" id="koiOv" hidden>
   <div class="panel">
-    <p class="eyebrow">Shop</p>
+    <p class="eyebrow">My koi</p>
+    <h2 class="over-title" id="koiAd">Kohaku</h2>
     <p class="inci-say buyuk"><i class="inci-ikon" aria-hidden="true"></i><b id="inciSay">0</b> pearls</p>
-    <div class="sekmeler" role="tablist" aria-label="Shop">
-      <button class="sekme" type="button" role="tab" id="sekKoi" aria-controls="panKoi" aria-selected="true">Koi</button>
-      <button class="sekme" type="button" role="tab" id="sekGel" aria-controls="panGel" aria-selected="false" tabindex="-1">Upgrades</button>
-      <button class="sekme" type="button" role="tab" id="sekYar" aria-controls="panYar" aria-selected="false" tabindex="-1">Boosts</button>
-    </div>
-    <div class="sekme-pan" id="panKoi" role="tabpanel" aria-labelledby="sekKoi">
-      <h2 class="over-title koi-ad" id="koiAd">Kohaku</h2>
-      <p class="eyebrow bicim-baslik">Your koi’s journey</p>
-      <div class="bicimler" id="bicimler" role="group" aria-label="How your koi looks on its journey, from the Pond to the dragon"></div>
-      <p class="bicim-not" id="bicimNot"></p>
-      <div class="desenler" id="desenler" role="listbox" aria-label="Koi patterns"></div>
-      <p class="stat koi-not" id="koiNot"></p>
-      <button class="btn" id="koiAl" type="button" hidden></button>
-    </div>
-    <div class="sekme-pan" id="panGel" role="tabpanel" aria-labelledby="sekGel" hidden>
-      <p class="dukkan-not">Upgrades stay with your koi, every time you swim alone.</p>
-      <ul class="dukkan-liste" id="gelListe"></ul>
-      <p class="dukkan-not" id="gelNot" role="status"></p>
-    </div>
-    <div class="sekme-pan" id="panYar" role="tabpanel" aria-labelledby="sekYar" hidden>
-      <p class="dukkan-not">A boost is for your next swim alone: buy it, then start swimming.</p>
-      <ul class="dukkan-liste" id="yarListe"></ul>
-      <p class="dukkan-not" id="yarNot" role="status"></p>
-    </div>
+    <p class="eyebrow bicim-baslik">Your koi’s journey</p>
+    <div class="bicimler" id="bicimler" role="group" aria-label="How your koi looks on its journey, from the Pond to the dragon"></div>
+    <p class="bicim-not" id="bicimNot"></p>
+    <div class="desenler" id="desenler" role="listbox" aria-label="Koi patterns"></div>
+    <p class="stat koi-not" id="koiNot"></p>
+    <button class="btn" id="koiAl" type="button" hidden></button>
     <button class="btn ghost" id="koiGeri" type="button">Back</button>
   </div>
 </section>
@@ -865,7 +820,7 @@ function engelKac(f, ta, rad) {
 /* ---------- levels: every fish eaten is experience, bigger fish more (1 to 7 by size step) ---------- */
 const TIER_OF = {};
 for (const id of MAP_IDS) MAPS[id].species.forEach((sp, i) => { TIER_OF[sp.name] = i; });
-const XP_FOR = L => Math.round(25 * Math.pow(L - 1, 1.7)); // experience for level L; since the Shop (12 Nov 2026) XP is not shown: it only says which waters a room's host may pick, and which patterns moved into the Shop
+const XP_FOR = L => Math.round(25 * Math.pow(L - 1, 1.7)); // experience for level L; since 12 Nov 2026 XP is not shown (patterns cost pearls): it only says which waters a room's host may pick, and which patterns moved into the Shop
 function xpOf(tally) { let x = 0; for (const k in tally) x += (+tally[k] || 0) * ((TIER_OF[k] != null ? TIER_OF[k] : 0) + 1); return x; }
 function levelOf(xp) { let L = 1; while (xp >= XP_FOR(L + 1)) L++; return L; }
 const mapOpen = (id, L) => L >= MAPS[id].level || ulasilan().includes(id);
@@ -930,7 +885,7 @@ let ejderSt = null;
 function ejderStili() { return ejderSt || (ejderSt = Object.assign({}, koiStili('dragon'), { name: 'dragon', ejder: true, w: .095, barbels: .42 })); }
 // Your koi grows into each water it swims in (alone): a pond koi, a river koi (long strong fins, whiskers), a sea koi
 // (pearl scales, flowing fins), an ocean koi (spots that glow in the dark), and at the end of the journey the dragon.
-// Its look and its moves (FIZIK) come with the water; the pattern stays on. Every form it has taken joins the line in the Shop (koi2.bicimler).
+// Its look and its moves (FIZIK) come with the water; the pattern stays on. Every form it has taken joins the line on the My koi screen (koi2.bicimler).
 const BICIMLER = ['golet', 'nehir', 'deniz', 'okyanus', 'ejder'];
 const birAd = ad => (/^[aeiou]/i.test(ad) ? 'an ' : 'a ') + ad; // "a River koi", "an Ocean koi"
 const BICIM = {
@@ -1318,7 +1273,6 @@ function kilikDegistir(k) {
   else { sfxGulp(.3); showToast('Back to koi 🐟'); }
   if (oda.ws && oda.ws.readyState === 1) oda.ws.send(JSON.stringify({ t: 'desen', d: kilik || odaDeseni() }));
 }
-const sfxKalkan = () => { titret('yut', .3); tone('sine', 1200, 300, .14, .12); tone('triangle', 700, 1400, .1, .05, .05); }; // the Shield pops
 const sfxInci = () => { titret('inci'); tone('sine', 1318, 1318, .09, .1); tone('sine', 1760, 1760, .16, .09, .07); tone('triangle', 2637, 2637, .12, .04, .14); };
 const sfxCarp = () => { titret('yut', .2); tone('triangle', 130, 70, .1, .09); }; // a bump against a rock
 const sfxDere = () => { tone('sine', 220, 660, .55, .12); tone('triangle', 330, 990, .45, .05, .08); }; // into the stream
@@ -1345,8 +1299,7 @@ function lockOff() { try { if (wakeLock) wakeLock.release(); } catch (e) {} wake
 /* ---------- HUD ---------- */
 const LIFE_SVG = cls => `<svg class="life ${cls}" viewBox="0 0 28 14" aria-hidden="true"><path d="M1.5 7C5 2.2 12.5 1.8 18.5 5.6L25.5 1.5 23.6 7l1.9 5.5-7-4.1C12.5 12.2 5 11.8 1.5 7z"/></svg>`;
 function renderLives() {
-  const n = mode === 'oda' ? 3 : Math.max(3, canSayisi(), P.lives); // Extra life: more fish up there
-  livesEl.innerHTML = Array.from({ length: n }, (_, i) => LIFE_SVG(i < P.lives ? '' : 'lost')).join('');
+  livesEl.innerHTML = [0, 1, 2].map(i => LIFE_SVG(i < P.lives ? '' : 'lost')).join('');
   livesEl.setAttribute('aria-label', `${P.lives} ${P.lives === 1 ? 'life' : 'lives'} left`);
 }
 let segEls = [];
@@ -1429,7 +1382,7 @@ const xpToplam = () => xpOf(toplamOku());
 const alinanlar = () => { const a = store.get('koi2.desenler', []); return Array.isArray(a) ? a.filter(id => DESEN[id]) : []; };
 const inciSay = () => Math.max(0, Math.floor(+store.get('koi2.inci', 0) || 0));
 function inciEkle(n) { if (n > 0) store.set('koi2.inci', inciSay() + Math.round(n)); }
-// Yours: Kohaku (every koi starts as one), bought, or earned on the journey. Until the move to the Shop
+// Yours: Kohaku (every koi starts as one), bought, or earned on the journey. Until the move from XP to pearl prices
 // (dukkanaGec) the patterns XP had opened still count, so nobody's koi changes before it.
 function sahipMi(id) {
   const d = DESEN[id];
@@ -1438,35 +1391,23 @@ function sahipMi(id) {
   if (alinanlar().includes(id) || (d.kazan && bicimlerim().includes(d.kazan))) return true;
   return !dukkanOku() && !!d.level && seviyem() >= d.level;
 }
-/* ---------- the Shop: pearls buy koi patterns, upgrades and boosts (alone only; no real money) ---------- */
-// Upgrades stay, bought step by step. ne(n): what step n gives. tr: the name in the family notes.
-const GELISIM = [
-  { id: 'can', ad: 'Extra life', tr: 'Fazladan can', fiyat: [250, 600], ne: n => `Start every water with ${3 + n} lives` },
-  { id: 'buyume', ad: 'Faster growth', tr: 'Hızlı büyüme', fiyat: [80, 200, 400], ne: n => `Grow ${n * 10}% more from every fish` },
-  { id: 'aclik', ad: 'Slower hunger', tr: 'Yavaş acıkma', fiyat: [50, 120, 250], ne: n => `Get hungry only after ${ACLIK.bekle + 3 * n} s without food` },
-  { id: 'miknatis', ad: 'Pearl magnet', tr: 'İnci mıknatısı', fiyat: [60, 150, 300], ne: n => ['', 'Pearls close by fly to you', 'Pearls farther away fly to you', 'Pearls fly to you from across the screen'][n] }
-];
-const GEL = Object.fromEntries(GELISIM.map(g => [g.id, g]));
-const MIKNATIS = [0, 2.5, 4.5, 7]; // how far a pearl flies to you from, in body lengths
-// Boosts are for the next swim alone, one of each; sart: a water you must have reached first.
-const YARDIMLAR = [
-  { id: 'kalkan', ad: 'Shield', tr: 'Kalkan', fiyat: 15, ne: 'The first bite does nothing' },
-  { id: 'bas', ad: 'Head start', tr: 'Hızlı başlangıç', fiyat: 30, ne: 'Start in the River, at 1 m', sart: 'nehir' },
-  { id: 'sans', ad: 'Second chance', tr: 'İkinci şans', fiyat: 45, ne: 'Eaten? All your lives come back, once' }
-];
-const YAR = Object.fromEntries(YARDIMLAR.map(y => [y.id, y]));
-// koi2.dukkan (kept with the account): { v: 1, gel: { can: 1, … }, yar: ['kalkan', …] }
+/* ---------- My koi: pearls buy koi patterns (no real money) ---------- */
+// koi2.dukkan (kept with the account): { v: 2 }. It marks the move from XP (dukkanaGec). From 12 to 13 November 2026
+// there was a Shop with upgrades and boosts (gel, yar); they are gone and their pearls come back once (dukkanIade).
 function dukkanOku() { const d = store.get('koi2.dukkan', null); return d && typeof d === 'object' && !Array.isArray(d) ? d : null; }
-function dukkanYaz(f) {
-  const d = Object.assign({ v: 1 }, dukkanOku());
-  d.gel = Object.assign({}, d.gel); d.yar = Array.isArray(d.yar) ? d.yar.slice() : [];
-  f(d); store.set('koi2.dukkan', d);
+const ESKI_FIYAT = { can: [250, 600], buyume: [80, 200, 400], aclik: [50, 120, 250], miknatis: [60, 150, 300], kalkan: 15, bas: 30, sans: 45 };
+function dukkanIade() {
+  const d = dukkanOku();
+  if (!d || (!d.gel && !d.yar)) return 0;
+  let n = 0;
+  for (const [id, adim] of Object.entries(d.gel || {})) { const f = ESKI_FIYAT[id]; if (Array.isArray(f)) n += f.slice(0, clamp(Math.floor(+adim || 0), 0, f.length)).reduce((a, b) => a + b, 0); }
+  for (const id of Array.isArray(d.yar) ? d.yar : []) if (typeof ESKI_FIYAT[id] === 'number') n += ESKI_FIYAT[id];
+  inciEkle(n);
+  store.set('koi2.dukkan', { v: 2 });
+  if (n) hesapNotu(`Dükkân kalktı: ${n} inci geri verildi`);
+  return n;
 }
-const gelAdim = id => { const G = GEL[id], d = dukkanOku(); return G && d && d.gel ? clamp(Math.floor(+d.gel[id] || 0), 0, G.fiyat.length) : 0; };
-const gelisim = id => mode === 'oda' ? 0 : gelAdim(id); // rooms keep the old rules
-const yardimlar = () => { const d = dukkanOku(); return d && Array.isArray(d.yar) ? d.yar.filter(id => YAR[id]) : []; };
-const yardimAcik = Y => !Y.sart || ulasilan().includes(Y.sart);
-const canSayisi = () => 3 + gelisim('can');
+const canSayisi = () => 3;
 // Once per player (12 November 2026): the patterns XP had opened become theirs for good, then XP is gone.
 // With accounts it waits until the account's save is on this device (Hesap.hazir), so the move is uploaded, not overwritten.
 function dukkanaGec() {
@@ -1474,7 +1415,7 @@ function dukkanaGec() {
   const L = seviyem(), a = alinanlar();
   const ek = DESENLER.filter(d => d.level > 1 && d.level <= L && !a.includes(d.id)).map(d => d.id);
   if (ek.length) store.set('koi2.desenler', a.concat(ek));
-  store.set('koi2.dukkan', { v: 1, gel: {}, yar: [] });
+  store.set('koi2.dukkan', { v: 2 });
   return true;
 }
 // The cheapest pattern still to buy: the "next koi" on the menu and the end screen.
@@ -1504,7 +1445,7 @@ function haritaKartlari(box, secili, L, sec) {
 function seviyeCiz() {
   const next = sonrakiKoi(), inci = inciSay();
   $('svLv').textContent = next ? `Next koi: ${next.name}` : 'Every koi is yours';
-  $('svXp').textContent = !next ? '' : inci >= next.price ? 'Ready in the Shop!' : `${inci} / ${next.price} pearls`;
+  $('svXp').textContent = !next ? '' : inci >= next.price ? 'Ready in My koi!' : `${inci} / ${next.price} pearls`;
   $('svBar').style.width = (next ? Math.min(1, inci / next.price) * 100 : 100).toFixed(1) + '%';
   yolCiz();
 }
@@ -1544,11 +1485,11 @@ function inciSonCiz(box, inci, once) {
   if (next) {
     const bar = mk('div', 'sv-bar'), i = mk('i'); i.style.width = (Math.min(1, toplam / next.price) * 100).toFixed(1) + '%'; bar.append(i);
     const simdi = toplam >= next.price && once < next.price; // this round made it
-    box.append(bar, mk('p', simdi ? 'yeni' : 'sv-xp', `Next koi: ${next.name}` + (toplam >= next.price ? ' · ready in the Shop' : ` · ${next.price - toplam} more pearls`)));
+    box.append(bar, mk('p', simdi ? 'yeni' : 'sv-xp', `Next koi: ${next.name}` + (toplam >= next.price ? ' · ready in My koi' : ` · ${next.price - toplam} more pearls`)));
   }
   box.hidden = false;
 }
-/* the Shop: koi patterns (pick one to wear, buy one with pearls), upgrades and boosts */
+/* My koi: pick a pattern to wear, buy one with pearls */
 const resimler = {};
 // A picture of a koi in pattern id, drawn with the game's own fish code on a small canvas.
 function koiResmi(id, su, kilitli) {
@@ -1572,7 +1513,7 @@ function koiResmi(id, su, kilitli) {
 }
 const resimKopya = img => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); return c; };
 let bicimSecim = null; // the form tapped in the line (none: say what the line is)
-// The line of forms in the Shop (Koi tab), drawn in the pattern the koi wears; forms not met yet are shadows.
+// The line of forms on the My koi screen, drawn in the pattern the koi wears; forms not met yet are shadows.
 function bicimCiz() {
   const acik = bicimlerim();
   $('bicimler').replaceChildren(...BICIMLER.map(id => {
@@ -1590,38 +1531,16 @@ function bicimCiz() {
     : acik.includes(bicimSecim) ? `${B.ad}: ${B.not}` + (bicimSecim === 'golet' ? '' : ` It turns into one in the ${su.name}.`)
     : `${B.yol} and your koi grows into ${birAd(B.ad)}.`;
 }
-let koiSecim = null; // the tile looked at in the Shop
-let dukkanSekme = 'koi'; // the Shop's tab: koi, gel (upgrades), yar (boosts)
-const SEKMELER = { koi: ['sekKoi', 'panKoi'], gel: ['sekGel', 'panGel'], yar: ['sekYar', 'panYar'] };
-function koiAc(sekme) {
+let koiSecim = null; // the tile looked at in My koi
+function koiAc() {
   hepsiniGizle(); $('koiOv').hidden = false; document.body.classList.add('lb-acik');
   koiSecim = seciliDesen; bicimSecim = null;
-  $('gelNot').textContent = ''; $('yarNot').textContent = '';
-  sekmeAc(sekme || dukkanSekme);
+  koiCiz();
   $('koiGeri').focus({ preventScroll: true });
-}
-function sekmeAc(id) {
-  dukkanSekme = SEKMELER[id] ? id : 'koi';
-  for (const k in SEKMELER) {
-    const [tab, pan] = SEKMELER[k], on = k === dukkanSekme;
-    $(tab).setAttribute('aria-selected', String(on)); $(tab).tabIndex = on ? 0 : -1; $(pan).hidden = !on;
-  }
-  dukkanCiz();
-}
-for (const k in SEKMELER) {
-  $(SEKMELER[k][0]).addEventListener('click', () => { sfxGulp(.2); sekmeAc(k); });
-  $(SEKMELER[k][0]).addEventListener('keydown', e => { // arrow keys move along the tabs
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const ids = Object.keys(SEKMELER), i = (ids.indexOf(k) + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length;
-    sekmeAc(ids[i]); $(SEKMELER[ids[i]][0]).focus(); e.preventDefault();
-  });
-}
-function dukkanCiz() {
-  $('inciSay').textContent = inciSay();
-  if (dukkanSekme === 'gel') gelCiz(); else if (dukkanSekme === 'yar') yarCiz(); else koiCiz();
 }
 function koiCiz() {
   const inci = inciSay();
+  $('inciSay').textContent = inci;
   bicimCiz();
   const d = DESEN[koiSecim] || DESEN.kohaku, sahip = sahipMi(d.id);
   $('koiAd').textContent = d.name;
@@ -1661,80 +1580,10 @@ $('koiAl').addEventListener('click', () => {
   store.set('koi2.desenler', alinanlar().concat(d.id));
   seciliDesen = d.id; store.set('koi2.desen', d.id);
   sfxLevel();
-  hesapNotu(`Dükkân: ${d.name} deseni · ${inciSay()} inci kaldı`);
-  dukkanCiz();
-  $('koiNot').textContent = `Your koi is ${birAd(d.name)} now!`; // said here, not in a toast over the Shop
+  hesapNotu(`${d.name} deseni alındı · ${inciSay()} inci kaldı`);
+  koiCiz();
+  $('koiNot').textContent = `Your koi is ${birAd(d.name)} now!`; // said here, not in a toast over the screen
 });
-// Little line drawings for the Upgrades and Boosts rows.
-const DUKKAN_IKON = {
-  can: '<path d="M2.5 12c3.2-4.4 8.6-4.8 12.8-1.6L20.5 7l-1.6 5 1.6 5-5.2-3.4C11.1 16.8 5.7 16.4 2.5 12z"/><path d="M19 2.5v4M17 4.5h4"/>',
-  buyume: '<path d="M12 20V5M6 11l6-6 6 6"/><path d="M5 20h14"/>',
-  aclik: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.8 1.8M9.5 2.5h5"/>',
-  miknatis: '<path d="M6 3.5v8.5a6 6 0 0 0 12 0V3.5"/><path d="M6 8h3.2M14.8 8H18"/>',
-  kalkan: '<circle cx="12" cy="12" r="8.5"/><path d="M7.8 9.6a5 5 0 0 1 3.4-3.1"/>',
-  bas: '<path d="M3.5 6l7.5 6-7.5 6zM12.5 6l7.5 6-7.5 6z"/>',
-  sans: '<path d="M19.5 12.5a7.5 7.5 0 1 1-2.2-5.6"/><path d="M19.5 3.5v4.5H15"/>'
-};
-function dukkanSatiri(ikon, ad, ne, sag, ek) {
-  const li = mk('li', 'dr'), ik = mk('span', 'dr-ikon'), yazi = mk('span', 'dr-yazi');
-  ik.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${DUKKAN_IKON[ikon]}</svg>`;
-  yazi.append(mk('b', null, ad), mk('small', null, ne));
-  if (ek) yazi.append(ek);
-  li.append(ik, yazi, sag);
-  return li;
-}
-function alDugmesi(fiyat, etiket, f) {
-  const b = mk('button', 'al' + (inciSay() < fiyat ? ' az' : ''));
-  b.type = 'button'; b.append(mk('i', 'inci-ikon'), String(fiyat)); b.setAttribute('aria-label', etiket);
-  b.addEventListener('click', f);
-  return b;
-}
-function gelCiz() {
-  $('gelListe').replaceChildren(...GELISIM.map(G => {
-    const n = gelAdim(G.id), max = G.fiyat.length, adim = mk('span', 'adim');
-    adim.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < max; i++) adim.append(mk('i', i < n ? 'on' : null));
-    const sag = n >= max ? mk('span', 'dr-tam', 'Max')
-      : alDugmesi(G.fiyat[n], `${G.ad}, step ${n + 1} of ${max}: ${G.ne(n + 1)}. ${G.fiyat[n]} pearls`, () => gelAl(G.id));
-    return dukkanSatiri(G.id, G.ad, G.ne(Math.min(max, n + 1)), sag, adim);
-  }));
-}
-function gelAl(id) {
-  const G = GEL[id], n = gelAdim(id), not = $('gelNot');
-  if (!G || n >= G.fiyat.length) return;
-  const fiyat = G.fiyat[n];
-  not.classList.remove('iyi');
-  if (inciSay() < fiyat) { not.textContent = `${fiyat - inciSay()} more pearls needed for ${G.ad}.`; sfxGulp(.15); return; }
-  store.set('koi2.inci', inciSay() - fiyat);
-  dukkanYaz(d => { d.gel[id] = n + 1; });
-  sfxLevel();
-  not.textContent = `${G.ad}! ${G.ne(n + 1)}.`; not.classList.add('iyi');
-  hesapNotu(`Dükkân: ${G.tr} ${n + 1} · ${inciSay()} inci kaldı`);
-  dukkanCiz();
-}
-function yarCiz() {
-  const on = yardimlar();
-  $('yarListe').replaceChildren(...YARDIMLAR.map(Y => {
-    const hazir = on.includes(Y.id), acik = yardimAcik(Y);
-    const sag = hazir ? mk('span', 'dr-tam', 'Ready ✓') : !acik ? mk('span', 'dr-tam', `Level ${MAP_IDS.indexOf(Y.sart) + 1}`)
-      : alDugmesi(Y.fiyat, `${Y.ad}: ${Y.ne}. ${Y.fiyat} pearls`, () => yarAl(Y.id));
-    const li = dukkanSatiri(Y.id, Y.ad, acik ? Y.ne : `${KAZAN_YOL[Y.sart]} first, then: ${Y.ne.toLowerCase()}`, sag);
-    if (hazir) li.classList.add('hazir');
-    return li;
-  }));
-}
-function yarAl(id) {
-  const Y = YAR[id], not = $('yarNot');
-  if (!Y || yardimlar().includes(id) || !yardimAcik(Y)) return;
-  not.classList.remove('iyi');
-  if (inciSay() < Y.fiyat) { not.textContent = `${Y.fiyat - inciSay()} more pearls needed for ${Y.ad}.`; sfxGulp(.15); return; }
-  store.set('koi2.inci', inciSay() - Y.fiyat);
-  dukkanYaz(d => { d.yar.push(id); });
-  sfxLevel();
-  not.textContent = `${Y.ad} is ready for your next swim.`; not.classList.add('iyi');
-  hesapNotu(`Dükkân: ${Y.tr} · ${inciSay()} inci kaldı`);
-  dukkanCiz();
-}
 $('koiBtn').addEventListener('click', () => { ensureAudio(); koiAc(); });
 $('koiGeri').addEventListener('click', () => { hepsiniGizle(); renderStartBest(); startOv.hidden = false; $('koiBtn').focus({ preventScroll: true }); });
 
@@ -1742,9 +1591,6 @@ function renderStartBest() {
   seviyeCiz();
   if (!sahipMi(seciliDesen)) seciliDesen = 'kohaku';
   $('inciBtn').textContent = inciSay();
-  const yar = yardimlar(); // boosts waiting for the next swim
-  $('yardimNot').hidden = !yar.length;
-  $('yardimNot').textContent = yar.length ? 'Next swim: ' + yar.map(id => YAR[id].ad).join(' · ') : '';
   const el = $('startBest');
   const n = toplamSayi();
   if (best > 0) {
@@ -1755,7 +1601,7 @@ function renderStartBest() {
 
 /* ---------- game flow ---------- */
 function resetPlayer() {
-  P.l = P.lShow = 10; P.lives = canSayisi(); P.alive = true; P.invuln = 0; P.gulp = 0; P.kalkan = false; P.sans = false;
+  P.l = P.lShow = 10; P.lives = canSayisi(); P.alive = true; P.invuln = 0; P.gulp = 0;
   P.zirve = 10; P.tok = 0; P.ac = false; P.ejder = false; P.ejderZirve = 0;
   P.x = cam.x; P.y = cam.y; P.speed = P.l * 1.2;
   koiIzleri(P); initSpine(P, P.l);
@@ -1766,20 +1612,14 @@ function yolSifirla() {
   Object.assign(yol, YOL_BOS, { yeniSular: [], yeniBicim: [] });
   parilti = 0;
 }
-let turYardim = []; // the boosts this round was started with
 function startGame(fromAttract) {
   ensureAudio();
   denemeBitir(); // a test round before this one is forgotten
   yolSifirla();
-  // The boosts bought in the Shop are for this swim: they are used up now (Second chance if it's needed).
-  turYardim = yardimlar().filter(id => yardimAcik(YAR[id]));
-  if (yardimlar().length) dukkanYaz(d => { d.yar = []; });
-  const basla = turYardim.includes('bas') ? 'nehir' : soloHarita; // every round starts again in the pond, but for a head start
-  if (HARITA.id !== basla) haritaKur(basla);
+  if (HARITA.id !== soloHarita) haritaKur(soloHarita); // every round starts again in the pond
   turBas = HARITA.bas || 10;
   if (!fromAttract) resetPlayer();
   else { P.lives = canSayisi(); P.alive = true; P.invuln = 0; }
-  P.kalkan = turYardim.includes('kalkan'); P.sans = turYardim.includes('sans');
   P.l = P.lShow = P.zirve = turBas; P.speed = P.l * 1.2;
   P.topIdx = SPECIES.filter(s => s.max <= P.l * .9).length;
   P.tok = 0; P.ac = false; P.ejder = false; P.ejderZirve = 0;
@@ -1799,8 +1639,7 @@ function startGame(fromAttract) {
   renderLives(); shownLen = ''; shownHedef = '-'; chainKey = ''; updateHud();
   bolumGoster(HARITA.id); // "Level 1 · Pond"; the very first round on this device tells the whole story once
   if (!store.get('koi2.hikaye', false)) { store.set('koi2.hikaye', true); showToast('Every koi dreams of becoming a dragon. Grow, and swim on to the Ocean!', false, 5); }
-  else if (turYardim.length) showToast('Boosts on: ' + turYardim.map(id => YAR[id].ad).join(' · '), false, 3);
-  hesapNotu(`Yeni tur · ${SU_TR[HARITA.id]} · ${fmtLenStr(P.l)}` + (turYardim.length ? ' · ' + turYardim.map(id => YAR[id].tr).join(', ') : ''));
+  hesapNotu(`Yeni tur · ${SU_TR[HARITA.id]} · ${fmtLenStr(P.l)}`);
   lockOn();
 }
 function pause() {
@@ -1818,7 +1657,7 @@ function resume() {
 function eat(f) { // (alone only: in rooms the server decides who eats)
   f.dead = true;
   const once = P.l;
-  P.l = once + (buyume(once, f.l) - once) * (1 + .1 * gelisim('buyume')); // Faster growth: +10% a step
+  P.l = buyume(once, f.l);
   if (HARITA.tavan && !P.ejder && P.l > HARITA.tavan) P.l = HARITA.tavan; // each water has a biggest koi it can hold (a dragon has no limit)
   P.zirve = Math.max(P.zirve, P.l); P.tok = 0; P.ac = false;
   if (P.ejder) P.ejderZirve = Math.max(P.ejderZirve, P.l);
@@ -1840,25 +1679,12 @@ function rekorBak() {
   yol.rekorDedi = true; showToast(`New record! You passed ${fmtLenStr(best)}`); sfxLevel();
 }
 function bitten(f) {
-  const kalkan = P.kalkan;
-  if (kalkan) P.kalkan = false; // the Shield pops instead
-  else { P.lives--; renderLives(); }
-  P.invuln = 2.2; flash = kalkan ? 0 : 1; f.cool = rand(5, 8); f.chaseT = 0;
+  P.lives--; renderLives();
+  P.invuln = 2.2; flash = 1; f.cool = rand(5, 8); f.chaseT = 0;
   const dx = P.x - f.x, dy = P.y - f.y, d = Math.hypot(dx, dy) || 1;
   P.x += dx / d * P.lShow * .4; P.y += dy / d * P.lShow * .4;
   ripples.push({ x: P.x, y: P.y, r: P.lShow * .2, max: P.lShow * 1.4, life: 1 });
-  if (kalkan) {
-    for (let i = 0; i < 8; i++) bubbles.push({ x: P.x + rand(-1, 1) * P.lShow * .3, y: P.y + rand(-1, 1) * P.lShow * .3, vx: rand(-1, 1) * P.lShow * .7, vy: rand(-1, 1) * P.lShow * .7, r: rand(2, 4), life: rand(.5, .9) });
-    sfxKalkan(); showToast(`Your shield took the bite from ${birAd(f.sp.name)}!`);
-    return;
-  }
   sfxBite();
-  if (P.lives <= 0 && P.sans) { // Second chance: the koi slips away, every life back
-    P.sans = false; P.lives = canSayisi(); renderLives(); P.invuln = 3;
-    labels.push({ x: P.x, y: P.y, text: 'Second chance!', life: 1.6 });
-    showToast('Second chance! All your lives are back'); sfxLevel();
-    return;
-  }
   if (P.lives <= 0) { gameOver(f); return; }
   showToast(`A ${f.sp.name} bit you · ${P.lives} ${P.lives === 1 ? 'life' : 'lives'} left`, true);
 }
@@ -1888,7 +1714,7 @@ function turBitir(gecikme, ayrinti) {
   ejderRekorYaz(); // the biggest dragon is still kept (koi2.ejder), for a dragon table later
   sayilmayaniEkle();
   // pearls for the round: one for every fish, one for every 10 cm it grew, one for swimming
-  // (the 50 for becoming a dragon came at the leap; before the Shop it was one for every two fish)
+  // (the 50 for becoming a dragon came at the leap; in Fish it is one for every two fish)
   turInci = eatenCount + Math.floor(Math.max(0, boy - turBas) / 10) + 1;
   inciEkle(turInci);
   renderStartBest();
@@ -1896,9 +1722,9 @@ function turBitir(gecikme, ayrinti) {
   // v: 2 marked rounds played with slower growth and size limits (from 11 November 2026); v: 3 the one journey
   // with the Dragon Gate at the end of the Ocean (12 November 2026); v: 4 every round from the pond, the waters
   // as levels with their own difficulty, each koi form with its own physics (12 November, noon); v: 5 the Shop
-  // (upgrades in gel, the boosts the round started with in yardim). ejder: the round ended as a dragon.
+  // (upgrades in gel, boosts in yardim; 12 November only); v: 6 no Shop (13 November on). ejder: the round ended as a dragon.
   lbSonuc = window.Hesap
-    ? (turDeneme ? Promise.resolve() : Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, bas: turBas, v: 5 }, gelOzet(), turYardim.length ? { yardim: turYardim.slice() } : null, P.ejder ? { ejder: true, ejderBoy: Math.round(P.ejderZirve * 10) / 10 } : null, ayrinti)))
+    ? (turDeneme ? Promise.resolve() : Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, bas: turBas, v: 6 }, P.ejder ? { ejder: true, ejderBoy: Math.round(P.ejderZirve * 10) / 10 } : null, ayrinti)))
         .catch(() => {})
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
@@ -1907,8 +1733,6 @@ function turBitir(gecikme, ayrinti) {
   setTimeout(() => showOver(isBest), gecikme);
 }
 const tumTurler = () => MAP_IDS.flatMap(id => MAPS[id].species);
-// The upgrades a round was played with, for its score (none: nothing).
-function gelOzet() { const g = {}; for (const G of GELISIM) { const n = gelAdim(G.id); if (n) g[G.id] = n; } return Object.keys(g).length ? { gel: g } : null; }
 const listeYaz = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 function showOver(isBest) {
   if (mode !== 'over') return;
@@ -1936,11 +1760,11 @@ function showOver(isBest) {
     return;
   }
   inciSonCiz($('overXp'), turInci + inciTur, inciBasla);
-  // News from the journey, short: the furthest new level, the koi it earned for the Shop, the first dragon
+  // News from the journey, short: the furthest new level, the koi patterns it earned, the first dragon
   const yeniSu = yol.yeniSular.slice().sort((x, y) => MAP_IDS.indexOf(y) - MAP_IDS.indexOf(x))[0];
   if (yeniSu) $('overXp').append(mk('p', 'yeni', `You reached Level ${MAP_IDS.indexOf(yeniSu) + 1}: the ${MAPS[yeniSu].name}!`));
   const kazanilan = DESENLER.filter(d => d.kazan && yol.yeniBicim.includes(d.kazan)).map(d => d.name);
-  if (kazanilan.length) $('overXp').append(mk('p', 'yeni', `New koi: ${listeYaz(kazanilan)} (in the Shop)`));
+  if (kazanilan.length) $('overXp').append(mk('p', 'yeni', `New koi: ${listeYaz(kazanilan)} (in My koi)`));
   if (yol.yeniBicim.includes('ejder')) $('overXp').append(mk('p', 'yeni', 'Your koi became a dragon for the first time!'));
   overOv.hidden = false; document.body.classList.add('lb-acik');
   $('againBtn').focus({ preventScroll: true });
@@ -2901,7 +2725,7 @@ function ejderOl() {
 // A big koi that goes hungry shrinks, slowly, but never below 70% of the biggest it got this round.
 function aclik(dt) {
   P.tok += dt;
-  const ac = P.l > ACLIK.esik && P.tok > ACLIK.bekle + 3 * gelisim('aclik') && yol.gecis <= 0 && !yol.sicrama; // Slower hunger: +3 s a step
+  const ac = P.l > ACLIK.esik && P.tok > ACLIK.bekle && yol.gecis <= 0 && !yol.sicrama;
   P.kuculuyor = false;
   if (ac) {
     const alt = Math.max(10, P.zirve * ACLIK.alt);
@@ -3001,11 +2825,9 @@ function inciGuncelle(dt) {
       if (Math.hypot(x - P.x, y - P.y) > P.lShow * 2 && !karada(x, y, P.lShow * .4) && !engelde(x, y, P.lShow * .3)) { inciler.push({ x, y, t: 0, r: P.lShow * .15 }); break; }
     }
   }
-  const mik = mode === 'play' ? MIKNATIS[gelisim('miknatis')] * P.lShow : 0; // Pearl magnet: pearls this near fly to you
   for (let i = inciler.length - 1; i >= 0; i--) {
     const p = inciler[i]; p.t += dt;
     if (p.t > 26 || Math.abs(p.x - cam.x) > hw * 3 || Math.abs(p.y - cam.y) > hh * 3) { inciler.splice(i, 1); continue; }
-    if (mik && Math.hypot(p.x - P.x, p.y - P.y) < mik) { const k = Math.min(1, dt * 5); p.x += (P.x - p.x) * k; p.y += (P.y - p.y) * k; }
     if (Math.hypot(p.x - P.x, p.y - P.y) < P.lShow * .45 + p.r) {
       inciler.splice(i, 1);
       inciEkle(3); inciTur += 3;
@@ -3014,19 +2836,6 @@ function inciGuncelle(dt) {
       sfxInci();
     }
   }
-}
-// The Shield: a soap-bubble round the koi until a bite pops it.
-function drawKalkan() {
-  const sc = cam.scale, m = (P.spine && P.spine[3]) || P, px = (m.x - cam.x) * sc + W / 2, py = (m.y - cam.y) * sc + H / 2;
-  const r = Math.max(14, P.lShow * sc * .62) * (1 + .035 * Math.sin(time * 4));
-  const g = ctx.createRadialGradient(px - r * .35, py - r * .4, r * .05, px, py, r);
-  g.addColorStop(0, 'rgba(255,255,255,.2)'); g.addColorStop(.7, 'rgba(175,228,255,.04)'); g.addColorStop(1, 'rgba(175,228,255,.18)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.fill();
-  ctx.lineWidth = Math.max(1.5, r * .045); ctx.strokeStyle = 'rgba(190,236,255,.6)';
-  ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.stroke();
-  ctx.lineWidth = Math.max(1.2, r * .05); ctx.strokeStyle = 'rgba(255,255,255,.55)';
-  ctx.beginPath(); ctx.arc(px, py, r * .78, TAU * .58, TAU * .7); ctx.stroke();
-  ctx.lineWidth = 1;
 }
 function drawInciler() {
   const sc = cam.scale;
@@ -4008,7 +3817,6 @@ function render() {
   }
 
   if (konfeti.length) drawKonfeti();
-  if (benGorun && P.kalkan && mode === 'play') drawKalkan();
   ctx.lineWidth = 1.5;
   for (const r of ripples) {
     ctx.strokeStyle = `rgba(225,246,236,${(r.life * .5).toFixed(3)})`;
@@ -4071,9 +3879,12 @@ function boot(data) {
   makeCaustics();
   chainKur();
   renderSound(); renderStartBest();
-  // XP → the Shop, once per player, after the account's save is on this device (no accounts: now)
+  // After the account's save is on this device (no accounts: now): XP → pearl prices once, and the pearls
+  // from the Shop's upgrades and boosts back once.
   (window.Hesap && Hesap.hazir ? Hesap.hazir : Promise.resolve()).then(() => {
-    if (dukkanaGec() && !startOv.hidden) renderStartBest();
+    const gecti = dukkanaGec(), iade = dukkanIade();
+    if ((gecti || iade) && !startOv.hidden) renderStartBest();
+    if (iade) showToast(`Upgrades and boosts are gone, so your ${iade} pearls are back`, false, 5);
   }).catch(() => {});
   HARITA = MAPS[soloHarita]; SPECIES = HARITA.species; suBoya(); chainKur();
   cam.x = 0; cam.y = 0; cam.scale = targetScale(10);
@@ -4113,7 +3924,7 @@ try { if (localStorage.getItem('koi2.debug') === '1') window.__fish = { P, get m
     // alone (Nov 2026): the journey, rocks, currents
     yol, buyume, akinti, gelgitDeger, engellerYakin, engelHucre, engeldenCik, gecitAc, suyaGec, sicramaBasla, ejderOl, hedefDurum, ulasilan, ejderRekor, EJDER_BOY,
     hiz, testBuyut, get turDeneme() { return turDeneme; }, ZORLUK, zorluk, FIZIK, fizik, bolumGoster, rekorBak,
-    GELISIM, YARDIMLAR, gelAdim, gelisim, yardimlar, dukkanOku, dukkanaGec, sahipMi, sonrakiKoi, canSayisi, koiAc, sekmeAc, bitten, eat,
+    dukkanOku, dukkanaGec, dukkanIade, sahipMi, sonrakiKoi, koiAc, bitten, eat,
     get akintiOlcek() { return akintiOlcek; }, get parilti() { return parilti; }, bicimStili, bicimlerim, BICIM, koiResmi, seritSolo,
     boyYap: l => { P.l = P.lShow = l; P.zirve = Math.max(P.zirve, l); if (P.ejder) P.ejderZirve = Math.max(P.ejderZirve, l); P.topIdx = SPECIES.filter(s => s.max <= l * .9).length; initSpine(P, l); cam.scale = targetScale(l); } }; } catch (e) {}
 const hot = window.claude && window.claude.hot;
