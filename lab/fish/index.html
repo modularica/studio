@@ -254,9 +254,14 @@ body{
 .koi-not{font-size:15px;min-height:1.4em;text-wrap:balance}
 /* the line of forms your koi has grown into */
 .bicim-baslik{margin:2px 0 -4px}
-.bicimler{width:100%;max-width:400px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.bicimler{width:100%;max-width:400px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.08fr);gap:5px}
 .bicimler .dk{padding:3px 2px 5px;font-size:11px}
 .bicimler .dk.kilit{color:var(--ink-dim)}
+.bicimler .dk[aria-pressed="true"]{border-color:var(--ink-dim)}
+/* the dragon is no water: it is how a round is won, so it stands apart, in gold */
+.bicimler .dk.ejder-kare{margin-left:7px;border-color:rgba(242,196,58,.55);color:#f2c43a}
+.bicimler .dk.ejder-kare.kilit{color:rgba(242,196,58,.7)}
+.bicimler .dk.ejder-kare[aria-pressed="true"]{border-color:#f2c43a}
 .bicim-not{margin:0;font-size:13px;font-weight:600;color:var(--ink-dim);min-height:1.3em;text-wrap:balance}
 
 /* Leaderboard */
@@ -457,8 +462,8 @@ body:not(.odada) #cikBtn{display:none}
     <p class="eyebrow">My koi</p>
     <h2 class="over-title" id="koiAd">Kohaku</h2>
     <p class="inci-say buyuk"><i class="inci-ikon" aria-hidden="true"></i><b id="inciSay">0</b> pearls</p>
-    <p class="eyebrow bicim-baslik">Your koi grows</p>
-    <div class="bicimler" id="bicimler" role="group" aria-label="How your koi grows"></div>
+    <p class="eyebrow bicim-baslik">Your koi in each water</p>
+    <div class="bicimler" id="bicimler" role="group" aria-label="How your koi looks in each water"></div>
     <p class="bicim-not" id="bicimNot"></p>
     <div class="desenler" id="desenler" role="listbox" aria-label="Koi patterns"></div>
     <p class="stat koi-not" id="koiNot"></p>
@@ -835,7 +840,7 @@ const BICIM = {
   nehir: { ad: 'River koi', kisa: 'River', not: 'Long, strong fins and whiskers for the current.', yol: 'Reach the River', st: { finSize: .13, tailLen: 1.45, barbels: .2, biyik: 'rgba(244,232,206,.92)', w: .118 } },
   deniz: { ad: 'Sea koi', kisa: 'Sea', not: 'Pearl scales and long, flowing veil fins.', yol: 'Reach the Sea', st: { finSize: .15, tailLen: 1.8, fin: 'rgba(226,240,252,.62)', inci: true } },
   okyanus: { ad: 'Ocean koi', kisa: 'Ocean', not: 'Spots that glow in the dark deep.', yol: 'Reach the Ocean', st: { finSize: .11, tailLen: 1.35, parla: true } },
-  ejder: { ad: 'Dragon', kisa: 'Dragon', not: 'A koi that leapt the Dragon Gate.', yol: 'Leap the Dragon Gate' }
+  ejder: { ad: 'Dragon', kisa: 'Dragon', not: 'Your koi leapt the Dragon Gate in the River at 1.5 m and won the round.', yol: 'Leap the Dragon Gate in the River at 1.5 m' }
 };
 function bicimlerim() { const a = store.get('fish.bicimler', []); return ['golet'].concat(Array.isArray(a) ? a.filter(id => BICIM[id] && id !== 'golet') : []); }
 // The first time the koi takes a form: it joins the line, and the end screen says so.
@@ -1391,25 +1396,28 @@ function koiResmi(id, su, kilitli) {
   return (resimler[anahtar] = c);
 }
 const resimKopya = img => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); return c; };
-let bicimSecim = 'golet';
+let bicimSecim = null; // the form tapped in the line (none: say what the line is)
 // The line of forms on the My koi screen, drawn in the pattern the koi wears; forms not met yet are shadows.
 function bicimCiz() {
   const acik = bicimlerim();
   $('bicimler').replaceChildren(...BICIMLER.map(id => {
-    const B = BICIM[id], gordu = acik.includes(id), b = mk('button', 'dk' + (gordu ? '' : ' kilit'));
+    const B = BICIM[id], gordu = acik.includes(id), b = mk('button', 'dk' + (gordu ? '' : ' kilit') + (id === 'ejder' ? ' ejder-kare' : ''));
     b.type = 'button'; b.setAttribute('aria-pressed', String(id === bicimSecim));
     b.append(resimKopya(koiResmi(seciliDesen, id, !gordu)), B.kisa);
     b.setAttribute('aria-label', gordu ? `${B.ad}: ${B.not}` : `${B.ad}: ${B.yol} first`);
     b.addEventListener('click', () => { bicimSecim = id; bicimCiz(); });
     return b;
   }));
-  const B = BICIM[bicimSecim];
-  $('bicimNot').textContent = acik.includes(bicimSecim) ? `${B.ad}: ${B.not}` : `${B.yol} and your koi grows into ${birAd(B.ad)}.`;
+  const B = BICIM[bicimSecim], su = MAPS[bicimSecim];
+  $('bicimNot').textContent = !B ? 'Its shape changes in every water by itself. The pattern you pick below stays on.'
+    : bicimSecim === 'ejder' ? (acik.includes('ejder') ? `Dragon: ${B.not}` : `${B.yol}: your koi becomes a dragon and wins the round.`)
+    : acik.includes(bicimSecim) ? `${B.ad}: ${B.not}` + (bicimSecim === 'golet' ? '' : ` It turns into one in the ${su.name}.`)
+    : `${B.yol} and your koi grows into ${birAd(B.ad)}.`;
 }
 let koiSecim = null; // the tile looked at in the menu
 function koiAc() {
   hepsiniGizle(); $('koiOv').hidden = false; document.body.classList.add('lb-acik');
-  koiSecim = seciliDesen; bicimSecim = MAPS[soloHarita] ? soloHarita : 'golet';
+  koiSecim = seciliDesen; bicimSecim = null;
   koiCiz();
   $('koiGeri').focus({ preventScroll: true });
 }
