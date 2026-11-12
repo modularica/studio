@@ -4,6 +4,7 @@
     { "source": "/giris/:path*", "destination": "/lab/giris/:path*", "permanent": false },
     { "source": "/takip/:path*", "destination": "/lab/takip/:path*", "permanent": false },
     { "source": "/fish/:path*", "destination": "/lab/fish/:path*", "permanent": false },
+    { "source": "/little-koi-v2/:path*", "destination": "/lab/little-koi-v2/:path*", "permanent": false },
     { "source": "/yelken/:path*", "destination": "/lab/yelken/:path*", "permanent": false },
     { "source": "/songbox/:path*", "destination": "/lab/songbox/:path*", "permanent": false },
     { "source": "/sur-muhafizi/:path*", "destination": "/lab/sur-muhafizi/:path*", "permanent": false },

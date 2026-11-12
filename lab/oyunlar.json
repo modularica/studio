@@ -1,4 +1,5 @@
 [
+  {"slug": "little-koi-v2", "title": "Little Koi v2", "listed": true, "desc": "The new Little Koi. Every koi dreams of becoming a dragon: grow from a 10 cm koi in the Pond through the River, the Sea and the Ocean, and leap the Dragon Gate. Beat your record and spend your pearls in the Shop.", "note": "New version of Fish · 4 levels, then a dragon · pearl shop · rooms with friends"},
   {"slug": "fish", "title": "Fish", "listed": true, "desc": "You start as a 10 cm koi. Eat the smaller fish, run from the bigger ones, and become the biggest fish in the pond.", "note": "4 waters, levels and koi patterns · rooms with friends"},
   {"slug": "yelken", "title": "Rüzgâr Kaptanı", "listed": true, "desc": "A step-by-step sailing school: tiller, points of sail, sheets, tacking, gybing and the spinnaker, then a race around the course.", "note": "8 lessons and free sailing · race friends on the course · in Turkish"},
   {"slug": "songbox", "title": "SONGbox", "listed": true, "desc": "Line up characters on the stage and each one plays its own beat. Get your song scored and unlock new singers.", "note": "Make your own character · song contest with friends"},

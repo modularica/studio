@@ -2,6 +2,8 @@
 
 Tepeden görünen bir gölette geçen "ye ya da yen" oyunu. Oyuncu 10 cm'lik bir koi ile başlar. Kendinden küçük balıkları yiyerek büyür, büyüklerden kaçar. Tek başına ya da arkadaşlarla aynı gölde (odalar) oynanır. Durum ve sonraki adımlar: `PLAN.md`.
 
+Yeni sürümü (level'lar, Ejder Kapısı, Shop) ayrı bir oyun: Little Koi v2, `lab/little-koi-v2/` (12 Kasım 2026). Bu klasördeki Fish olduğu gibi kalıyor; odaları ikisi ortak kullanır.
+
 ## Bu klasörde
 
 - `index.html`: Oyunun tamamı (tek kişilik ve odalar). Bağımlılıksız, tek dosya.
