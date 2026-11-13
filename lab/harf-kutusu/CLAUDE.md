@@ -36,8 +36,9 @@ Masada oynanan Türkçe Boggle kutusu (13 Kasım 2026). Umut ile eşi Boggle oyn
 ## Zarlar (`src/dice.json`)
 
 - 4×4: 16 zar (96 yüz), 5×5: 25 zar (150 yüz). Harf sıklığı yazı dilinden değil, bilinen sözlük kelimelerinden (yazı dilinde ekler yüzünden I, D, N, Y şişkin; köklerde K, T, M, S daha sık). 4×4'te 8 zar 1 sesli + 5 sessiz, 8 zar 4 sesli + 2 sessiz: tahtadaki sesli sayısı daha az oynar. J ile F aynı zarda (ikisi bir arada çıkmaz). Her harf en az bir yüzde, bir zarda aynı harf iki kez yok.
-- Ölçüm (`src/tools/dice.py`, `words.txt` ile, en az 3 harf): 4×4 tahtada ortalama 25,5 bilinen kelime (medyan 23, en kötü %10'da 10), az bilinenlerle 60; 5×5'te 48 (medyan 45, en kötü %10'da 24), az bilinenlerle 114. En az 4 harfte 4×4 14'e, 5×5 28'e düşüyor; o yüzden Türkçede 5×5'te de varsayılan 3 harf. Zarlar daha gevşek bir "bilinen"le (yalnız wordfreq Zipf ≥ 3, `NOT_COMMON` yok) tasarlandı: o ölçümle 4×4'te ~41, İngilizce kutu aynı ölçümle ~53.
-- Zarları değiştirirsen `dice.py` ile ölç; buradaki sayıları ve Kurallar'daki "Kutudaki zarlar" paragrafını güncelle.
+- Ölçüm (`src/tools/dice.py`, `words.txt` ile, en az 3 harf, yeniden atma olmadan): 4×4 tahtada ortalama 25,5 bilinen kelime (medyan 23, en kötü %10'da 10), az bilinenlerle 60; 5×5'te 48 (medyan 45, en kötü %10'da 24), az bilinenlerle 114. En az 4 harfte 4×4 14'e, 5×5 28'e düşüyor; o yüzden Türkçede 5×5'te de varsayılan 3 harf. Zarlar daha gevşek bir "bilinen"le (yalnız wordfreq Zipf ≥ 3, `NOT_COMMON` yok) tasarlandı: o ölçümle 4×4'te ~41, İngilizce kutu aynı ölçümle ~53.
+- **Kötü tahta yeniden atılır** (`rollGood`, `GOOD`; 13 Kasım akşamı Umut'a tek sesli bir tahta geldi): 4×4'te 4'ten az sesli ya da 12'den az bilinen kelime (en az 3 harf sayılır, oyundaki "en az" ayarından bağımsız), 5×5'te 7 sesli / 25 kelime. Bu zarlarla ret oranı 4×4'te ~%14, 5×5'te ~%12; kalanlarda ortalama 28 ve 51 bilinen kelime. Kural olmasa (bir milyon tahta): 4×4'te tek sesli tahta 1.700'de bir, 3 ya da daha az sesli 35'te bir. 40 denemede iyisi çıkmazsa en çok kelimelisi alınır (pratikte olmuyor). Tahta başına 1–2 ms (masaüstü).
+- Zarları değiştirirsen `dice.py` ile ölç; buradaki sayıları, `GOOD` eşiklerini ve Kurallar'daki "Kutudaki zarlar" paragrafını güncelle.
 
 ## Dosyalar
 
@@ -45,7 +46,7 @@ Masada oynanan Türkçe Boggle kutusu (13 Kasım 2026). Umut ile eşi Boggle oyn
 - `cover.png` (1200×630) ve `icon.png` (180×180): `src/tools/cover.py` çizer.
 - `src/` (siteye çıkmaz, `.vercelignore`): `page.html` (iskelet, stil, kod), `build.py`, `dice.json`, `words.txt` (üretilmiş, elle düzenleme), `fonts/` (Bricolage Grotesque 800, Atkinson Hyperlegible Next 400/700; ikisi de OFL, Türkçe harflere indirilmiş, latin ve latin-ext ayrı dosya), `wake.mp4`, `tools/words.py`, `tools/dice.py`, `tools/cover.py`, `test/browser.py`.
 - Derleme: `python3 lab/harf-kutusu/src/build.py --lab` → `index.html`. Hesapsız tek başına kopya (Claude artifact'i için): `python3 lab/harf-kutusu/src/build.py /tmp/hk.html`.
-- Deneme: tek başına kopyayı derle, sonra `python3 lab/harf-kutusu/src/test/browser.py /tmp/hk.html` (sahte hesap ve sahte iPhone sensörüyle bir el: izin, sallama, kapak, süre, mola, "Nasıldı?", Bitir ile erken bitirme, kelime listesi ve tahtada yanan yol, sabit bir 5×5 tahtada sayfanın bulduğu kelimelerin düz bir çözücüyle birebir aynı olması, eski karışık ayarın düze geçmesi).
+- Deneme: tek başına kopyayı derle, sonra `python3 lab/harf-kutusu/src/test/browser.py /tmp/hk.html` (sahte hesap ve sahte iPhone sensörüyle bir el: izin, sallama, kapak, süre, mola, "Nasıldı?", Bitir ile erken bitirme, kelime listesi ve tahtada yanan yol, sabit bir 5×5 tahtada sayfanın bulduğu kelimelerin düz bir çözücüyle birebir aynı olması, eski karışık ayarın düze geçmesi, 300 + 60 atışta hiç kötü tahta gelmemesi). Deneme kancası: `localStorage['harf-kutusu.debug'] = '1'` sayfanın içini `window.__hk` olarak açar (`roll`, `rollGood`, `solveBoard`, `GOOD`, `G`, `S`).
 - Umut'a özel Claude artifact kopyası: https://claude.ai/artifact/LmbLD3Vo1oGm8GTM6fHBE7 (orada sensör ve ekran kilidi çalışmaz).
 
 ## Lab

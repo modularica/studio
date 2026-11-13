@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Plays a round of a stand-alone build on a phone-sized page with a fake Lab account and a fake iPhone sensor:
 permission, shaking, lid, clock, pause, "Nasıldı?", ending early, the word list (checked against a plain solver),
-the old mixed-letters setting coming back upright.
+the old mixed-letters setting coming back upright, bad boards rolled again.
 
     python3 lab/harf-kutusu/src/build.py /tmp/hk.html
     python3 lab/harf-kutusu/src/test/browser.py /tmp/hk.html     (screenshots in /tmp/hk-shots/)
@@ -17,6 +17,7 @@ SHOTS = pathlib.Path("/tmp/hk-shots")
 SHOTS.mkdir(exist_ok=True)
 
 FAKE = """
+try { localStorage.setItem('harf-kutusu.debug', '1'); } catch (e) {}
 window.Hesap = { nasildi(o) { window.__nas = (window.__nas || []).concat([o]); },
                  not(s) { (window.__notes = window.__notes || []).push(s); } };
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-nasildi]');
@@ -186,6 +187,23 @@ async def main():
         rots = await page.evaluate("[...document.querySelectorAll('.die')].map(d => d.style.getPropertyValue('--rot'))")
         check(any(r not in ("0deg", "") for r in rots), "choosing Karışık again is kept after reload")
 
+        # Bad boards are rolled again (13 Nov: a one-vowel board came up)
+        stats = await page.evaluate("""() => {
+          const out = {};
+          for (const [n, N] of [[4, 300], [5, 60]]) {
+            const t0 = performance.now(); let bad = 0, minV = 99, minK = 999;
+            for (let i = 0; i < N; i++) {
+              const b = __hk.rollGood(n);
+              const v = b.letters.filter((c) => 'AEIİOÖUÜ'.includes(c)).length;
+              const k = __hk.solveBoard(b, 3).filter((x) => x.known).length;
+              minV = Math.min(minV, v); minK = Math.min(minK, k);
+              if (v < __hk.GOOD[n].vowels || k < __hk.GOOD[n].words) bad++;
+            }
+            out[n] = { bad, minV, minK, ms: Math.round((performance.now() - t0) / N) };
+          }
+          return out;
+        }""")
+        check(stats["4"]["bad"] == 0 and stats["5"]["bad"] == 0, f"every rolled board has enough vowels and words: {stats}")
         check(not errors, f"no page errors {errors}")
         await b.close()
     print("\nall passed" if not fails else f"\n{len(fails)} failed")

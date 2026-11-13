@@ -327,7 +327,7 @@ table.score td+td{font:800 18px/1 var(--display);color:var(--brass);text-align:r
       </ul>
 
       <h3>Kutudaki zarlar</h3>
-      <p>4×4 kutuda 16, 5×5 kutuda 25 zar var. Harfler, Türkçe sözlük kelimelerinde ne sıklıkla geçiyorsa o kadar yüze yazıldı; J ile F aynı zarda, ikisi bir arada çıkmaz. Binlerce tahta denendi: 4×4 bir tahtada ortalama 25 kadar bilinen kelime saklı (az bilinenlerle 60 kadar), 5×5 bir tahtada 48 kadar (az bilinenlerle 115 kadar).</p>
+      <p>4×4 kutuda 16, 5×5 kutuda 25 zar var. Harfler, Türkçe sözlük kelimelerinde ne sıklıkla geçiyorsa o kadar yüze yazıldı; J ile F aynı zarda, ikisi bir arada çıkmaz. Çok az sesli ya da az kelimeli tahtalar kendiliğinden yeniden atılır (4×4'te 4'ten az sesli ya da 12'den az bilinen kelime). Binlerce tahta denendi: 4×4 bir tahtada ortalama 28 kadar, 5×5 bir tahtada 51 kadar bilinen kelime saklı; az bilinenlerle bunun iki katından fazla.</p>
       <p><b>4×4</b></p>
       <div class="dice-list" id="dice4"></div>
       <p><b>5×5</b></p>
@@ -459,8 +459,59 @@ function roll(size) {
     tilt: d.map(() => (rnd(31) - 15) / 10)
   };
 }
+/* Sözlükte ikili arama, tahtada derinlemesine arama */
+let WL = null;
+function lowerBound(a, s) {
+  let lo = 0, hi = a.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < s) lo = m + 1; else hi = m; }
+  return lo;
+}
+function neighbours(n) {
+  const out = [];
+  for (let i = 0; i < n * n; i++) {
+    const r = Math.floor(i / n), c = i % n, l = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if ((dr || dc) && r + dr >= 0 && r + dr < n && c + dc >= 0 && c + dc < n) l.push((r + dr) * n + c + dc);
+    }
+    out.push(l);
+  }
+  return out;
+}
+function solveBoard(b, minLen) {
+  if (!WL) WL = WORDS.split('\n');
+  const a = WL, n = b.size, nb = neighbours(n), found = new Map(), path = [];
+  const dfs = (i, s, used) => {
+    s += b.letters[i];
+    const k = lowerBound(a, s);
+    if (k >= a.length || a[k].lastIndexOf(s, 0) !== 0) return;
+    path.push(i);
+    if (s.length >= minLen && !found.has(s) && (a[k] === s || a[k] === s + '.')) {
+      found.set(s, { w: s, path: path.slice(), known: a[k] !== s });
+    }
+    const u = used | (1 << i);
+    for (const j of nb[i]) if (!(u & (1 << j))) dfs(j, s, u);
+    path.pop();
+  };
+  for (let i = 0; i < n * n; i++) dfs(i, '', 0);
+  return [...found.values()].sort((x, y) => y.w.length - x.w.length || x.w.localeCompare(y.w, 'tr'));
+}
+/* Kötü tahta yeniden atılır (13 Kasım, tek sesli bir tahtadan sonra): 4×4'te 4'ten az sesli ya da
+   12'den az bilinen kelime (tahtaların ~%14'ü), 5×5'te 7 sesli / 25 kelime (~%12). */
+const GOOD = { 4: { vowels: 4, words: 12 }, 5: { vowels: 7, words: 25 } };
+const VOWELS = new Set(Array.from('AEIİOÖUÜ'));
+function rollGood(size) {
+  let best = null, bestK = -1;
+  for (let t = 0; t < 40; t++) {
+    const b = roll(size);
+    if (b.letters.filter((c) => VOWELS.has(c)).length < GOOD[size].vowels) continue;
+    const k = solveBoard(b, 3).filter((x) => x.known).length;
+    if (k >= GOOD[size].words) return b;
+    if (k > bestK) { best = b; bestK = k; }
+  }
+  return best || roll(size);
+}
 const validBoard = (b) => b && DICE[b.size] && Array.isArray(b.letters) && b.letters.length === b.size * b.size;
-if (!G || !validBoard(G.board)) G = { phase: 'idle', round: 0, total: S.dur * 1000, left: 0, endAt: 0, board: roll(S.size) };
+if (!G || !validBoard(G.board)) G = { phase: 'idle', round: 0, total: S.dur * 1000, left: 0, endAt: 0, board: rollGood(S.size) };
 if (G.phase === 'shaking' || G.phase === 'countdown') G.phase = 'idle';
 if (G.phase === 'playing' && !(G.endAt > Date.now())) G.phase = 'ended';
 if (!PHASES_OK(G.phase)) G.phase = 'idle';
@@ -757,7 +808,7 @@ function settleSoon() {
 function settle() {
   clearInterval(flickT); clearTimeout(rattleT); clearTimeout(settleT);
   tray.classList.remove('shaking');
-  G.board = roll(S.size);
+  G.board = rollGood(S.size);
   G.total = S.dur * 1000;
   keepAwake(true);
   if (S.count > 0) {
@@ -935,46 +986,13 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { const s = document.querySelector('.sheet:not([hidden])'); if (s) closeSheet(s); else closeWords(); }
 });
 
-/* Tahtadaki kelimeler: sözlükte ikili arama, tahtada derinlemesine arama */
-let WL = null, wordsCache = { key: '', list: [] }, showRare = false;
+/* Tahtadaki kelimeler (aramayı yukarıdaki solveBoard yapar) */
+let wordsCache = { key: '', list: [] }, showRare = false;
 const wordsEl = $('#words'), wordsList = $('#wordsList');
-function lowerBound(a, s) {
-  let lo = 0, hi = a.length;
-  while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < s) lo = m + 1; else hi = m; }
-  return lo;
-}
-function neighbours(n) {
-  const out = [];
-  for (let i = 0; i < n * n; i++) {
-    const r = Math.floor(i / n), c = i % n, l = [];
-    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-      if ((dr || dc) && r + dr >= 0 && r + dr < n && c + dc >= 0 && c + dc < n) l.push((r + dr) * n + c + dc);
-    }
-    out.push(l);
-  }
-  return out;
-}
 function boardWords() {
   const b = G.board, key = b.letters.join('') + '|' + S.min;
-  if (wordsCache.key === key) return wordsCache.list;
-  if (!WL) WL = WORDS.split('\n');
-  const a = WL, n = b.size, nb = neighbours(n), found = new Map(), path = [];
-  const dfs = (i, s, used) => {
-    s += b.letters[i];
-    const k = lowerBound(a, s);
-    if (k >= a.length || a[k].lastIndexOf(s, 0) !== 0) return;
-    path.push(i);
-    if (s.length >= S.min && !found.has(s) && (a[k] === s || a[k] === s + '.')) {
-      found.set(s, { w: s, path: path.slice(), known: a[k] !== s });
-    }
-    const u = used | (1 << i);
-    for (const j of nb[i]) if (!(u & (1 << j))) dfs(j, s, u);
-    path.pop();
-  };
-  for (let i = 0; i < n * n; i++) dfs(i, '', 0);
-  const list = [...found.values()].sort((x, y) => y.w.length - x.w.length || x.w.localeCompare(y.w, 'tr'));
-  wordsCache = { key, list };
-  return list;
+  if (wordsCache.key !== key) wordsCache = { key, list: solveBoard(b, S.min) };
+  return wordsCache.list;
 }
 const GROUPS = [[8, 99, '8 harf ve üstü', 11], [7, 7, '7 harf', 5], [6, 6, '6 harf', 3], [5, 5, '5 harf', 2], [3, 4, '3–4 harf', 1]];
 function renderWords() {
@@ -1051,7 +1069,7 @@ $('#settings').addEventListener('click', (e) => {
   if (k === 'size') {
     const n = +v;
     if (n !== S.size && (G.phase === 'idle' || G.phase === 'ended')) {
-      S.size = n; G.board = roll(n); G.phase = 'idle'; buildGrid(n); paint(G.board); lidHide(true);
+      S.size = n; G.board = rollGood(n); G.phase = 'idle'; buildGrid(n); paint(G.board); lidHide(true);
     }
   } else if (k === 'dur') S.dur = +v;
   else if (k === 'min') S.min = +v;
@@ -1072,6 +1090,9 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   if (G.phase === 'playing') { keepAwake(true); step(); }
 });
+
+/* Deneme: localStorage 'harf-kutusu.debug' = '1' sayfanın içini window.__hk olarak açar */
+try { if (localStorage.getItem('harf-kutusu.debug') === '1') window.__hk = { roll, rollGood, solveBoard, GOOD, get G() { return G; }, get S() { return S; } }; } catch (e) {}
 
 /* Başlangıç */
 buildGrid(G.board.size);
