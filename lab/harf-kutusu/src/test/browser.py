@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Plays one round of a stand-alone build on a phone-sized page with a fake Lab account and a fake iPhone sensor.
+"""Plays a round of a stand-alone build on a phone-sized page with a fake Lab account and a fake iPhone sensor:
+permission, shaking, lid, clock, pause, "Nasıldı?", ending early, the word list (checked against a plain solver),
+the old mixed-letters setting coming back upright.
 
     python3 lab/harf-kutusu/src/build.py /tmp/hk.html
     python3 lab/harf-kutusu/src/test/browser.py /tmp/hk.html     (screenshots in /tmp/hk-shots/)
@@ -29,6 +31,43 @@ window.__shake = (ms) => new Promise((done) => {
   }, 30);
 });
 """
+
+SPELLS = """(w) => {
+  const d = [...document.querySelectorAll('.die')], n = Math.round(Math.sqrt(d.length));
+  const order = d.map((c, i) => [c.querySelector('.ord'), i]).filter((x) => x[0])
+    .sort((a, b) => +a[0].textContent - +b[0].textContent).map((x) => x[1]);
+  const spelled = order.map((i) => d[i].querySelector('b').textContent).join('');
+  const touching = order.every((i, k) => k === 0 || (Math.abs(Math.floor(i / n) - Math.floor(order[k - 1] / n)) <= 1
+    && Math.abs(i % n - order[k - 1] % n) <= 1));
+  return spelled === w && touching && new Set(order).size === order.length;
+}"""
+
+WORDS = (pathlib.Path(__file__).resolve().parents[1] / "words.txt").read_text(encoding="utf-8").split("\n")
+VALID = {w.rstrip(".") for w in WORDS}
+PREFIX = {w[:i] for w in VALID for i in range(1, len(w) + 1)}
+
+
+def solve(letters, n, minlen=3):
+    found = set()
+
+    def dfs(i, s, used):
+        s += letters[i]
+        if s not in PREFIX:
+            return
+        if len(s) >= minlen and s in VALID:
+            found.add(s)
+        r, c = divmod(i, n)
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                rr, cc = r + dr, c + dc
+                j = rr * n + cc
+                if (dr or dc) and 0 <= rr < n and 0 <= cc < n and j not in used:
+                    dfs(j, s, used | {j})
+
+    for i in range(n * n):
+        dfs(i, "", {i})
+    return found
+
 
 fails = []
 
@@ -77,14 +116,58 @@ async def main():
         await page.locator("#lidNasil").click()
         nas = await page.evaluate("window.__nas || []")
         check(len(nas) == 1 and nas[0]["yer"] == "mola", f"'Nasıldı?' opens with yer=mola: {nas}")
+        await page.locator("#mainBtn").click()
+        check(await phase() == "playing", "Devam et resumes")
+        check(await page.locator("#rightBtn").inner_text() == "Bitir", "Bitir during the round")
         await page.locator("#rightBtn").click()
         check(await page.locator("#rightBtn").inner_text() == "Emin misiniz?", "ending early asks once")
         await page.locator("#rightBtn").click()
-        check(await phase() == "ended", "round ended")
-        check(await page.locator("#info [data-nasildi='el-sonu']").count() == 1, "'Nasıldı?' with the points at the end")
+        check(await phase() == "ended", "round ended early")
+        check(await page.locator("#info [data-nasildi='el-sonu']").count() == 1, "'Nasıldı?' at the end")
         notes = await page.evaluate("window.__notes || []")
-        check(any("bitti" in n for n in notes), "Lab note on end")
-        await page.screenshot(path=str(SHOTS / "2-ended.png"))
+        check(any("bitti" in n and "erken" in n for n in notes), "Lab note on early end")
+
+        # Words on the board
+        btn = page.locator("#wordsBtn")
+        check(await btn.count() == 1, "end of round offers the word list")
+        n_known = int(await btn.locator("b").inner_text())
+        await btn.click()
+        check(await page.locator("#words").is_visible(), "word list opens over the bottom panel")
+        chips = page.locator("#wordsList .wchip")
+        check(await chips.count() == n_known, f"list shows the {n_known} known words")
+        if n_known:
+            first = chips.first
+            w = await first.inner_text()
+            await first.click()
+            check(await page.locator(".die.hl").count() == len(w), f"tapping {w} lights {len(w)} dice")
+            ok = await page.evaluate(SPELLS, w)
+            check(ok, "lit dice spell the word along touching dice")
+            check(await page.locator("#farNote").inner_text() == w, "the word shows on the far strip too")
+            await page.screenshot(path=str(SHOTS / "2-words.png"))
+            await first.click()
+            check(await page.locator(".die.hl").count() == 0, "tapping again clears it")
+        if await page.locator("#rareBtn").is_visible():
+            await page.locator("#rareBtn").click()
+            check(await chips.count() > n_known, "rare words can be shown too")
+        await page.locator("#wordsClose").click()
+        check(not await page.locator("#words").is_visible() and await page.locator(".die.hl").count() == 0,
+              "closing the list clears the board")
+
+        # The page finds exactly the words a plain solver finds (fixed 5x5 board)
+        letters = list("KALEMATİŞEROKUYÇANDIRSÜTGE")[:25]
+        await page.evaluate("""(l) => localStorage.setItem('harf-kutusu.v1', JSON.stringify({S: {rotV: 2},
+            G: {phase: 'ended', round: 2, total: 180000, left: 0, endAt: 0,
+                board: {size: 5, letters: l, rot: Array(25).fill(0), tilt: Array(25).fill(0)}}}))""", letters)
+        await page.reload()
+        await page.wait_for_timeout(300)
+        await page.locator("#wordsBtn").click()
+        if await page.locator("#rareBtn").is_visible():
+            await page.locator("#rareBtn").click()
+        got = set(await page.locator("#wordsList .wchip").all_inner_texts())
+        want = solve(letters, 5)
+        check(got == want, f"5x5 solver matches: page {len(got)}, reference {len(want)}, diff {sorted(got ^ want)[:8]}")
+        await page.screenshot(path=str(SHOTS / "3-words-5x5.png"))
+        await page.locator("#wordsClose").click()
 
         # A device that played the first (mixed letters) version comes back upright.
         await page.evaluate("""localStorage.setItem('harf-kutusu.v1', JSON.stringify({S: {rot: 'mix'}, G: null}))""")

@@ -1,59 +1,29 @@
 #!/usr/bin/env python3
 """Measures the dice in ../dice.json: how many known words a random board hides.
 
-    pip install wordfreq zemberek-python
     python3 lab/harf-kutusu/src/tools/dice.py            # 4x4 and 5x5, minimum 3 letters
     python3 lab/harf-kutusu/src/tools/dice.py --min 4
 
-Words: Zemberek dictionary entries (no proper names or abbreviations, circumflex dropped) plus verb roots
-and infinitives (GEL, GELMEK), the same rule as the page's rules sheet. "Known" = wordfreq Zipf >= 3.
-Only lexicon.csv is read, so zemberek-python does not need to import (it fails on Python 3.13).
+Words come from ../words.txt (tools/words.py builds it), the same list the page shows at the end of a round:
+dictionary words and verb roots, family filters applied; a trailing "." marks a known word.
 """
 import argparse
 import json
 import pathlib
 import random
-import site
-import sys
-
-from wordfreq import zipf_frequency
 
 HERE = pathlib.Path(__file__).resolve().parent
-ALPHA = "abcçdefgğhıijklmnoöprsştuüvyz"
-VOW = set("aeıioöuü")
+VOW = set("AEIİOÖUÜ")
 PTS = {3: 1, 4: 1, 5: 2, 6: 3, 7: 5}
-
-
-def lexicon_path():
-    for d in site.getsitepackages() + [site.getusersitepackages()]:
-        p = pathlib.Path(d) / "zemberek" / "resources" / "lexicon.csv"
-        if p.exists():
-            return p
-    sys.exit("zemberek-python not found: pip install zemberek-python")
 
 
 def words():
     valid, known = set(), set()
-    norm = str.maketrans({"â": "a", "î": "i", "û": "u"})
-    for line in lexicon_path().open(encoding="utf-8"):
-        row = line.rstrip("\n").split("\t")
-        if len(row) < 5:
-            continue
-        lemma, pos, sec = row[1], row[3], row[4]
-        if sec in ("Prop", "Abbrv") or pos in ("Punc", "Dup") or lemma[:1] != lemma[:1].lower():
-            continue
-        lemma = lemma.translate(norm)
-        if not all(c in ALPHA for c in lemma):
-            continue
-        forms = [lemma]
-        if pos == "Verb" and lemma[-3:] in ("mak", "mek") and len(lemma) > 4:
-            forms.append(lemma[:-3])
-        z = zipf_frequency(lemma, "tr")
-        for w in forms:
-            if len(w) >= 3:
-                valid.add(w)
-                if z >= 3.0:
-                    known.add(w)
+    for line in (HERE.parent / "words.txt").read_text(encoding="utf-8").split("\n"):
+        w = line.rstrip(".")
+        valid.add(w)
+        if line.endswith("."):
+            known.add(w)
     return valid, known
 
 
@@ -82,10 +52,6 @@ def solve(board, nb, prefixes, valid, minlen):
     return found
 
 
-def lower(s):
-    return "".join({"İ": "i", "I": "ı"}.get(c, c.lower()) for c in s)
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min", type=int, default=3)
@@ -93,12 +59,11 @@ def main():
     a = ap.parse_args()
     valid, known = words()
     prefixes = {w[:i] for w in valid for i in range(1, len(w) + 1)}
-    print(f"{len(valid)} dictionary words, {len(known)} known")
+    print(f"{len(valid)} words, {len(known)} known")
     dice = json.loads((HERE.parent / "dice.json").read_text(encoding="utf-8"))
     rng = random.Random(2026)
     for n, ds in dice.items():
         n = int(n)
-        ds = [lower(d) for d in ds]
         faces = sum(len(d) for d in ds)
         vowels = sum(c in VOW for d in ds for c in d)
         nb, kn, va, pt = neighbours(n), [], [], []

@@ -91,7 +91,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 @keyframes flash{50%{box-shadow:inset 0 0 0 4px var(--alert),0 0 46px rgba(255,122,89,.45)}}
 
 /* Alt panel */
-.near{flex:none;display:grid;gap:10px;padding:8px 16px 18px}
+.near{flex:none;position:relative;display:grid;gap:10px;padding:8px 16px 18px}
 .clock{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
 .time{font:800 clamp(46px,13.5vw,62px)/.9 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .meta{display:grid;justify-items:end;gap:3px;text-align:right}
@@ -107,6 +107,26 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 .pts strong{color:var(--brass);font:800 15px/1 var(--display);margin-left:3px}
 .chip-btn{min-height:30px;border:1.5px solid var(--brass);background:none;color:var(--brass);border-radius:99px;padding:3px 12px;font-weight:700;font-size:14px;white-space:nowrap}
 .chip-btn:active{background:rgba(232,178,74,.15)}
+.end-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.wide-btn{min-height:46px;padding:0 16px;border-radius:14px;border:1.5px solid var(--brass);background:rgba(232,178,74,.1);color:var(--text);font-weight:700;font-size:16px}
+.wide-btn b{font:800 18px/1 var(--display);color:var(--brass);margin-left:4px}
+.wide-btn:active{background:rgba(232,178,74,.22)}
+/* El sonunda tahtadaki kelimeler: alt panelin üstüne açılır, tahta görünür kalır */
+.words{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;background:var(--table);padding:6px 16px 14px}
+.words[hidden]{display:none}
+.words-head{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.words-head h2{margin:0;flex:1;font:800 20px/1.1 var(--display);white-space:nowrap}
+.words-head .close{min-height:40px;padding:0 14px}
+.words-list{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:2px 0 4px}
+.words-list h3{margin:10px 0 6px;font:700 13px/1.2 var(--body);color:var(--muted)}
+.wl{display:flex;flex-wrap:wrap;gap:6px}
+.wchip{min-height:34px;padding:4px 10px;border-radius:10px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);font:800 15px/1 var(--display);letter-spacing:.04em}
+.wchip.rare{color:var(--muted);border-style:dashed}
+.wchip.on{background:var(--brass);border-color:var(--brass);color:var(--ink)}
+.words-note{margin:12px 0 0;font-size:13px;line-height:1.35;color:var(--muted)}
+.die.hl{background:linear-gradient(165deg,#ffd780 0%,#e8b24a 55%,#cf9431 100%);box-shadow:inset 0 calc(var(--cell,60px)*-.07) 0 #a8761f,inset 0 1px 0 #ffe9b8,0 calc(var(--cell,60px)*.06) calc(var(--cell,60px)*.1) rgba(0,0,0,.5)}
+.die.dim{opacity:.35}
+.die .ord{position:absolute;top:6%;left:9%;font:800 calc(var(--cell,60px)*.19)/1 var(--display);font-style:normal;color:var(--ink);opacity:.72}
 .controls{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:10px;align-items:center}
 .ghost{min-height:54px;border-radius:16px;border:1.5px solid var(--line);background:rgba(255,255,255,.03);font-weight:700;font-size:16px;padding:0 8px}
 .ghost:active{background:rgba(255,255,255,.08)}
@@ -210,6 +230,14 @@ table.score td+td{font:800 18px/1 var(--display);color:var(--brass);text-align:r
       <button type="button" class="primary" id="mainBtn">Salla<small>basılı tut</small></button>
       <button type="button" class="ghost" id="rightBtn">Ayarlar</button>
     </div>
+    <section class="words" id="words" aria-labelledby="wordsTitle" hidden>
+      <div class="words-head">
+        <h2 id="wordsTitle">Kelimeler</h2>
+        <button type="button" class="chip-btn" id="rareBtn">Az bilinenler</button>
+        <button type="button" class="close" id="wordsClose">Kapat</button>
+      </div>
+      <div class="words-list" id="wordsList"></div>
+    </section>
   </footer>
 </main>
 
@@ -260,8 +288,9 @@ table.score td+td{font:800 18px/1 var(--display);color:var(--brass);text-align:r
 
       <h3>İtiraz</h3>
       <ul>
-        <li>Şüpheli kelimede sözlüğe bakılır: sozluk.gov.tr (TDK Güncel Türkçe Sözlük). Sözlükte yoksa çizilir.</li>
-        <li>Harfleri tahtada birbirine değmiyorsa kelime çizilir. Süre bitince tahta açık kalır; kontrol edebilirsiniz.</li>
+        <li>Süre bitince <b>Kelimeleri göster</b>’e basın: tahtadaki sözlük kelimeleri listelenir. Bir kelimeye dokununca harfleri tahtada sırayla yanar.</li>
+        <li>Listede olmayan kelimede sözlüğe bakılır: sozluk.gov.tr (TDK Güncel Türkçe Sözlük). Sözlükte de yoksa çizilir.</li>
+        <li>Harfleri tahtada birbirine değmiyorsa kelime çizilir.</li>
       </ul>
 
       <h3>Ev kuralları</h3>
@@ -276,12 +305,13 @@ table.score td+td{font:800 18px/1 var(--display);color:var(--brass);text-align:r
       <ul>
         <li><b>Salla</b>’ya basılı tutun, zarlar sallanır. Bırakınca kapak kapanır; geri sayımda telefonu ortaya koyun. İsterseniz basılı tutarken telefonu da sallayın.</li>
         <li>Telefon hareketi okuyabiliyorsa düğmesiz, sadece sallamak da yeter.</li>
-        <li>Son dakikada bir zil, son 10 saniyede tık sesi, sonunda alarm çalar. Süre bitince tahta açık kalır.</li>
+        <li>Son dakikada bir zil, son 10 saniyede tık sesi, sonunda alarm çalar. Herkes bitirdiyse <b>Bitir</b>’e iki kez basıp eli erken bitirebilirsiniz.</li>
+        <li>Süre bitince tahta açık kalır; <b>Kelimeleri göster</b> tahtadaki kelimeleri puanlarıyla listeler.</li>
         <li>Ekran oyun ortasında kararırsa telefonun otomatik kilit süresini uzatın.</li>
       </ul>
 
       <h3>Kutudaki zarlar</h3>
-      <p>4×4 kutuda 16, 5×5 kutuda 25 zar var. Harfler, Türkçe sözlük kelimelerinde ne sıklıkla geçiyorsa o kadar yüze yazıldı; J ile F aynı zarda, ikisi bir arada çıkmaz. Yaklaşık 9.500 bilinen kelimeyle binlerce tahta denendi: 4×4 bir tahtada ortalama 40 kadar, 5×5 bir tahtada 75 kadar bilinen kelime saklı.</p>
+      <p>4×4 kutuda 16, 5×5 kutuda 25 zar var. Harfler, Türkçe sözlük kelimelerinde ne sıklıkla geçiyorsa o kadar yüze yazıldı; J ile F aynı zarda, ikisi bir arada çıkmaz. Binlerce tahta denendi: 4×4 bir tahtada ortalama 25 kadar bilinen kelime saklı (az bilinenlerle 60 kadar), 5×5 bir tahtada 48 kadar (az bilinenlerle 115 kadar).</p>
       <p><b>4×4</b></p>
       <div class="dice-list" id="dice4"></div>
       <p><b>5×5</b></p>
@@ -365,6 +395,8 @@ table.score td+td{font:800 18px/1 var(--display);color:var(--brass);text-align:r
 (() => {
 'use strict';
 const DICE = __DICE__;
+/* Sözlük: büyük harfle, kod sırasıyla; sonunda nokta olan bilinen kelime (src/tools/words.py) */
+const WORDS = __WORDS__;
 const WAKE = 'data:video/mp4;base64,__WAKE__';
 const KEY = 'harf-kutusu.v1';
 const $ = (s) => document.querySelector(s);
@@ -605,11 +637,11 @@ const PH = {
   idle:      { status: 'Hazır', far: 'Sıradaki sallasın', main: 'Salla', small: 'basılı tut', left: 'Kurallar', right: 'Ayarlar' },
   shaking:   { status: 'Sallanıyor', far: 'Sallanıyor', main: 'Sallanıyor…', small: 'bırakınca dizilir' },
   countdown: { status: 'Hazır olun', far: 'Hazır olun', main: 'Bekleyin', off: true },
-  playing:   { status: 'Oyun sürüyor', far: '', main: 'Durdur' },
+  playing:   { status: 'Oyun sürüyor', far: '', main: 'Durdur', right: 'Bitir' },
   paused:    { status: 'Durduruldu', far: 'Durduruldu', main: 'Devam et', left: 'Kurallar', right: 'Eli bitir' },
   ended:     { status: 'Süre doldu', far: 'Süre doldu', main: 'Salla', small: 'yeni el', left: 'Kurallar', right: 'Ayarlar' }
 };
-let motionOK = false, infoKey = '', mainKey = '', confirmEnd = 0;
+let motionOK = false, infoKey = '', mainKey = '', confirmEnd = 0, selWord = null;
 const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 function leftMs() {
   if (G.phase === 'playing') return Math.max(0, G.endAt - Date.now());
@@ -617,11 +649,10 @@ function leftMs() {
   if (G.phase === 'ended') return 0;
   return S.dur * 1000;
 }
-function ptsHTML() {
-  const first = S.min === 4 ? '4 harf' : '3–4 harf';
-  const rows = [[first, 1], ['5 harf', 2], ['6 harf', 3], ['7 harf', 5], ['8+ harf', 11]];
+function endHTML() {
+  const n = boardWords().filter((x) => x.known).length;
   const ask = hasHesap() ? '<button type="button" class="chip-btn" data-nasildi="el-sonu">Nasıldı?</button>' : '';
-  return '<span class="pts" aria-label="Puanlar">' + rows.map(([a, b]) => '<span>' + a + '<strong>' + b + '</strong></span>').join('') + ask + '</span>';
+  return '<span class="end-row"><button type="button" class="wide-btn" id="wordsBtn">Kelimeleri göster<b>' + n + '</b></button>' + ask + '</span>';
 }
 function infoHTML(p) {
   switch (p) {
@@ -633,7 +664,7 @@ function infoHTML(p) {
     case 'countdown': return 'Telefonu masanın ortasına koyun.';
     case 'playing': return 'Kelimeleri kâğıda yazın. Harfler yan yana, alt alta ya da çapraz değmeli.';
     case 'paused': return 'Harfler kapalı. Devam edince süre kaldığı yerden akar.';
-    case 'ended': return ptsHTML();
+    case 'ended': return endHTML();
   }
   return '';
 }
@@ -652,7 +683,6 @@ function ui() {
   fills.forEach((f) => { f.style.transform = 'scaleX(' + frac.toFixed(4) + ')'; });
   app.classList.toggle('low', p === 'playing' && left <= 10000);
   if (E.status.textContent !== c.status) E.status.textContent = c.status;
-  E.farNote.textContent = c.far;
   const n = (p === 'idle' || p === 'shaking' || p === 'countdown') ? S.size : G.board.size;
   const r = Math.max(1, G.round + ((p === 'idle' || p === 'shaking' || p === 'countdown') ? 1 : 0));
   E.sub.textContent = n + '×' + n + ' · en az ' + S.min + ' harf · ' + r + '. el';
@@ -663,8 +693,9 @@ function ui() {
   E.main.disabled = !!c.off;
   E.main.classList.toggle('held', p === 'shaking');
   setBtn(E.left, c.left);
-  if (p === 'paused' && confirmEnd > Date.now()) setBtn(E.right, 'Emin misiniz?', true);
+  if ((p === 'paused' || p === 'playing') && confirmEnd > Date.now()) setBtn(E.right, 'Emin misiniz?', true);
   else setBtn(E.right, c.right);
+  E.farNote.textContent = (p === 'ended' && selWord) ? selWord : c.far;
 }
 function setPhase(p) { G.phase = p; ui(); save(); }
 
@@ -673,6 +704,7 @@ let shakeSrc = null, shakeStart = 0, flickT = null, rattleT = null, settleT = nu
 function canShake() { return (G.phase === 'idle' || G.phase === 'ended') && !document.querySelector('.sheet:not([hidden])'); }
 function startShake(src) {
   if (!canShake()) return;
+  closeWords();
   shakeSrc = src; shakeStart = Date.now(); settling = false;
   clearInterval(tickT);
   app.classList.remove('flash');
@@ -807,11 +839,16 @@ window.addEventListener('blur', () => { if (G.phase === 'shaking' && shakeSrc !=
 E.left.addEventListener('click', () => { if (!E.left.disabled) openSheet('rules'); });
 E.right.addEventListener('click', () => {
   if (E.right.disabled) return;
-  if (G.phase === 'paused') {
-    if (confirmEnd > Date.now()) { confirmEnd = 0; end(false); }
+  if (G.phase === 'paused' || G.phase === 'playing') {
+    /* Eli erken bitirmek iki dokunuş ister: masadaki telefona yanlışlıkla değilebilir. */
+    if (confirmEnd > Date.now()) { confirmEnd = 0; endEarly(); }
     else { confirmEnd = Date.now() + 3000; ui(); setTimeout(ui, 3050); }
   } else openSheet('settings');
 });
+function endEarly() {
+  end(false);
+  tone(660, 0.16, 0.14, 'triangle'); tone(440, 0.32, 0.13, 'triangle', 0.15);
+}
 
 /* Telefonu sallamak (hareket sensörü açıksa) */
 let motionAsked = false, listening = false, lastAcc = null, jolts = [], lastJolt = 0;
@@ -846,7 +883,10 @@ function askMotion() {
     }, done);
   } catch (e) { done(); }
 }
-E.info.addEventListener('click', (e) => { if (e.target.closest('#motionBtn')) askMotion(); });
+E.info.addEventListener('click', (e) => {
+  if (e.target.closest('#motionBtn')) askMotion();
+  else if (e.target.closest('#wordsBtn')) openWords();
+});
 try {
   if (window.DeviceMotionEvent && !needsPerm()) listenMotion();
   else if (needsPerm() && !inFrame && S.motion === 1) {
@@ -876,8 +916,107 @@ document.querySelectorAll('.sheet').forEach((s) => {
   s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('.close')) closeSheet(s); });
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { const s = document.querySelector('.sheet:not([hidden])'); if (s) closeSheet(s); }
+  if (e.key === 'Escape') { const s = document.querySelector('.sheet:not([hidden])'); if (s) closeSheet(s); else closeWords(); }
 });
+
+/* Tahtadaki kelimeler: sözlükte ikili arama, tahtada derinlemesine arama */
+let WL = null, wordsCache = { key: '', list: [] }, showRare = false;
+const wordsEl = $('#words'), wordsList = $('#wordsList');
+function lowerBound(a, s) {
+  let lo = 0, hi = a.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < s) lo = m + 1; else hi = m; }
+  return lo;
+}
+function neighbours(n) {
+  const out = [];
+  for (let i = 0; i < n * n; i++) {
+    const r = Math.floor(i / n), c = i % n, l = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if ((dr || dc) && r + dr >= 0 && r + dr < n && c + dc >= 0 && c + dc < n) l.push((r + dr) * n + c + dc);
+    }
+    out.push(l);
+  }
+  return out;
+}
+function boardWords() {
+  const b = G.board, key = b.letters.join('') + '|' + S.min;
+  if (wordsCache.key === key) return wordsCache.list;
+  if (!WL) WL = WORDS.split('\n');
+  const a = WL, n = b.size, nb = neighbours(n), found = new Map(), path = [];
+  const dfs = (i, s, used) => {
+    s += b.letters[i];
+    const k = lowerBound(a, s);
+    if (k >= a.length || a[k].lastIndexOf(s, 0) !== 0) return;
+    path.push(i);
+    if (s.length >= S.min && !found.has(s) && (a[k] === s || a[k] === s + '.')) {
+      found.set(s, { w: s, path: path.slice(), known: a[k] !== s });
+    }
+    const u = used | (1 << i);
+    for (const j of nb[i]) if (!(u & (1 << j))) dfs(j, s, u);
+    path.pop();
+  };
+  for (let i = 0; i < n * n; i++) dfs(i, '', 0);
+  const list = [...found.values()].sort((x, y) => y.w.length - x.w.length || x.w.localeCompare(y.w, 'tr'));
+  wordsCache = { key, list };
+  return list;
+}
+const GROUPS = [[8, 99, '8 harf ve üstü', 11], [7, 7, '7 harf', 5], [6, 6, '6 harf', 3], [5, 5, '5 harf', 2], [3, 4, '3–4 harf', 1]];
+function renderWords() {
+  const all = boardWords(), known = all.filter((x) => x.known), rare = all.length - known.length;
+  const shown = showRare ? all : known;
+  $('#wordsTitle').textContent = known.length + ' kelime';
+  const rb = $('#rareBtn');
+  rb.hidden = rare === 0;
+  rb.textContent = showRare ? 'Az bilinenleri gizle' : '+' + rare + ' az bilinen';
+  let html = '';
+  for (const [lo, hi, name, pts] of GROUPS) {
+    const g = shown.filter((x) => x.w.length >= lo && x.w.length <= hi);
+    if (!g.length) continue;
+    const label = lo === 3 && S.min === 4 ? '4 harf' : name;
+    html += '<h3>' + label + ' · ' + pts + ' puan</h3><div class="wl">' +
+      g.map((x) => '<button type="button" class="wchip' + (x.known ? '' : ' rare') + (x.w === selWord ? ' on' : '') + '" data-w="' + x.w + '">' + x.w + '</button>').join('') + '</div>';
+  }
+  if (!shown.length) html = '<p class="words-note">Bu tahtada bilinen kelime yok.</p>';
+  html += '<p class="words-note">Kelimeye dokunun, harfleri tahtada sırayla yanar. Kesik çizgili olanlar az bilinen kelimeler. Listede olmayan kelime için sozluk.gov.tr.</p>';
+  wordsList.innerHTML = html;
+}
+function clearPath() {
+  cells.forEach((c) => { c.classList.remove('hl', 'dim'); const o = c.querySelector('.ord'); if (o) o.remove(); });
+  selWord = null;
+}
+function showPath(item) {
+  clearPath();
+  selWord = item.w;
+  cells.forEach((c) => c.classList.add('dim'));
+  item.path.forEach((idx, k) => {
+    const c = cells[idx]; c.classList.remove('dim'); c.classList.add('hl');
+    const o = document.createElement('i'); o.className = 'ord'; o.textContent = k + 1; c.appendChild(o);
+  });
+}
+function openWords() {
+  if (G.phase !== 'ended') return;
+  renderWords();
+  wordsEl.hidden = false;
+  wordsList.scrollTop = 0;
+  $('#wordsClose').focus({ preventScroll: true });
+}
+function closeWords() {
+  if (wordsEl.hidden) return;
+  wordsEl.hidden = true;
+  clearPath();
+  ui();
+  const b = document.getElementById('wordsBtn'); if (b) b.focus({ preventScroll: true });
+}
+wordsList.addEventListener('click', (e) => {
+  const b = e.target.closest('.wchip'); if (!b) return;
+  const item = boardWords().find((x) => x.w === b.dataset.w); if (!item) return;
+  if (selWord === item.w) clearPath(); else showPath(item);
+  wordsList.querySelectorAll('.wchip.on').forEach((x) => x.classList.remove('on'));
+  if (selWord) b.classList.add('on');
+  ui();
+});
+$('#rareBtn').addEventListener('click', () => { showRare = !showRare; renderWords(); });
+$('#wordsClose').addEventListener('click', closeWords);
 
 /* Ayarlar */
 function syncSettings() {

@@ -4,7 +4,8 @@
     python3 lab/harf-kutusu/src/build.py --lab          -> lab/harf-kutusu/index.html (Lab head: share tags, account)
     python3 lab/harf-kutusu/src/build.py /tmp/hk.html   -> stand-alone copy without the Lab account (e.g. a Claude artifact)
 
-Fonts, the dice and the tiny keep-awake video are inlined, so the page has no outside requests.
+Fonts, the dice, the word list (words.txt, from tools/words.py) and the tiny keep-awake video are inlined,
+so the page has no outside requests.
 """
 import base64
 import json
@@ -50,6 +51,7 @@ def build(lab):
         "__AHN700L__": b64("fonts/ahn-700-l.woff2"), "__AHN700X__": b64("fonts/ahn-700-x.woff2"),
         "__WAKE__": b64("wake.mp4"),
         "__DICE__": json.dumps(dice, ensure_ascii=False),
+        "__WORDS__": json.dumps((SRC / "words.txt").read_text(encoding="utf-8"), ensure_ascii=False),
     }
     html = (SRC / "page.html").read_text(encoding="utf-8")
     for k, v in rep.items():
