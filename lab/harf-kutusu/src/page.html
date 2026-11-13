@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1c18">
+<title>Harf Kutusu</title>
+<!--LAB_HEAD-->
+<style>
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:800;font-display:swap;src:url(data:font/woff2;base64,__BRICO_L__) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+2212}
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:800;font-display:swap;src:url(data:font/woff2;base64,__BRICO_X__) format("woff2");unicode-range:U+0100-0130,U+0132-02FF}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,__AHN400L__) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+2212}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,__AHN400X__) format("woff2");unicode-range:U+0100-0130,U+0132-02FF}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:700;font-display:swap;src:url(data:font/woff2;base64,__AHN700L__) format("woff2");unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+2212}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:700;font-display:swap;src:url(data:font/woff2;base64,__AHN700X__) format("woff2");unicode-range:U+0100-0130,U+0132-02FF}
+
+:root{
+  /* Masadaki kutu: koyu yeşil çuha tepsi, fildişi zarlar, pirinç sayaç. Akşam masa ışığı için tek, koyu tema. */
+  /* Düzen: üstte karşıdaki oyuncuya dönük süre şeridi, ortada tepsi, altta süre ve Salla düğmesi. */
+  --table:#0b1c18;
+  --felt:#16392f;
+  --die:#f4eee1;
+  --ink:#201b14;
+  --brass:#e8b24a;
+  --alert:#ff7a59;
+  --text:var(--die);
+  --muted:rgba(244,238,225,.68);
+  --line:rgba(244,238,225,.17);
+  --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{background:var(--table);color:var(--text);font:400 17px/1.45 var(--body);overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{cursor:default}
+button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
+
+.app{height:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* Karşıdaki oyuncu için ters şerit */
+.far{flex:none;height:62px;transform:rotate(180deg);display:flex;align-items:center;gap:16px;padding:0 20px}
+.far-time{font:800 30px/1 var(--display);font-variant-numeric:tabular-nums;min-width:3.3ch}
+.far-side{flex:1;display:grid;gap:7px}
+.far-note{font-size:15px;line-height:1.2;color:var(--muted);min-height:18px}
+
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;background:var(--brass);transform-origin:left center;transition:transform .25s linear,background-color .3s}
+.far .bar{height:6px}
+
+/* Tepsi */
+.stage{flex:1 1 auto;min-height:0;display:grid;place-items:center;padding:0 12px}
+.tray{position:relative;width:var(--tray,300px);height:var(--tray,300px);padding:var(--pad,12px);border-radius:calc(var(--tray,300px)*.075);overflow:hidden;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 110% at 30% 18%,#22513f 0%,var(--felt) 48%,#0e2a22 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.05),inset 0 12px 34px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.07),0 20px 44px rgba(0,0,0,.55)}
+.grid{width:100%;height:100%;display:grid;grid-template-columns:repeat(var(--n,4),1fr);grid-template-rows:repeat(var(--n,4),1fr);gap:var(--gap,8px)}
+.die{position:relative;display:flex;align-items:center;justify-content:center;border-radius:calc(var(--cell,60px)*.2);
+  background:linear-gradient(165deg,#fffbf3 0%,var(--die) 40%,#e4d9c2 100%);
+  box-shadow:inset 0 calc(var(--cell,60px)*-.07) 0 #d3c6aa,inset 0 1px 0 #fff,0 calc(var(--cell,60px)*.06) calc(var(--cell,60px)*.1) rgba(0,0,0,.5);
+  transform:rotate(var(--tilt,0deg))}
+.die b{position:relative;display:block;font:800 calc(var(--cell,60px)*.5)/1 var(--display);color:var(--ink);transform:translateY(var(--nudge,0)) rotate(var(--rot,0deg))}
+.die b span{display:block;transform:translateY(.04em)}
+.mixed .die b::after{content:"";position:absolute;left:4%;right:4%;bottom:-.2em;height:.045em;border-radius:1px;background:currentColor;opacity:.5}
+
+.tray.shaking{animation:tray-shake .1s ease-in-out infinite alternate}
+.tray.shaking .die{animation:jiggle var(--jd,.13s) ease-in-out infinite alternate}
+@keyframes tray-shake{from{transform:translate(-2px,1px) rotate(-.5deg)}to{transform:translate(2px,-1px) rotate(.5deg)}}
+@keyframes jiggle{from{transform:translate(var(--jx,2px),var(--jy,-2px)) rotate(var(--jr,-6deg))}to{transform:translate(calc(var(--jx,2px)*-1),calc(var(--jy,-2px)*-1)) rotate(calc(var(--jr,-6deg)*-1))}}
+
+/* Kapak */
+.lid{position:absolute;inset:0;z-index:2;display:grid;grid-template-rows:1fr auto 1fr;justify-items:center;gap:6px;padding:9% 8%;border-radius:inherit;
+  background:
+    radial-gradient(90% 70% at 50% 30%,rgba(255,255,255,.11),transparent 62%),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 10px,transparent 10px 20px),
+    linear-gradient(180deg,#22533f,#123227);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),inset 0 -16px 34px rgba(0,0,0,.35);
+  transition:transform .24s ease-in,opacity .18s}
+.lid.off{transform:translateY(-104%);opacity:0;pointer-events:none;transition:transform .45s cubic-bezier(.6,0,.2,1),opacity .35s}
+.lid.instant{transition:none}
+.lid-text{margin:0;font:800 clamp(18px,calc(var(--tray,300px)*.066),26px)/1.15 var(--display);text-align:center;text-wrap:balance}
+.lid-text.flip{transform:rotate(180deg);align-self:end;color:var(--muted)}
+.lid-bottom{align-self:start;display:grid;justify-items:center;gap:14px}
+.lid-btn{min-height:44px;padding:0 20px;border-radius:14px;border:1.5px solid var(--line);background:rgba(0,0,0,.18);font-weight:700;font-size:16px}
+.lid-num{font:800 calc(var(--tray,300px)*.34)/1 var(--display);color:var(--brass);font-variant-numeric:tabular-nums;text-shadow:0 6px 0 rgba(0,0,0,.25);min-height:1em;display:flex;align-items:center;gap:.16em}
+.lid.pause .lid-num::before,.lid.pause .lid-num::after{content:"";width:.17em;height:.62em;border-radius:.05em;background:var(--brass)}
+
+.app.flash .tray{animation:flash .55s ease-in-out 4}
+@keyframes flash{50%{box-shadow:inset 0 0 0 4px var(--alert),0 0 46px rgba(255,122,89,.45)}}
+
+/* Alt panel */
+.near{flex:none;display:grid;gap:10px;padding:8px 16px 18px}
+.clock{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.time{font:800 clamp(46px,13.5vw,62px)/.9 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.meta{display:grid;justify-items:end;gap:3px;text-align:right}
+.status{font:800 20px/1.1 var(--display)}
+.sub{font-size:14px;color:var(--muted)}
+.app.low .time,.app.low .far-time,.app[data-phase="ended"] .time,.app[data-phase="ended"] .far-time{color:var(--alert)}
+.app.low .bar i{background:var(--alert)}
+.info{height:58px;overflow:hidden;font-size:16px;line-height:1.35;color:var(--muted);display:flex;align-items:center}
+.info>*{flex:1;margin:0}
+.info b{color:var(--text)}
+.pts{display:flex;flex-wrap:wrap;gap:6px}
+.pts span{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:14px;color:var(--text);white-space:nowrap}
+.pts strong{color:var(--brass);font:800 15px/1 var(--display);margin-left:3px}
+.chip-btn{min-height:30px;border:1.5px solid var(--brass);background:none;color:var(--brass);border-radius:99px;padding:3px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+.chip-btn:active{background:rgba(232,178,74,.15)}
+.controls{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:10px;align-items:center}
+.ghost{min-height:54px;border-radius:16px;border:1.5px solid var(--line);background:rgba(255,255,255,.03);font-weight:700;font-size:16px;padding:0 8px}
+.ghost:active{background:rgba(255,255,255,.08)}
+.ghost.warn{border-color:var(--alert);color:var(--alert)}
+.primary{min-height:70px;border:0;border-radius:20px;background:var(--brass);color:var(--ink);font:800 26px/1 var(--display);display:grid;place-content:center;gap:5px;padding:0 8px;box-shadow:0 5px 0 #9a6c20,0 12px 22px rgba(0,0,0,.4);transition:transform .08s,box-shadow .08s;touch-action:none}
+.primary small{font:700 13px/1 var(--body);opacity:.75}
+.primary.held{transform:translateY(4px);box-shadow:0 1px 0 #9a6c20,0 6px 12px rgba(0,0,0,.4)}
+.primary:disabled{opacity:.5}
+.hide{visibility:hidden}
+
+/* Sayfalar */
+.sheet{position:fixed;inset:0;z-index:10;display:flex;align-items:flex-end;justify-content:center;background:rgba(3,10,8,0);transition:background .2s}
+.sheet[hidden]{display:none}
+.sheet.in{background:rgba(3,10,8,.62)}
+.panel{width:100%;max-width:640px;max-height:94%;display:flex;flex-direction:column;background:#10291f;border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.5);transform:translateY(100%);transition:transform .22s ease-out}
+.sheet.in .panel{transform:none}
+.panel header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.panel h2{margin:0;font:800 25px/1.1 var(--display);text-wrap:balance}
+.close{min-height:46px;padding:0 18px;border-radius:14px;border:1.5px solid var(--line);background:none;font-weight:700}
+.scroll{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 18px 32px;-webkit-user-select:text;user-select:text}
+.hint b{color:var(--text)}
+.scroll h3{margin:24px 0 8px;font:800 19px/1.2 var(--display);color:var(--brass);text-wrap:balance}
+.scroll p,.scroll li{max-width:62ch}
+.scroll p{margin:0 0 8px}
+.scroll ul,.scroll ol{margin:0;padding-left:1.25em;display:grid;gap:7px}
+.lead{color:var(--muted);margin-top:14px!important}
+.w{font:800 .92em/1 var(--display);letter-spacing:.03em;white-space:nowrap}
+.no{color:var(--alert)}
+table.score{border-collapse:collapse;margin:6px 0 10px;font-variant-numeric:tabular-nums}
+table.score td{padding:6px 18px 6px 0;border-bottom:1px solid var(--line)}
+table.score td+td{font:800 18px/1 var(--display);color:var(--brass);text-align:right;padding-right:4px}
+.dice-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px}
+.dice-list span{font:800 15px/1 var(--display);letter-spacing:.14em;padding:7px 6px 6px 9px;border-radius:8px;background:var(--die);color:var(--ink)}
+
+.set{padding:16px 0;border-bottom:1px solid var(--line)}
+.set:last-of-type{border-bottom:0}
+.set h3{margin:0 0 10px;color:var(--text)}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 0;min-width:70px;min-height:50px;border-radius:14px;border:1.5px solid var(--line);background:none;font-weight:700;font-size:16px;padding:6px 10px}
+.seg button[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--ink)}
+.seg button:disabled{opacity:.4}
+.seg.five{display:grid;grid-template-columns:repeat(5,1fr)}
+.seg.five button{min-width:0;padding:6px 2px}
+.stepper{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.stepper button{width:58px;height:58px;border-radius:16px;border:1.5px solid var(--line);background:none;font:800 30px/1 var(--display)}
+.stepper output{flex:1;text-align:center;font:800 44px/1 var(--display);font-variant-numeric:tabular-nums}
+.hint{margin:10px 0 0!important;font-size:15px;color:var(--muted)}
+.wake{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none}
+
+@media (prefers-reduced-motion:reduce){
+  .tray.shaking,.tray.shaking .die{animation:none}
+  .lid{transition:opacity .2s}
+  .lid.off{transform:none}
+  .app.flash .tray{animation:none;box-shadow:inset 0 0 0 4px var(--alert)}
+  .sheet,.panel{transition:none}
+}
+@media (max-height:600px){
+  .far{height:50px}.far-time{font-size:24px}
+  .info{height:46px;font-size:15px}
+  .primary{min-height:60px}.ghost{min-height:48px}
+  .near{gap:8px;padding-bottom:12px}
+}
+</style>
+</head>
+<body>
+<main class="app" id="app" data-phase="idle">
+  <header class="far" aria-hidden="true">
+    <span class="far-time" id="farTime">3:00</span>
+    <div class="far-side">
+      <span class="far-note" id="farNote">Sıradaki sallasın</span>
+      <div class="bar"><i id="farFill"></i></div>
+    </div>
+  </header>
+
+  <section class="stage" id="stage">
+    <div class="tray" id="tray">
+      <div class="grid" id="grid" role="img" aria-label="Harf tahtası"></div>
+      <div class="lid off instant" id="lid" aria-hidden="true">
+        <p class="lid-text flip" id="lidTop">Hazır olun</p>
+        <div class="lid-num" id="count">3</div>
+        <div class="lid-bottom">
+          <p class="lid-text" id="lidBottom">Telefonu ortaya koyun</p>
+          <button type="button" class="lid-btn" id="lidNasil" data-nasildi="mola" hidden>Nasıldı?</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="near">
+    <div class="clock">
+      <span class="time" id="time">3:00</span>
+      <div class="meta">
+        <span class="status" id="status" aria-live="polite">Hazır</span>
+        <span class="sub" id="sub">4×4 · en az 3 harf · 1. el</span>
+      </div>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="fill"></i></div>
+    <div class="info" id="info"></div>
+    <div class="controls">
+      <button type="button" class="ghost" id="leftBtn">Kurallar</button>
+      <button type="button" class="primary" id="mainBtn">Salla<small>basılı tut</small></button>
+      <button type="button" class="ghost" id="rightBtn">Ayarlar</button>
+    </div>
+  </footer>
+</main>
+
+<div class="sheet" id="rules" role="dialog" aria-modal="true" aria-labelledby="rulesTitle" hidden>
+  <div class="panel">
+    <header><h2 id="rulesTitle">Kurallar</h2><button type="button" class="close" id="rulesClose">Kapat</button></header>
+    <div class="scroll">
+      <p class="lead">Bu sayfa kutunun yerine geçer: zarlar, kapak ve kum saati burada. Kelimeler ve puanlar kâğıtta.</p>
+
+      <h3>Nasıl oynanır</h3>
+      <ol>
+        <li>Herkesin önünde kâğıt kalem olsun. Sırası gelen <b>Salla</b>’ya basılı tutup bırakır, telefonu masanın ortasına koyar.</li>
+        <li>Geri sayımdan sonra kapak açılır, süre başlar.</li>
+        <li>Herkes bulduğu kelimeleri kendi kâğıdına yazar. Süre bitince kalemler bırakılır.</li>
+        <li>Listeler okunur, puanlar yazılır. Sonraki eli sıradaki oyuncu sallar.</li>
+      </ol>
+
+      <h3>Kelime nasıl kurulur</h3>
+      <ul>
+        <li>Harfler birbirine değmeli: yan yana, alt alta ya da çapraz.</li>
+        <li>Bir kelimede aynı zar bir kez kullanılır. Tahtada iki A varsa ikisi de kullanılabilir.</li>
+        <li>En az 3 harf. Ayarlardan 4 yapabilirsiniz.</li>
+        <li>Tahtada iki yerden kurulan kelime bir kez yazılır.</li>
+      </ul>
+
+      <h3>Hangi kelimeler geçer</h3>
+      <ul>
+        <li>Sözlükte maddesi olan kelimeler: <span class="w">KALEM</span>, <span class="w">ÇİÇEK</span>, <span class="w">GÖZLÜK</span>, <span class="w">YOLCU</span>.</li>
+        <li>Fiilin kökü ya da mastarı: <span class="w">GEL</span>, <span class="w">OKU</span>, <span class="w">OTUR</span>, <span class="w">GELMEK</span>.</li>
+        <li>Ekli hâller geçmez: <span class="w no">KALEMLER</span>, <span class="w no">EVDE</span>, <span class="w no">KAPIYI</span>, <span class="w no">GELDİ</span>. Ekle türemiş ama sözlükte kendi maddesi olan kelime geçer: <span class="w">EVLİ</span>, <span class="w">TUZLU</span>.</li>
+        <li>Özel adlar ve kısaltmalar geçmez: <span class="w no">ALİ</span>, <span class="w no">ANKARA</span>, <span class="w no">TDK</span>.</li>
+        <li>Noktalı ve noktasız harfler ayrı harftir: I ile İ, C ile Ç, G ile Ğ, O ile Ö, S ile Ş, U ile Ü birbirinin yerine geçmez.</li>
+        <li>Şapka sayılmaz: <span class="w">KÂR</span> için A yeter.</li>
+      </ul>
+
+      <h3>Puanlama</h3>
+      <p>Listeler okunurken birden çok kişinin yazdığı kelimeyi herkes çizer. Yalnız sizin bulduğunuz kelimeler puan getirir:</p>
+      <table class="score" aria-label="Puan tablosu">
+        <tbody>
+          <tr><td>3 ya da 4 harf</td><td>1</td></tr>
+          <tr><td>5 harf</td><td>2</td></tr>
+          <tr><td>6 harf</td><td>3</td></tr>
+          <tr><td>7 harf</td><td>5</td></tr>
+          <tr><td>8 harf ve üstü</td><td>11</td></tr>
+        </tbody>
+      </table>
+      <p>En az 4 harfle oynuyorsanız 3 harfliler sayılmaz. Önceden anlaşın: 5 el sonunda en çok puanı olan ya da 50 puana ilk ulaşan kazanır.</p>
+
+      <h3>İtiraz</h3>
+      <ul>
+        <li>Şüpheli kelimede sözlüğe bakılır: sozluk.gov.tr (TDK Güncel Türkçe Sözlük). Sözlükte yoksa çizilir.</li>
+        <li>Harfleri tahtada birbirine değmiyorsa kelime çizilir. Süre bitince tahta açık kalır; kontrol edebilirsiniz.</li>
+      </ul>
+
+      <h3>Ev kuralları</h3>
+      <ul>
+        <li><b>Ekli kelimeler serbest:</b> <span class="w">EVDE</span>, <span class="w">GELDİM</span> de geçer. Liste uzar, tartışma da.</li>
+        <li><b>Hepsi sayılır:</b> ortak kelimeler de puan alır. Daha az çekişmeli.</li>
+        <li><b>Küçüklerle:</b> çocuğun kelimeleri ortak olsa da çizilmez.</li>
+        <li><b>5×5 tahta:</b> kelime bol çıkar. Zorlaştırmak için en az 4 harf yapın.</li>
+      </ul>
+
+      <h3>Telefonla</h3>
+      <ul>
+        <li><b>Salla</b>’ya basılı tutun, zarlar sallanır. Bırakınca kapak kapanır; geri sayımda telefonu ortaya koyun. İsterseniz basılı tutarken telefonu da sallayın.</li>
+        <li>Telefon hareketi okuyabiliyorsa düğmesiz, sadece sallamak da yeter.</li>
+        <li>Son dakikada bir zil, son 10 saniyede tık sesi, sonunda alarm çalar. Süre bitince tahta açık kalır.</li>
+        <li>Ekran oyun ortasında kararırsa telefonun otomatik kilit süresini uzatın.</li>
+      </ul>
+
+      <h3>Kutudaki zarlar</h3>
+      <p>4×4 kutuda 16, 5×5 kutuda 25 zar var. Harfler, Türkçe sözlük kelimelerinde ne sıklıkla geçiyorsa o kadar yüze yazıldı; J ile F aynı zarda, ikisi bir arada çıkmaz. Yaklaşık 9.500 bilinen kelimeyle binlerce tahta denendi: 4×4 bir tahtada ortalama 40 kadar, 5×5 bir tahtada 75 kadar bilinen kelime saklı.</p>
+      <p><b>4×4</b></p>
+      <div class="dice-list" id="dice4"></div>
+      <p><b>5×5</b></p>
+      <div class="dice-list" id="dice5"></div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
+  <div class="panel">
+    <header><h2 id="setTitle">Ayarlar</h2><button type="button" class="close" id="setClose">Kapat</button></header>
+    <div class="scroll">
+      <section class="set" aria-labelledby="hDur">
+        <h3 id="hDur">Süre</h3>
+        <div class="stepper">
+          <button type="button" id="durMinus" aria-label="30 saniye azalt">−</button>
+          <output id="durVal" aria-live="polite">3:00</output>
+          <button type="button" id="durPlus" aria-label="30 saniye artır">+</button>
+        </div>
+        <div class="seg five">
+          <button type="button" id="dur60" data-set="dur" data-val="60">1:00</button>
+          <button type="button" id="dur120" data-set="dur" data-val="120">2:00</button>
+          <button type="button" id="dur180" data-set="dur" data-val="180">3:00</button>
+          <button type="button" id="dur240" data-set="dur" data-val="240">4:00</button>
+          <button type="button" id="dur300" data-set="dur" data-val="300">5:00</button>
+        </div>
+        <p class="hint">Kutudaki kum saati 3 dakikadır.</p>
+      </section>
+      <section class="set" aria-labelledby="hSize">
+        <h3 id="hSize">Tahta</h3>
+        <div class="seg">
+          <button type="button" id="size4" data-set="size" data-val="4">4×4 · 16 zar</button>
+          <button type="button" id="size5" data-set="size" data-val="5">5×5 · 25 zar</button>
+        </div>
+      </section>
+      <section class="set" aria-labelledby="hMin">
+        <h3 id="hMin">En az harf</h3>
+        <div class="seg">
+          <button type="button" id="min3" data-set="min" data-val="3">3 harf</button>
+          <button type="button" id="min4" data-set="min" data-val="4">4 harf</button>
+        </div>
+        <p class="hint">Türkçede 3 harf önerilir: sözlük kelimeleriyle 4 harf sınırında tahtalar fakirleşiyor.</p>
+      </section>
+      <section class="set" aria-labelledby="hRot">
+        <h3 id="hRot">Harflerin yönü</h3>
+        <div class="seg">
+          <button type="button" id="rotFlat" data-set="rot" data-val="flat">Düz</button>
+          <button type="button" id="rotTwo" data-set="rot" data-val="two">Karşılıklı</button>
+          <button type="button" id="rotMix" data-set="rot" data-val="mix">Karışık</button>
+        </div>
+        <p class="hint"><b>Düz:</b> bütün harfler aynı yöne bakar. <b>Karşılıklı:</b> harflerin bir kısmı size, bir kısmı karşınızdakine döner. <b>Karışık:</b> zarlar dört yöne bakar; ince çizgi harfin altını gösterir.</p>
+      </section>
+      <section class="set" aria-labelledby="hCount">
+        <h3 id="hCount">Açılışta geri sayım</h3>
+        <div class="seg">
+          <button type="button" id="count0" data-set="count" data-val="0">Yok</button>
+          <button type="button" id="count3" data-set="count" data-val="3">3 sn</button>
+          <button type="button" id="count5" data-set="count" data-val="5">5 sn</button>
+        </div>
+        <p class="hint">Sallayan kişi harfleri önce görmesin diye kapak geri sayım bitene kadar kapalı kalır.</p>
+      </section>
+      <section class="set" aria-labelledby="hSound">
+        <h3 id="hSound">Ses</h3>
+        <div class="seg">
+          <button type="button" id="sound1" data-set="sound" data-val="1">Açık</button>
+          <button type="button" id="sound0" data-set="sound" data-val="0">Kapalı</button>
+        </div>
+      </section>
+      <section class="set" aria-labelledby="hRound">
+        <h3 id="hRound">El sayacı</h3>
+        <div class="seg">
+          <button type="button" id="roundReset">Sayacı sıfırla</button>
+        </div>
+        <p class="hint" id="roundNow">Şu ana kadar 0 el oynandı.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const DICE = __DICE__;
+const WAKE = 'data:video/mp4;base64,__WAKE__';
+const KEY = 'harf-kutusu.v1';
+const $ = (s) => document.querySelector(s);
+const app = $('#app'), stage = $('#stage'), tray = $('#tray'), grid = $('#grid'), lid = $('#lid');
+const E = {
+  time: $('#time'), farTime: $('#farTime'), farNote: $('#farNote'), status: $('#status'), sub: $('#sub'), info: $('#info'),
+  left: $('#leftBtn'), main: $('#mainBtn'), right: $('#rightBtn'), count: $('#count'), lidTop: $('#lidTop'), lidBottom: $('#lidBottom')
+};
+const fills = [$('#fill'), $('#farFill')];
+const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+const hasHesap = () => !!(window.Hesap && window.Hesap.nasildi);
+function note(s) { try { if (window.Hesap && window.Hesap.not) window.Hesap.not(s); } catch (e) {} }
+
+/* ---------- durum ---------- */
+const DEF = { dur: 180, size: 4, min: 3, rot: 'flat', count: 3, sound: true, noVid: false };
+let S = Object.assign({}, DEF), G = null;
+try {
+  const o = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (o && typeof o === 'object') { S = Object.assign({}, DEF, o.S || {}); G = o.G || null; }
+} catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ S, G })); } catch (e) {} };
+
+if (!DICE[S.size]) S.size = 4;
+S.dur = Math.min(600, Math.max(30, Math.round((+S.dur || 180) / 30) * 30));
+if (S.min !== 4) S.min = 3;
+if (S.mixed === false && !S.rot) S.rot = 'flat';
+delete S.mixed;
+/* İlk sürümde harfler karışık yöndeydi; o cihazlar bir kez düze geçer (rotV yalnız kayıttan gelir). */
+if (S.rotV !== 2) { S.rot = 'flat'; S.rotV = 2; }
+if (!['mix', 'two', 'flat'].includes(S.rot)) S.rot = 'flat';
+if (![0, 3, 5].includes(S.count)) S.count = 3;
+
+function rnd(n) {
+  try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+  catch (e) { return Math.floor(Math.random() * n); }
+}
+function roll(size) {
+  const d = DICE[size].slice();
+  for (let i = d.length - 1; i > 0; i--) { const j = rnd(i + 1); const t = d[i]; d[i] = d[j]; d[j] = t; }
+  return {
+    size,
+    letters: d.map((x) => Array.from(x)[rnd(6)]),
+    rot: d.map(() => rnd(4)),
+    tilt: d.map(() => (rnd(31) - 15) / 10)
+  };
+}
+const validBoard = (b) => b && DICE[b.size] && Array.isArray(b.letters) && b.letters.length === b.size * b.size;
+if (!G || !validBoard(G.board)) G = { phase: 'idle', round: 0, total: S.dur * 1000, left: 0, endAt: 0, board: roll(S.size) };
+if (G.phase === 'shaking' || G.phase === 'countdown') G.phase = 'idle';
+if (G.phase === 'playing' && !(G.endAt > Date.now())) G.phase = 'ended';
+if (!PHASES_OK(G.phase)) G.phase = 'idle';
+function PHASES_OK(p) { return ['idle', 'shaking', 'countdown', 'playing', 'paused', 'ended'].includes(p); }
+
+/* ---------- tahta ---------- */
+let cells = [];
+function buildGrid(n) {
+  grid.style.setProperty('--n', n);
+  grid.textContent = '';
+  cells = [];
+  for (let i = 0; i < n * n; i++) {
+    const d = document.createElement('div'); d.className = 'die';
+    const b = document.createElement('b'); const s = document.createElement('span');
+    b.appendChild(s); d.appendChild(b); grid.appendChild(d); cells.push(d);
+  }
+  sizeTray();
+}
+function setFace(i, letter, rot) {
+  const c = cells[i];
+  c.firstChild.firstChild.textContent = letter;
+  c.style.setProperty('--rot', (S.rot === 'mix' ? rot * 90 : S.rot === 'two' ? (rot % 2) * 180 : 0) + 'deg');
+}
+function paint(b) {
+  if (cells.length !== b.size * b.size) buildGrid(b.size);
+  b.letters.forEach((L, i) => {
+    setFace(i, L, b.rot[i]);
+    cells[i].style.setProperty('--tilt', (b.tilt ? b.tilt[i] : 0) + 'deg');
+  });
+  grid.classList.toggle('mixed', S.rot !== 'flat');
+  const rows = [];
+  for (let r = 0; r < b.size; r++) rows.push((r + 1) + '. sıra ' + b.letters.slice(r * b.size, r * b.size + b.size).join(' '));
+  grid.setAttribute('aria-label', 'Harfler: ' + rows.join(', '));
+}
+function sizeTray() {
+  const r = stage.getBoundingClientRect();
+  const n = cells.length ? Math.round(Math.sqrt(cells.length)) : S.size;
+  const s = Math.max(180, Math.floor(Math.min(r.width - 24, r.height - 6, 620)));
+  const pad = Math.round(s * 0.045), gap = Math.round(s * (n === 4 ? 0.03 : 0.024));
+  const cell = (s - 2 * pad - (n - 1) * gap) / n;
+  const st = document.documentElement.style;
+  st.setProperty('--tray', s + 'px'); st.setProperty('--pad', pad + 'px');
+  st.setProperty('--gap', gap + 'px'); st.setProperty('--cell', cell.toFixed(2) + 'px');
+}
+if ('ResizeObserver' in window) new ResizeObserver(sizeTray).observe(stage);
+else window.addEventListener('resize', sizeTray);
+
+/* ---------- kapak ---------- */
+function lidShow(mode) {
+  lid.classList.remove('off', 'instant');
+  lid.classList.toggle('pause', mode === 'pause');
+  lid.removeAttribute('aria-hidden');
+  $('#lidNasil').hidden = !(mode === 'pause' && hasHesap());
+  if (mode === 'pause') {
+    E.count.textContent = '';
+    E.lidTop.textContent = 'Durduruldu'; E.lidBottom.textContent = 'Durduruldu';
+  } else {
+    E.lidTop.textContent = 'Hazır olun'; E.lidBottom.textContent = 'Telefonu ortaya koyun';
+  }
+  grid.setAttribute('aria-hidden', 'true');
+}
+function lidHide(instant) {
+  lid.classList.toggle('instant', !!instant);
+  lid.classList.add('off');
+  lid.setAttribute('aria-hidden', 'true');
+  grid.removeAttribute('aria-hidden');
+}
+
+/* ---------- ses ---------- */
+let AC = null, NOISE = null, alarmEl = null, alarmReady = false;
+function ac() {
+  if (!AC) {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+      AC = new C();
+      const len = Math.floor(AC.sampleRate * 0.5);
+      NOISE = AC.createBuffer(1, len, AC.sampleRate);
+      const d = NOISE.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) { AC = null; return null; }
+  }
+  if (AC.state === 'suspended') { try { AC.resume(); } catch (e) {} }
+  return AC;
+}
+function env(g, t, a, d, peak) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + a);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+}
+function tone(f, d, vol, type, at) {
+  if (!S.sound) return; const a = ac(); if (!a) return;
+  try {
+    const t = a.currentTime + (at || 0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'sine'; o.frequency.value = f;
+    env(g, t, 0.006, d, vol || 0.15);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + 0.06);
+  } catch (e) {}
+}
+function clack() {
+  if (!S.sound) return; const a = ac(); if (!a || !NOISE) return;
+  try {
+    const t = a.currentTime;
+    const s = a.createBufferSource(); s.buffer = NOISE;
+    const f = a.createBiquadFilter(); f.type = 'bandpass';
+    f.frequency.value = 1300 + Math.random() * 3400; f.Q.value = 4 + Math.random() * 9;
+    const g = a.createGain(); env(g, t, 0.002, 0.018 + Math.random() * 0.05, 0.22 + Math.random() * 0.5);
+    s.connect(f); f.connect(g); g.connect(a.destination); s.start(t, Math.random() * 0.4, 0.09);
+    if (Math.random() < 0.16) tone(85 + Math.random() * 70, 0.07, 0.14, 'sine');
+  } catch (e) {}
+}
+const beep = () => tone(660, 0.14, 0.16, 'triangle');
+const goBeep = () => { tone(880, 0.12, 0.16, 'triangle'); tone(1320, 0.32, 0.14, 'triangle', 0.12); };
+const chime = () => { tone(784, 0.4, 0.13); tone(1047, 0.55, 0.11, 'sine', 0.2); };
+const tick = () => tone(1750, 0.035, 0.08, 'triangle');
+function webAlarm() { [0, 0.18, 0.36, 1.0, 1.18, 1.36].forEach((at, i) => tone([880, 1175, 1568][i % 3], 0.55, 0.22, 'sine', at)); }
+function makeAlarm() {
+  const sr = 22050, n = Math.floor(sr * 2.1), data = new Float32Array(n);
+  [[0, 880], [0.18, 1175], [0.36, 1568], [1.0, 880], [1.18, 1175], [1.36, 1568]].forEach(([st, f]) => {
+    const s0 = Math.floor(st * sr);
+    for (let i = 0; i < sr * 0.65 && s0 + i < n; i++) {
+      const t = i / sr, e = Math.exp(-t * 5.5) * Math.min(1, t * 300);
+      data[s0 + i] += 0.3 * e * (Math.sin(2 * Math.PI * f * t) + 0.25 * Math.sin(4 * Math.PI * f * t));
+    }
+  });
+  const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const x = Math.max(-1, Math.min(1, data[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+/* Dokunuşla açılır: tarayıcılar sesi ancak bir dokunuştan sonra çalar. */
+function unlockAudio() {
+  const a = ac();
+  if (a) { try { const s = a.createBufferSource(); s.buffer = a.createBuffer(1, 1, 22050); s.connect(a.destination); s.start(0); } catch (e) {} }
+  try {
+    if (!alarmEl) { alarmEl = new Audio(makeAlarm()); alarmEl.preload = 'auto'; }
+    if (!alarmReady) {
+      alarmEl.muted = true;
+      const p = alarmEl.play();
+      if (p && p.then) p.then(() => { alarmEl.pause(); alarmEl.currentTime = 0; alarmEl.muted = false; alarmReady = true; })
+        .catch(() => { alarmEl.muted = false; });
+    }
+  } catch (e) {}
+}
+function alarm() {
+  if (!S.sound) return;
+  if (alarmEl && alarmReady) {
+    try { alarmEl.currentTime = 0; const p = alarmEl.play(); if (p && p.catch) p.catch(webAlarm); return; } catch (e) {}
+  }
+  webAlarm();
+}
+function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+/* ---------- ekran açık kalsın ---------- */
+let wl = null, wakeVid = null, wakeOffT = null;
+async function keepAwake(on) {
+  clearTimeout(wakeOffT);
+  if (!on) {
+    try { if (wl) wl.release(); } catch (e) {}
+    wl = null;
+    if (wakeVid) { try { wakeVid.pause(); } catch (e) {} }
+    return;
+  }
+  if (wl && !wl.released) return;
+  try { if (navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); return; } } catch (e) { wl = null; }
+  if (S.noVid) return;
+  try {
+    if (!wakeVid) {
+      wakeVid = document.createElement('video');
+      wakeVid.className = 'wake'; wakeVid.muted = true; wakeVid.loop = true;
+      wakeVid.setAttribute('muted', ''); wakeVid.setAttribute('playsinline', ''); wakeVid.setAttribute('webkit-playsinline', '');
+      wakeVid.setAttribute('aria-hidden', 'true'); wakeVid.src = WAKE;
+      wakeVid.addEventListener('webkitbeginfullscreen', () => {
+        S.noVid = true; save();
+        try { wakeVid.webkitExitFullscreen(); } catch (e) {}
+        try { wakeVid.pause(); } catch (e) {}
+      });
+      document.body.appendChild(wakeVid);
+    }
+    await wakeVid.play();
+  } catch (e) {}
+}
+
+/* ---------- akış ---------- */
+const PH = {
+  idle:      { status: 'Hazır', far: 'Sıradaki sallasın', main: 'Salla', small: 'basılı tut', left: 'Kurallar', right: 'Ayarlar' },
+  shaking:   { status: 'Sallanıyor', far: 'Sallanıyor', main: 'Sallanıyor…', small: 'bırakınca dizilir' },
+  countdown: { status: 'Hazır olun', far: 'Hazır olun', main: 'Bekleyin', off: true },
+  playing:   { status: 'Oyun sürüyor', far: '', main: 'Durdur' },
+  paused:    { status: 'Durduruldu', far: 'Durduruldu', main: 'Devam et', left: 'Kurallar', right: 'Eli bitir' },
+  ended:     { status: 'Süre doldu', far: 'Süre doldu', main: 'Salla', small: 'yeni el', left: 'Kurallar', right: 'Ayarlar' }
+};
+let motionOK = false, infoKey = '', mainKey = '', confirmEnd = 0;
+const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function leftMs() {
+  if (G.phase === 'playing') return Math.max(0, G.endAt - Date.now());
+  if (G.phase === 'paused') return G.left;
+  if (G.phase === 'ended') return 0;
+  return S.dur * 1000;
+}
+function ptsHTML() {
+  const first = S.min === 4 ? '4 harf' : '3–4 harf';
+  const rows = [[first, 1], ['5 harf', 2], ['6 harf', 3], ['7 harf', 5], ['8+ harf', 11]];
+  const ask = hasHesap() ? '<button type="button" class="chip-btn" data-nasildi="el-sonu">Nasıldı?</button>' : '';
+  return '<span class="pts" aria-label="Puanlar">' + rows.map(([a, b]) => '<span>' + a + '<strong>' + b + '</strong></span>').join('') + ask + '</span>';
+}
+function infoHTML(p) {
+  switch (p) {
+    case 'idle':
+      if (motionOK) return 'Sırası gelen telefonu sallasın ya da <b>Salla</b>’ya basılı tutsun.';
+      if (canAskMotion()) return 'Sırası gelen <b>Salla</b>’ya basılı tutsun. <button type="button" class="chip-btn" id="motionBtn">Sallayarak oyna</button>';
+      return 'Sırası gelen <b>Salla</b>’ya basılı tutup bıraksın, sonra telefonu ortaya koysun.';
+    case 'shaking': return 'Bırakınca harfler kapağın altına dizilir.';
+    case 'countdown': return 'Telefonu masanın ortasına koyun.';
+    case 'playing': return 'Kelimeleri kâğıda yazın. Harfler yan yana, alt alta ya da çapraz değmeli.';
+    case 'paused': return 'Harfler kapalı. Devam edince süre kaldığı yerden akar.';
+    case 'ended': return ptsHTML();
+  }
+  return '';
+}
+function setBtn(b, label, warn) {
+  if (label) { b.textContent = label; b.classList.remove('hide'); b.disabled = false; b.classList.toggle('warn', !!warn); }
+  else { b.classList.add('hide'); b.disabled = true; b.classList.remove('warn'); }
+}
+function ui() {
+  const p = G.phase, c = PH[p];
+  app.dataset.phase = p;
+  const left = leftMs();
+  const total = (p === 'playing' || p === 'paused' || p === 'ended') ? (G.total || 1) : S.dur * 1000;
+  const t = fmt(left);
+  if (E.time.textContent !== t) { E.time.textContent = t; E.farTime.textContent = t; }
+  const frac = Math.max(0, Math.min(1, left / total));
+  fills.forEach((f) => { f.style.transform = 'scaleX(' + frac.toFixed(4) + ')'; });
+  app.classList.toggle('low', p === 'playing' && left <= 10000);
+  if (E.status.textContent !== c.status) E.status.textContent = c.status;
+  E.farNote.textContent = c.far;
+  const n = (p === 'idle' || p === 'shaking' || p === 'countdown') ? S.size : G.board.size;
+  const r = Math.max(1, G.round + ((p === 'idle' || p === 'shaking' || p === 'countdown') ? 1 : 0));
+  E.sub.textContent = n + '×' + n + ' · en az ' + S.min + ' harf · ' + r + '. el';
+  const ik = p + motionOK + S.min + canAskMotion();
+  if (ik !== infoKey) { infoKey = ik; E.info.innerHTML = '<p>' + infoHTML(p) + '</p>'; }
+  const mk = c.main + (c.small || '');
+  if (mk !== mainKey) { mainKey = mk; E.main.innerHTML = c.main + (c.small ? '<small>' + c.small + '</small>' : ''); }
+  E.main.disabled = !!c.off;
+  E.main.classList.toggle('held', p === 'shaking');
+  setBtn(E.left, c.left);
+  if (p === 'paused' && confirmEnd > Date.now()) setBtn(E.right, 'Emin misiniz?', true);
+  else setBtn(E.right, c.right);
+}
+function setPhase(p) { G.phase = p; ui(); save(); }
+
+/* Sallama */
+let shakeSrc = null, shakeStart = 0, flickT = null, rattleT = null, settleT = null, settling = false, cdT = null, tickT = null;
+function canShake() { return (G.phase === 'idle' || G.phase === 'ended') && !document.querySelector('.sheet:not([hidden])'); }
+function startShake(src) {
+  if (!canShake()) return;
+  shakeSrc = src; shakeStart = Date.now(); settling = false;
+  clearInterval(tickT);
+  app.classList.remove('flash');
+  if (cells.length !== S.size * S.size) buildGrid(S.size);
+  grid.classList.toggle('mixed', S.rot !== 'flat');
+  lidHide(true);
+  cells.forEach((c) => {
+    c.style.setProperty('--jd', (0.09 + Math.random() * 0.08).toFixed(3) + 's');
+    c.style.setProperty('--jx', (Math.random() * 6 - 3).toFixed(1) + 'px');
+    c.style.setProperty('--jy', (Math.random() * 6 - 3).toFixed(1) + 'px');
+    c.style.setProperty('--jr', (Math.random() * 14 - 7).toFixed(1) + 'deg');
+  });
+  tray.classList.add('shaking');
+  flicker(); flickT = setInterval(flicker, 75);
+  setPhase('shaking');
+  rattle();
+  settleT = setTimeout(settleSoon, 8000);
+}
+function flicker() {
+  const ds = DICE[S.size];
+  cells.forEach((c, i) => setFace(i, Array.from(ds[rnd(ds.length)])[rnd(6)], rnd(4)));
+}
+function rattle() {
+  if (G.phase !== 'shaking') return;
+  clack();
+  rattleT = setTimeout(rattle, 26 + rnd(62));
+}
+function settleSoon() {
+  if (G.phase !== 'shaking' || settling) return;
+  settling = true;
+  clearTimeout(settleT);
+  settleT = setTimeout(settle, Math.max(0, 750 - (Date.now() - shakeStart)));
+}
+function settle() {
+  clearInterval(flickT); clearTimeout(rattleT); clearTimeout(settleT);
+  tray.classList.remove('shaking');
+  G.board = roll(S.size);
+  G.total = S.dur * 1000;
+  keepAwake(true);
+  if (S.count > 0) {
+    lidShow('count');
+    E.count.textContent = S.count;
+    setTimeout(() => paint(G.board), 300);
+    setPhase('countdown');
+    let k = S.count;
+    const step = () => {
+      if (G.phase !== 'countdown') return;
+      if (k === 0) { reveal(); return; }
+      E.count.textContent = k; beep(); k--;
+      cdT = setTimeout(step, 1000);
+    };
+    cdT = setTimeout(step, 350);
+  } else {
+    paint(G.board);
+    reveal();
+  }
+}
+function reveal() {
+  clearTimeout(cdT);
+  G.round = (G.round || 0) + 1;
+  G.endAt = Date.now() + G.total; G.left = G.total;
+  G.minute = G.total <= 60000; G.lastTick = 0;
+  lidHide(false);
+  goBeep();
+  setPhase('playing');
+  runTicker();
+  note(G.round + '. el başladı · ' + G.board.size + '×' + G.board.size + ' · ' + fmt(G.total));
+}
+function runTicker() { clearInterval(tickT); tickT = setInterval(step, 200); step(); }
+function step() {
+  if (G.phase !== 'playing') { clearInterval(tickT); ui(); return; }
+  const left = G.endAt - Date.now();
+  if (left <= 0) { end(true); return; }
+  if (!G.minute && left <= 60000) { G.minute = true; chime(); save(); }
+  const sec = Math.ceil(left / 1000);
+  if (sec <= 10 && G.lastTick !== sec) { G.lastTick = sec; tick(); }
+  ui();
+}
+function end(withAlarm) {
+  clearInterval(tickT);
+  G.left = 0;
+  lidHide(false);
+  setPhase('ended');
+  note(G.round + '. el bitti · ' + G.board.size + '×' + G.board.size + (withAlarm ? '' : ' · erken bitirildi'));
+  if (withAlarm) {
+    alarm(); buzz([220, 110, 220, 110, 420]);
+    app.classList.remove('flash'); void app.offsetWidth; app.classList.add('flash');
+    setTimeout(() => app.classList.remove('flash'), 2400);
+  }
+  wakeOffT = setTimeout(() => keepAwake(false), 5 * 60 * 1000);
+}
+function pause() {
+  if (G.phase !== 'playing') return;
+  clearInterval(tickT);
+  G.left = Math.max(0, G.endAt - Date.now());
+  lidShow('pause');
+  setPhase('paused');
+}
+function resume() {
+  if (G.phase !== 'paused') return;
+  G.endAt = Date.now() + G.left;
+  confirmEnd = 0;
+  lidHide(false);
+  keepAwake(true);
+  setPhase('playing');
+  runTicker();
+}
+
+/* Düğmeler */
+const main = E.main;
+main.addEventListener('pointerdown', (e) => {
+  if (e.button > 0) return;
+  unlockAudio();
+  if (canShake()) {
+    e.preventDefault();
+    try { main.setPointerCapture(e.pointerId); } catch (_) {}
+    startShake('hold');
+  }
+});
+const release = () => { if (G.phase === 'shaking' && shakeSrc === 'hold') settleSoon(); };
+main.addEventListener('pointerup', release);
+main.addEventListener('pointercancel', release);
+main.addEventListener('lostpointercapture', release);
+main.addEventListener('contextmenu', (e) => e.preventDefault());
+main.addEventListener('click', (e) => {
+  if (G.phase === 'playing') pause();
+  else if (G.phase === 'paused') resume();
+  else if (e.detail === 0 && canShake()) { unlockAudio(); startShake('key'); settleSoon(); }
+});
+window.addEventListener('blur', () => { if (G.phase === 'shaking' && shakeSrc !== 'motion') settleSoon(); });
+
+E.left.addEventListener('click', () => { if (!E.left.disabled) openSheet('rules'); });
+E.right.addEventListener('click', () => {
+  if (E.right.disabled) return;
+  if (G.phase === 'paused') {
+    if (confirmEnd > Date.now()) { confirmEnd = 0; end(false); }
+    else { confirmEnd = Date.now() + 3000; ui(); setTimeout(ui, 3050); }
+  } else openSheet('settings');
+});
+
+/* Telefonu sallamak (hareket sensörü açıksa) */
+let motionAsked = false, listening = false, lastAcc = null, jolts = [], lastJolt = 0;
+const needsPerm = () => !!(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function');
+/* Claude'un çerçevesinde sensör kapalı; izin düğmesi yalnız sayfa kendi adresinde açıkken çıkar. */
+function canAskMotion() { return !motionOK && !inFrame && needsPerm() && !motionAsked && S.motion !== 0; }
+function listenMotion() { if (listening) return; listening = true; window.addEventListener('devicemotion', onMotion); }
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null || a.y == null || a.z == null) return;
+  if (!motionOK) { motionOK = true; ui(); }
+  if (lastAcc) {
+    const d = Math.abs(a.x - lastAcc.x) + Math.abs(a.y - lastAcc.y) + Math.abs(a.z - lastAcc.z);
+    if (d > 25) {
+      const now = Date.now();
+      jolts = jolts.filter((t) => now - t < 900); jolts.push(now); lastJolt = now;
+      if (jolts.length >= 4 && canShake()) startShake('motion');
+    }
+  }
+  lastAcc = { x: a.x, y: a.y, z: a.z };
+}
+setInterval(() => { if (G.phase === 'shaking' && shakeSrc === 'motion' && Date.now() - lastJolt > 450) settleSoon(); }, 100);
+function askMotion() {
+  if (motionAsked || !needsPerm()) return;
+  motionAsked = true;
+  const done = () => { infoKey = ''; ui(); };
+  try {
+    DeviceMotionEvent.requestPermission().then((r) => {
+      S.motion = r === 'granted' ? 1 : 0; save();
+      if (r === 'granted') listenMotion();
+      done();
+    }, done);
+  } catch (e) { done(); }
+}
+E.info.addEventListener('click', (e) => { if (e.target.closest('#motionBtn')) askMotion(); });
+try {
+  if (window.DeviceMotionEvent && !needsPerm()) listenMotion();
+  else if (needsPerm() && !inFrame && S.motion === 1) {
+    /* iPhone: izin her açılışta yeniden istenmeli; daha önce izin verildiyse ilk dokunuşta sessizce istenir. */
+    const once = () => { document.removeEventListener('touchend', once, true); document.removeEventListener('click', once, true); askMotion(); };
+    document.addEventListener('touchend', once, true);
+    document.addEventListener('click', once, true);
+  }
+} catch (e) {}
+
+/* Sayfalar */
+let lastFocus = null;
+function openSheet(id) {
+  const s = document.getElementById(id);
+  if (!s.hidden) return;
+  lastFocus = document.activeElement;
+  if (id === 'settings') syncSettings();
+  s.hidden = false; void s.offsetWidth; s.classList.add('in');
+  const c = s.querySelector('.close'); if (c) c.focus({ preventScroll: true });
+}
+function closeSheet(s) {
+  s.classList.remove('in');
+  setTimeout(() => { s.hidden = true; }, 230);
+  if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+}
+document.querySelectorAll('.sheet').forEach((s) => {
+  s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('.close')) closeSheet(s); });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { const s = document.querySelector('.sheet:not([hidden])'); if (s) closeSheet(s); }
+});
+
+/* Ayarlar */
+function syncSettings() {
+  document.querySelectorAll('#settings button[data-set]').forEach((b) => {
+    const k = b.dataset.set, v = b.dataset.val;
+    const cur = k === 'sound' ? (S[k] ? '1' : '0') : String(S[k]);
+    b.setAttribute('aria-pressed', String(cur === v));
+    if (k === 'size') b.disabled = !(G.phase === 'idle' || G.phase === 'ended');
+  });
+  $('#durVal').textContent = fmt(S.dur * 1000);
+  $('#roundNow').textContent = 'Şu ana kadar ' + (G.round || 0) + ' el oynandı.';
+}
+$('#settings').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-set]'); if (!b || b.disabled) return;
+  const k = b.dataset.set, v = b.dataset.val;
+  if (k === 'size') {
+    const n = +v;
+    if (n !== S.size && (G.phase === 'idle' || G.phase === 'ended')) {
+      S.size = n; G.board = roll(n); G.phase = 'idle'; buildGrid(n); paint(G.board); lidHide(true);
+    }
+  } else if (k === 'dur') S.dur = +v;
+  else if (k === 'min') S.min = +v;
+  else if (k === 'count') S.count = +v;
+  else if (k === 'rot') { S.rot = v; paint(G.board); }
+  else if (k === 'sound') { S.sound = v === '1'; if (S.sound) { unlockAudio(); tone(880, 0.12, 0.14, 'triangle'); } }
+  syncSettings(); save(); ui();
+});
+$('#durMinus').addEventListener('click', () => { S.dur = Math.max(30, S.dur - 30); syncSettings(); save(); ui(); });
+$('#durPlus').addEventListener('click', () => { S.dur = Math.min(600, S.dur + 30); syncSettings(); save(); ui(); });
+$('#roundReset').addEventListener('click', () => { G.round = 0; save(); syncSettings(); ui(); });
+
+/* Kurallardaki zar listesi */
+['4', '5'].forEach((n) => { $('#dice' + n).innerHTML = DICE[n].map((d) => '<span>' + d + '</span>').join(''); });
+
+/* Uygulama arka plandan dönünce */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (G.phase === 'playing') { keepAwake(true); step(); }
+});
+
+/* Başlangıç */
+buildGrid(G.board.size);
+paint(G.board);
+if (G.phase === 'paused') lidShow('pause'); else lidHide(true);
+ui();
+if (G.phase === 'playing') runTicker();
+})();
+</script>
+</body>
+</html>
