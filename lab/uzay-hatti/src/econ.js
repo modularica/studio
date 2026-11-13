@@ -1,25 +1,25 @@
 /* ===== EKONOMI (pure functions, shared by game + simulation) ===== */
 var ECON = (function () {
   var CFG = {
-    A0: 0.5, Astep: 0.25, Acost0: 8, Agrowth: 1.12,
-    C0: 0.4, Cstep: 0.2, Ccost0: 12, Cgrowth: 1.12,
+    A0: 0.5, Astep: 0.25, Acost0: 10, Agrowth: 1.12,
+    C0: 0.6, Cstep: 0.3, Ccost0: 14, Cgrowth: 1.12,
     mEvery: 25,
-    boardTime: 1.2, autoWait: 2.0, padClear: 0.8, maxWait: 5,
+    boardTime: 1.5, autoWait: 3.0, manualWait: 1.5, padClear: 0.8, maxWait: 12, autoMaxWait: 15,
     seatGrowth: 1.14, seatCostK: 0.5,
-    speedGrowth: 1.6, speedCostK: 1.2, speedMax: 15, speedStep: 0.92,
-    fleetCostK: [8, 50], fleetMax: 3,
+    speedGrowth: 1.6, speedCostK: 1.2, speedMax: 15, speedStep: 0.93,
+    fleetCostK: [8, 50], fleetMax: 3, autoCostK: 4,
     shareBase: 1.6,
     offlineBaseH: 12
   };
   var ROUTES = [
-    { id: 'ay',     name: 'Ay',      dat: "Ay'a",      price: 4,     trip: 6,  seats: 4,  value: 6,     color: '#d8d1c0' },
-    { id: 'mars',   name: 'Mars',    dat: "Mars'a",    price: 30,    trip: 9,  seats: 6,  value: 500,   color: '#ff6a45' },
-    { id: 'venus',  name: 'Venüs',   dat: "Venüs'e",   price: 220,   trip: 12, seats: 8,  value: 1e4,   color: '#f1c24f' },
-    { id: 'europa', name: 'Europa',  dat: "Europa'ya", price: 1600,  trip: 16, seats: 10, value: 2.2e5, color: '#8fd4ff' },
-    { id: 'saturn', name: 'Satürn',  dat: "Satürn'e",  price: 1.2e4, trip: 20, seats: 12, value: 5e6,   color: '#e9b37b' },
-    { id: 'titan',  name: 'Titan',   dat: "Titan'a",   price: 9e4,   trip: 25, seats: 14, value: 1.2e8, color: '#ffa04a' },
-    { id: 'neptun', name: 'Neptün',  dat: "Neptün'e",  price: 7e5,   trip: 30, seats: 16, value: 2e9,   color: '#5a86ff' },
-    { id: 'pluton', name: 'Plüton',  dat: "Plüton'a",  price: 6e6,   trip: 36, seats: 18, value: 4e10,  color: '#f4b3c6' }
+    { id: 'ay',     name: 'Ay',      dat: "Ay'a",      price: 4,     trip: 10, seats: 4,  value: 30,    color: '#d8d1c0' },
+    { id: 'mars',   name: 'Mars',    dat: "Mars'a",    price: 30,    trip: 14, seats: 6,  value: 600,   color: '#ff6a45' },
+    { id: 'venus',  name: 'Venüs',   dat: "Venüs'e",   price: 220,   trip: 18, seats: 8,  value: 1.2e4, color: '#f1c24f' },
+    { id: 'europa', name: 'Europa',  dat: "Europa'ya", price: 1600,  trip: 22, seats: 10, value: 2.6e5, color: '#8fd4ff' },
+    { id: 'saturn', name: 'Satürn',  dat: "Satürn'e",  price: 1.2e4, trip: 26, seats: 12, value: 6e6,   color: '#e9b37b' },
+    { id: 'titan',  name: 'Titan',   dat: "Titan'a",   price: 9e4,   trip: 30, seats: 14, value: 1.5e8, color: '#ffa04a' },
+    { id: 'neptun', name: 'Neptün',  dat: "Neptün'e",  price: 7e5,   trip: 36, seats: 16, value: 2.5e9, color: '#5a86ff' },
+    { id: 'pluton', name: 'Plüton',  dat: "Plüton'a",  price: 6e6,   trip: 42, seats: 18, value: 5e10,  color: '#f4b3c6' }
   ];
   function mm(L) { return Math.pow(2, Math.floor(L / CFG.mEvery)); }
   function mult(s, boost) {
@@ -30,17 +30,17 @@ var ECON = (function () {
       demand: (1 + 0.3 * (r.reklam || 0)) * (b.demand || 1),
       checkin: (1 + 0.3 * (r.checkin || 0)),
       trip: (1 - 0.06 * (r.motor || 0)) / (b.speed || 1),
-      autoWait: Math.max(0.5, CFG.autoWait - 0.3 * (r.otopilot || 0)),
+      autoWait: Math.max(1, CFG.autoWait - 0.4 * (r.otopilot || 0)),
       autoMult: 1 + 0.1 * (r.otopilot || 0)
     };
   }
   function arrival(s, L, m) { L = L || s.lvA; m = m || mult(s); return (CFG.A0 + CFG.Astep * (L - 1)) * mm(L) * m.demand; }
   function checkin(s, L, m) { L = L || s.lvC; m = m || mult(s); return (CFG.C0 + CFG.Cstep * (L - 1)) * mm(L) * m.checkin; }
   function seats(i, L) { var R = ROUTES[i]; return Math.round(R.seats * (1 + 0.5 * (L - 1)) * mm(L)); }
-  function trip(i, L, m) { var R = ROUTES[i]; return Math.max(3.6, R.trip * Math.pow(CFG.speedStep, L - 1) * (m ? m.trip : 1)); }
+  function trip(i, L, m) { var R = ROUTES[i]; return Math.max(4, R.trip * Math.pow(CFG.speedStep, L - 1) * (m ? m.trip : 1)); }
   function cap(s, i, m, rt) {
     rt = rt || s.routes[i]; m = m || mult(s);
-    var K = seats(i, rt.seats), T = trip(i, rt.speed, m), w = m.autoWait;
+    var K = seats(i, rt.seats), T = trip(i, rt.speed, m), w = rt.auto ? m.autoWait : CFG.manualWait;
     return Math.min(rt.fleet * K / (T + CFG.boardTime + w), K / (CFG.boardTime + w + CFG.padClear));
   }
   function shares(s) {
@@ -52,14 +52,15 @@ var ECON = (function () {
   // steady-state flow (passive, no tapping). Demand split by shares; overflow
   // rebooks to routes with free seats, most expensive first (never wastes a passenger
   // while any rocket has room).
-  function flow(s, boost) {
-    var m = mult(s, boost);
+  // opts.autoOnly: only routes with automatic pilot fly (what happens while nobody is tapping)
+  function flow(s, boost, opts) {
+    var m = mult(s, boost), autoOnly = !!(opts && opts.autoOnly);
     var A = arrival(s, s.lvA, m), C = checkin(s, s.lvC, m);
     var Fin = Math.min(A, C), sh = shares(s);
     var caps = [], x = [], F = 0, i;
     for (i = 0; i < ROUTES.length; i++) {
       if (!s.routes[i].u) { caps.push(0); x.push(0); continue; }
-      var c = cap(s, i, m); caps.push(c); F += c;
+      var c = (autoOnly && !s.routes[i].auto) ? 0 : cap(s, i, m); caps.push(c); F += c;
       x.push(Math.min(Fin * sh[i], c));
     }
     var used = 0; for (i = 0; i < x.length; i++) used += x[i];
@@ -94,6 +95,7 @@ var ECON = (function () {
     seats: function (i, L, n) { return geoCost(ROUTES[i].value * CFG.seatCostK, CFG.seatGrowth, L, n || 1); },
     speed: function (i, L, n) { return geoCost(ROUTES[i].value * CFG.speedCostK, CFG.speedGrowth, L, n || 1); },
     fleet: function (i, f) { return ROUTES[i].value * CFG.fleetCostK[f - 1]; },
+    auto: function (i) { return Math.max(60, ROUTES[i].value * CFG.autoCostK); },
     unlock: function (i) { return i === 0 ? 0 : ROUTES[i].value; }
   };
   var maxBuy = {

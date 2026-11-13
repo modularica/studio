@@ -15,18 +15,17 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="uzay-hatti" data-kayit="uzay-hatti-v1"></script>
+<script src="/hesap/hesap.js" data-oyun="uzay-hatti" data-kayit="uzay-hatti-v2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Martian+Mono:wght@400;600;800&family=Onest:wght@400;500;600;700;800&display=swap">
 <style>
 :root{
   /* Uzay Hattı: gece kalkış terminali. Lacivert-petrol gök, tek vurgu sinyal turuncusu, sıcak beyaz metin.
-     Düzen: üstte canlı sahne + mekanik kalkış panosu, altta yönetim paneli (geniş ekranda sağ sütun). */
+     Düzen: üstte canlı sahne, altta gezegen kartları (geniş ekranda sağ sütun). Az yazı, az sayı. */
   --ink:#060d15; --panel:#0b1721; --card:#102130; --card2:#0d1b27; --line:#1c3242; --text:#f3ebdb; --muted:#8fa3b0; --dim:#5e7281;
   --signal:#ff6a2b; --signal-hi:#ff8d57; --signal-ink:#200c02;
   --mint:#5fe3b4; --amber:#ffc34d; --gem:#b8a2ff; --danger:#ff6474;
-  --flap:#0a1117; --flap-text:#ffd37a;
   --display:'Bungee', Impact, 'Arial Black', system-ui, sans-serif;
   --mono:'Martian Mono', ui-monospace, Menlo, Consolas, monospace;
   --body:'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -41,15 +40,14 @@ svg{display:block}
 [hidden]{display:none!important}
 
 #app{height:100%;display:grid;grid-template-columns:minmax(0,1fr);
-  grid-template-rows:auto minmax(190px,38%) auto auto minmax(0,1fr);
-  grid-template-areas:"hud" "stage" "board" "flow" "side"}
+  grid-template-rows:auto minmax(220px,46%) minmax(0,1fr);
+  grid-template-areas:"hud" "stage" "side"}
 
 /* HUD */
 #hud{grid-area:hud;display:flex;align-items:center;gap:10px;padding:7px 10px 7px 12px;background:linear-gradient(#0b1621,#08121b);border-bottom:1px solid var(--line);min-width:0}
 .brand{font-family:var(--display);font-size:11px;line-height:1.02;color:var(--signal);letter-spacing:.03em;display:none}
 .money{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
-.money b{display:block;font-family:var(--display);font-weight:400;font-size:22px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.money small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--mint);white-space:nowrap;margin-top:2px}
+.money b{display:block;font-family:var(--display);font-weight:400;font-size:24px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .coin{flex:none;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff5c9 0,#ffcf5c 38%,#d48b17 100%);box-shadow:inset 0 0 0 2px rgba(110,60,0,.35),0 0 12px rgba(255,195,77,.25)}
 .gems{display:flex;align-items:center;gap:5px;padding:5px 9px 5px 7px;border:1px solid #2b2752;background:#14122a;border-radius:999px;font-family:var(--mono);font-weight:800;font-size:13px;color:#e4dcff}
 .gems svg{width:16px;height:16px}
@@ -60,9 +58,6 @@ svg{display:block}
 /* Stage */
 #stage{grid-area:stage;position:relative;overflow:hidden;background:#05101a;min-height:0}
 #scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
-#radio{position:absolute;left:8px;right:8px;top:8px;display:flex;gap:8px;align-items:flex-start;padding:7px 10px;border-radius:10px;background:rgba(6,14,22,.82);border:1px solid rgba(255,106,43,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-size:12.5px;line-height:1.35;max-width:560px;z-index:3;animation:dropin .28s ease-out}
-#radio .r-from{flex:none;font-family:var(--mono);font-weight:800;font-size:9.5px;letter-spacing:.06em;color:var(--signal);background:rgba(255,106,43,.12);padding:3px 6px;border-radius:5px;margin-top:1px}
-#radio .r-txt{min-height:1.35em}
 @keyframes dropin{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
 #evchip{position:absolute;left:8px;top:8px;z-index:2;display:flex;align-items:center;gap:8px;max-width:calc(100% - 128px);padding:6px 6px 6px 10px;border-radius:999px;background:rgba(32,18,6,.85);border:1px solid rgba(255,195,77,.55);font-weight:700;font-size:12.5px;color:#ffe2a6;overflow:hidden;animation:dropin .28s ease-out}
 #evchip .ev-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -72,41 +67,17 @@ svg{display:block}
 .boost{font-family:var(--mono);font-weight:800;font-size:10px;padding:4px 7px;border-radius:6px;background:rgba(95,227,180,.14);border:1px solid rgba(95,227,180,.45);color:var(--mint)}
 
 /* Launch control */
-#btnLaunch{position:absolute;left:8px;bottom:8px;z-index:2;width:min(200px,42%);border:0;border-radius:14px;padding:7px 10px 8px;text-align:left;
+#btnLaunch{position:absolute;left:8px;bottom:8px;z-index:2;width:min(210px,46%);border:0;border-radius:14px;padding:8px 11px 9px;text-align:left;
   background:linear-gradient(180deg,#ff7a3d,#f45a1c);color:var(--signal-ink);box-shadow:0 6px 0 #a83a0e,0 10px 26px rgba(255,106,43,.35);transform:translateY(0);transition:transform .06s}
 #btnLaunch:active{transform:translateY(3px);box-shadow:0 3px 0 #a83a0e,0 6px 18px rgba(255,106,43,.35)}
-#btnLaunch .l-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-family:var(--mono);font-weight:800;font-size:10px;letter-spacing:.04em}
+#btnLaunch .l-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-family:var(--mono);font-weight:800;font-size:10.5px;letter-spacing:.04em}
 #btnLaunch .l-top em{font-style:normal;opacity:.75}
-#btnLaunch .l-cta{display:block;font-family:var(--display);font-size:19px;line-height:1;margin-top:5px;letter-spacing:.02em}
-.gauge{position:relative;display:block;height:11px;margin-top:5px;border-radius:6px;background:#3d1606;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+#btnLaunch .l-cta{display:block;font-family:var(--display);font-size:21px;line-height:1;margin-top:6px;letter-spacing:.02em}
+.gauge{position:relative;display:block;height:13px;margin-top:6px;border-radius:7px;background:#3d1606;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
 .gauge .gz{position:absolute;top:0;bottom:0;background:#d99a2b}
 .gauge .pz{position:absolute;top:0;bottom:0;background:#5fe3b4}
 .gauge .needle{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;left:0;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff;will-change:transform}
 #btnLaunch .l-timer{position:absolute;left:10px;right:10px;bottom:4px;height:2px;border-radius:2px;background:rgba(32,12,2,.45);transform-origin:left;transform:scaleX(var(--t,1))}
-
-/* Departure board */
-#board{grid-area:board;background:#05090d;border-top:1px solid #142632;border-bottom:1px solid #142632;padding:6px 10px 7px;font-family:var(--mono);font-size:11px}
-.bhead{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--dim);margin-bottom:4px}
-.bhead b{color:var(--flap-text);font-weight:800;letter-spacing:.08em}
-.brow{display:grid;grid-template-columns:auto auto 1fr;gap:10px;align-items:center;height:21px}
-.brow .cells{display:flex;gap:1.5px}
-.brow .cells i{position:relative;display:inline-block;width:1.18em;height:17px;line-height:17px;text-align:center;font-style:normal;font-weight:800;color:var(--flap-text);background:linear-gradient(#141e26 0 49%,#0b1319 51% 100%);border-radius:2px;font-size:11px}
-.brow .cells i::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#03070a}
-.brow .inf{justify-self:end}
-.brow .dot{display:none}
-.brow.r-ready .st i{color:#7dffcb}
-.brow.r-lock .cells i{color:#56656f}
-.brow:nth-of-type(n+5){display:none}
-
-/* Flow */
-#flow{grid-area:flow;display:flex;align-items:stretch;gap:4px;padding:7px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
-.fchip{position:relative;flex:1;min-width:0;border:1px solid var(--line);background:var(--card2);border-radius:10px;padding:5px 6px 5px 8px;text-align:left}
-.fchip span{display:block;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fchip b{display:block;font-family:var(--mono);font-size:12px;font-weight:800;white-space:nowrap}
-.fchip.bn{border-color:var(--signal);background:linear-gradient(180deg,rgba(255,106,43,.18),rgba(255,106,43,.06));animation:pulse 1.6s ease-in-out infinite}
-.fchip.bn::after{content:"DARBOĞAZ";position:absolute;right:4px;top:-7px;font-family:var(--mono);font-size:7.5px;font-weight:800;letter-spacing:.06em;background:var(--signal);color:var(--signal-ink);padding:2px 4px;border-radius:4px}
-.farrow{flex:none;align-self:center;width:6px;height:6px;border-top:2px solid var(--dim);border-right:2px solid var(--dim);transform:rotate(45deg);margin:0 1px}
-@keyframes pulse{50%{box-shadow:0 0 0 3px rgba(255,106,43,.18)}}
 
 /* Side: tabs + panel */
 #side{grid-area:side;display:flex;flex-direction:column;min-height:0;background:var(--panel)}
@@ -119,59 +90,60 @@ svg{display:block}
 .tab .badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--signal);color:var(--signal-ink);font-family:var(--mono);font-size:9.5px;font-weight:800;line-height:16px}
 .tab.new::after{content:"YENİ";position:absolute;top:2px;right:8%;font-family:var(--mono);font-size:7.5px;font-weight:800;color:var(--signal)}
 
-/* Cards */
+/* Planet cards (Liman) */
+.rcard{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 10px 3px 11px;display:flex;flex-direction:column}
+.rcard.next{border-style:dashed;background:var(--card2);padding-bottom:6px}
+.rcard.term{padding-top:8px}
+.rhd{display:flex;align-items:center;gap:9px;min-height:30px;padding-bottom:6px}
+.rnm{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.02em;white-space:nowrap}
+.rbar{flex:1;min-width:28px;height:9px;border-radius:5px;background:#0a1620;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.rbar i{display:block;height:100%;width:0;background:var(--rc,var(--mint));border-radius:5px;transition:width .3s}
+.next .rbar i{background:var(--amber)}
+.rseat{flex:none;font-family:var(--mono);font-size:12px;font-weight:800;min-width:30px;text-align:right;white-space:nowrap}
+.rst{flex:none;font-size:11.5px;font-weight:700;color:var(--muted);padding:4px 9px;border-radius:999px;background:#0a1620;white-space:nowrap}
+.rst.ready{background:var(--signal);color:var(--signal-ink)}
+.rst.wait{background:rgba(255,195,77,.14);color:var(--amber)}
+.rst.away{color:var(--dim)}
+.urow{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid rgba(28,50,66,.8);border-radius:4px}
+.urow.pop{animation:upop .45s ease}
+@keyframes upop{30%{background:rgba(95,227,180,.14)}}
+.uico{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#0b1823;border:1px solid var(--line);color:var(--amber)}
+.uico svg{width:19px;height:19px}
+.ulab{flex:1;min-width:0}
+.ulab b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ulab em{display:block;font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.ubadge{flex:none;width:26px;height:26px;animation:bob 1.3s ease-in-out infinite}
+.ubadge svg{width:100%;height:100%}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.ubuy{flex:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:98px;border:0;border-radius:11px;padding:10px 11px;background:var(--signal);color:var(--signal-ink);box-shadow:0 3px 0 #a83a0e}
+.ubuy .coin{width:16px;height:16px}
+.ubuy b{font-family:var(--mono);font-weight:800;font-size:13px;white-space:nowrap}
+.ubuy:active{transform:translateY(2px);box-shadow:0 1px 0 #a83a0e}
+.ubuy:disabled{background:#1c2c38;color:#7d909a;box-shadow:0 3px 0 #0f1a22;cursor:default}
+.ubuy:disabled:active{transform:none}
+.ubuy:disabled .coin{opacity:.55}
+.ubuy.done{background:none;box-shadow:none;color:var(--mint)}
+.ubuy.done .coin{display:none}
+.ubuy.big{min-width:108px}
+.nmeta{flex:1;min-width:0}
+.nmeta .rnm{display:block;white-space:normal}
+.nmeta span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.save{display:flex;align-items:center;gap:9px;padding:2px 0 2px}
+.save>span:last-child{flex:none;font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.hintline{margin:6px 6px 0;text-align:center;font-size:13.5px;color:var(--muted)}
+.planet{flex:none;width:30px;height:30px;border-radius:50%;box-shadow:inset -6px -5px 0 rgba(0,0,0,.35),0 0 12px var(--pc,#fff3)}
+
+/* Cards (Görevler, Bilim) */
 .sect{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 2px 0}
 .sect h3{margin:0;font-family:var(--display);font-weight:400;font-size:13px;letter-spacing:.03em;color:var(--text)}
 .sect p{margin:0;font-size:11.5px;color:var(--muted)}
 .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 12px;display:flex;flex-direction:column;gap:7px}
-.card.hot{border-color:rgba(255,106,43,.75);box-shadow:0 0 0 1px rgba(255,106,43,.25) inset}
-.card.hot::before{content:"ÖNCE BU";position:absolute;right:10px;top:-8px;font-family:var(--mono);font-weight:800;font-size:8.5px;letter-spacing:.06em;background:var(--signal);color:var(--signal-ink);padding:2px 6px;border-radius:5px}
 .crow{display:flex;align-items:center;gap:10px;min-width:0}
-.cico{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#0b1823;border:1px solid var(--line);color:var(--amber)}
-.cico svg{width:19px;height:19px}
 .cmain{flex:1;min-width:0}
 .ctitle{display:flex;align-items:baseline;gap:7px;font-weight:700;font-size:14px}
-.ctitle .lv{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--muted)}
 .cstat{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
 .cstat b{color:var(--text);font-weight:600}
-.cdesc{font-size:12px;color:var(--muted)}
-.mile{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--dim)}
-.mile i{flex:1;height:4px;border-radius:2px;background:#0a1620;overflow:hidden}
-.mile i::before{content:"";display:block;height:100%;width:var(--p,0%);background:var(--amber)}
-.buy{flex:none;min-width:104px;border:0;border-radius:10px;padding:7px 10px;background:var(--signal);color:var(--signal-ink);text-align:center;box-shadow:0 3px 0 #a83a0e}
-.buy:active{transform:translateY(2px);box-shadow:0 1px 0 #a83a0e}
-.buy b{display:block;font-family:var(--mono);font-weight:800;font-size:12.5px;white-space:nowrap}
-.buy small{display:block;font-size:10.5px;font-weight:700;opacity:.85;white-space:nowrap}
-.buy.meh{background:#22313c;color:#cfd9df;box-shadow:0 3px 0 #111d26}
-.buy.meh small{opacity:.7}
-.buy:disabled{background:#1c2c38;color:#71858f;box-shadow:0 3px 0 #0f1a22;cursor:default}
-.buy:disabled:active{transform:none}
-.buy.max{background:#1a2833;color:var(--muted);box-shadow:none}
-.gain{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--mint);text-align:center;margin-top:3px;white-space:nowrap}
-.gain.zero{color:var(--dim);font-weight:600}
-.bcol{flex:none;display:flex;flex-direction:column;align-items:stretch}
-.btn3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.mini{border:0;border-radius:10px;padding:6px 4px 7px;background:#16293a;color:var(--text);text-align:center;box-shadow:0 3px 0 #0b1621;min-width:0}
-.mini:active{transform:translateY(2px);box-shadow:0 1px 0 #0b1621}
-.mini span{display:block;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini b{display:block;font-family:var(--mono);font-weight:800;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini em{display:block;font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--mint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini em.zero{color:var(--dim)}
-.mini.can{background:linear-gradient(180deg,#ff7a3d,#f45a1c);color:var(--signal-ink);box-shadow:0 3px 0 #a83a0e}
-.mini.can span,.mini.can em{color:rgba(32,12,2,.8)}
-.mini:disabled{opacity:.6;cursor:default}
-.mini.done{opacity:.5}
-.rhead{display:flex;align-items:center;gap:10px}
-.planet{flex:none;width:30px;height:30px;border-radius:50%;box-shadow:inset -6px -5px 0 rgba(0,0,0,.35),0 0 12px var(--pc,#fff3)}
-.rname{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.02em}
-.rmeta{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
-.rstat{display:flex;flex-wrap:wrap;gap:4px 10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
-.rstat b{color:var(--text);font-weight:600}
 .pill{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:#1a2a36;color:var(--muted)}
-.pill.full{background:rgba(255,106,43,.16);color:var(--signal-hi);border:1px solid rgba(255,106,43,.45)}
-.pill.ok{background:rgba(95,227,180,.12);color:var(--mint)}
-.card.lock{border-style:dashed;background:var(--card2)}
-.card.mystery{opacity:.65}
 .toggle{display:flex;gap:3px;padding:3px;border-radius:9px;background:#0a1620;border:1px solid var(--line)}
 .toggle button{border:0;background:none;border-radius:7px;padding:4px 9px;font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted)}
 .toggle button[aria-pressed="true"]{background:#1f3446;color:var(--text)}
@@ -227,6 +199,8 @@ svg{display:block}
 .sw[aria-pressed="true"]::after{transform:translateX(20px);background:#fff}
 .found{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;background:#0b1823;border:1px solid #2c4660;margin:8px 0}
 .found .sv{width:62px;flex:none}
+.licon{display:inline-block;width:19px;height:19px;vertical-align:-5px;margin:0 2px}
+.licon svg{width:100%;height:100%}
 
 #toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
 .tst{padding:8px 13px;border-radius:999px;background:#13283a;border:1px solid #2c4660;font-size:12.5px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:dropin .25s ease-out;white-space:nowrap}
@@ -268,14 +242,13 @@ svg{display:block}
 
 @media (min-width:420px){ .brand{display:block} }
 @media (min-width:900px){
-  #app{grid-template-columns:minmax(0,1.45fr) minmax(370px,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;
-    grid-template-areas:"hud hud" "stage side" "board side" "flow side"}
+  #app{grid-template-columns:minmax(0,1.45fr) minmax(370px,1fr);grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"hud hud" "stage side"}
   #side{border-left:1px solid var(--line)}
   #tabs{order:0;border-top:0;border-bottom:1px solid var(--line)}
   .tab[aria-selected="true"]::before{top:auto;bottom:-1px;border-radius:3px 3px 0 0}
-  .brow:nth-of-type(n+5){display:grid}
   #toast{bottom:24px}
-  .money b{font-size:26px}
+  .money b{font-size:27px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
@@ -286,47 +259,28 @@ svg{display:block}
 <div id="app">
   <header id="hud">
     <div class="brand" aria-hidden="true">UZAY<br>HATTI</div>
-    <div class="money"><i class="coin" aria-hidden="true"></i><div style="min-width:0"><b id="money" aria-label="Kredi">10</b><small id="rate">+0/sn</small></div></div>
-    <div class="gems" title="Kristal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z" fill="#b8a2ff"/><path d="M2 9h20M8 3l4 18M16 3l-4 18M6 3l2 6M18 3l-2 6" stroke="#5b46b3" stroke-width="1.1" fill="none"/></svg><b id="crystals">0</b></div>
+    <div class="money"><i class="coin" aria-hidden="true"></i><b id="money" aria-label="Para">0</b></div>
+    <div class="gems" title="Kristal" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z" fill="#b8a2ff"/><path d="M2 9h20M8 3l4 18M16 3l-4 18M6 3l2 6M18 3l-2 6" stroke="#5b46b3" stroke-width="1.1" fill="none"/></svg><b id="crystals">0</b></div>
     <button class="ibtn" id="btnSound" aria-label="Sesi aç/kapat"></button>
     <button class="ibtn" id="btnMenu" aria-label="Menü"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </header>
 
   <section id="stage">
-    <canvas id="scene" aria-label="Uzay limanı: yolcular check-in yapıp roketlere biniyor"></canvas>
+    <canvas id="scene" aria-label="Uzay limanı: yolcular biletini alıp roketlere biniyor"></canvas>
     <div id="boosts"></div>
-    <div id="radio" hidden><span class="r-from">KULE</span><span class="r-txt"></span></div>
     <div id="evchip" hidden><span class="ev-txt"></span><button class="ev-btn" hidden></button><i class="ev-bar"></i></div>
     <button id="btnLaunch" hidden aria-label="Roketi fırlat">
-      <span class="l-top"><b id="lName">AY</b><em id="lInfo">4/4</em></span>
+      <span class="l-top"><b id="lName">AY</b><em id="lInfo"></em></span>
       <span class="gauge" aria-hidden="true"><i class="gz"></i><i class="pz"></i><i class="needle"></i></span>
       <span class="l-cta">FIRLAT!</span>
-      <i class="l-timer"></i>
+      <i class="l-timer" hidden></i>
     </button>
   </section>
 
-  <section id="board" aria-label="Kalkış panosu">
-    <div class="bhead"><span>KALKIŞLAR · DEPARTURES</span><b id="bclock">00:00</b></div>
-    <div class="brow"><span class="cells dest"></span><span class="cells st"></span><span class="cells inf"></span></div>
-    <div class="brow"><span class="cells dest"></span><span class="cells st"></span><span class="cells inf"></span></div>
-    <div class="brow"><span class="cells dest"></span><span class="cells st"></span><span class="cells inf"></span></div>
-    <div class="brow"><span class="cells dest"></span><span class="cells st"></span><span class="cells inf"></span></div>
-    <div class="brow"><span class="cells dest"></span><span class="cells st"></span><span class="cells inf"></span></div>
-  </section>
-
-  <section id="flow" aria-label="Yolcu akışı">
-    <button class="fchip" data-k="A"><span>Gelen yolcu</span><b>0/sn</b></button>
-    <i class="farrow" aria-hidden="true"></i>
-    <button class="fchip" data-k="C"><span>Check-in</span><b>0/sn</b></button>
-    <i class="farrow" aria-hidden="true"></i>
-    <button class="fchip" data-k="F"><span>Roketler</span><b>0/sn</b></button>
-  </section>
-
   <section id="side">
-    <nav id="tabs" role="tablist">
+    <nav id="tabs" role="tablist" hidden>
       <button class="tab" role="tab" data-tab="liman" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 20v-8c0-3 3-6 7-6s7 3 7 6v8M9 20v-5h6v5M8 10h8"/></svg>Liman</button>
-      <button class="tab" role="tab" data-tab="rota" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c3 2.2 4.6 5.6 4.6 9.4l-1.8 4.3H9.2l-1.8-4.3c0-3.8 1.6-7.2 4.6-9.4z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M9.2 16.2 7 19.5M14.8 16.2 17 19.5M12 18v3"/></svg>Rotalar</button>
-      <button class="tab" role="tab" data-tab="gorev" aria-selected="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4M6 4h11l-2.5 4L17 12H6"/></svg>Görevler</button>
+      <button class="tab" role="tab" data-tab="gorev" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4M6 4h11l-2.5 4L17 12H6"/></svg>Görevler</button>
       <button class="tab" role="tab" data-tab="bilim" aria-selected="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5.2 9.6A1.6 1.6 0 0 0 6.2 21h11.6a1.6 1.6 0 0 0 1.4-2.4L14 9V3M7.6 15h8.8"/></svg>Bilim</button>
     </nav>
     <main id="panel" role="tabpanel"></main>
@@ -340,25 +294,25 @@ svg{display:block}
 /* ===== EKONOMI (pure functions, shared by game + simulation) ===== */
 var ECON = (function () {
   var CFG = {
-    A0: 0.5, Astep: 0.25, Acost0: 8, Agrowth: 1.12,
-    C0: 0.4, Cstep: 0.2, Ccost0: 12, Cgrowth: 1.12,
+    A0: 0.5, Astep: 0.25, Acost0: 10, Agrowth: 1.12,
+    C0: 0.6, Cstep: 0.3, Ccost0: 14, Cgrowth: 1.12,
     mEvery: 25,
-    boardTime: 1.2, autoWait: 2.0, padClear: 0.8, maxWait: 5,
+    boardTime: 1.5, autoWait: 3.0, manualWait: 1.5, padClear: 0.8, maxWait: 12, autoMaxWait: 15,
     seatGrowth: 1.14, seatCostK: 0.5,
-    speedGrowth: 1.6, speedCostK: 1.2, speedMax: 15, speedStep: 0.92,
-    fleetCostK: [8, 50], fleetMax: 3,
+    speedGrowth: 1.6, speedCostK: 1.2, speedMax: 15, speedStep: 0.93,
+    fleetCostK: [8, 50], fleetMax: 3, autoCostK: 4,
     shareBase: 1.6,
     offlineBaseH: 12
   };
   var ROUTES = [
-    { id: 'ay',     name: 'Ay',      dat: "Ay'a",      price: 4,     trip: 6,  seats: 4,  value: 6,     color: '#d8d1c0' },
-    { id: 'mars',   name: 'Mars',    dat: "Mars'a",    price: 30,    trip: 9,  seats: 6,  value: 500,   color: '#ff6a45' },
-    { id: 'venus',  name: 'Venüs',   dat: "Venüs'e",   price: 220,   trip: 12, seats: 8,  value: 1e4,   color: '#f1c24f' },
-    { id: 'europa', name: 'Europa',  dat: "Europa'ya", price: 1600,  trip: 16, seats: 10, value: 2.2e5, color: '#8fd4ff' },
-    { id: 'saturn', name: 'Satürn',  dat: "Satürn'e",  price: 1.2e4, trip: 20, seats: 12, value: 5e6,   color: '#e9b37b' },
-    { id: 'titan',  name: 'Titan',   dat: "Titan'a",   price: 9e4,   trip: 25, seats: 14, value: 1.2e8, color: '#ffa04a' },
-    { id: 'neptun', name: 'Neptün',  dat: "Neptün'e",  price: 7e5,   trip: 30, seats: 16, value: 2e9,   color: '#5a86ff' },
-    { id: 'pluton', name: 'Plüton',  dat: "Plüton'a",  price: 6e6,   trip: 36, seats: 18, value: 4e10,  color: '#f4b3c6' }
+    { id: 'ay',     name: 'Ay',      dat: "Ay'a",      price: 4,     trip: 10, seats: 4,  value: 30,    color: '#d8d1c0' },
+    { id: 'mars',   name: 'Mars',    dat: "Mars'a",    price: 30,    trip: 14, seats: 6,  value: 600,   color: '#ff6a45' },
+    { id: 'venus',  name: 'Venüs',   dat: "Venüs'e",   price: 220,   trip: 18, seats: 8,  value: 1.2e4, color: '#f1c24f' },
+    { id: 'europa', name: 'Europa',  dat: "Europa'ya", price: 1600,  trip: 22, seats: 10, value: 2.6e5, color: '#8fd4ff' },
+    { id: 'saturn', name: 'Satürn',  dat: "Satürn'e",  price: 1.2e4, trip: 26, seats: 12, value: 6e6,   color: '#e9b37b' },
+    { id: 'titan',  name: 'Titan',   dat: "Titan'a",   price: 9e4,   trip: 30, seats: 14, value: 1.5e8, color: '#ffa04a' },
+    { id: 'neptun', name: 'Neptün',  dat: "Neptün'e",  price: 7e5,   trip: 36, seats: 16, value: 2.5e9, color: '#5a86ff' },
+    { id: 'pluton', name: 'Plüton',  dat: "Plüton'a",  price: 6e6,   trip: 42, seats: 18, value: 5e10,  color: '#f4b3c6' }
   ];
   function mm(L) { return Math.pow(2, Math.floor(L / CFG.mEvery)); }
   function mult(s, boost) {
@@ -369,17 +323,17 @@ var ECON = (function () {
       demand: (1 + 0.3 * (r.reklam || 0)) * (b.demand || 1),
       checkin: (1 + 0.3 * (r.checkin || 0)),
       trip: (1 - 0.06 * (r.motor || 0)) / (b.speed || 1),
-      autoWait: Math.max(0.5, CFG.autoWait - 0.3 * (r.otopilot || 0)),
+      autoWait: Math.max(1, CFG.autoWait - 0.4 * (r.otopilot || 0)),
       autoMult: 1 + 0.1 * (r.otopilot || 0)
     };
   }
   function arrival(s, L, m) { L = L || s.lvA; m = m || mult(s); return (CFG.A0 + CFG.Astep * (L - 1)) * mm(L) * m.demand; }
   function checkin(s, L, m) { L = L || s.lvC; m = m || mult(s); return (CFG.C0 + CFG.Cstep * (L - 1)) * mm(L) * m.checkin; }
   function seats(i, L) { var R = ROUTES[i]; return Math.round(R.seats * (1 + 0.5 * (L - 1)) * mm(L)); }
-  function trip(i, L, m) { var R = ROUTES[i]; return Math.max(3.6, R.trip * Math.pow(CFG.speedStep, L - 1) * (m ? m.trip : 1)); }
+  function trip(i, L, m) { var R = ROUTES[i]; return Math.max(4, R.trip * Math.pow(CFG.speedStep, L - 1) * (m ? m.trip : 1)); }
   function cap(s, i, m, rt) {
     rt = rt || s.routes[i]; m = m || mult(s);
-    var K = seats(i, rt.seats), T = trip(i, rt.speed, m), w = m.autoWait;
+    var K = seats(i, rt.seats), T = trip(i, rt.speed, m), w = rt.auto ? m.autoWait : CFG.manualWait;
     return Math.min(rt.fleet * K / (T + CFG.boardTime + w), K / (CFG.boardTime + w + CFG.padClear));
   }
   function shares(s) {
@@ -391,14 +345,15 @@ var ECON = (function () {
   // steady-state flow (passive, no tapping). Demand split by shares; overflow
   // rebooks to routes with free seats, most expensive first (never wastes a passenger
   // while any rocket has room).
-  function flow(s, boost) {
-    var m = mult(s, boost);
+  // opts.autoOnly: only routes with automatic pilot fly (what happens while nobody is tapping)
+  function flow(s, boost, opts) {
+    var m = mult(s, boost), autoOnly = !!(opts && opts.autoOnly);
     var A = arrival(s, s.lvA, m), C = checkin(s, s.lvC, m);
     var Fin = Math.min(A, C), sh = shares(s);
     var caps = [], x = [], F = 0, i;
     for (i = 0; i < ROUTES.length; i++) {
       if (!s.routes[i].u) { caps.push(0); x.push(0); continue; }
-      var c = cap(s, i, m); caps.push(c); F += c;
+      var c = (autoOnly && !s.routes[i].auto) ? 0 : cap(s, i, m); caps.push(c); F += c;
       x.push(Math.min(Fin * sh[i], c));
     }
     var used = 0; for (i = 0; i < x.length; i++) used += x[i];
@@ -433,6 +388,7 @@ var ECON = (function () {
     seats: function (i, L, n) { return geoCost(ROUTES[i].value * CFG.seatCostK, CFG.seatGrowth, L, n || 1); },
     speed: function (i, L, n) { return geoCost(ROUTES[i].value * CFG.speedCostK, CFG.speedGrowth, L, n || 1); },
     fleet: function (i, f) { return ROUTES[i].value * CFG.fleetCostK[f - 1]; },
+    auto: function (i) { return Math.max(60, ROUTES[i].value * CFG.autoCostK); },
     unlock: function (i) { return i === 0 ? 0 : ROUTES[i].value; }
   };
   var maxBuy = {
@@ -494,13 +450,6 @@ function fmt(n) {
   var s = n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : n.toFixed(0);
   return trimZ(s).replace('.', ',') + ' ' + UNITS[u];
 }
-function fmtRate(n) {
-  if (!isFinite(n) || n <= 0) return '0';
-  if (n < 1) return trimZ(n.toFixed(2)).replace('.', ',');
-  if (n < 100) return trimZ(n.toFixed(1)).replace('.', ',');
-  if (n < 1000) return String(Math.round(n));
-  return fmt(n);
-}
 function fmtTime(s) {
   s = Math.max(0, Math.round(s));
   var hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
@@ -529,8 +478,8 @@ var RESEARCH = [
   { id: 'checkin', name: 'Robot Görevliler', fx: function (l) { return 'Check-in hızı +%' + (30 * l); }, step: '+%30 hız' },
   { id: 'motor', name: 'İyon Motoru', fx: function (l) { return 'Seferler %' + (6 * l) + ' daha kısa'; }, step: '%6 kısa sefer' },
   { id: 'hassas', name: 'Hassas Fırlatma', fx: function (l) { return 'Yeşil bölge geniş, mükemmel x' + (2 + 0.25 * l).toFixed(2).replace(/0$/, '').replace('.', ','); }, step: 'daha geniş yeşil' },
-  { id: 'otopilot', name: 'Otopilot', fx: function (l) { return 'Otomatik kalkış ' + (2 - 0.3 * l).toFixed(1).replace('.', ',') + ' sn, +%' + (10 * l) + ' bilet'; }, step: 'daha hızlı oto-kalkış' },
-  { id: 'gece', name: 'Gece Vardiyası', fx: function (l) { return 'Sen yokken ' + (CFG.offlineBaseH + 6 * l) + ' saat kazanç'; }, step: '+6 saat' },
+  { id: 'otopilot', name: 'Akıllı Pilot', fx: function (l) { return 'Otomatik pilot ' + (CFG.autoWait - 0.4 * l).toFixed(1).replace('.', ',') + ' sn bekler, +%' + (10 * l) + ' bilet'; }, step: 'daha çabuk otomatik kalkış' },
+  { id: 'gece', name: 'Gece Vardiyası', fx: function (l) { return 'Otomatik pilotlar sen yokken ' + (CFG.offlineBaseH + 6 * l) + ' saat uçar'; }, step: '+6 saat' },
   { id: 'sonda', name: 'Gelişmiş Sonda', fx: function (l) { return 'Keşif %' + (15 * l) + ' kısa, +%' + (20 * l) + ' kristal'; }, step: 'daha iyi keşif' }
 ];
 var RES_COST = [2, 5, 10, 20, 40];
@@ -567,37 +516,20 @@ var EXPEDS = [
   { id: 'kuyruk', name: 'Kuyrukluyıldız', min: 12, cr: [10, 14], p: 0.65 },
   { id: 'derin', name: 'Derin Uzay', min: 45, cr: [25, 35], p: 1 }
 ];
-var QUIPS = [
-  'Ay\'a giden bir teyze "orada çay var mı?" diye sordu. Termos verdik.',
-  'Bir yolcu yerçekimini evde unuttuğunu söyledi. Kayıp eşyaya bildirdik.',
-  'Mars yolcusu kırmızı kazak giydi. Kamuflaj dedi.',
-  'Bavul bandına bir uzaylı karıştı. Meğer o da yolcuymuş.',
-  'Kule raporu: Roketler yerinde, kahve bitti.',
-  'Bir çocuk pencereden el salladı. Ay da el salladı. Emin değiliz.',
-  'Uzay simitçisi rampaya tezgâh açmak istiyor. Düşünüyoruz.',
-  'Ay\'daki zıplama yarışmasının kazananı hâlâ havada.',
-  'Roket boyacısı "Bir kat daha atalım mı?" diye sordu. Atalım.',
-  'Biri check-in\'de kimliğini 3 saniyede buldu. Yeni rekor!',
-  'Yolcular soruyor: "Uzayda Wi-Fi şifresi ne?" Şifre: yıldız123.',
-  'Bir dede "Bizim zamanımızda Ay\'a yürüyerek giderdik" dedi.',
-  'Venüs dönüşü yolcu: "Bulutlar pamuk gibiydi, tadı yoktu."',
-  'Satürn halkasında paten kayan grup fotoğraf yolladı. Herkes dönüyor.',
-  'Kayıp eşyada üç tek çorap var. Hepsi farklı gezegenden.',
-  'Pilotlar soruyor: Plüton gezegen mi? Kule cevabı: Bize göre evet.'
-];
 var SKINS = ['#f2c7a5', '#d9a07a', '#a8714f', '#7a4a32', '#f6d6bd', '#c58b63'];
 var OUTFITS = ['#ff6a2b', '#5fe3b4', '#ffc34d', '#7aa7ff', '#e8e2d4', '#ff8fb0', '#b8a2ff', '#4cc3d9'];
 
 /* ================= state ================= */
-var SAVE_KEY = 'uzay-hatti-v1';
+var SAVE_KEY = 'uzay-hatti-v2';
+function newRouteState(i) { return { u: i === 0, seats: 1, speed: 1, fleet: 1, auto: false }; }
 function newState() {
   return {
-    v: 1, money: 15, crystals: 0, stars: 0, lvA: 1, lvC: 1,
-    routes: ROUTES.map(function (r, i) { return { u: i === 0, seats: 1, speed: 1, fleet: 1 }; }),
+    v: 2, money: 0, crystals: 0, stars: 0, lvA: 1, lvC: 1,
+    routes: ROUTES.map(function (r, i) { return newRouteState(i); }),
     research: { konfor: 0, reklam: 0, checkin: 0, motor: 0, hassas: 0, otopilot: 0, gece: 0, sonda: 0 },
     souvenirs: [], missions: [], mseq: 0, exp: null,
     stats: { pax: 0, launches: 0, perfect: 0, earned: 0, runEarned: 0, meteors: 0, exps: 0, streak: 0, best: 0, play: 0, routeL: [0, 0, 0, 0, 0, 0, 0, 0], prestiges: 0, vips: 0 },
-    flags: { seen: {}, tabs: { gorev: false, bilim: false }, guides: {} },
+    flags: { seen: {}, guides: {}, reveal: {} },
     settings: { sfx: true, music: true, buy: 1 },
     created: Date.now(), savedAt: Date.now()
   };
@@ -605,13 +537,13 @@ function newState() {
 function fin(x, d) { return (typeof x === 'number' && isFinite(x)) ? x : d; }
 function sanitize(o) {
   var b = newState();
-  if (!o || typeof o !== 'object' || o.v !== 1) return b;
+  if (!o || typeof o !== 'object' || o.v !== 2) return b;
   var s = b;
   s.money = Math.max(0, fin(o.money, b.money)); s.crystals = Math.max(0, fin(o.crystals, 0)); s.stars = Math.max(0, fin(o.stars, 0));
   s.lvA = Math.max(1, Math.floor(fin(o.lvA, 1))); s.lvC = Math.max(1, Math.floor(fin(o.lvC, 1)));
   s.routes = ROUTES.map(function (r, i) {
     var x = (o.routes || [])[i] || {};
-    return { u: i === 0 ? true : !!x.u, seats: Math.max(1, Math.floor(fin(x.seats, 1))), speed: clamp(Math.floor(fin(x.speed, 1)), 1, CFG.speedMax), fleet: clamp(Math.floor(fin(x.fleet, 1)), 1, CFG.fleetMax) };
+    return { u: i === 0 ? true : !!x.u, seats: Math.max(1, Math.floor(fin(x.seats, 1))), speed: clamp(Math.floor(fin(x.speed, 1)), 1, CFG.speedMax), fleet: clamp(Math.floor(fin(x.fleet, 1)), 1, CFG.fleetMax), auto: !!x.auto };
   });
   for (var i = 1; i < s.routes.length; i++) if (s.routes[i].u && !s.routes[i - 1].u) s.routes[i - 1].u = true;
   RESEARCH.forEach(function (r) { s.research[r.id] = clamp(Math.floor(fin((o.research || {})[r.id], 0)), 0, 5); });
@@ -624,20 +556,22 @@ function sanitize(o) {
   if (Array.isArray(st.routeL) && st.routeL.length === 8) s.stats.routeL = st.routeL.map(function (x) { return fin(x, 0); });
   var fl = o.flags || {};
   s.flags.seen = (fl.seen && typeof fl.seen === 'object') ? fl.seen : {};
-  s.flags.tabs = { gorev: !!(fl.tabs && fl.tabs.gorev), bilim: !!(fl.tabs && fl.tabs.bilim) };
   s.flags.guides = (fl.guides && typeof fl.guides === 'object') ? fl.guides : {};
+  s.flags.reveal = (fl.reveal && typeof fl.reveal === 'object') ? fl.reveal : {};
   var se = o.settings || {};
   s.settings = { sfx: se.sfx !== false, music: se.music !== false, buy: (se.buy === 10 || se.buy === 'max') ? se.buy : 1 };
   s.created = fin(o.created, Date.now()); s.savedAt = fin(o.savedAt, Date.now());
   return s;
 }
 var S = newState();
+function rv(k) { return !!S.flags.reveal[k]; }
 
 /* runtime (not saved) */
 var RT = {
-  lobby: 0, gates: [0, 0, 0, 0, 0, 0, 0, 0], rockets: [], procRate: 0, lostLobby: 0, lostFleet: 0,
+  lobby: 0, gates: [0, 0, 0, 0, 0, 0, 0, 0], rockets: [], procRate: 0,
+  waitPax: [0, 0, 0, 0, 0, 0, 0, 0], queueT: 0, sinceMars: 0,
   boost: { ticket: { m: 1, until: 0 }, demand: { m: 1, until: 0 }, speed: { m: 1, until: 0 } },
-  event: null, nextEventAt: 75, nextQuipAt: 150, visArr: 0, visApr: 0, sessionBuys: 0, bootSavedAt: 0,
+  event: null, nextEventAt: Infinity, visArr: 0, visApr: 0, sessionBuys: 0, bootSavedAt: 0,
   flowCache: null, flowAt: -1, lastMoneyText: '', paused: false, holdAuto: false, tapCount: 0, lastTapQ: '', claims: 0
 };
 var GT = 0; // game seconds since load
@@ -655,6 +589,7 @@ function topRoute() { var t = 0; for (var i = 0; i < ROUTES.length; i++) if (S.r
 function nextRoute() { for (var i = 0; i < ROUTES.length; i++) if (!S.routes[i].u) return i; return -1; }
 function hnot(t) { try { if (window.Hesap && typeof window.Hesap.not === 'function') window.Hesap.not(t); } catch (e) {} }
 function addMoney(x) { if (!(x > 0)) return; S.money += x; S.stats.earned += x; S.stats.runEarned += x; }
+function bonusMoney(sec) { return Math.max(25, E.flow(S).income * sec); }
 
 function newRocket(i, st) { return { i: i, st: st, t: 0, load: 0, wait: 0, away: 0, trip: 0, mult: 1, q: '', fromAway: false, id: Math.random() }; }
 function initRockets() {
@@ -749,23 +684,25 @@ function musicTick() {
     AU.nextChord += 8;
   }
   if (AU.nextBell < t - 1) AU.nextBell = t + 1;
-  if (t >= AU.nextBell - 0.3) { bellNote(pick(BELLS), AU.nextBell, 0.035 + Math.random() * 0.025); AU.nextBell += rand(1.4, 3.8); }
+  if (t >= AU.nextBell - 0.3) { bellNote(pick(BELLS), AU.nextBell, 0.035 + Math.random() * 0.025); AU.nextBell += rand(2.6, 5.5); }
 }
 
 /* ================= economy runtime ================= */
+function lobbyCapNow(C) { return Math.max(12, C * 12); }
+function gateCap(i) { return Math.max(8, E.seats(i, S.routes[i].seats) * 2); }
 function tickEconomy(dt) {
   var b = boostNow(), m = E.mult(S, b);
   var A = E.arrival(S, S.lvA, m), C = E.checkin(S, S.lvC, m);
-  var lobbyCap = Math.max(20, C * 12);
+  var lobbyCap = lobbyCapNow(C);
   RT.lobby += A * dt;
-  var lostL = 0;
-  if (RT.lobby > lobbyCap) { lostL = RT.lobby - lobbyCap; RT.lobby = lobbyCap; }
+  if (RT.lobby > lobbyCap) RT.lobby = lobbyCap;
   var proc = Math.min(RT.lobby, C * dt); RT.lobby -= proc;
   RT.procRate = ema(RT.procRate, proc / dt, dt, 1.5);
+  RT.queueT = RT.lobby >= Math.max(6, lobbyCap * 0.6) ? RT.queueT + dt : Math.max(0, RT.queueT - dt * 2);
   var sh = E.shares(S), over = 0, i, gcap = [];
   for (i = 0; i < ROUTES.length; i++) {
     if (!S.routes[i].u) { gcap.push(0); continue; }
-    var K = E.seats(i, S.routes[i].seats); gcap.push(Math.max(8, K * 2));
+    gcap.push(gateCap(i));
     RT.gates[i] += proc * sh[i];
     if (RT.gates[i] > gcap[i]) { over += RT.gates[i] - gcap[i]; RT.gates[i] = gcap[i]; }
   }
@@ -773,12 +710,10 @@ function tickEconomy(dt) {
     if (!S.routes[i].u) continue;
     var add = Math.min(over, gcap[i] - RT.gates[i]); RT.gates[i] += add; over -= add;
   }
-  RT.lostLobby = ema(RT.lostLobby, lostL / dt, dt, 3);
-  RT.lostFleet = ema(RT.lostFleet, over / dt, dt, 3);
-  // visuals
-  RT.visArr += Math.min(A, 1.4) * dt;
+  // visuals: one walker is one passenger while numbers are small
+  RT.visArr += Math.min(A, 1.0) * dt;
   if (RT.visArr >= 1) { RT.visArr -= 1; spawnWalker('arr'); }
-  RT.visApr += Math.min(proc / dt, 1.6) * dt;
+  RT.visApr += Math.min(proc / dt, 1.1) * dt;
   if (RT.visApr >= 1) { RT.visApr -= 1; var tgt = pickBoardingRoute(sh); if (tgt >= 0) spawnWalker('apr', tgt); }
   for (i = 0; i < ROUTES.length; i++) if (S.routes[i].u) tickRoute(i, dt, m, b);
 }
@@ -805,8 +740,12 @@ function padBusy(i) {
   for (var k = 0; k < rs.length; k++) if (rs[k].st === 'launch' && rs[k].t < CFG.padClear) return true;
   return false;
 }
+function crowd(i) { return S.routes[i].u && RT.gates[i] >= gateCap(i) * 0.9; }
+function waitingRoute() { var best = -1, bt = 0; for (var i = 0; i < ROUTES.length; i++) if (RT.waitPax[i] > bt) { bt = RT.waitPax[i]; best = i; } return best < 0 ? 0 : best; }
+function anyWaiting() { for (var i = 0; i < ROUTES.length; i++) if (RT.waitPax[i] > 4) return true; return false; }
+// Manual rockets wait on the pad until the player presses FIRLAT. With automatic pilot they leave by themselves.
 function tickRoute(i, dt, m, b) {
-  var rs = RT.rockets[i], K = E.seats(i, S.routes[i].seats);
+  var rt = S.routes[i], rs = RT.rockets[i], K = E.seats(i, rt.seats), waiting = false;
   for (var k = 0; k < rs.length; k++) {
     var r = rs[k];
     if (r.st === 'board' || r.st === 'ready') {
@@ -814,14 +753,17 @@ function tickRoute(i, dt, m, b) {
       if (can > 0) { r.load += can; RT.gates[i] -= can; }
       if (r.st === 'board') {
         r.wait += dt;
-        if (r.load >= K - 1e-6 || (r.wait >= CFG.maxWait && r.load >= 1)) { r.st = 'ready'; r.t = 0; onReady(i, r); }
+        if (r.load < K - 1e-6 && RT.gates[i] < 0.5) waiting = true;
+        var full = r.load >= K - 1e-6;
+        var late = rt.auto ? (r.wait >= CFG.autoMaxWait && r.load >= K * 0.5) : (r.wait >= CFG.maxWait && r.load >= 1);
+        if (full || late) { r.st = 'ready'; r.t = 0; onReady(i, r); }
       } else {
         r.t += dt;
-        if (!RT.holdAuto && r.t >= m.autoWait) launch(i, r, 'auto');
+        if (rt.auto && !RT.holdAuto && r.t >= m.autoWait) launch(i, r, 'auto');
       }
     } else if (r.st === 'launch') {
       r.t += dt;
-      if (r.t >= LAUNCH_T) { r.st = 'away'; r.away = Math.max(0.4, r.trip - LAUNCH_T - LAND_T); }
+      if (r.t >= LAUNCH_T) { r.st = 'away'; r.away = Math.max(0.4, r.trip - LAUNCH_T - LAND_T); r.awayMax = r.away; }
     } else if (r.st === 'away') {
       r.away -= dt * (b.speed || 1);
       if (r.away <= 0) { r.st = 'hangar'; r.t = 0; r.fromAway = true; }
@@ -832,6 +774,7 @@ function tickRoute(i, dt, m, b) {
       r.t += dt; if (r.t > 0.35) r.fromAway = false;
     }
   }
+  RT.waitPax[i] = waiting ? RT.waitPax[i] + dt : 0;
   if (!padBusy(i)) {
     for (var j = 0; j < rs.length; j++) if (rs[j].st === 'hangar') {
       var hr = rs[j];
@@ -851,45 +794,43 @@ function launch(i, r, how, quality) {
   if (how === 'tap') {
     if (quality === 'perfect') {
       S.stats.perfect++; S.stats.streak++; S.stats.best = Math.max(S.stats.best, S.stats.streak);
-      if (S.stats.streak % 10 === 0) { S.crystals += 1; var pp = SC.G ? SC.G.pads[i] : null; if (pp) floater(pp.x, pp.y - 70, '+1 kristal (seri ' + S.stats.streak + ')', '#c9b8ff', 1.2); SFX.crystal(); markDirty(); }
+      if (S.stats.streak % 10 === 0) { S.crystals += 1; var pp = SC.G ? SC.G.pads[i] : null; if (pp) floater(pp.x, pp.y - 90, '+1 kristal', '#c9b8ff', 1.1); SFX.crystal(); markDirty(); }
     } else S.stats.streak = 0;
   }
   r.st = 'launch'; r.t = 0; r.trip = E.trip(i, S.routes[i].speed, m); r.load = 0; r.wait = 0; r.mult = mult; r.q = how === 'tap' ? quality : 'auto';
   var ix = readyList.indexOf(r); if (ix >= 0) readyList.splice(ix, 1);
-  // visuals + sound
   var p = SC.G ? SC.G.pads[i] : null;
   if (p) {
-    floater(p.x, p.y - SC.G.rh * p.s - 10, '+' + fmt(gain), quality === 'perfect' ? '#7dffcb' : '#5fe3b4', quality === 'perfect' ? 1.25 : 1);
-    for (var k = 0; k < (RM ? 4 : 14); k++) puff(p.x + rand(-6, 6) * p.s, p.y - 2, rand(-40, 40) * p.s, rand(-14, 4), rand(4, 8) * p.s, rand(0.9, 1.7), 'smoke', 14 * p.s);
+    floater(p.x, p.y - SC.G.rh * p.s - 14, '+' + fmt(gain), quality === 'perfect' ? '#7dffcb' : '#5fe3b4', quality === 'perfect' ? 1.3 : 1.1);
+    for (var k = 0; k < (RM ? 3 : 9); k++) puff(p.x + rand(-6, 6) * p.s, p.y - 2, rand(-34, 34) * p.s, rand(-12, 4), rand(4, 7) * p.s, rand(0.9, 1.5), 'smoke', 12 * p.s);
   }
   if (how === 'tap') {
-    if (quality === 'perfect') { SFX.perfect(); banner('MÜKEMMEL!', 'x' + trimZ(mult.toFixed(2)).replace('.', ',') + ' bilet', '#5fe3b4'); if (!RM) SC.shake = 0.28; try { navigator.vibrate && navigator.vibrate(18); } catch (e) {} }
-    else if (quality === 'good') { SFX.good(); banner('İYİ!', 'x1,3 bilet', '#ffc34d'); }
-    else banner('KAÇIRDIN!', 'ibre yeşildeyken bas', '#ff8d57');
+    if (quality === 'perfect') { SFX.perfect(); banner('MÜKEMMEL!', '2 kat para', '#5fe3b4'); if (!RM) SC.shake = 0.22; try { navigator.vibrate && navigator.vibrate(18); } catch (e) {} }
+    else if (quality === 'good') { SFX.good(); banner('İYİ!', 'biraz fazla para', '#ffc34d'); }
   }
   SFX.launch(quality === 'perfect');
   SFX.coin();
 }
-function needle() { var x = (GT / 0.85) % 2; return x < 1 ? x : 2 - x; }
+function needle() { var x = (GT / 1.15) % 2; return x < 1 ? x : 2 - x; }
 var PZ_C = 0.8;
-function pzHalf() { return 0.075 + 0.015 * S.research.hassas; }
-function gzHalf() { return 0.2 + 0.01 * S.research.hassas; }
+function pzHalf() { return 0.09 + 0.015 * S.research.hassas; }
+function gzHalf() { return 0.22 + 0.01 * S.research.hassas; }
 function tapLaunch(rocket) {
-  if (!readyList.length) return;
+  if (!readyList.length || RT.paused) return;
   var r = rocket || readyList[0];
   if (r.st !== 'ready') return;
   var d = Math.abs(needle() - PZ_C), q = d <= pzHalf() ? 'perfect' : d <= gzHalf() ? 'good' : 'miss';
   launch(r.i, r, 'tap', q);
   RT.tapCount++; RT.lastTapQ = q;
-  if (!S.flags.seen.firstTap) { S.flags.seen.firstTap = 1; }
 }
+// Time away: only rockets with automatic pilot kept flying.
 function catchUp(sec) {
   var capS = (CFG.offlineBaseH + 6 * S.research.gece) * 3600, eff = Math.min(sec, capS);
-  var f = E.flow(S), gain = f.income * eff;
+  var f = E.flow(S, null, { autoOnly: true }), gain = f.income * eff;
   addMoney(gain); S.stats.pax += f.carried * eff;
   RT.lobby = 0; for (var i = 0; i < RT.gates.length; i++) RT.gates[i] = 0;
   invalidate();
-  return { sec: sec, eff: eff, gain: gain, pax: f.carried * eff, capped: sec > eff };
+  return { sec: sec, eff: eff, gain: gain, pax: f.carried * eff, capped: gain > 0 && sec > eff, anyAuto: S.routes.some(function (r) { return r.u && r.auto; }) };
 }
 
 /* ================= missions ================= */
@@ -901,12 +842,12 @@ function genMission() {
   o('route', 3, function () { var n = 5 + ((Math.random() * 5) | 0); return { route: top, target: n, base: S.stats.routeL[top], text: ROUTES[top].dat + ' ' + n + ' sefer yap' }; });
   o('perfect', 3, function () { var n = 3 + ((Math.random() * 4) | 0); return { target: n, base: S.stats.perfect, text: n + ' mükemmel kalkış yap' }; });
   if (S.stats.perfect >= 3) o('streak', 1.2, function () { var n = Math.min(12, 3 + ((S.stats.best / 2) | 0)); return { target: n, base: 0, text: 'Art arda ' + n + ' mükemmel kalkış yap' }; });
-  o('levelA', 2, function () { var n = S.lvA + 4 + ((Math.random() * 4) | 0); return { target: n, base: S.lvA, abs: 1, text: 'Tanıtım panolarını ' + n + '. seviyeye çıkar' }; });
-  o('levelC', 2, function () { var n = S.lvC + 4 + ((Math.random() * 4) | 0); return { target: n, base: S.lvC, abs: 1, text: 'Check-in bankolarını ' + n + '. seviyeye çıkar' }; });
+  o('levelA', 2, function () { var n = S.lvA + 4 + ((Math.random() * 4) | 0); return { target: n, base: S.lvA, abs: 1, text: 'Reklam panosunu ' + n + '. seviyeye çıkar' }; });
+  o('levelC', 2, function () { var n = S.lvC + 4 + ((Math.random() * 4) | 0); return { target: n, base: S.lvC, abs: 1, text: 'Check-in bankosunu ' + n + '. seviyeye çıkar' }; });
   o('seats', 2, function () { var n = S.routes[top].seats + 3 + ((Math.random() * 4) | 0); return { route: top, target: n, base: S.routes[top].seats, abs: 1, text: ROUTES[top].name + ' koltuklarını ' + n + '. seviyeye çıkar' }; });
   if (nx > 0 && E.cost.unlock(nx) < Math.max(S.money, 1) + f.income * 600) o('unlock', 4, function () { return { route: nx, target: 1, base: 0, abs: 1, text: ROUTES[nx].name + ' rotasını aç', bonus: 2 }; });
   if (S.stats.meteors > 0) o('meteor', 1.5, function () { var n = 5 + ((Math.random() * 4) | 0); return { target: n, base: S.stats.meteors, text: n + ' göktaşı yakala' }; });
-  if (S.routes[1].u) o('exp', 1.2, function () { return { target: 1, base: S.stats.exps, text: 'Bir keşif seferini tamamla', bonus: 1 }; });
+  if (rv('kesif')) o('exp', 1.2, function () { return { target: 1, base: S.stats.exps, text: 'Bir keşif seferini tamamla', bonus: 1 }; });
   o('earn', 2, function () { var n = niceNum(Math.max(100, f.income * 150)); return { target: n, base: S.stats.runEarned, text: fmt(n) + ' kredi kazan' }; });
   var tot = 0; opts.forEach(function (x) { tot += x.w; });
   var r = Math.random() * tot, ch = opts[0];
@@ -940,24 +881,25 @@ function claimMission(id) {
   var ix = -1; S.missions.forEach(function (m, k) { if (m.id === id) ix = k; });
   if (ix < 0) return;
   var m = S.missions[ix]; if (!mDone(m)) return;
-  var money = Math.max(30, E.flow(S).income * 45);
+  var money = bonusMoney(45);
   S.crystals += m.cr; addMoney(money); RT.claims++;
   S.missions.splice(ix, 1);
   SFX.claim(); toast('+' + m.cr + ' kristal  ·  +' + fmt(money) + ' kredi');
-  onCrystal();
   fillMissions(); markDirty(); structDirty();
 }
 
 /* ================= events ================= */
+// Events start only after the basics are learned, come every few minutes, and the first time each one
+// explains itself (game paused) before it begins.
 var EVDEF = {
   vip: { w: 3, ok: function () { return true; } },
-  meteor: { w: 3, ok: function () { return GT > 110; } },
+  meteor: { w: 3, ok: function () { return true; } },
   ufo: { w: 2, ok: function () { return true; } },
-  press: { w: 1.4, ok: function () { return S.routes[1].u; } },
-  wind: { w: 1.4, ok: function () { return S.stats.launches > 8; } }
+  press: { w: 1.4, ok: function () { return rv('bilim'); } },
+  wind: { w: 1.4, ok: function () { return true; } }
 };
 function maybeEvent() {
-  if (RT.event || GT < RT.nextEventAt || !$('#modal').hidden || (GD.tour && !GD.tour.tip)) return;
+  if (!rv('events') || RT.event || GT < RT.nextEventAt || !$('#modal').hidden || GD.tour || GD.queue.length) return;
   var opts = [], tot = 0;
   for (var k in EVDEF) if (EVDEF[k].ok() && k !== RT.lastEvent) { opts.push(k); tot += EVDEF[k].w; }
   if (!opts.length) return;
@@ -965,35 +907,37 @@ function maybeEvent() {
   for (var j = 0; j < opts.length; j++) { r -= EVDEF[opts[j]].w; if (r <= 0) { ch = opts[j]; break; } }
   startEvent(ch);
 }
-function endEvent() { RT.lastEvent = RT.event ? RT.event.type : null; RT.event = null; RT.nextEventAt = GT + rand(55, 100); $('#evchip').hidden = true; SC.vip = null; }
+function endEvent() { RT.lastEvent = RT.event ? RT.event.type : null; RT.event = null; RT.nextEventAt = GT + rand(150, 240); $('#evchip').hidden = true; SC.vip = null; }
 function startEvent(type) {
+  if (!S.flags.guides['e_' + type]) { RT.nextEventAt = GT + 9999; guideStart('e_' + type); return; }
+  beginEvent(type);
+}
+function beginEvent(type) {
   var ev = { type: type, t: 0, dur: 12, txt: '', btn: null };
   RT.event = ev;
-  if (RCUR) { RQ.unshift(RCUR.text); RCUR = null; $('#radio').hidden = true; }
   var G = SC.G;
   if (type === 'vip') {
-    ev.dur = 16; ev.txt = 'VIP yolcu geldi! Karşıla, bahşiş bırakır';
+    ev.dur = 20; ev.txt = 'VIP yolcu geldi!';
     ev.btn = { label: 'Karşıla', fn: welcomeVip };
     var tgt = topRoute(), p = G.pads[tgt];
-    SC.vip = { x: G.tx1 - 2, y: G.ground - 1, sx: G.tx1 - 2, tx: p.x - 8 * G.u * p.s, ty: p.y - 1, t: 0, sp: (G.tx1 > 0 ? (p.x - G.tx1) / 14 : 14) };
+    SC.vip = { x: G.tx1 - 2, y: G.ground - 1, sx: G.tx1 - 2, tx: p.x - 8 * G.u * p.s, ty: p.y - 1, t: 0, sp: (p.x - G.tx1) / 18 };
   } else if (type === 'meteor') {
-    ev.dur = 10; ev.txt = 'Göktaşı yağmuru! Göktaşlarına dokun'; ev.caught = 0; ev.spawn = 0;
+    ev.dur = 12; ev.txt = 'Göktaşlarına dokun!'; ev.caught = 0; ev.spawn = 0;
   } else if (type === 'ufo') {
     var n = Math.round(Math.max(10, E.arrival(S) * 25));
-    ev.dur = 7; ev.txt = 'Uzaylı turist kafilesi: +' + fmt(n) + ' yolcu!'; ev.n = n; ev.given = false;
+    ev.dur = 8; ev.txt = 'Uzaylı turistler geldi!'; ev.n = n; ev.given = false;
     SC.ufo = { x: -40, y: G.tTop - G.u * 34, t: 0, beam: 0 };
     SFX.ufo();
   } else if (type === 'press') {
-    ev.dur = 22; ev.txt = 'Gazeteciler kapıda!'; ev.btn = { label: 'Konuş', fn: pressModal };
+    ev.dur = 25; ev.txt = 'Gazeteciler geldi!'; ev.btn = { label: 'Konuş', fn: pressModal };
   } else if (type === 'wind') {
-    ev.dur = 40; ev.txt = 'Güneş rüzgarı arkamızda: roketler 2 kat hızlı!';
+    ev.dur = 40; ev.txt = 'Güneş rüzgarı: roketler hızlı!';
     RT.boost.speed = { m: 2, until: Date.now() + 40000 }; invalidate();
   }
   var chip = $('#evchip'); chip.hidden = false;
   chip.querySelector('.ev-txt').textContent = ev.txt;
   var bt = chip.querySelector('.ev-btn');
   if (ev.btn) { bt.hidden = false; bt.textContent = ev.btn.label; bt.onclick = function () { audioUnlock(); ev.btn.fn(); }; } else bt.hidden = true;
-  guideStart('t_' + type);
 }
 function updateEvent(dt) {
   var ev = RT.event; if (!ev) return;
@@ -1001,39 +945,40 @@ function updateEvent(dt) {
   var G = SC.G;
   if (ev.type === 'meteor') {
     ev.spawn -= dt;
-    if (ev.t < ev.dur - 1.5 && ev.spawn <= 0) {
-      ev.spawn = rand(0.45, 0.8);
-      var sx = rand(SC.W * 0.25, SC.W * 1.05), sy = rand(-20, SC.H * 0.08), sp = rand(42, 66) * G.u;
-      SC.meteors.push({ x: sx, y: sy, vx: -sp * 0.75, vy: sp * 0.62, r: rand(4, 6) * G.u, alive: true, t: 0 });
+    if (ev.t < ev.dur - 2 && ev.spawn <= 0) {
+      ev.spawn = rand(0.7, 1.1);
+      var sx = rand(SC.W * 0.3, SC.W * 1.0), sy = rand(-20, SC.H * 0.06), sp = rand(34, 50) * G.u;
+      SC.meteors.push({ x: sx, y: sy, vx: -sp * 0.7, vy: sp * 0.6, r: rand(5, 7) * G.u, alive: true, t: 0 });
     }
-    $('#evchip .ev-txt').textContent = 'Göktaşı yağmuru! Yakalanan: ' + ev.caught;
+    var tx = 'Göktaşlarına dokun! ' + ev.caught;
+    if (ev._tx !== tx) { ev._tx = tx; $('#evchip .ev-txt').textContent = tx; }
   }
   if (ev.type === 'ufo' && !ev.given && ev.t > 2.6) {
     ev.given = true; RT.lobby += ev.n;
-    for (var k = 0; k < 9; k++) setTimeout(function () { spawnWalker('alien'); }, k * 140);
+    for (var k = 0; k < 9; k++) setTimeout(function () { spawnWalker('alien'); }, k * 160);
   }
   var bar = $('#evchip .ev-bar'); if (bar) bar.style.setProperty('--p', String(clamp(1 - ev.t / ev.dur, 0, 1)));
   if (ev.t >= ev.dur) endEvent();
 }
 function welcomeVip() {
   var ev = RT.event; if (!ev || ev.type !== 'vip') return;
-  var money = Math.max(25, E.flow(S).income * 45);
+  var money = bonusMoney(45);
   addMoney(money); S.crystals += 1; S.stats.vips++;
   if (SC.vip) { floater(SC.vip.x, SC.vip.y - 30, '+' + fmt(money) + '  +1 kristal', '#ffd37a', 1.15); for (var k = 0; k < 16; k++) puff(SC.vip.x, SC.vip.y - 10, rand(-60, 60), rand(-80, -10), rand(1.5, 3), rand(0.4, 0.9), 'spark', 0); }
-  SFX.claim(); onCrystal(); markDirty();
+  SFX.claim(); markDirty();
   SC.vip = null; endEvent();
 }
 function pressModal() {
   var ev = RT.event; if (!ev) return;
   endEvent();
-  showModal('Gazeteciler kapıda!', [h('p', { text: 'Uzay Hattı haberlerde! Röportaj için ne yapalım?' })], [
-    { label: 'Canlı yayın: 45 sn bilet x2', fn: function () { RT.boost.ticket = { m: 2, until: Date.now() + 45000 }; invalidate(); SFX.claim(); toast('Canlı yayın başladı: biletler x2!'); } },
-    { label: 'Belgesel: +3 kristal', cls: 'gem', fn: function () { S.crystals += 3; onCrystal(); SFX.crystal(); toast('+3 kristal'); markDirty(); } }
+  showModal('Gazeteciler geldi!', [h('p', { text: 'Uzay Hattı haberlerde! Hangisini istersin?' })], [
+    { label: 'Biletler 45 sn 2 kat', fn: function () { RT.boost.ticket = { m: 2, until: Date.now() + 45000 }; invalidate(); SFX.claim(); } },
+    { label: '+3 kristal', cls: 'gem', fn: function () { S.crystals += 3; SFX.crystal(); markDirty(); } }
   ]);
 }
 
 /* ================= scene ================= */
-var SC = { cv: null, cx: null, W: 0, H: 0, dpr: 1, bg: null, bgKey: '', G: null, parts: [], walkers: [], floaters: [], meteors: [], shake: 0, banner: null, vip: null, ufo: null, shoot: null, sat: null, tw: [] };
+var SC = { cv: null, cx: null, W: 0, H: 0, dpr: 1, bg: null, bgKey: '', G: null, parts: [], walkers: [], floaters: [], meteors: [], shake: 0, banner: null, vip: null, ufo: null, shoot: null, tw: [] };
 function layoutScene() {
   var W = SC.W, H = SC.H;
   var u = clamp(Math.min(H / 250, W / 330), 0.75, 2.4);
@@ -1060,7 +1005,7 @@ function resizeScene() {
 }
 function deskCount() { var t = [1, 5, 12, 22, 35, 50], n = 0; for (var i = 0; i < t.length; i++) if (S.lvC >= t[i]) n++; return n; }
 function boardCount() { var t = [1, 6, 14, 25, 40, 60], n = 0; for (var i = 0; i < t.length; i++) if (S.lvA >= t[i]) n++; return n; }
-function bgKeyNow() { var m = ''; for (var i = 0; i < 8; i++) m += S.routes[i].u ? '1' : '0'; return SC.W + 'x' + SC.H + '@' + SC.dpr + '|' + m; }
+function bgKeyNow() { var m = ''; for (var i = 0; i < 8; i++) m += S.routes[i].u ? '1' : '0'; return SC.W + 'x' + SC.H + '@' + SC.dpr + '|' + m + (rv('mars') ? 'm' : ''); }
 function shade(hex, amt) {
   var n = parseInt(hex.slice(1), 16), r = n >> 16, g = n >> 8 & 255, b = n & 255;
   var f = amt < 0 ? 0 : 255, t = Math.abs(amt);
@@ -1139,7 +1084,7 @@ function drawPlanet(c, i, x, y, r) {
   c.restore();
 }
 function drawPadBase(c, i) {
-  var G = SC.G, p = G.pads[i], s = p.s, u = G.u, un = S.routes[i].u, nx = nextRoute() === i;
+  var G = SC.G, p = G.pads[i], s = p.s, u = G.u, un = S.routes[i].u, nx = nextRoute() === i && rv('mars');
   var rw = G.rh * s * 0.3, pw = rw * 1.7;
   c.fillStyle = un ? '#24343f' : '#17242d';
   c.beginPath(); c.moveTo(p.x - pw, p.y + 1); c.lineTo(p.x - pw * 0.8, p.y - 3 * u * s); c.lineTo(p.x + pw * 0.8, p.y - 3 * u * s); c.lineTo(p.x + pw, p.y + 1); c.closePath(); c.fill();
@@ -1157,10 +1102,11 @@ function drawPadBase(c, i) {
     c.fillStyle = '#ff6a2b';
     for (var q = -1; q <= 1; q += 2) { c.beginPath(); c.moveTo(p.x + q * pw * 0.6, p.y - 3 * u * s); c.lineTo(p.x + q * pw * 0.6 - 2.5 * u * s, p.y + 1); c.lineTo(p.x + q * pw * 0.6 + 2.5 * u * s, p.y + 1); c.closePath(); c.fill(); }
   }
-  var lbl = un ? upTR(ROUTES[i].name) : nx ? 'YAKINDA' : '?';
+  var lbl = un ? upTR(ROUTES[i].name) : nx ? 'YAKINDA' : '';
+  if (!lbl) return;
   c.font = '800 ' + Math.max(7, 7.5 * u * s).toFixed(1) + 'px "Martian Mono", monospace';
   c.textAlign = 'center'; c.textBaseline = 'top';
-  c.fillStyle = un ? ROUTES[i].color : nx ? '#ff8d57' : '#3c4f5c';
+  c.fillStyle = un ? ROUTES[i].color : '#ff8d57';
   c.fillText(lbl, p.x, p.y + 4 * u * s);
 }
 function drawTerminal(c) {
@@ -1212,11 +1158,8 @@ function drawTerminalDyn(c) {
     c.fillStyle = rgba(hue, 0.85 + 0.15 * Math.sin(GT * 2 + k)); c.fillRect(bx, by, bw, bh);
     c.fillStyle = 'rgba(255,255,255,0.75)'; c.fillRect(bx + 1.2 * u, by + 1.2 * u, bw * 0.5, 0.9 * u); c.fillRect(bx + 1.2 * u, by + 2.8 * u, bw * 0.35, 0.9 * u);
   }
-  if (RT.lostLobby > 0.02 && Math.sin(GT * 8) > 0) {
-    var lf = Math.max(7, 7.5 * u);
-    c.fillStyle = '#ff6474'; c.font = '800 ' + lf.toFixed(1) + 'px "Martian Mono", monospace'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-    c.fillText('LOBİ DOLU', (x0 + x1) / 2, G.tTop + Math.max(8, 8.5 * u) * 1.25 + lf * 1.5);
-  }
+  // long queue: red "!" above the waiting passengers
+  if (rv('banko') && RT.queueT > 2) drawProb(c, 'bang', (x0 + dx0) / 2, gr - 26 * u, 18 * u);
 }
 function drawRocket(c, x, yb, hh, col, o) {
   var w = hh * 0.3, top = yb - hh, bot = yb - hh * 0.1, sh = yb - hh * 0.6;
@@ -1268,7 +1211,7 @@ function rocketPose(i, r) {
 function spawnWalker(kind, tgt) {
   var G = SC.G; if (!G || SC.walkers.length > 46) return;
   var u = G.u, alien = kind === 'alien' || Math.random() < 0.13;
-  var w = { k: kind, t: Math.random() * 6, skin: alien ? '#86e08f' : pick(SKINS), body: pick(OUTFITS), alien: alien, sp: (14 + Math.random() * 8) * u };
+  var w = { k: kind, t: Math.random() * 6, skin: alien ? '#86e08f' : pick(SKINS), body: pick(OUTFITS), alien: alien, sp: (12 + Math.random() * 5) * u };
   if (kind === 'arr') { w.x = -6; w.y = G.ground - 1; w.sx = -6; w.tx = G.tx0 + 2 * u; w.ty = w.y; }
   else if (kind === 'alien') { w.x = G.tx0 + rand(2, 14) * u; w.y = G.ground - 1; w.sx = w.x - 1; w.tx = w.x + 0.01; w.ty = w.y; w.k = 'arr'; w.fade = 0.9; w.sp = 10 * u; }
   else { var p = G.pads[tgt]; w.x = G.tx1 - 2 * u; w.y = G.ground - 1; w.sx = w.x; w.tx = p.x - (G.rh * p.s * 0.3 * 1.25) + rand(-2, 2) * u; w.ty = p.y - 2; w.ri = tgt; }
@@ -1322,7 +1265,44 @@ function puff(x, y, vx, vy, r, life, kind, grow) {
   SC.parts.push({ x: x, y: y, vx: vx, vy: vy, r: r, life: life, max: life, k: kind, g: grow || 0 });
 }
 function dust(i) { var G = SC.G; if (!G) return; var p = G.pads[i]; for (var k = 0; k < (RM ? 3 : 8); k++) puff(p.x + rand(-5, 5) * p.s, p.y - 2, rand(-50, 50) * p.s, rand(-10, 0), rand(3, 5) * p.s, rand(0.5, 1), 'smoke', 10 * p.s); }
-function floater(x, y, text, col, size) { SC.floaters.push({ x: x, y: y, text: text, col: col, t: 0, max: 1.5, size: size || 1 }); if (SC.floaters.length > 14) SC.floaters.shift(); }
+// Problem signs drawn in the scene use the same pictures as the badges on the buttons.
+var PIMG = {};
+function probImg(k) {
+  var im = PIMG[k];
+  if (!im) { im = PIMG[k] = new Image(); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(PROB[k].replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')); }
+  return im;
+}
+function drawProb(c, k, x, y, size) {
+  var im = probImg(k); if (!im.complete || !im.naturalWidth) return;
+  var b = RM ? 0 : Math.sin(GT * 3.2) * size * 0.1;
+  c.save(); c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 6; c.drawImage(im, x - size / 2, y - size / 2 + b, size, size); c.restore();
+}
+function gateX(i) { var G = SC.G, p = G.pads[i], s = p.s, rw = G.rh * s * 0.3; return p.x - rw * 1.25 - Math.max(4, 5.5 * G.u * s); }
+var CROWD = [];
+function drawGateCrowd(c, i) {
+  var G = SC.G, p = G.pads[i], s = p.s, u = G.u * s, n = Math.min(4, Math.floor(RT.gates[i] + 0.25)), x0 = gateX(i) - 3 * u;
+  for (var k = n - 1; k >= 0; k--) {
+    var row = k % 2, w = CROWD[i * 4 + k] || (CROWD[i * 4 + k] = { t: 0, skin: SKINS[(i + k * 2) % SKINS.length], body: OUTFITS[(i * 3 + k) % OUTFITS.length], alien: (i + k) % 7 === 3 });
+    w.x = x0 - ((k / 2) | 0) * 4.8 * u - row * 2.4 * u; w.y = p.y - 1 - row * 1.4 * u;
+    drawWalker(c, w);
+  }
+}
+function drawReturn(c, i) {
+  var rs = RT.rockets[i] || [], best = null, k;
+  for (k = 0; k < rs.length; k++) { var r = rs[k]; if (r.st === 'away' && (!best || r.away < best.away)) best = r; }
+  if (!best) return;
+  var G = SC.G, p = G.pads[i], s = p.s, R = 8.5 * G.u * s, x = p.x, y = p.y - G.rh * s * 0.42;
+  var prog = clamp(1 - best.away / (best.awayMax || 1), 0, 1);
+  c.save();
+  c.lineWidth = 2.6 * G.u * s; c.strokeStyle = 'rgba(255,255,255,0.13)';
+  c.beginPath(); c.arc(x, y, R, 0, TAU); c.stroke();
+  c.strokeStyle = ROUTES[i].color; c.lineCap = 'round';
+  c.beginPath(); c.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(0.02, prog)); c.stroke();
+  var q = R * 0.55; c.fillStyle = 'rgba(243,235,219,0.85)';
+  c.beginPath(); c.moveTo(x, y - q); c.lineTo(x + q * 0.6, y + q * 0.62); c.lineTo(x - q * 0.6, y + q * 0.62); c.closePath(); c.fill();
+  c.restore();
+}
+function floater(x, y, text, col, size) { SC.floaters.push({ x: x, y: y, text: text, col: col, t: 0, max: 1.8, size: size || 1 }); if (SC.floaters.length > 14) SC.floaters.shift(); }
 function banner(text, sub, col) { SC.banner = { text: text, sub: sub, col: col, t: 0 }; }
 
 function drawScene(dt) {
@@ -1347,11 +1327,9 @@ function drawScene(dt) {
     }
     c.restore();
   }
-  // ambient: shooting star + satellite
-  if (!SC.shoot && Math.random() < dt / 9) SC.shoot = { x: rand(W * 0.1, W), y: rand(0, H * 0.3), t: 0 };
+  // ambient: a rare shooting star
+  if (!SC.shoot && Math.random() < dt / 30) SC.shoot = { x: rand(W * 0.1, W), y: rand(0, H * 0.3), t: 0 };
   if (SC.shoot) { var s1 = SC.shoot; s1.t += dt; var len = 40 * u, px = s1.x - s1.t * 260 * u, py = s1.y + s1.t * 120 * u, al = clamp(1 - s1.t / 0.6, 0, 1); var sg = c.createLinearGradient(px, py, px + len, py - len * 0.46); sg.addColorStop(0, 'rgba(255,255,255,' + al + ')'); sg.addColorStop(1, 'rgba(255,255,255,0)'); c.strokeStyle = sg; c.lineWidth = 1.2; c.beginPath(); c.moveTo(px, py); c.lineTo(px + len, py - len * 0.46); c.stroke(); if (s1.t > 0.6) SC.shoot = null; }
-  if (!SC.sat && Math.random() < dt / 25) SC.sat = { x: -5, y: rand(H * 0.05, H * 0.3), v: rand(10, 18) * u };
-  if (SC.sat) { SC.sat.x += SC.sat.v * dt; c.fillStyle = Math.sin(GT * 6) > 0.6 ? '#ff8d57' : '#cfd8e0'; c.fillRect(SC.sat.x, SC.sat.y, 1.6, 1.6); if (SC.sat.x > W + 5) SC.sat = null; }
   // meteors
   for (k = SC.meteors.length - 1; k >= 0; k--) {
     var m = SC.meteors[k]; m.t += dt; m.x += m.vx * dt; m.y += m.vy * dt;
@@ -1375,6 +1353,8 @@ function drawScene(dt) {
   drawTerminalDyn(c);
   // gantry lights
   for (var i = 0; i < 8; i++) if (S.routes[i].u) { var pp = G.pads[i]; c.fillStyle = Math.sin(GT * 3 + i) > 0.2 ? '#ff4d4d' : '#5a1f1f'; c.fillRect(pp.x - G.rh * pp.s * 0.3 * 1.25 - 4 * u * pp.s, pp.y - G.rh * pp.s * 0.92 - 2, 2, 2); }
+  // passengers waiting at each gate; a ring fills while the rocket is away
+  for (i = 0; i < 8; i++) if (S.routes[i].u) { drawGateCrowd(c, i); if (!padBusy(i)) drawReturn(c, i); }
   // rockets (back row first)
   var order = [4, 5, 6, 7, 0, 1, 2, 3];
   for (var oi = 0; oi < 8; oi++) {
@@ -1389,6 +1369,15 @@ function drawScene(dt) {
       if (r.st === 'ready' && Math.random() < dt * 4) puff(po.x + rand(-1, 1) * hh * 0.25, po.y - 2, rand(-20, 20), rand(-16, -4), rand(1.5, 3) * G.pads[i].s, rand(0.5, 0.9), 'steam', 5);
       drawRocket(c, po.x, po.y, hh, ROUTES[i].color, { flame: po.flame, blue: S.routes[i].speed >= 8, load: (r.st === 'board' || r.st === 'ready') ? r.load / K : r.st === 'launch' ? 1 : 0, ready: r.st === 'ready' });
     }
+  }
+  // problem signs: the same pictures sit on the button that fixes them
+  for (i = 0; i < 8; i++) {
+    if (!S.routes[i].u) continue;
+    var pd = G.pads[i];
+    // both signs sit above the pad: the hourglass while the rocket waits, the people while the gate is full
+    var signY = pd.y - 3 * u * pd.s - G.rh * pd.s * rocketSize(i) - 12 * u * pd.s, pr0 = padRocket(i);
+    if (rv('reklam') && RT.waitPax[i] > 4 && pr0 && pr0.st === 'board') drawProb(c, 'hour', pd.x, signY, 18 * u * pd.s);
+    else if (rv('seats') && crowd(i)) drawProb(c, 'people', pd.x, signY, 18 * u * pd.s);
   }
   // walkers
   for (k = SC.walkers.length - 1; k >= 0; k--) { var wk = SC.walkers[k]; if (!walkerUpdate(wk, dt)) { SC.walkers.splice(k, 1); continue; } drawWalker(c, wk); }
@@ -1439,7 +1428,7 @@ function onCanvasTap(e) {
     if (m.alive && Math.hypot(m.x - x, m.y - y) < reach) {
       m.alive = false; S.crystals += 1; S.stats.meteors++; if (RT.event && RT.event.type === 'meteor') RT.event.caught++;
       floater(m.x, m.y, '+1', '#c9b8ff', 1); for (var q = 0; q < 10; q++) puff(m.x, m.y, rand(-70, 70), rand(-70, 70), rand(1.5, 3), rand(0.3, 0.6), 'gem', 0);
-      SFX.meteor(); onCrystal(); markDirty(); return;
+      SFX.meteor(); markDirty(); return;
     }
   }
   if (SC.vip && Math.hypot(SC.vip.x - x, SC.vip.y - 10 - y) < reach * 1.2) { welcomeVip(); return; }
@@ -1468,91 +1457,23 @@ function updateLaunchUI() {
     LB.pz.style.left = ((PZ_C - ph) * 100) + '%'; LB.pz.style.width = (ph * 200) + '%';
     LB.gz.style.left = ((PZ_C - gh) * 100) + '%'; LB.gz.style.width = (gh * 200) + '%';
   }
-  var r = readyList[0], K = E.seats(r.i, S.routes[r.i].seats);
-  var nm = upTR(ROUTES[r.i].name) + (readyList.length > 1 ? '  +' + (readyList.length - 1) : '');
+  var r = readyList[0], nm = upTR(ROUTES[r.i].name);
   if (LB.name.textContent !== nm) LB.name.textContent = nm;
-  var inf = Math.floor(r.load) + '/' + K + ' yolcu';
+  var inf = readyList.length > 1 ? '+' + (readyList.length - 1) + ' roket' : '';
   if (LB.info.textContent !== inf) LB.info.textContent = inf;
   var w = LB.gw || (LB.gw = LB.btn.querySelector('.gauge').clientWidth);
   LB.needle.style.transform = 'translateX(' + (needle() * w).toFixed(1) + 'px)';
-  var aw = E.mult(S).autoWait;
-  LB.timer.style.setProperty('--t', String(RT.holdAuto ? 1 : clamp(1 - r.t / aw, 0, 1)));
+  // manual rockets wait for you; only automatic pilots count down
+  var auto = S.routes[r.i].auto;
+  if (LB.timer.hidden === auto) LB.timer.hidden = !auto;
+  if (auto) LB.timer.style.setProperty('--t', String(RT.holdAuto ? 1 : clamp(1 - r.t / E.mult(S).autoWait, 0, 1)));
 }
 
-/* ================= departure board ================= */
-var FLAPS = [], FLAP_CH = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ0123456789';
-function flapSet(el, text, len) {
-  text = upTR(text || '');
-  while (text.length < len) text += ' ';
-  text = text.slice(0, len);
-  if (!el._cells) {
-    el._cells = []; el.textContent = '';
-    for (var i = 0; i < len; i++) { var s = document.createElement('i'); s.textContent = ' '; el.appendChild(s); el._cells.push({ el: s, tgt: ' ', n: 0 }); }
-  }
-  for (var j = 0; j < len; j++) {
-    var c = el._cells[j], ch = text[j];
-    if (c.tgt !== ch) { c.tgt = ch; c.n = 1 + ((Math.random() * 2) | 0); if (FLAPS.indexOf(c) < 0) FLAPS.push(c); }
-  }
-}
-function flapTick() {
-  for (var k = FLAPS.length - 1; k >= 0; k--) {
-    var c = FLAPS[k];
-    if (c.n > 0) { c.n--; c.el.textContent = FLAP_CH[(Math.random() * FLAP_CH.length) | 0]; }
-    else { c.el.textContent = c.tgt === ' ' ? ' ' : c.tgt; FLAPS.splice(k, 1); SFX.flap(); }
-  }
-}
-function routeStatus(i) {
-  if (!S.routes[i].u) return { st: nextRoute() === i ? 'YAKINDA' : '-------', inf: '', cls: 'r-lock' };
-  var rs = RT.rockets[i] || [], K = E.seats(i, S.routes[i].seats), pr = padRocket(i);
-  if (pr) {
-    if (pr.st === 'ready') return { st: 'HAZIR', inf: '%' + Math.round(10 * pr.load / K) * 10, cls: 'r-ready' };
-    if (pr.st === 'land') return { st: 'İNİŞ', inf: '', cls: '' };
-    return { st: 'BİNİŞ', inf: '%' + Math.round(10 * pr.load / K) * 10, cls: '' };
-  }
-  var best = Infinity, launching = false;
-  rs.forEach(function (r) {
-    if (r.st === 'launch') launching = true;
-    if (r.st === 'away') best = Math.min(best, r.away + LAND_T);
-    if (r.st === 'launch') best = Math.min(best, (LAUNCH_T - r.t) + Math.max(0.4, r.trip - LAUNCH_T - LAND_T) + LAND_T);
-  });
-  if (launching && best > 3) return { st: 'KALKIŞ', inf: fmtClock(best), cls: '' };
-  if (isFinite(best)) return { st: 'UÇUŞTA', inf: fmtClock(best), cls: '' };
-  return { st: 'BEKLER', inf: '', cls: '' };
-}
-function updateBoard() {
-  var rows = document.querySelectorAll('#board .brow'), list = [], i;
-  for (i = ROUTES.length - 1; i >= 0; i--) if (S.routes[i].u) list.push(i);
-  var nx = nextRoute(); if (nx >= 0) list.unshift(nx);
-  for (var k = 0; k < rows.length; k++) {
-    var row = rows[k], ri = list[k];
-    var dest = row.querySelector('.dest'), st = row.querySelector('.st'), inf = row.querySelector('.inf');
-    if (ri == null) { flapSet(dest, '', 7); flapSet(st, '', 7); flapSet(inf, '', 5); row.className = 'brow r-lock'; continue; }
-    var s = routeStatus(ri);
-    flapSet(dest, ROUTES[ri].name, 7); flapSet(st, s.st, 7); flapSet(inf, s.inf, 5);
-    row.className = 'brow ' + s.cls;
-  }
-  var d = new Date(), clk = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  var bc = $('#bclock'); if (bc.textContent !== clk) bc.textContent = clk;
-}
-
-/* ================= radio / toast / modal ================= */
-var RQ = [], RCUR = null;
-function radio(text, prio) { if (prio) RQ.unshift(text); else RQ.push(text); if (RQ.length > 4) RQ.length = 4; }
-function radioTick(dt) {
-  var el = $('#radio');
-  if (RCUR) {
-    RCUR.t += dt;
-    var n = Math.min(RCUR.text.length, Math.floor(RCUR.t * 55));
-    if (n !== RCUR.shown) { RCUR.shown = n; el.querySelector('.r-txt').textContent = RCUR.text.slice(0, n); }
-    if (RCUR.t > RCUR.text.length / 55 + 5.5) { RCUR = null; el.hidden = true; }
-    return;
-  }
-  if (RQ.length && $('#modal').hidden && !RT.event && !GD.tour) { RCUR = { text: RQ.shift(), t: 0, shown: -1 }; el.hidden = false; el.querySelector('.r-txt').textContent = ''; }
-}
+/* ================= toast / modal ================= */
 function toast(text) {
   var box = $('#toast'); while (box.children.length >= 2) box.firstChild.remove();
   var t = h('div', { class: 'tst', text: text }); box.appendChild(t);
-  setTimeout(function () { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 320); }, 2200);
+  setTimeout(function () { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 320); }, 2600);
 }
 var MODAL_CB = null;
 function showModal(title, body, buttons, onClose) {
@@ -1568,35 +1489,29 @@ function showModal(title, body, buttons, onClose) {
 }
 function closeModal() { $('#modal').hidden = true; var cb = MODAL_CB; MODAL_CB = null; if (cb) cb(); }
 
-/* ================= hints ================= */
-function hint(id, text, prio) { if (S.flags.seen[id]) return; S.flags.seen[id] = 1; radio(text, prio); markDirty(); }
-function hintsTick() {
-  if (S.routes[1].u && !S.flags.tabs.bilim) { S.flags.tabs.bilim = true; markNew('bilim'); }
-  if (GT > 30 && GT > RT.nextQuipAt && !GD.tour) { RT.nextQuipAt = GT + rand(140, 230); radio(pick(QUIPS)); }
-}
-function onCrystal() {
-  if (!S.flags.tabs.bilim) { S.flags.tabs.bilim = true; structDirty(true); markNew('bilim'); }
-}
-function markNew(tab) { var b = document.querySelector('.tab[data-tab="' + tab + '"]'); if (b) b.classList.add('new'); }
-
 /* ================= panel UI ================= */
-var UI = { tab: 'liman', binds: [], dirty: true, keepScroll: true };
+var UI = { tab: 'liman', binds: [], dirty: true };
 function structDirty() { UI.dirty = true; }
 function bind(fn) { UI.binds.push(fn); }
+var SVGA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
 var ICONS = {
-  board: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="11" rx="1.5"/><path d="M7 8h7M7 11h4M9 15v5M15 15v5"/></svg>',
-  desk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2.5"/><path d="M7.5 13c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/><path d="M3 13h18v7H3z"/></svg>',
-  seat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v10h10M7 13l-1 7M17 13v7M10 9h6"/></svg>',
+  board: SVGA + '<rect x="3" y="4" width="18" height="11" rx="1.5"/><path d="M7 8h7M7 11h4M9 15v5M15 15v5"/></svg>',
+  desk: SVGA + '<circle cx="12" cy="6" r="2.5"/><path d="M7.5 13c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/><path d="M3 13h18v7H3z"/></svg>',
+  seat: SVGA + '<path d="M7 3v10h10M7 13l-1 7M17 13v7M10 9h6"/></svg>',
+  engine: SVGA + '<path d="M12 3c2.5 3.5 5.5 6 5.5 10a5.5 5.5 0 0 1-11 0c0-2.5 1.5-4.5 3-6 .3 2 1.2 3 2.5 3.5C12 8 11 5.5 12 3z"/></svg>',
+  rocket: SVGA + '<path d="M12 2.5c3 2.2 4.6 5.6 4.6 9.4l-1.8 4.3H9.2l-1.8-4.3c0-3.8 1.6-7.2 4.6-9.4z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M9.2 16.2 7 19.5M14.8 16.2 17 19.5M12 18v3"/></svg>',
+  auto: SVGA + '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 3.5v6.3M4.6 15.8l5.5-2.8M19.4 15.8l-5.5-2.8"/></svg>',
   crystal: '<svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z" fill="#b8a2ff"/><path d="M2 9h20M8 3l4 18M16 3l-4 18" stroke="#5b46b3" stroke-width="1.1" fill="none"/></svg>'
 };
+// The same three signs appear in the scene and on the button that fixes them.
+var PROB = {
+  bang: '<svg viewBox="0 0 24 24" aria-label="Sıra uzun"><circle cx="12" cy="12" r="10.5" fill="#e8344a"/><rect x="10.6" y="5.3" width="2.8" height="8.6" rx="1.2" fill="#fff"/><circle cx="12" cy="17.5" r="1.7" fill="#fff"/></svg>',
+  hour: '<svg viewBox="0 0 24 24" aria-label="Yolcu bekleniyor"><circle cx="12" cy="12" r="10.5" fill="#ffc34d"/><path d="M8.3 6h7.4M8.3 18h7.4M9.3 6c0 3.6 5.4 3.8 5.4 6s-5.4 2.4-5.4 6M14.7 6c0 3.6-5.4 3.8-5.4 6s5.4 2.4 5.4 6" stroke="#3a2600" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>',
+  people: '<svg viewBox="0 0 24 24" aria-label="Kapıda yolcu birikti"><circle cx="12" cy="12" r="10.5" fill="#5b8cff"/><circle cx="9" cy="9.3" r="2.3" fill="#fff"/><circle cx="15" cy="9.3" r="2.3" fill="#fff"/><path d="M5.2 17.2c.5-2.7 2.1-3.9 3.8-3.9s3.3 1.2 3.8 3.9zM11.2 17.2c.5-2.7 2.1-3.9 3.8-3.9s3.3 1.2 3.8 3.9z" fill="#fff"/></svg>'
+};
 function svgEl(html) { var d = document.createElement('span'); d.innerHTML = html; return d.firstChild; }
-function econClone(mod) {
-  var s = { lvA: S.lvA, lvC: S.lvC, research: S.research, souvenirs: S.souvenirs, stars: S.stars, routes: S.routes.map(function (r) { return { u: r.u, seats: r.seats, speed: r.speed, fleet: r.fleet }; }) };
-  if (mod) mod(s); return s;
-}
-function gainFor(mod) { var b = boostNow(), base = flowNow().income, s2 = econClone(mod); return E.flow(s2, b).income - base; }
 function buyN(kind, i) {
-  var mode = S.settings.buy;
+  var mode = rv('bulk') ? S.settings.buy : 1;
   if (mode === 1) return 1;
   if (mode === 10) { if (kind === 'speed') return Math.max(1, Math.min(10, CFG.speedMax - S.routes[i].speed)); return 10; }
   var n = 0;
@@ -1606,153 +1521,134 @@ function buyN(kind, i) {
   else if (kind === 'speed') n = E.maxBuy.speed(i, S.routes[i].speed, S.money);
   return Math.max(1, n);
 }
-function nextMile(L) { var e = CFG.mEvery; return Math.floor(L / e) * e + e; }
-function gainText(el, g) { if (g > 1e-9) { el.textContent = '+' + fmtRate(g) + '/sn'; el.classList.remove('zero'); } else { el.textContent = 'şu an etkisiz'; el.classList.add('zero'); } }
-
+function secs(t) { return trimZ(t.toFixed(1)).replace('.', ',') + ' sn'; }
 function buyToggle() {
   var wrap = h('div', { class: 'toggle', role: 'group', 'aria-label': 'Kaç tane alınsın' });
   [[1, 'x1'], [10, 'x10'], ['max', 'MAKS']].forEach(function (o) {
-    var b = h('button', { text: o[1], 'aria-pressed': String(S.settings.buy === o[0]), onclick: function () { S.settings.buy = o[0]; SFX.tab(); markDirty(); structDirty(); } });
-    wrap.appendChild(b);
+    wrap.appendChild(h('button', { text: o[1], 'aria-pressed': String(S.settings.buy === o[0]), onclick: function () { S.settings.buy = o[0]; SFX.tab(); markDirty(); structDirty(); } }));
   });
   return wrap;
 }
-function upgradeCard(o) {
-  var lvEl = h('span', { class: 'lv' }), stat = h('div', { class: 'cstat' }), cost = h('b'), lab = h('small', { text: 'Yükselt' });
-  var btn = h('button', { class: 'buy' }, lab, cost), gain = h('div', { class: 'gain' }), mileFill = h('i'), mileTxt = h('span');
-  var card = h('div', { class: 'card', id: 'card-' + o.key },
-    h('div', { class: 'crow' },
-      h('div', { class: 'cico' }, svgEl(o.icon)),
-      h('div', { class: 'cmain' }, h('div', { class: 'ctitle' }, o.title, lvEl), stat, h('div', { class: 'cdesc', text: o.desc })),
-      h('div', { class: 'bcol' }, btn, gain)),
-    h('div', { class: 'mile' }, mileTxt, mileFill));
+function urow(o) {
+  var eff = h('em'), costEl = h('b'), badge = h('span', { class: 'ubadge', hidden: true });
+  var btn = h('button', { class: 'ubuy', 'aria-label': o.label + ' al' }, h('i', { class: 'coin' }), costEl);
+  var row = h('div', { class: 'urow', id: o.id }, h('span', { class: 'uico' }, svgEl(o.icon)), h('span', { class: 'ulab' }, h('b', { text: o.label }), eff), badge, btn);
   btn.addEventListener('click', function () {
     audioUnlock();
-    var n = o.n(), c = o.cost(n);
+    var c = o.cost(); if (c == null) return;
     if (S.money < c) { SFX.error(); return; }
-    S.money -= c; o.apply(n); invalidate(); RT.sessionBuys++; SFX.buy(o.level()); markDirty();
-    if (o.after) o.after();
+    S.money -= c; o.buy(); invalidate(); RT.sessionBuys++; SFX.buy(RT.sessionBuys); markDirty();
+    row.classList.remove('pop'); void row.offsetWidth; row.classList.add('pop');
   });
-  bind(function (f) {
-    var n = o.n(), c = o.cost(n), L = o.level();
-    lvEl.textContent = 'Sv ' + L;
-    stat.innerHTML = '';
-    add(stat, [h('b', { text: o.now() }), ' → ', o.next(n), ' ' + o.unit]);
-    cost.textContent = fmt(c) + (n > 1 ? ' (x' + n + ')' : '');
-    btn.disabled = S.money < c;
-    var gg = gainFor(function (s) { o.mod(s, n); });
-    gainText(gain, gg); btn.classList.toggle('meh', !btn.disabled && !(gg > 1e-9));
-    var nm = nextMile(L), pm = (L % CFG.mEvery) / CFG.mEvery;
-    mileTxt.textContent = nm + '. seviyede x2';
-    mileFill.style.setProperty('--p', (pm * 100).toFixed(1) + '%');
-    card.classList.toggle('hot', f.bottleneck === o.key);
+  bind(function () {
+    var c = o.cost(), e = o.eff();
+    if (eff.textContent !== e) eff.textContent = e;
+    if (c == null) { costEl.textContent = 'TAMAM'; btn.disabled = true; btn.classList.add('done'); }
+    else { var t = fmt(c); if (costEl.textContent !== t) costEl.textContent = t; btn.disabled = S.money < c; btn.classList.remove('done'); }
+    var bd = o.badge ? o.badge() : '';
+    if (badge._k !== bd) { badge._k = bd; badge.innerHTML = bd ? PROB[bd] : ''; badge.hidden = !bd; }
   });
-  return card;
-}
-function tabLiman(root) {
-  root.appendChild(h('div', { class: 'sect' }, h('div', null, h('h3', { text: 'Terminal' }), h('p', { text: 'Yolcu akışını hızlandır' })), buyToggle()));
-  root.appendChild(upgradeCard({
-    key: 'A', icon: ICONS.board, title: 'Tanıtım Panoları', desc: 'Limana daha çok yolcu gelir.', unit: 'yolcu/sn',
-    level: function () { return S.lvA; }, n: function () { return buyN('A'); }, cost: function (n) { return E.cost.A(S.lvA, n); },
-    now: function () { return fmtRate(E.arrival(S, S.lvA, E.mult(S, boostNow()))); }, next: function (n) { return fmtRate(E.arrival(S, S.lvA + n, E.mult(S, boostNow()))); },
-    apply: function (n) { S.lvA += n; }, mod: function (s, n) { s.lvA += n; }
-  }));
-  root.appendChild(upgradeCard({
-    key: 'C', icon: ICONS.desk, title: 'Check-in Bankoları', desc: 'Yolcular kapıda beklemeden geçer.', unit: 'yolcu/sn',
-    level: function () { return S.lvC; }, n: function () { return buyN('C'); }, cost: function (n) { return E.cost.C(S.lvC, n); },
-    now: function () { return fmtRate(E.checkin(S, S.lvC)); }, next: function (n) { return fmtRate(E.checkin(S, S.lvC + n)); },
-    apply: function (n) { S.lvC += n; }, mod: function (s, n) { s.lvC += n; }
-  }));
-  var lob = h('div', { class: 'mrow' }), warn = h('div', { class: 'warn' });
-  root.appendChild(h('div', { class: 'card' }, h('div', { class: 'mrow' }, h('span', { text: 'Lobide bekleyen' }), lob), warn,
-    h('div', { class: 'note', text: 'Gelen yolcu check-in hızını geçerse lobi dolar ve yolcular geri döner. Check-in roketleri geçerse kapılar dolar.' })));
-  bind(function (f) {
-    var cap = Math.max(20, f.C * 12);
-    lob.textContent = ''; add(lob, h('b', { text: fmt(RT.lobby) + ' / ' + fmt(cap) }));
-    var w = '';
-    if (RT.lostLobby > 0.02) w = 'Lobi dolu: saniyede ' + fmtRate(RT.lostLobby) + ' yolcu geri dönüyor. Check-in yükselt.';
-    else if (RT.lostFleet > 0.02) w = 'Kapılar dolu: saniyede ' + fmtRate(RT.lostFleet) + ' yolcu uçamıyor. Rotalardan koltuk ekle.';
-    warn.textContent = w; warn.hidden = !w;
-  });
+  return row;
 }
 function planetDot(i, size) {
   var col = ROUTES[i].color;
   return h('span', { class: 'planet', style: 'width:' + (size || 30) + 'px;height:' + (size || 30) + 'px;background:radial-gradient(circle at 34% 30%,' + shade(col, 0.4) + ',' + col + ' 55%,' + shade(col, -0.45) + ');--pc:' + rgba(col, 0.35) });
 }
+function routeStatus(i) {
+  var pr = padRocket(i), K = E.seats(i, S.routes[i].seats);
+  if (pr) {
+    if (pr.st === 'ready') return { txt: S.routes[i].auto ? 'Kalkıyor' : 'Hazır! Fırlat', cls: 'ready', fill: pr.load / K, load: pr.load, K: K };
+    if (pr.st === 'land') return { txt: 'İniyor', cls: '', fill: 0, load: 0, K: K };
+    var w = RT.waitPax[i] > 4;
+    return { txt: w ? 'Yolcu bekliyor' : 'Yolcu alıyor', cls: w ? 'wait' : '', fill: pr.load / K, load: pr.load, K: K };
+  }
+  return { txt: 'Yolda', cls: 'away', fill: 0, load: 0, K: K };
+}
 function routeCard(i) {
   var R = ROUTES[i], rt = S.routes[i];
-  var meta = h('div', { class: 'rmeta' }), rst = h('div', { class: 'rstat' }), pill = h('span', { class: 'pill' });
-  function mini(label, kind) {
-    var lab = h('span', { text: label }), val = h('b'), em = h('em');
-    var b = h('button', { class: 'mini' }, lab, val, em);
-    b.addEventListener('click', function () {
-      audioUnlock();
-      var n, c;
-      if (kind === 'fleet') { if (rt.fleet >= CFG.fleetMax) return; c = E.cost.fleet(i, rt.fleet); if (S.money < c) { SFX.error(); return; } S.money -= c; rt.fleet++; RT.rockets[i].push(newRocket(i, 'hangar')); }
-      else if (kind === 'speed') { if (rt.speed >= CFG.speedMax) return; n = buyN('speed', i); c = E.cost.speed(i, rt.speed, n); if (S.money < c) { SFX.error(); return; } S.money -= c; rt.speed += n; }
-      else { n = buyN('seats', i); c = E.cost.seats(i, rt.seats, n); if (S.money < c) { SFX.error(); return; } S.money -= c; rt.seats += n; }
-      invalidate(); RT.sessionBuys++; SFX.buy(rt.seats + rt.speed); markDirty();
-    });
-    bind(function () {
-      var c, n, maxed = false, txt, g;
-      if (kind === 'fleet') { maxed = rt.fleet >= CFG.fleetMax; c = maxed ? 0 : E.cost.fleet(i, rt.fleet); txt = 'Roket ' + rt.fleet + '/' + CFG.fleetMax; g = maxed ? 0 : gainFor(function (s) { s.routes[i].fleet++; }); }
-      else if (kind === 'speed') { maxed = rt.speed >= CFG.speedMax; n = maxed ? 0 : buyN('speed', i); c = maxed ? 0 : E.cost.speed(i, rt.speed, n); txt = 'Motor Sv' + rt.speed; g = maxed ? 0 : gainFor(function (s) { s.routes[i].speed += n; }); }
-      else { n = buyN('seats', i); c = E.cost.seats(i, rt.seats, n); txt = 'Koltuk Sv' + rt.seats; g = gainFor(function (s) { s.routes[i].seats += n; }); }
-      lab.textContent = txt;
-      val.textContent = maxed ? 'MAKS' : fmt(c) + (n > 1 ? ' x' + n : '');
-      if (maxed) { em.textContent = 'tamam'; em.className = 'zero'; } else gainText(em, g);
-      b.disabled = maxed; b.classList.toggle('done', maxed);
-      b.classList.toggle('can', !maxed && S.money >= c && g > 1e-9);
-    });
-    return b;
-  }
-  var card = h('div', { class: 'card', id: 'route-' + i, style: 'border-left:3px solid ' + R.color },
-    h('div', { class: 'rhead' }, planetDot(i), h('div', { class: 'cmain' }, h('div', { class: 'rname', text: R.name }), meta), pill),
-    h('div', { class: 'cdesc', text: RINFO[i].desc }), rst,
-    h('div', { class: 'btn3' }, mini('Koltuk', 'seats'), mini('Motor', 'speed'), mini('Roket', 'fleet')));
-  bind(function (f) {
-    var m = f.m, K = E.seats(i, rt.seats), T = E.trip(i, rt.speed, m), per = f.per[i];
-    meta.textContent = 'Bilet ' + fmt(R.price * m.ticket) + ' · Sefer ' + trimZ(T.toFixed(1)).replace('.', ',') + ' sn · ' + K + ' koltuk';
-    rst.textContent = '';
-    if (per) add(rst, [h('span', null, 'Taşınan ', h('b', { text: fmtRate(per.carried) + '/sn' })), h('span', null, 'Kapasite ', h('b', { text: fmtRate(per.cap) + '/sn' }))]);
-    if (per && per.full && f.bottleneck === 'F') { pill.textContent = 'DOLU'; pill.className = 'pill full'; }
-    else if (per && per.carried < per.cap * 0.6) { pill.textContent = 'BOŞ KOLTUK'; pill.className = 'pill'; }
-    else { pill.textContent = 'AKIYOR'; pill.className = 'pill ok'; }
+  var fill = h('i'), seatTxt = h('span', { class: 'rseat' }), st = h('span', { class: 'rst' });
+  var card = h('div', { class: 'rcard', id: 'route-' + i, style: '--rc:' + R.color },
+    h('div', { class: 'rhd' }, planetDot(i, 26), h('b', { class: 'rnm', text: R.name }), h('span', { class: 'rbar' }, fill), seatTxt, st));
+  if (rv('seats')) card.appendChild(urow({ id: 'row-seats-' + i, icon: ICONS.seat, label: 'Koltuk',
+    eff: function () { return E.seats(i, rt.seats) + ' → ' + E.seats(i, rt.seats + buyN('seats', i)); },
+    cost: function () { return E.cost.seats(i, rt.seats, buyN('seats', i)); },
+    buy: function () { rt.seats += buyN('seats', i); },
+    badge: function () { return crowd(i) ? 'people' : ''; } }));
+  if (rv('motor')) card.appendChild(urow({ id: 'row-speed-' + i, icon: ICONS.engine, label: 'Motor',
+    eff: function () { var a = E.trip(i, rt.speed), b2 = E.trip(i, Math.min(CFG.speedMax, rt.speed + buyN('speed', i))); return b2 < a ? secs(a) + ' → ' + secs(b2) : secs(a); },
+    cost: function () { if (rt.speed >= CFG.speedMax || E.trip(i, rt.speed + 1) >= E.trip(i, rt.speed)) return null; return E.cost.speed(i, rt.speed, buyN('speed', i)); },
+    buy: function () { rt.speed = Math.min(CFG.speedMax, rt.speed + buyN('speed', i)); } }));
+  if (rv('fleet')) card.appendChild(urow({ id: 'row-fleet-' + i, icon: ICONS.rocket, label: 'Roket sayısı',
+    eff: function () { return rt.fleet >= CFG.fleetMax ? String(rt.fleet) : rt.fleet + ' → ' + (rt.fleet + 1); },
+    cost: function () { return rt.fleet >= CFG.fleetMax ? null : E.cost.fleet(i, rt.fleet); },
+    buy: function () { rt.fleet++; RT.rockets[i].push(newRocket(i, 'hangar')); },
+    badge: function () { return crowd(i) && rt.fleet < CFG.fleetMax ? 'people' : ''; } }));
+  if (rv('oto')) card.appendChild(urow({ id: 'row-auto-' + i, icon: ICONS.auto, label: 'Otomatik pilot',
+    eff: function () { return rt.auto ? 'açık: kendi kalkar' : 'roket kendi kalksın'; },
+    cost: function () { return rt.auto ? null : E.cost.auto(i); },
+    buy: function () { rt.auto = true; hnot(R.name + ' otomatik pilot'); } }));
+  bind(function () {
+    var s2 = routeStatus(i);
+    fill.style.width = (clamp(s2.fill, 0, 1) * 100).toFixed(0) + '%';
+    var t = s2.cls === 'away' ? '' : Math.floor(s2.load + 1e-6) + '/' + s2.K;
+    if (seatTxt.textContent !== t) seatTxt.textContent = t;
+    if (st.textContent !== s2.txt) st.textContent = s2.txt;
+    var cl = 'rst ' + s2.cls; if (st.className !== cl) st.className = cl;
   });
   return card;
 }
-function unlockCard(i) {
-  var R = ROUTES[i], c = E.cost.unlock(i), btn = h('button', { class: 'buy' }, h('small', { text: 'Rotayı aç' }), h('b', { text: fmt(c) })), gain = h('div', { class: 'gain' });
+function terminalCard() {
+  var card = h('div', { class: 'rcard term', id: 'terminal-card' }, h('div', { class: 'rhd' }, h('b', { class: 'rnm', text: 'Terminal' })));
+  if (rv('reklam')) card.appendChild(urow({ id: 'row-A', icon: ICONS.board, label: 'Reklam panosu',
+    eff: function () { return 'Seviye ' + S.lvA + ' → ' + (S.lvA + buyN('A')); },
+    cost: function () { return E.cost.A(S.lvA, buyN('A')); },
+    buy: function () { S.lvA += buyN('A'); },
+    badge: function () { return anyWaiting() ? 'hour' : ''; } }));
+  if (rv('banko')) card.appendChild(urow({ id: 'row-C', icon: ICONS.desk, label: 'Check-in bankosu',
+    eff: function () { return 'Seviye ' + S.lvC + ' → ' + (S.lvC + buyN('C')); },
+    cost: function () { return E.cost.C(S.lvC, buyN('C')); },
+    buy: function () { S.lvC += buyN('C'); },
+    badge: function () { return RT.queueT > 2 ? 'bang' : ''; } }));
+  return card;
+}
+function planetCard(i) {
+  var R = ROUTES[i], c = E.cost.unlock(i), fill = h('i'), have = h('span');
+  var btn = h('button', { class: 'ubuy big', 'aria-label': R.name + ' hattını aç' }, h('i', { class: 'coin' }), h('b', { text: fmt(c) }));
   btn.addEventListener('click', function () {
     audioUnlock();
     if (S.money < c) { SFX.error(); return; }
     S.money -= c; S.routes[i].u = true; RT.rockets[i] = [newRocket(i, 'board')]; RT.gates[i] = 0; invalidate();
-    if (i === 1) guideStart('newRoute');
+    SFX.claim(); banner('YENİ GEZEGEN!', upTR(R.name), R.color);
     hnot(R.name + ' hattı açıldı');
-    SFX.claim(); banner('YENİ ROTA!', upTR(R.name), R.color);
-    radio(R.name + ' hattı açıldı! İlk yolcular kapıda. ' + RINFO[i].desc, 1);
+    if (i === 1) { RT.sinceMars = 0; guideStart('newRoute'); }
     markDirty(); structDirty(); SC.bgKey = '';
-    if (!S.flags.tabs.gorev) { S.flags.tabs.gorev = true; markNew('gorev'); }
   });
-  var card = h('div', { class: 'card lock', id: 'unlock-' + i },
-    h('div', { class: 'crow' }, planetDot(i, 34), h('div', { class: 'cmain' }, h('div', { class: 'rname', text: R.name }), h('div', { class: 'rmeta', text: 'Bilet ' + fmt(R.price) + ' · Sefer ' + R.trip + ' sn' }), h('div', { class: 'cdesc', text: RINFO[i].desc })), h('div', { class: 'bcol' }, btn, gain)));
-  bind(function () { btn.disabled = S.money < c; var gg = gainFor(function (s) { s.routes[i].u = true; }); gainText(gain, gg); });
+  var card = h('div', { class: 'rcard next', id: 'unlock-' + i, style: '--rc:' + R.color },
+    h('div', { class: 'rhd' }, planetDot(i, 30), h('span', { class: 'nmeta' }, h('b', { class: 'rnm', text: 'Yeni gezegen: ' + R.name }), h('span', { text: RINFO[i].desc })), btn),
+    h('div', { class: 'save' }, h('span', { class: 'rbar' }, fill), have));
+  bind(function () {
+    btn.disabled = S.money < c;
+    fill.style.width = (clamp(S.money / c, 0, 1) * 100).toFixed(1) + '%';
+    var t = S.money >= c ? 'Hazır, aç!' : fmt(S.money) + ' / ' + fmt(c);
+    if (have.textContent !== t) have.textContent = t;
+  });
   return card;
 }
-function tabRota(root) {
-  root.appendChild(h('div', { class: 'sect' }, h('div', null, h('h3', { text: 'Rotalar' }), h('p', { text: 'Yeni gezegenler, daha pahalı biletler' })), buyToggle()));
+function tabLiman(root) {
+  if (rv('bulk')) root.appendChild(h('div', { class: 'sect' }, h('h3', { text: 'Liman' }), buyToggle()));
   var nx = nextRoute();
-  if (nx > 0) root.appendChild(unlockCard(nx));
+  if (nx > 0 && rv('mars')) root.appendChild(planetCard(nx));
   for (var i = ROUTES.length - 1; i >= 0; i--) if (S.routes[i].u) root.appendChild(routeCard(i));
-  if (nx > 0 && nx + 1 < ROUTES.length) root.appendChild(h('div', { class: 'card lock mystery' }, h('div', { class: 'crow' }, h('span', { class: 'planet', style: 'background:#1a2a36' }), h('div', { class: 'cmain' }, h('div', { class: 'rname', text: '? ? ?' }), h('div', { class: 'cdesc', text: 'Gizli rota. Önce ' + ROUTES[nx].name + ' hattını aç.' })))));
-  if (nx < 0) root.appendChild(h('div', { class: 'note', text: 'Bütün rotalar açık! Şimdi sıra yıldızlarda: Görevler sekmesinden yeni üs kurabilirsin.' }));
+  if (rv('reklam') || rv('banko')) root.appendChild(terminalCard());
+  if (!rv('seats')) root.appendChild(h('p', { class: 'hintline', text: 'Yolcular geliyor. Roket dolunca FIRLAT\'a bas!' }));
+  if (nx < 0) root.appendChild(h('p', { class: 'hintline', text: 'Bütün gezegenler açık! Görevler\'den yeni üs kurabilirsin.' }));
 }
 function tabGorev(root) {
   root.appendChild(h('div', { class: 'sect' }, h('div', null, h('h3', { text: 'Görevler' }), h('p', { text: 'Bitir, ödülü al: kristal + kredi' }))));
   S.missions.forEach(function (m) {
     var bar = h('i'), prog = h('b'), act = h('div');
     var card = h('div', { class: 'card' }, h('div', { class: 'mrow' }, h('span', { style: 'color:var(--text);font-weight:700;font-size:13.5px', text: m.text }), prog),
-      h('div', { class: 'bar' }, bar), h('div', { class: 'mrow' }, h('span', { class: 'reward', text: m.cr + ' kristal + 45 sn gelir' }), act));
+      h('div', { class: 'bar' }, bar), h('div', { class: 'mrow' }, h('span', { class: 'reward', text: m.cr + ' kristal + bonus para' }), act));
     var claimBtn = h('button', { class: 'claim', text: 'Ödülü al', onclick: function () { audioUnlock(); claimMission(m.id); } });
     bind(function () {
       var p = mProg(m), done = p >= m.target, base = m.abs ? m.base : 0, pct = m.abs ? (p - base) / Math.max(1, m.target - base) : p / m.target;
@@ -1799,11 +1695,10 @@ function prestigeModal() {
 function doPrestige() {
   var g = E.starsFor(S.stats.runEarned); if (g < 1) return;
   S.stars += g; S.stats.prestiges++; hnot('Yeni üs: +' + g + ' yıldız (toplam ' + S.stars + ')');
-  S.money = 10; S.lvA = 1; S.lvC = 1; S.stats.runEarned = 0;
-  S.routes = ROUTES.map(function (r, i) { return { u: i === 0, seats: 1, speed: 1, fleet: 1 }; });
+  S.money = 0; S.lvA = 1; S.lvC = 1; S.stats.runEarned = 0; RT.sinceMars = 0;
+  S.routes = ROUTES.map(function (r, i) { return newRouteState(i); });
   S.missions = []; RT.lobby = 0; RT.gates = [0, 0, 0, 0, 0, 0, 0, 0]; readyList = []; initRockets(); invalidate();
   fillMissions(); SC.bgKey = ''; SFX.claim(); banner('YENİ ÜS!', '+' + g + ' yıldız', '#b8a2ff');
-  radio('Yeni üs hazır, Kaptan. ' + S.stars + ' şöhret yıldızıyla biletler daha değerli. Ay hattı ilk yolcularını bekliyor!', 1);
   markDirty(); structDirty(); selectTab('liman');
 }
 function tabBilim(root) {
@@ -1829,7 +1724,7 @@ function tabBilim(root) {
       else { cost.innerHTML = ''; add(cost, [svgEl(ICONS.crystal), String(RES_COST[l])]); btn.disabled = S.crystals < RES_COST[l]; }
     });
   });
-  if (S.routes[1].u) {
+  if (rv('kesif')) {
     root.appendChild(h('div', { class: 'sect' }, h('div', null, h('h3', { text: 'Keşif sondası' }), h('p', { text: 'Sen yokken de uçar' }))));
     var box = h('div', { class: 'card', id: 'exp-card' });
     root.appendChild(box);
@@ -1887,7 +1782,7 @@ function collectExp() {
   var missing = SOUVENIRS.filter(function (v) { return S.souvenirs.indexOf(v.id) < 0; }), found = null;
   if (missing.length && Math.random() < x.p) { found = pick(missing); S.souvenirs.push(found.id); }
   else if (!missing.length) cr = Math.round(cr * 1.5);
-  S.crystals += cr; S.exp = null; S.stats.exps++; hnot('Keşif: ' + x.name + (found ? ', hatıra: ' + found.name : '')); invalidate(); onCrystal(); markDirty();
+  S.crystals += cr; S.exp = null; S.stats.exps++; hnot('Keşif: ' + x.name + (found ? ', hatıra: ' + found.name : '')); invalidate(); markDirty();
   SFX.claim();
   var body = [h('p', { text: x.name + ' dönüşü:' }), h('div', { class: 'big', style: 'color:var(--gem)', text: '+' + cr + ' kristal' })];
   if (found) { body.push(h('p', { text: 'Ve bir hatıra buldu:' })); body.push(souvenirFound(found)); }
@@ -1897,10 +1792,9 @@ function collectExp() {
 function renderPanel() {
   var root = $('#panel'), sc = root.scrollTop;
   root.textContent = ''; UI.binds = [];
-  if (UI.tab === 'liman') tabLiman(root);
-  else if (UI.tab === 'rota') tabRota(root);
-  else if (UI.tab === 'gorev') tabGorev(root);
-  else tabBilim(root);
+  if (UI.tab === 'gorev') tabGorev(root);
+  else if (UI.tab === 'bilim') tabBilim(root);
+  else tabLiman(root);
   root.scrollTop = sc;
   UI.dirty = false;
   refreshPanel();
@@ -1913,32 +1807,30 @@ function selectTab(t) {
 }
 var lastStruct = '';
 function structKey() {
-  var k = UI.tab + '|' + S.settings.buy + '|';
-  if (UI.tab === 'rota') for (var i = 0; i < 8; i++) k += S.routes[i].u ? 1 : 0;
-  if (UI.tab === 'gorev') k += S.missions.map(function (m) { return m.id; }).join(',') + '|' + (E.starsFor(S.stats.runEarned) > 0) + '|' + S.stars;
-  if (UI.tab === 'bilim') k += S.souvenirs.length + '|' + (S.routes[1].u ? 1 : 0);
+  var k = UI.tab + '|' + S.settings.buy + '|' + Object.keys(S.flags.reveal).sort().join(',') + '|';
+  for (var i = 0; i < 8; i++) k += S.routes[i].u ? 1 : 0;
+  if (UI.tab === 'gorev') k += '|' + S.missions.map(function (m) { return m.id; }).join(',') + '|' + (E.starsFor(S.stats.runEarned) > 0) + '|' + S.stars;
+  if (UI.tab === 'bilim') k += '|' + S.souvenirs.length;
   return k;
 }
+function markNew(tab) { var b = document.querySelector('.tab[data-tab="' + tab + '"]'); if (b) b.classList.add('new'); }
 function updateHUD() {
-  var f = flowNow();
   var mt = fmt(S.money); if (mt !== RT.lastMoneyText) { $('#money').textContent = mt; RT.lastMoneyText = mt; }
-  var rt = '+' + fmtRate(f.income) + '/sn'; var re = $('#rate'); if (re.textContent !== rt) re.textContent = rt;
+  var gems = $('#hud .gems'), showG = rv('bilim'); if (gems.hidden === showG) gems.hidden = !showG;
   var ct = String(S.crystals); var ce = $('#crystals'); if (ce.textContent !== ct) ce.textContent = ct;
-  var chips = document.querySelectorAll('.fchip');
-  chips.forEach(function (ch) { var k = ch.dataset.k, v = k === 'A' ? f.A : k === 'C' ? f.C : f.F; var t = fmtRate(v) + '/sn'; var b = ch.querySelector('b'); if (b.textContent !== t) b.textContent = t; ch.classList.toggle('bn', f.bottleneck === k); });
   var bs = boostNow(), bx = $('#boosts'), now = Date.now(), html = '';
   if (bs.ticket > 1) html += '<span class="boost">BİLET x' + bs.ticket + ' · ' + fmtClock((RT.boost.ticket.until - now) / 1000) + '</span>';
   if (bs.speed > 1) html += '<span class="boost">HIZ x' + bs.speed + ' · ' + fmtClock((RT.boost.speed.until - now) / 1000) + '</span>';
   if (bx._h !== html) { bx.innerHTML = html; bx._h = html; }
+  var nav = $('#tabs'), showT = rv('gorev'); if (nav.hidden === showT) nav.hidden = !showT;
+  var bb = document.querySelector('.tab[data-tab="bilim"]'); if (bb.hidden === rv('bilim')) bb.hidden = !rv('bilim');
   var nClaim = S.missions.filter(mDone).length, gb = document.querySelector('.tab[data-tab="gorev"]');
   var badge = gb.querySelector('.badge');
   if (nClaim && !badge) { badge = h('span', { class: 'badge' }); gb.appendChild(badge); }
   if (badge) { if (nClaim) badge.textContent = String(nClaim); else badge.remove(); }
-  var expDone = S.exp && Date.now() >= S.exp.end, bb = document.querySelector('.tab[data-tab="bilim"]'), b2 = bb.querySelector('.badge');
+  var expDone = S.exp && Date.now() >= S.exp.end, b2 = bb.querySelector('.badge');
   if (expDone && !b2) { b2 = h('span', { class: 'badge', text: '!' }); bb.appendChild(b2); }
   if (!expDone && b2) b2.remove();
-  document.querySelector('.tab[data-tab="gorev"]').hidden = !S.flags.tabs.gorev;
-  document.querySelector('.tab[data-tab="bilim"]').hidden = !S.flags.tabs.bilim;
   var sb = $('#btnSound'), on = S.settings.sfx || S.settings.music, key = on ? 'on' : 'off';
   if (sb._k !== key) {
     sb._k = key; sb.classList.toggle('off', !on);
@@ -1962,19 +1854,19 @@ function settingsModal() {
   ], [{ label: 'Kapat', cls: 'sec' }]);
 }
 function helpModal() {
+  function ic(k) { return h('span', { class: 'licon', html: PROB[k] }); }
   showModal('Nasıl oynanır?', [h('ol', null,
-    h('li', { text: 'Yolcular limana gelir, check-in yapar, roketine biner. Bilet parası kalkışta kasaya girer.' }),
-    h('li', { text: 'Akış çubuğunda turuncu yanan kutu darboğazdır: en yavaş halka. Önce onu yükselt.' }),
-    h('li', { text: 'Roket dolunca FIRLAT düğmesine ibre yeşildeyken bas: bilet x2! Basmazsan roket kendisi kalkar.' }),
-    h('li', { text: 'Yeni rotalar daha pahalı bilet demek. Rotalar sekmesinden aç.' }),
-    h('li', { text: 'Kristalleri görevlerden, göktaşlarından, VIP yolculardan ve keşiften topla. Bilim sekmesinde harca.' }),
-    h('li', { text: 'Oyunu kapatsan da roketler ' + (CFG.offlineBaseH + 6 * S.research.gece) + ' saate kadar çalışmaya devam eder. Reklam yok, bekletme yok.' })),
-    h('p', { class: 'note', text: 'İpucu: Biri FIRLAT\'a basarken öbürü yükseltme seçsin. İki kişiyle daha eğlenceli!' })], [{ label: 'Anladım' }]);
+    h('li', { text: 'Yolcular limana gelir, biletini alır ve roketine biner.' }),
+    h('li', { text: 'Roket dolunca FIRLAT\'a bas. İbre yeşildeyken basarsan 2 kat para!' }),
+    h('li', { text: 'Parayla koltuk, motor, reklam panosu ve check-in bankosu al. Para biriktir, yeni gezegenler aç.' }),
+    h('li', null, 'İşaretlere bak: ', ic('hour'), ' yolcu az (reklam panosu), ', ic('bang'), ' kuyruk uzun (check-in bankosu), ', ic('people'), ' kapıda yolcu birikti (koltuk ya da roket).'),
+    h('li', { text: 'Otomatik pilotlu roketler kendi kalkar; oyunu kapatsan da ' + (CFG.offlineBaseH + 6 * S.research.gece) + ' saate kadar uçar. Reklam yok, bekletme yok.' })),
+    h('p', { class: 'note', text: 'İpucu: Biri FIRLAT\'a basarken öbürü ne alacağını seçsin. İki kişiyle daha eğlenceli!' })], [{ label: 'Anladım' }]);
 }
 function resetModal() {
   showModal('Her şey silinsin mi?', [h('p', { text: 'Para, rotalar, kristaller, araştırmalar, koleksiyon ve yıldızlar silinir. Geri alınamaz.' })], [
     { label: 'Vazgeç', cls: 'sec' },
-    { label: 'Evet, sıfırla', fn: function () { var st = S.settings; S = newState(); S.settings = st; RT.lobby = 0; RT.gates = [0, 0, 0, 0, 0, 0, 0, 0]; readyList = []; initRockets(); fillMissions(); invalidate(); SC.bgKey = ''; RT.event = null; $('#evchip').hidden = true; markDirty(); saveLocal(); cloudSave(true); selectTab('liman'); toast('Yeni oyun başladı'); } }
+    { label: 'Evet, sıfırla', fn: function () { var st = S.settings; if (GD.tour) { GD.replay = true; endTour(); } GD.queue = []; S = newState(); S.settings = st; RT.lobby = 0; RT.gates = [0, 0, 0, 0, 0, 0, 0, 0]; RT.waitPax = [0, 0, 0, 0, 0, 0, 0, 0]; RT.queueT = 0; RT.sinceMars = 0; RT.nextEventAt = Infinity; readyList = []; initRockets(); invalidate(); SC.bgKey = ''; RT.event = null; SC.vip = null; SC.meteors.length = 0; $('#evchip').hidden = true; markDirty(); saveLocal(); cloudSave(true); selectTab('liman'); toast('Yeni oyun başladı'); } }
   ]);
 }
 
@@ -2009,7 +1901,7 @@ function cloudInit() {
     if (!r) return;
     CLOUD.ref = r.ref;
     var d = r.snap && r.snap.exists ? r.snap.data() : null;
-    if (d && d.state && d.savedAt > RT.bootSavedAt + 5000 && RT.sessionBuys === 0) {
+    if (d && d.state && d.state.v === 2 && d.savedAt > RT.bootSavedAt + 5000 && RT.sessionBuys === 0) {
       S = sanitize(JSON.parse(JSON.stringify(d.state)));
       initRockets(); readyList = []; invalidate(); SC.bgKey = ''; structDirty();
       var away = (Date.now() - S.savedAt) / 1000;
@@ -2021,15 +1913,12 @@ function cloudInit() {
 
 /* ================= rehber (guide) ================= */
 var AVATAR = '<svg viewBox="0 0 44 44" aria-hidden="true"><path d="M22 3.5v4.5" stroke="#13202b" stroke-width="2.2" stroke-linecap="round"/><circle cx="22" cy="3.6" r="2.7" fill="#ff6a2b"/><circle cx="22" cy="24.5" r="17" fill="#ece5d6" stroke="#13202b" stroke-width="2.2"/><rect x="10" y="15.5" width="24" height="16" rx="8" fill="#13202b"/><rect x="12.6" y="18.1" width="18.8" height="10.8" rx="5.4" fill="#ff6a2b"/><circle cx="18" cy="23.5" r="2.1" fill="#fff"/><circle cx="26" cy="23.5" r="2.1" fill="#fff"/><path d="M17 36c3 1.6 7 1.6 10 0" stroke="#13202b" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
-var GD = { tour: null, id: '', i: 0, step: null, queue: [], t: 0, base: 0, sel: '', cool: 0, coolTip: 0, force: {}, last: {}, el: null };
+var GD = { tour: null, id: '', i: 0, step: null, mode: '', replay: false, queue: [], t: 0, base: 0, sel: '', cool: 0, coolTip: 0, force: {}, last: {}, el: null };
 function val(x) { return typeof x === 'function' ? x() : x; }
 function sceneRect(x, y, w, hh) { var cr = SC.cv.getBoundingClientRect(); return { x: cr.left + x, y: cr.top + y, w: w, h: hh }; }
 function rTerminal() { var G = SC.G; if (!G) return null; return sceneRect(G.tx0 - 6, G.tRoof - 16 * G.u, G.tx1 - G.tx0 + 12, G.ground - G.tRoof + 20 * G.u); }
-function rRocket(i) { var G = SC.G; if (!G) return null; var p = G.pads[i], hh = G.rh * p.s * rocketSize(i), w = Math.max(48, hh); return sceneRect(p.x - w * 0.62, p.y - hh - 18, w * 1.12, hh + 32); }
+function rRocket(i) { var G = SC.G; if (!G) return null; var p = G.pads[i], hh = G.rh * p.s * rocketSize(i), w = Math.max(56, hh * 1.1); return sceneRect(p.x - w * 0.66, p.y - hh - 24 * G.u * p.s, w * 1.16, hh + 24 * G.u * p.s + 14); }
 function rSky() { var G = SC.G; if (!G) return null; return sceneRect(4, 4, SC.W - 8, G.ground * 0.56); }
-function rVip() { if (SC.vip) return sceneRect(SC.vip.x - 20, SC.vip.y - 40, 40, 46); return '#evchip'; }
-function launchReady() { return readyList.length > 0 && !$('#btnLaunch').hidden; }
-function padRoute() { for (var i = topRoute(); i >= 0; i--) if (padRocket(i)) return i; return 0; }
 function ensureVis(sel) {
   var el = typeof sel === 'string' ? document.querySelector(sel) : sel, panel = $('#panel');
   if (!el || !panel.contains(el)) return;
@@ -2037,108 +1926,112 @@ function ensureVis(sel) {
   panel.scrollTop += (er.top + Math.min(er.height, pr.height * 0.6) / 2) - (pr.top + pr.height * 0.42);
 }
 function showTab(t) { selectTab(t); renderPanel(); }
-function hotPick() {
-  var f = flowNow();
-  if (f.bottleneck === 'A') return '#card-A .buy';
-  if (f.bottleneck === 'C') return '#card-C .buy';
-  return '#route-' + topRoute() + ' .mini';
+// Opens the Liman tab, makes sure the row exists and scrolls it into view.
+function focusRow(sel) { if (UI.tab !== 'liman' || UI.dirty) showTab('liman'); ensureVis(sel); }
+function buyStep(o) {
+  return { mode: 'action', title: o.title, text: o.text, target: o.sel + ' .ubuy', skipIf: o.done,
+    enter: function () { focusRow(o.sel); GD.base = o.lv(); },
+    wait: function () { var b = $(o.sel + ' .ubuy'); return b && !b.disabled ? 'ŞİMDİ SEN!' : 'PARA BİRİKİYOR...'; },
+    until: function () { return o.lv() > GD.base; } };
 }
-function mileSel() {
-  if (S.lvC % CFG.mEvery >= 20 && $('#card-C')) return '#card-C .mile';
-  if (S.lvA % CFG.mEvery >= 20 && $('#card-A')) return '#card-A .mile';
-  return null;
-}
+function quality() { return RT.lastTapQ; }
 var TOURS = {
-  intro: { prio: 2, name: 'İlk uçuş: temel oynanış', steps: [
-    { title: 'Hoş geldin, Kaptan!', text: 'Uzay Hattı artık senin! Yolcuları gezegenlere taşıyıp bilet parası kazanacağız. Nasıl oynandığını göstereyim.', btn: 'Hadi bakalım' },
-    { target: rTerminal, title: 'Terminal', text: 'Yolcular soldan gelir, terminalde sıraya girer ve check-in bankosunda biletini alır.' },
-    { target: function () { return rRocket(0); }, title: 'Ay roketi', text: 'Biletini alan yolcu rokete biner. Pencereleri yandıkça roket doluyor demektir.' },
-    { target: '#board', title: 'Kalkış panosu', text: 'Hangi roket yolcu alıyor, hangisi uçuşta, ne zaman dönecek: hepsi bu panoda yazar.' },
-    { target: '#hud .money', title: 'Kasa', text: 'Paran burada. Altındaki yeşil sayı saniyede ne kadar kazandığını gösterir. Oyunu kapatsan da roketler çalışmaya devam eder.' },
-    { mode: 'action', hold: true, space: true,
-      target: function () { return launchReady() ? '#btnLaunch' : rRocket(padRoute()); },
-      title: function () { return launchReady() ? 'Fırlatma zamanı!' : 'Roket doluyor...'; },
-      text: function () { return launchReady() ? 'İbre YEŞİL bölgeye gelince FIRLAT\'a bas: bilet parası 2 katı! Roket seni bekliyor.' : 'Roket dolunca turuncu bir FIRLAT düğmesi çıkacak. Biraz bekle...'; },
-      wait: function () { return launchReady() ? 'ŞİMDİ SEN!' : 'BEKLENİYOR...'; },
+  intro: { prio: 2, name: 'Başlangıç', steps: [
+    { title: 'Hoş geldin, Kaptan!', text: 'Bu senin uzay limanın. Yolcuları roketle gezegenlere götürüp bilet parası kazanacağız.', btn: 'Hadi!' },
+    { target: rTerminal, title: 'Yolcular', text: 'Yolcular soldan gelir, terminalde biletini alır ve rokete yürür.' },
+    { target: function () { return rRocket(0); }, title: 'Ay roketi', text: 'Yolcu bindikçe pencereler yanar. Roket dolunca sana haber vereceğim.', btn: 'Tamam' }
+  ] },
+  launch: { prio: 2, name: 'FIRLAT', when: function () { return readyList.length > 0; }, steps: [
+    { mode: 'action', space: true, target: '#btnLaunch', title: 'Roket doldu!',
+      text: 'İbre YEŞİLE gelince FIRLAT\'a bas. Yeşilde basarsan 2 kat para!',
       enter: function () { GD.base = RT.tapCount; }, until: function () { return RT.tapCount > GD.base; } },
     { target: '#hud .money',
-      title: function () { return RT.lastTapQ === 'perfect' ? 'Mükemmel!' : RT.lastTapQ === 'good' ? 'Fena değil!' : 'Kalkış!'; },
-      text: function () { return RT.lastTapQ === 'perfect' ? 'Tam yeşilde bastın, bilet parası 2 katı geldi! Her roketle böyle yapabilirsin.' : RT.lastTapQ === 'good' ? 'Sarı bölgede bastın, biraz fazla para geldi. Tam yeşilde 2 katı!' : 'Roket kalktı ama ibre yeşilde değildi. Bir dahakine yeşili bekle: 2 katı para!'; } },
-    { target: '#flow', title: 'Yolcu akışı', text: 'Yolcular sırayla bu üç halkadan geçer. Turuncu yanan DARBOĞAZ, yani en yavaş halka. Paranı önce oraya harca!' },
-    { mode: 'action', target: function () { return GD.sel; },
-      enter: function () { GD.base = RT.sessionBuys; GD.sel = hotPick(); showTab(GD.sel.indexOf('#route') === 0 ? 'rota' : 'liman'); ensureVis(GD.sel); },
-      title: 'İlk yükseltme',
-      text: function () { var el = $(GD.sel), ok = el && !el.disabled; return (GD.sel.indexOf('#route') === 0 ? 'Roketler yetişmiyor, koltuk ekle!' : '"ÖNCE BU" yazan kartın düğmesine bas!') + (ok ? '' : ' Para birikince düğme açılacak.'); },
-      wait: function () { var el = $(GD.sel); return el && !el.disabled ? 'ŞİMDİ SEN!' : 'PARA BİRİKİYOR...'; },
-      until: function () { return RT.sessionBuys > GD.base; } },
-    { target: '.tab[data-tab="rota"]', title: 'Rotalar', text: 'Burada roketlerine koltuk, motor ve yeni roket eklersin. Para biriktir, yeni gezegenler aç!' },
-    { target: '#btnMenu', title: 'Rehber hep burada', text: 'Ses ayarları ve bu rehberler menüde. Yeni bir şey açıldığında yine geleceğim. İyi uçuşlar, Kaptan!', btn: 'Başlayalım!' }
+      title: function () { return quality() === 'perfect' ? 'Mükemmel!' : quality() === 'good' ? 'Güzel!' : 'Kalkış!'; },
+      text: function () { return (quality() === 'perfect' ? 'Tam yeşilde bastın, 2 kat para geldi! ' : quality() === 'good' ? 'Biraz fazla para geldi. Tam yeşilde 2 kat! ' : 'Para kasaya girdi. Bir dahakine yeşili bekle: 2 kat! ') + 'Roket Ay\'a gidip geri dönecek.'; } },
+    { enter: function () { focusRow('#route-0'); }, target: '#route-0 .rhd', title: 'Ay hattı', text: 'Roketin ne yapıyor, burada yazar. Çubuk dolunca roket hazır.', btn: 'Tamam' }
   ] },
-  rota: { prio: 1, name: 'Rotalar ve yükseltmeler', done: function () { S.flags.guides.t_bulk = 1; }, steps: [
-    { enter: function () { showTab('rota'); ensureVis('#route-' + topRoute()); }, target: function () { return '#route-' + topRoute(); }, title: 'Rota kartı', text: 'Her gezegenin kendi roketi var. Bilet fiyatı, sefer süresi ve koltuk sayısı burada yazar.' },
-    { target: function () { return '#route-' + topRoute() + ' .btn3'; }, title: 'Üç yükseltme', text: 'Koltuk: daha çok yolcu. Motor: daha kısa sefer. Roket: hatta ikinci, üçüncü roket. Yeşil sayı, alırsan saniyede ne kadar fazla kazanacağını gösterir.' },
-    { skipIf: function () { return nextRoute() < 1; }, enter: function () { ensureVis('#unlock-' + nextRoute()); }, target: function () { return '#unlock-' + nextRoute(); }, title: 'Yeni gezegen', text: 'Uzak gezegen, pahalı bilet! Parayı biriktir, yeni rotayı aç. Sonraki gezegenler gizli, açtıkça görünür.' },
-    { enter: function () { ensureVis('#panel .toggle'); }, target: '#panel .toggle', title: 'Toplu alım', text: 'x10 ile on seviye birden, MAKS ile paranın yettiği kadar alırsın.', btn: 'Anladım' }
+  seats: { name: 'Koltuk', steps: [
+    buyStep({ sel: '#row-seats-0', title: 'Koltuk ekle', text: 'Koltuk alırsan roket bir seferde daha çok yolcu taşır, daha çok para getirir. Düğmeye bas!',
+      lv: function () { return S.routes[0].seats; }, done: function () { return S.routes[0].seats > 1; } })
   ] },
-  unlock: { prio: 1, name: 'Yeni rota açma', when: function () { return nextRoute() === 1 && S.money >= E.cost.unlock(1); }, steps: [
-    { mode: 'action', skipIf: function () { return UI.tab === 'rota'; }, target: '.tab[data-tab="rota"]', title: 'Mars seni bekliyor!', text: 'Mars hattını açacak kadar paran oldu. Rotalar\'a dokun.', until: function () { return UI.tab === 'rota'; } },
-    { mode: 'action', enter: function () { if (UI.dirty) renderPanel(); ensureVis('#unlock-1'); }, target: '#unlock-1 .buy', title: 'Rotayı aç!', text: 'Bu düğmeye bas, Mars hattı açılsın.', until: function () { return S.routes[1].u; } }
+  reklam: { name: 'Reklam panosu', steps: [
+    { target: function () { return rRocket(0); }, title: 'Kum saati', text: 'Roket yolcu beklerken üstünde kum saati çıkar. Demek ki daha çok yolcu lazım!', skipIf: function () { return S.lvA > 1; } },
+    buyStep({ sel: '#row-A', title: 'Reklam panosu', text: 'Reklam panosu limana daha çok yolcu getirir. Bas!',
+      lv: function () { return S.lvA; }, done: function () { return S.lvA > 1; } })
   ] },
-  newRoute: { prio: 1, name: 'Yeni hat', steps: [
-    { target: function () { return rRocket(1); }, title: 'Mars hattı açıldı!', text: 'İşte yeni roketin! Yolcuların bir kısmı artık Mars\'a gidiyor. Mars bileti Ay\'dan 7 kat pahalı!' },
-    { target: '#flow', title: 'Darboğaza bak', text: 'Yeni roket gelince yolcu akışı değişir. Turuncu yanan kutuyu takip etmeyi unutma.', btn: 'Tamam' }
+  banko: { name: 'Check-in bankosu', steps: [
+    { target: rTerminal, title: function () { return RT.queueT > 0 ? 'Kuyruk uzadı!' : 'Check-in'; },
+      text: 'Yolcular burada biletini alır. Kuyruk uzayınca terminalde kırmızı ünlem çıkar.', skipIf: function () { return S.lvC > 1; } },
+    buyStep({ sel: '#row-C', title: 'Check-in bankosu', text: 'Banko büyüyünce yolcular biletini daha hızlı alır. Bas!',
+      lv: function () { return S.lvC; }, done: function () { return S.lvC > 1; } })
   ] },
-  gorev: { name: 'Görevler', when: function () { return S.flags.tabs.gorev; }, steps: [
-    { target: '.tab[data-tab="gorev"]', title: 'Görevler açıldı!', text: 'Küçük görevleri bitir, kristal ve para kazan.' },
-    { enter: function () { showTab('gorev'); }, target: '#panel .card', title: 'Görev kartı', text: 'Çubuk dolunca "Ödülü al" düğmesi çıkar. Hep 3 görevin olur; biri bitince yenisi gelir.', btn: 'Anladım' }
+  motor: { name: 'Motor', steps: [
+    buyStep({ sel: '#row-speed-0', title: 'Motor', text: 'Güçlü motorla roket gidip daha çabuk döner. Yazı bir seferin kaç saniye sürdüğünü gösterir. Bas!',
+      lv: function () { return S.routes[0].speed; }, done: function () { return S.routes[0].speed > 1; } })
   ] },
-  claim: { name: 'Ödül alma', when: function () { return S.flags.tabs.gorev && S.missions.some(mDone); }, steps: [
+  oto: { name: 'Otomatik pilot', steps: [
+    { enter: function () { focusRow('#row-auto-0'); }, target: '#row-auto-0', title: 'Otomatik pilot', text: 'Otomatik pilotlu roket dolunca kendi kalkar. Oyunu kapatsan da uçar, para kazanır.', skipIf: function () { return S.routes[0].auto; } },
+    buyStep({ sel: '#row-auto-0', title: 'Al bakalım!', text: 'Sen yine de FIRLAT\'a basabilirsin: yeşilde basınca 2 kat para devam!',
+      lv: function () { return S.routes[0].auto ? 1 : 0; }, done: function () { return S.routes[0].auto; } })
+  ] },
+  mars: { name: 'Yeni gezegen', steps: [
+    { enter: function () { focusRow('#unlock-1'); }, target: '#unlock-1', title: 'Yeni gezegen: Mars', text: 'Mars bileti çok daha pahalı! Para biriktir; çubuk dolunca Mars hattını açarsın.', btn: 'Tamam' }
+  ] },
+  unlock: { prio: 1, when: function () { return nextRoute() === 1 && S.money >= E.cost.unlock(1); }, steps: [
+    { mode: 'action', enter: function () { focusRow('#unlock-1'); }, target: '#unlock-1 .ubuy', title: 'Paran yetti!', text: 'Bu düğmeye bas, Mars hattı açılsın.', until: function () { return S.routes[1].u; } }
+  ] },
+  newRoute: { prio: 1, steps: [
+    { target: function () { return rRocket(1); }, title: 'Mars hattı açıldı!', text: 'İşte yeni roketin! Yolcuların bir kısmı artık Mars\'a gidiyor. Mars bileti Ay\'ın 7 katı.' },
+    { enter: function () { focusRow('#route-1'); }, target: '#route-1', title: 'Mars kartı', text: 'Her gezegenin kendi kartı var. Mars roketi dolunca da FIRLAT\'a basmayı unutma!', btn: 'Tamam' }
+  ] },
+  fleet: { name: 'Yeni roket', steps: [
+    { enter: function () { focusRow('#row-fleet-' + topRoute()); }, target: function () { return '#row-fleet-' + topRoute(); }, title: 'Bir roket daha', text: 'Bir hatta 3 rokete kadar alabilirsin: biri uçarken öbürü yolcu alır.' },
+    { target: function () { return rRocket(topRoute()); }, title: 'Mavi işaret', text: 'Kapıda yolcu birikince mavi insanlar işareti çıkar. O zaman koltuk ya da roket ekle.', btn: 'Anladım' }
+  ] },
+  gorev: { name: 'Görevler', done: function () { showTab('liman'); }, steps: [
+    { target: '.tab[data-tab="gorev"]', title: 'Görevler açıldı!', text: 'Aşağıda yeni bir sekme var. Görevleri bitir, kristal ve para kazan.' },
+    { enter: function () { showTab('gorev'); }, target: '#panel .card', title: 'Görev kartı', text: 'Çubuk dolunca "Ödülü al" düğmesi çıkar. Bir görev bitince yenisi gelir.', btn: 'Anladım' }
+  ] },
+  claim: { prio: 1, when: function () { return rv('gorev') && S.missions.some(mDone); }, steps: [
     { mode: 'action', skipIf: function () { return UI.tab === 'gorev'; }, target: '.tab[data-tab="gorev"]', title: 'Görev tamam!', text: 'Bir görevi bitirdin! Görevler\'e dokun.', until: function () { return UI.tab === 'gorev'; } },
     { mode: 'action', enter: function () { GD.base = RT.claims; if (UI.dirty) renderPanel(); ensureVis('#panel .claim'); }, target: '#panel .claim', title: 'Ödülünü al', text: '"Ödülü al"a bas, kristaller senin!', until: function () { return RT.claims > GD.base || !S.missions.some(mDone); } }
   ] },
-  bilim: { name: 'Kristal ve araştırma', when: function () { return S.flags.tabs.bilim; }, steps: [
-    { target: '#hud .gems', title: 'Kristal', text: 'Kristallerin burada birikir. Görevlerden, göktaşlarından, VIP yolculardan ve keşiften gelir.' },
-    { target: '.tab[data-tab="bilim"]', title: 'Bilim açıldı!', text: 'Kristallerini bu sekmede harcarsın.' },
-    { enter: function () { showTab('bilim'); }, target: '#panel .card', title: 'Araştırma', text: 'Her araştırmanın 5 seviyesi var ve hiç kaybolmaz. Mor düğmeye bas, kristal ver, güçlen!', btn: 'Anladım' }
+  bilim: { name: 'Kristal ve araştırma', steps: [
+    { target: '#hud .gems', title: 'Kristal', text: 'Kristallerin burada birikir. Görevlerden, göktaşlarından ve VIP yolculardan gelir.' },
+    { target: '.tab[data-tab="bilim"]', title: 'Bilim', text: 'Kristallerini Bilim sekmesinde harcarsın.' },
+    { enter: function () { showTab('bilim'); }, target: '#panel .card', title: 'Araştırma', text: 'Araştırmalar hiç kaybolmaz. Mor düğmeye bas, kristal ver, güçlen!', btn: 'Anladım' }
   ] },
-  kesif: { name: 'Keşif sondası ve koleksiyon', when: function () { return S.flags.tabs.bilim && S.routes[1].u; }, steps: [
-    { enter: function () { showTab('bilim'); ensureVis('#exp-card'); }, target: '#exp-card', title: 'Keşif sondası', text: 'Sondayı uzaya gönder. Kısa yol az, uzun yol çok kristal getirir. Oyunu kapatsan da uçmaya devam eder.' },
-    { enter: function () { ensureVis('#coll-card'); }, target: '#coll-card', title: 'Koleksiyon', text: 'Sonda bazen bir hatıra bulur. Her hatıra tüm biletlere +%5 ekler. 12\'sini de topla!', btn: 'Anladım' }
+  kesif: { name: 'Keşif sondası', steps: [
+    { enter: function () { showTab('bilim'); ensureVis('#exp-card'); }, target: '#exp-card', title: 'Keşif sondası', text: 'Sondayı uzaya gönder. Uzun yol daha çok kristal getirir. Oyunu kapatsan da uçar.' },
+    { enter: function () { ensureVis('#coll-card'); }, target: '#coll-card', title: 'Koleksiyon', text: 'Sonda bazen bir hatıra bulur. Her hatıra biletlere +%5 ekler.', btn: 'Anladım' }
   ] },
-  expDone: { prio: 1, name: 'Sonda dönüşü', when: function () { return S.flags.tabs.bilim && S.exp && Date.now() >= S.exp.end; }, steps: [
+  expDone: { prio: 1, when: function () { return rv('bilim') && S.exp && Date.now() >= S.exp.end; }, steps: [
     { mode: 'action', skipIf: function () { return UI.tab === 'bilim'; }, target: '.tab[data-tab="bilim"]', title: 'Sonda döndü!', text: 'Kargoda bir şey var. Bilim\'e dokun.', until: function () { return UI.tab === 'bilim'; } },
     { mode: 'action', enter: function () { GD.base = S.stats.exps; if (UI.dirty) renderPanel(); ensureVis('#exp-card'); }, target: '#exp-card .claim', title: 'Kargoyu aç', text: 'Bakalım sonda ne getirmiş!', until: function () { return S.stats.exps > GD.base || !S.exp; } }
   ] },
-  prestige: { name: 'Yeni üs ve yıldızlar', when: function () { return S.flags.tabs.gorev && E.starsFor(S.stats.runEarned) >= 1; }, steps: [
+  bulk: { name: 'Toplu alım', steps: [
+    { enter: function () { showTab('liman'); $('#panel').scrollTop = 0; }, target: '#panel .toggle', title: 'Toplu alım', text: 'x10 ile on seviye birden, MAKS ile paranın yettiği kadar alırsın.', btn: 'Anladım' }
+  ] },
+  prestige: { name: 'Yeni üs ve yıldızlar', steps: [
     { target: '.tab[data-tab="gorev"]', title: 'Şöhret kazandın!', text: 'Bu sezon çok kazandın. Artık şöhret yıldızı toplayabilirsin.' },
-    { enter: function () { showTab('gorev'); ensureVis('#prestige-card'); }, target: '#prestige-card', title: 'Yeni üs kur', text: 'Para ve rotalar sıfırlanır ama her yıldız biletlere kalıcı +%10 ekler. Kristal, araştırma ve koleksiyon kalır. İstersen, acele yok.', btn: 'Anladım' }
+    { enter: function () { showTab('gorev'); ensureVis('#prestige-card'); }, target: '#prestige-card', title: 'Yeni üs kur', text: 'Para ve rotalar sıfırlanır ama her yıldız biletlere kalıcı +%10 ekler. Kristal, araştırma ve koleksiyon kalır. Acele yok.', btn: 'Anladım' }
   ] },
-  events: { name: 'Olaylar: göktaşı, VIP, UFO...', steps: [
-    { title: 'Göktaşı yağmuru', text: 'Gökyüzünden parlak taşlar düşer. Dokun, her biri 1 kristal!' },
+  events: { name: 'Olaylar', steps: [
+    { title: 'Göktaşı yağmuru', text: 'Gökten parlak taşlar düşer. Dokun, her biri 1 kristal!' },
     { title: 'VIP yolcu', text: 'Altın kıyafetli yolcuya ya da "Karşıla" düğmesine dokun: bahşiş ve kristal.' },
-    { title: 'Uzaylı turistler', text: 'Bir UFO lobiye bir anda çok yolcu bırakır. Check-in hızlıysa hepsi uçar.' },
-    { title: 'Gazeteciler', text: '"Konuş"a bas ve seç: biletler bir süre 2 kat mı olsun, yoksa kristal mi?' },
-    { title: 'Güneş rüzgarı', text: 'Roketler bir süre 2 kat hızlı uçar. Kalan süre sağ üstte yazar.', btn: 'Tamam' }
+    { title: 'Uzaylı turistler', text: 'Bir UFO limana bir anda çok yolcu bırakır.' },
+    { title: 'Gazeteciler', text: '"Konuş"a bas ve bir ödül seç.' },
+    { title: 'Güneş rüzgarı', text: 'Roketler bir süre 2 kat hızlı uçar.', btn: 'Tamam' }
   ] },
-  t_meteor: { tip: 1, prio: 1, when: function () { return RT.event && RT.event.type === 'meteor'; }, steps: [{ mode: 'tip', target: rSky, text: 'Göktaşı yağmuru! Parlak taşlara dokun, her biri 1 kristal.', until: function () { return !RT.event || RT.event.type !== 'meteor'; } }] },
-  t_vip: { tip: 1, prio: 1, when: function () { return RT.event && RT.event.type === 'vip'; }, steps: [{ mode: 'tip', target: rVip, text: 'Altın kıyafetli VIP yolcu geldi! Ona ya da "Karşıla"ya dokun.', until: function () { return !RT.event || RT.event.type !== 'vip'; } }] },
-  t_ufo: { tip: 1, prio: 1, when: function () { return RT.event && RT.event.type === 'ufo'; }, steps: [{ mode: 'tip', target: rTerminal, text: 'Uzaylı turistler! UFO lobiye bir anda çok yolcu bıraktı. Check-in hızlıysa hepsi uçar.', dur: 6 }] },
-  t_press: { tip: 1, prio: 1, when: function () { return RT.event && RT.event.type === 'press'; }, steps: [{ mode: 'tip', target: '#evchip .ev-btn', text: 'Gazeteciler kapıda! "Konuş"a bas ve birini seç.', until: function () { return !RT.event || RT.event.type !== 'press'; } }] },
-  t_wind: { tip: 1, prio: 1, when: function () { return boostNow().speed > 1; }, steps: [{ mode: 'tip', target: '#boosts', text: 'Güneş rüzgarı! Roketler bir süre 2 kat hızlı. Kalan süre burada.', dur: 6 }] },
-  t_lobby: { tip: 1, when: function () { return RT.lostLobby > 0.03; }, steps: [{ mode: 'tip', target: rTerminal, text: 'Lobi doldu, yolcular geri dönüyor! Check-in bankolarını yükselt.', dur: 7 }] },
-  t_fleet: { tip: 1, when: function () { return RT.lostFleet > 0.03; }, steps: [{ mode: 'tip', target: '.fchip[data-k="F"]', text: 'Roketler yetişmiyor, yolcular kapıda kalıyor! Rotalar\'dan koltuk ya da roket ekle.', dur: 7 }] },
-  t_bulk: { tip: 1, when: function () { return !!$('#panel .toggle'); }, steps: [{ mode: 'tip', target: '#panel .toggle', text: 'İpucu: x10 ve MAKS ile tek dokunuşta çok seviye alırsın.', dur: 6 }] },
-  t_streak: { tip: 1, steps: [{ mode: 'tip', target: function () { return launchReady() ? '#btnLaunch' : '#hud .money'; }, text: 'Seri 3! Art arda her 10 mükemmel kalkışta 1 kristal hediye.', dur: 5 }] },
-  t_mile: { tip: 1, when: function () { return UI.tab === 'liman' && !!mileSel(); }, steps: [{ mode: 'tip', target: function () { return mileSel(); }, text: 'Bu çubuk dolunca, yani 25. seviyede, hız 2 katına çıkar!', dur: 6 }] }
+  // The first time an event happens it is explained first (game paused), then it starts.
+  e_meteor: { prio: 2, done: function () { beginEvent('meteor'); }, steps: [{ target: rSky, title: 'Göktaşı yağmuru!', text: 'Birazdan gökten parlak taşlar düşecek. Dokun, her biri 1 kristal!', btn: 'Hazırım!' }] },
+  e_vip: { prio: 2, done: function () { beginEvent('vip'); }, steps: [{ title: 'VIP yolcu geliyor!', text: 'Altın kıyafetli bir yolcu gelecek. Ona ya da yukarıdaki "Karşıla" düğmesine dokun: bahşiş ve kristal!', btn: 'Tamam' }] },
+  e_ufo: { prio: 2, done: function () { beginEvent('ufo'); }, steps: [{ target: rTerminal, title: 'Uzaylı turistler!', text: 'Bir UFO limana bir anda çok yolcu bırakacak. Bakalım hepsini uçurabilecek miyiz?', btn: 'Tamam' }] },
+  e_press: { prio: 2, done: function () { beginEvent('press'); }, steps: [{ title: 'Gazeteciler geldi!', text: 'Seninle konuşmak istiyorlar. Yukarıda "Konuş"a bas ve bir ödül seç.', btn: 'Tamam' }] },
+  e_wind: { prio: 2, done: function () { beginEvent('wind'); }, steps: [{ title: 'Güneş rüzgarı!', text: 'Bir süre roketler 2 kat hızlı uçacak. Kalan süre sağ üstte yazar.', btn: 'Tamam' }] }
 };
-var GUIDE_LIST = ['intro', 'rota', 'gorev', 'bilim', 'kesif', 'events', 'prestige'];
-function guideAvail(id) {
-  if (id === 'gorev') return S.flags.tabs.gorev;
-  if (id === 'bilim') return S.flags.tabs.bilim;
-  if (id === 'kesif') return S.flags.tabs.bilim && S.routes[1].u;
-  if (id === 'prestige') return S.stars > 0 || E.starsFor(S.stats.runEarned) >= 1;
-  return true;
-}
+var GUIDE_LIST = ['intro', 'launch', 'seats', 'reklam', 'banko', 'motor', 'oto', 'mars', 'fleet', 'gorev', 'bilim', 'kesif', 'events', 'prestige'];
+function guideAvail(id) { return id === 'events' ? rv('events') : !!S.flags.guides[id]; }
 function guideBuild() {
   if (GD.el) return;
   var g = {};
@@ -2179,24 +2072,23 @@ function guideTick(rdt) {
       if (!forced && T.when && !T.when()) { GD.queue.splice(k--, 1); continue; }
       if (!forced && !T.prio && GT < (T.tip ? GD.coolTip : GD.cool)) continue;
       GD.queue.splice(k, 1); delete GD.force[id];
-      startTour(id); return;
+      startTour(id, forced); return;
     }
     return;
   }
   var g = GD.el;
   if (!$('#modal').hidden) { if (!g.root.hidden) g.root.hidden = true; RT.paused = false; return; }
-  if (g.root.hidden) { g.root.hidden = false; GD.last = {}; RT.paused = (GD.step.mode || 'modal') === 'modal'; }
+  if (g.root.hidden) { g.root.hidden = false; GD.last = {}; RT.paused = GD.mode === 'modal'; }
   GD.t += rdt;
   var st = GD.step;
-  if ((st.until && st.until()) || (st.dur && GD.t >= st.dur)) { guideNext(); return; }
+  if ((st.until && GD.mode !== 'modal' && st.until()) || (st.dur && GD.t >= st.dur)) { guideNext(); return; }
   guideRender(false);
 }
-function startTour(id) {
+function startTour(id, replay) {
   guideBuild();
   var T = TOURS[id];
-  GD.tour = T; GD.id = id; GD.i = -1; GD.step = null;
+  GD.tour = T; GD.id = id; GD.i = -1; GD.step = null; GD.replay = !!replay;
   S.flags.guides[id] = 1; markDirty();
-  if (!T.tip && RCUR) { RQ.unshift(RCUR.text); RCUR = null; $('#radio').hidden = true; }
   GD.el.root.hidden = false; GD.last = {};
   guideNext();
 }
@@ -2204,22 +2096,24 @@ function guideNext() {
   var T = GD.tour; if (!T) return;
   if (GD.step && GD.step.exit) GD.step.exit();
   GD.i++;
-  while (GD.i < T.steps.length && T.steps[GD.i].skipIf && T.steps[GD.i].skipIf()) GD.i++;
+  while (GD.i < T.steps.length && !GD.replay && T.steps[GD.i].skipIf && T.steps[GD.i].skipIf()) GD.i++;
   if (GD.i >= T.steps.length) { endTour(); return; }
   var st = GD.step = T.steps[GD.i]; GD.t = 0; GD.last = {};
   if (st.enter) st.enter();
   var mode = st.mode || 'modal';
+  if (GD.replay && mode === 'action') mode = 'modal';
+  GD.mode = mode;
   RT.paused = mode === 'modal'; RT.holdAuto = !!st.hold;
   guideRender(true);
   if (mode !== 'action' && !COARSE) setTimeout(function () { try { if (GD.el && !GD.el.next.hidden) GD.el.next.focus({ preventScroll: true }); } catch (e) {} }, 40);
 }
 function endTour() {
-  var T = GD.tour;
+  var T = GD.tour, replay = GD.replay;
   if (GD.step && GD.step.exit) GD.step.exit();
-  if (T && T.done) T.done();
-  GD.tour = null; GD.step = null; GD.id = ''; RT.paused = false; RT.holdAuto = false;
+  GD.tour = null; GD.step = null; GD.id = ''; GD.mode = ''; GD.replay = false; RT.paused = false; RT.holdAuto = false;
   if (GD.el) GD.el.root.hidden = true;
-  if (T && T.tip) GD.coolTip = GT + 5; else { GD.cool = GT + 20; GD.coolTip = GT + 4; }
+  if (T && T.tip) GD.coolTip = GT + 5; else { GD.cool = GT + 8; GD.coolTip = GT + 4; }
+  if (T && T.done && !replay) T.done();
 }
 function setBox(el, b) { el.style.left = b.x + 'px'; el.style.top = b.y + 'px'; el.style.width = b.w + 'px'; el.style.height = b.h + 'px'; }
 function guideRect(st) {
@@ -2234,7 +2128,7 @@ function guideRect(st) {
 }
 function guideRender(first) {
   var st = GD.step, g = GD.el, T = GD.tour; if (!st || !g) return;
-  var mode = st.mode || 'modal', last = GD.last, k;
+  var mode = GD.mode, last = GD.last, k;
   if (first) {
     g.root.className = mode;
     g.dots.textContent = '';
@@ -2291,50 +2185,73 @@ function guideRender(first) {
     if (dir) g.arrow.style.left = (clamp(hole.x + hole.w / 2 - bx, 24, bw - 24) - 7) + 'px';
   }
 }
-function guideTriggers() {
-  var g = S.flags.guides, f = flowNow();
-  if (!g.intro) guideStart('intro');
-  if (!g.unlock && nextRoute() === 1 && S.money >= E.cost.unlock(1)) guideStart('unlock');
-  if (!g.gorev && S.flags.tabs.gorev) guideStart('gorev');
-  if (!g.claim && S.flags.tabs.gorev && S.missions.some(mDone)) guideStart('claim');
-  if (!g.bilim && S.flags.tabs.bilim) guideStart('bilim');
-  if (!g.kesif && S.flags.tabs.bilim && S.routes[1].u) guideStart('kesif');
-  if (!g.expDone && S.flags.tabs.bilim && S.exp && Date.now() >= S.exp.end) guideStart('expDone');
-  if (!g.prestige && S.flags.tabs.gorev && E.starsFor(S.stats.runEarned) >= 1) guideStart('prestige');
-  if (!g.t_lobby && RT.lostLobby > 0.05 && GT > 25) guideStart('t_lobby');
-  if (!g.t_fleet && f.bottleneck === 'F' && RT.lostFleet > 0.05 && GT > 30) guideStart('t_fleet');
-  if (!g.t_bulk && RT.sessionBuys >= 10 && (UI.tab === 'liman' || UI.tab === 'rota')) guideStart('t_bulk');
-  if (!g.t_streak && S.stats.streak >= 3) guideStart('t_streak');
-  if (!g.t_mile && UI.tab === 'liman' && mileSel()) guideStart('t_mile');
+// Features open one at a time, when they become useful, each with its own short guide.
+// Nothing new opens while a guide is on screen or waiting, or in the few seconds after one.
+function reveal(k) { if (S.flags.reveal[k]) return false; S.flags.reveal[k] = 1; markDirty(); structDirty(); return true; }
+var FEATS = [
+  { k: 'seats', cond: function () { return S.stats.launches >= 1; },
+    ready: function () { return S.routes[0].seats > 1 || S.money >= E.cost.seats(0, S.routes[0].seats); } },
+  { k: 'reklam', cond: function () { return S.flags.guides.seats && ((S.routes[0].seats > 1 && RT.waitPax[0] >= 5) || S.stats.routeL[0] >= 7); },
+    ready: function () { return S.lvA > 1 || S.money >= E.cost.A(S.lvA); } },
+  { k: 'banko', cond: function () { return S.flags.guides.reklam && (RT.queueT >= 3 || S.stats.routeL[0] >= 11); },
+    ready: function () { return S.lvC > 1 || S.money >= E.cost.C(S.lvC); } },
+  { k: 'motor', cond: function () { return S.flags.guides.seats && S.stats.routeL[0] >= 9; },
+    ready: function () { return S.routes[0].speed > 1 || S.money >= E.cost.speed(0, S.routes[0].speed); } },
+  { k: 'oto', cond: function () { return S.flags.guides.motor && S.stats.routeL[0] >= 14; },
+    ready: function () { return S.routes[0].auto || S.money >= E.cost.auto(0); } },
+  { k: 'mars', cond: function () { return S.flags.guides.seats && (S.money >= 0.35 * E.cost.unlock(1) || S.stats.routeL[0] >= 20); } },
+  { k: 'fleet', cond: function () { return S.routes[1].u && S.flags.guides.newRoute && RT.sinceMars >= 30; } },
+  { k: 'gorev', cond: function () { return S.flags.guides.fleet && RT.sinceMars >= 60; }, on: function () { fillMissions(); } },
+  { k: 'events', tour: false, cond: function () { return S.flags.guides.gorev; }, on: function () { RT.nextEventAt = GT + 45; } },
+  { k: 'bilim', cond: function () { return rv('gorev') && S.crystals > 0; } },
+  { k: 'kesif', cond: function () { return S.flags.guides.bilim && S.routes[2].u; } },
+  { k: 'bulk', cond: function () { return S.routes[2].u; } },
+  { k: 'prestige', cond: function () { return rv('gorev') && E.starsFor(S.stats.runEarned) >= 1; } }
+];
+function progressTick() {
+  if (GD.tour || GD.queue.length || !$('#modal').hidden || GT < GD.cool) return;
+  var g = S.flags.guides;
+  if (!g.intro) { guideStart('intro'); return; }
+  if (!g.launch) { if (readyList.length) guideStart('launch'); return; }
+  if (rv('mars') && nextRoute() === 1 && !g.unlock && S.money >= E.cost.unlock(1)) { guideStart('unlock'); return; }
+  if (rv('gorev') && !g.claim && S.missions.some(mDone)) { guideStart('claim'); return; }
+  if (rv('bilim') && !g.expDone && S.exp && Date.now() >= S.exp.end) { guideStart('expDone'); return; }
+  for (var n = 0; n < FEATS.length; n++) {
+    var F = FEATS[n], tour = F.tour !== false && !!TOURS[F.k];
+    if (!rv(F.k)) {
+      if (!F.cond()) continue;
+      reveal(F.k); if (F.on) F.on();
+      if (tour && (!F.ready || F.ready())) guideStart(F.k);
+      return;
+    }
+    if (tour && !g[F.k]) { if (!F.ready || F.ready()) guideStart(F.k); return; }
+  }
 }
 function guideListModal() {
   var rows = GUIDE_LIST.filter(guideAvail).map(function (id) {
     return h('div', { class: 'setrow' }, h('span', { text: TOURS[id].name }), h('button', { class: 'ghost', text: 'Göster', onclick: function () { closeModal(); guideStart(id, true); } }));
   });
   rows.push(h('div', { class: 'setrow', style: 'border:0' }, h('span', { text: 'Kısa özet (yazılı)' }), h('button', { class: 'ghost', text: 'Oku', onclick: function () { closeModal(); helpModal(); } })));
-  showModal('Rehberler', [h('p', { class: 'note', text: 'Hangi konuyu göstereyim? Yeni özellikler açıldıkça bu liste uzar.' })].concat(rows), [{ label: 'Kapat', cls: 'sec' }]);
+  showModal('Rehberler', [h('p', { class: 'note', text: 'Hangi konuyu göstereyim? Yeni şeyler açıldıkça bu liste uzar.' })].concat(rows), [{ label: 'Kapat', cls: 'sec' }]);
 }
 
 /* ================= main loop ================= */
-var lastT = 0, accUI = 0, accBoard = 0, accFlap = 0, accSlow = 0, accSave = 0;
+var lastT = 0, accUI = 0, accSlow = 0, accSave = 0;
 function frame(t) {
   var dt = lastT ? (t - lastT) / 1000 : 0.016; lastT = t;
   if (dt > 2.5) {
     var res = catchUp(dt);
-    if (dt > 60 && res.gain > 0) toast('Sen yokken +' + fmt(res.gain) + ' kazandın');
+    if (dt > 60 && res.gain > 0) toast('Sen yokken otomatik pilotlar +' + fmt(res.gain) + ' kazandı');
     dt = 0.016;
   }
   dt = Math.min(dt, 0.1);
   var rdt = dt, paused = RT.paused;
   if (paused) dt = 0;
-  else { GT += dt; S.stats.play += dt; }
+  else { GT += dt; S.stats.play += dt; if (S.routes[1].u) RT.sinceMars += dt; }
   invalidate();
   if (!paused) { tickEconomy(dt); updateEvent(dt); }
   if (SC.G) drawScene(dt);
   updateLaunchUI();
-  radioTick(dt);
-  accFlap += rdt; if (accFlap > 0.05) { accFlap = 0; flapTick(); }
-  accBoard += rdt; if (accBoard > 0.33) { accBoard = 0; updateBoard(); }
   accUI += rdt;
   if (accUI > 0.2) {
     accUI = 0;
@@ -2344,11 +2261,11 @@ function frame(t) {
   }
   accSlow += rdt;
   if (accSlow > 1) {
-    accSlow = 0; hintsTick(); maybeEvent();
-    if (!S.flags.tabs.gorev && (S.stats.launches >= 4 || GT > 50)) { S.flags.tabs.gorev = true; markNew('gorev'); }
-    fillMissions();
-    guideTriggers();
-    if (S.exp && Date.now() >= S.exp.end && !S.exp.told) { S.exp.told = 1; toast('Keşif sondası döndü! Bilim sekmesine bak.'); }
+    accSlow = 0;
+    if (rv('gorev')) fillMissions();
+    progressTick();
+    maybeEvent();
+    if (S.exp && Date.now() >= S.exp.end && !S.exp.told) { S.exp.told = 1; if (S.flags.guides.expDone) toast('Keşif sondası döndü! Bilim sekmesine bak.'); }
   }
   guideTick(rdt);
   if (RT.saveSoon != null) { RT.saveSoon -= rdt; if (RT.saveSoon <= 0) { RT.saveSoon = null; saveLocal(); } }
@@ -2358,15 +2275,18 @@ function frame(t) {
 
 /* ================= boot ================= */
 function welcomeBack(res) {
-  var body = [h('p', { text: 'Sen yokken ' + fmtTime(res.sec) + ' geçti. Roketler çalışmaya devam etti:' }), h('div', { class: 'big', text: '+' + fmt(res.gain) }), h('p', { class: 'note', text: fmt(res.pax) + ' yolcu taşındı.' + (res.capped ? ' (Çevrimdışı kazanç ' + (CFG.offlineBaseH + 6 * S.research.gece) + ' saatte durur; Gece Vardiyası araştırması uzatır.)' : '') })];
+  var body = [h('p', { text: 'Sen yokken ' + fmtTime(res.sec) + ' geçti. Otomatik pilotlu roketler uçmaya devam etti:' }), h('div', { class: 'big', text: '+' + fmt(res.gain) })];
+  if (res.capped) body.push(h('p', { class: 'note', text: 'Roketler en fazla ' + (CFG.offlineBaseH + 6 * S.research.gece) + ' saat kendi kendine uçar.' }));
   if (S.exp && Date.now() >= S.exp.end) body.push(h('p', { class: 'reward', text: 'Keşif sondası da döndü, Bilim sekmesinde seni bekliyor.' }));
   showModal('Hoş geldin, Kaptan!', body, [{ label: 'Topla' }]);
 }
 function start(hotData) {
-  var src = (hotData && hotData.v === 1) ? hotData : loadLocal(), fresh = !src;
+  var src = (hotData && hotData.v === 2) ? hotData : loadLocal(), fresh = !src || src.v !== 2;
   S = sanitize(src);
   RT.bootSavedAt = fresh ? 0 : S.savedAt;
-  initRockets(); fillMissions();
+  initRockets();
+  if (rv('gorev')) fillMissions();
+  if (rv('events')) RT.nextEventAt = 60;
   SC.cv = $('#scene'); SC.cx = SC.cv.getContext('2d');
   resizeScene();
   if (window.ResizeObserver) new ResizeObserver(function () { resizeScene(); }).observe($('#stage'));
@@ -2374,23 +2294,13 @@ function start(hotData) {
   SC.cv.addEventListener('pointerdown', onCanvasTap);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { SC.bgKey = ''; LB.gw = 0; });
   setupLaunchUI();
-  document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { audioUnlock(); SFX.tab(); selectTab(b.dataset.tab); if (b.dataset.tab === 'rota') guideStart('rota'); }); });
-  document.querySelectorAll('.fchip').forEach(function (b) {
-    b.addEventListener('click', function () {
-      audioUnlock(); var k = b.dataset.k;
-      if (k === 'F') { selectTab('rota'); guideStart('rota'); } else { selectTab('liman'); }
-      renderPanel();
-      var el = k === 'F' ? $('#panel .card:not(.lock)') : $('#card-' + k);
-      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: RM ? 'auto' : 'smooth' });
-    });
-  });
+  document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { audioUnlock(); SFX.tab(); selectTab(b.dataset.tab); }); });
   $('#btnMenu').addEventListener('click', function () { audioUnlock(); settingsModal(); });
   $('#btnSound').addEventListener('click', function () { var on = !(S.settings.sfx || S.settings.music); S.settings.sfx = on; S.settings.music = on; audioUnlock(); applyAudioSettings(); markDirty(); updateHUD(); });
   $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
-  $('#radio').addEventListener('click', function () { RCUR = null; $('#radio').hidden = true; });
   ['pointerup', 'touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, function () { if (!AU.ctx || AU.ctx.state !== 'running') audioUnlock(); }, { passive: true }); });
   document.addEventListener('keydown', function (e) {
-    var gs = GD.step, gm = gs ? (gs.mode || 'modal') : '', isSp = e.code === 'Space' || e.key === ' ';
+    var gs = GD.step, gm = gs ? GD.mode : '', isSp = e.code === 'Space' || e.key === ' ';
     if (gs && gm !== 'tip' && $('#modal').hidden) {
       if (e.key === 'Escape') { e.preventDefault(); endTour(); return; }
       if (gm === 'modal') { if ((e.key === 'Enter' || isSp) && !(document.activeElement && document.activeElement.tagName === 'BUTTON')) { e.preventDefault(); guideNext(); } return; }
@@ -2404,17 +2314,23 @@ function start(hotData) {
   if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') { try { window.claude.hot.snapshot(function () { return snapshot(); }); } catch (e) {} }
   if (!fresh) {
     var away = (Date.now() - S.savedAt) / 1000;
-    if (away > 5) { var res = catchUp(away); if (away > 60 && res.gain > 0) welcomeBack(res); }
+    if (away > 5) {
+      var res = catchUp(away);
+      if (away > 60 && res.gain > 0) welcomeBack(res);
+      else if (away > 600 && rv('oto') && !res.anyAuto) setTimeout(function () { toast('İpucu: otomatik pilotlu roketler sen yokken de uçar.'); }, 1500);
+    }
   }
   selectTab('liman');
   saveLocal();
-  window.__UZ = { S: function () { return S; }, RT: RT, E: E, add: addMoney, catchUp: catchUp, ev: startEvent, flow: flowNow, GD: GD, guide: guideStart, sim: function (sec) { for (var t = 0; t < sec; t += 0.05) { GT += 0.05; invalidate(); tickEconomy(0.05); } } };
+  progressTick();
+  window.__UZ = { S: function () { return S; }, RT: RT, E: E, add: addMoney, catchUp: catchUp, ev: startEvent, flow: flowNow, GD: GD, guide: guideStart, progress: progressTick, ready: function () { return readyList; }, launch: tapLaunch, gt: function () { return GT; }, needle: needle,
+    sim: function (sec) { for (var t = 0; t < sec; t += 0.05) { GT += 0.05; invalidate(); tickEconomy(0.05); } } };
   requestAnimationFrame(frame);
   setTimeout(cloudInit, 0);
 }
 var hot = window.claude && window.claude.hot;
-if (hot && typeof hot.ready === 'function') { try { hot.ready(function (d) { start(d && d.v === 1 ? d : null); }); } catch (e) { start(null); } }
-else start(hot && hot.data && hot.data.v === 1 ? hot.data : null);
+if (hot && typeof hot.ready === 'function') { try { hot.ready(function (d) { start(d && d.v === 2 ? d : null); }); } catch (e) { start(null); } }
+else start(hot && hot.data && hot.data.v === 2 ? hot.data : null);
 })();
 </script>
 </body>

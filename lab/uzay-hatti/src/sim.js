@@ -1,5 +1,5 @@
 const E = require('./econ.js');
-function fresh(){ return {lvA:1,lvC:1,money:15,stars:0,souvenirs:[],research:{},routes:E.ROUTES.map((r,i)=>({u:i===0,seats:1,speed:1,fleet:1}))}; }
+function fresh(){ return {lvA:1,lvC:1,money:0,stars:0,souvenirs:[],research:{},routes:E.ROUTES.map((r,i)=>({u:i===0,seats:1,speed:1,fleet:1,auto:true}))}; }
 function clone(s){ return JSON.parse(JSON.stringify(s)); }
 function options(s){
   const o=[];

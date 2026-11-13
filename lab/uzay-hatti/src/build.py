@@ -23,7 +23,7 @@ if True:
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="noindex">
 <script src="/hesap/supabase.js"></script>
-<script src="/hesap/hesap.js" data-oyun="uzay-hatti" data-kayit="uzay-hatti-v1"></script>
+<script src="/hesap/hesap.js" data-oyun="uzay-hatti" data-kayit="uzay-hatti-v2"></script>
 '''
     anchor = '<title>Uzay Hattı</title>\n'
     assert anchor in out
