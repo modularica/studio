@@ -34,6 +34,7 @@
     <section id="sheet" aria-label="Drawing board">
       <canvas id="board"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
+      <div id="ff-badge" aria-hidden="true"><svg viewBox="0 0 22 20"><path d="M1.5 3l9 7-9 7zM11.5 3l9 7-9 7z" fill="currentColor"/></svg>×4</div>
     </section>
     <aside id="side">
       <div class="side-head" id="side-head">
@@ -52,7 +53,7 @@
       <div class="panel" id="pult" hidden>
         <div class="panel-head"><span class="cap">Controls</span><span class="cap" id="press-count">Presses: 0</span></div>
         <div id="pult-buttons"></div>
-        <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too.</p>
+        <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too. Hold Fast (or F) to speed up.</p>
       </div>
       <div class="panel" id="editor" hidden>
         <div class="panel-head"><span class="cap">Workshop</span><span class="cap" id="ed-status"></span></div>
@@ -71,10 +72,16 @@
         <div class="panel-head"><span class="cap">Approval stamps</span></div>
         <ul id="goal-list"></ul>
       </div>
-      <button id="run" type="button">
-        <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
-        <span id="run-label">Run</span>
-      </button>
+      <div class="run-row" id="run-row">
+        <button id="ff" type="button" hidden aria-pressed="false" aria-label="Fast: hold to speed up the machine" title="Hold to speed up (or hold F)">
+          <svg viewBox="0 0 22 20" aria-hidden="true"><path d="M1.5 3l9 7-9 7zM11.5 3l9 7-9 7z" fill="currentColor"/></svg>
+          <span id="ff-label">Fast</span>
+        </button>
+        <button id="run" type="button">
+          <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
+          <span id="run-label">Run</span>
+        </button>
+      </div>
     </aside>
   </main>
 </div>

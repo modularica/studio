@@ -54,6 +54,10 @@ The Incredible Machine tarzı fizik bulmacası (Kasım 2026'ya kadarki adı "Kü
 - Telefon (10 Kasım 2026, Umut'un isteği): yalnız yatay oynanır. Dokunmatik ve dar ekran dik tutulunca (`(orientation: portrait) and (max-width: 600px) and (pointer: coarse)`) "Turn your phone sideways" ekranı çıkar, makine bekler; iPad dik düzeni olduğu gibi. Kısa yatay ekranda (`(max-height: 520px) and (min-aspect-ratio: 5/4)`, `body.compact`) antet gizlenir: çizimin adı, görevi ve antetteki düğmeler (`.tb-btns`, JS ile taşınır) yan panelin başına geçer, tahtaya yükseklik kalır. Yan panel ok düğmesiyle daraltılır (`body.rail`): yalnız parça simgeleri ve adetleri, kumanda numaraları ve Run kalır, tahta genişler (küçük telefonlarda işe yarar; geniş telefonda tahta yükseklikle sınırlı). Tercih `drawing-board.device` → `rail`. Atölye'de düzenlerken panel hep açık ve geniş.
 - Oyunun içi İngilizce, kod İngilizce, yorumlar Türkçe. Odası yok.
 
+## Hızlı ileri
+
+- Makine çalışırken Run'ın yerinde Stop, yanında "Fast" düğmesi var (16 Kasım 2026, oyuncu isteği: "50. kez aynı şeyi denerken balonun süzülüşünü hızlandırmak istedim"). Basılı tutuldukça makine 4 kat hızlı (`FAST`), bırakınca normal; F ya da → tuşu da aynı. Tahtanın köşesinde "×4" görünür. Fizik adımı aynı kalır (karede daha çok adım), yani sonuç değişmez; yalnız elle basışın zamanlaması zorlaşır. Kovaya giriş kutlamasında ve rehberin donduğu anda etkisi yok. Parmak, fare ve tuş ayrı ayrı sayılır (`S.fastBy`); pencere odağı gidince bırakılmış sayılır.
+
 ## Atölye (kendi çizimin)
 
 - Bölümler sayfasında "+ New drawing", Atölye çiziminde "Edit this drawing". Düzenlerken (`S.mode === 'edit'`) yan panelde araçlar: Wall (dokun/sürükle; duvardan başlarsan siler), Ball (boru; aynı yere dokununca yön r → l → d), Cup (2 kare), Part (sabit parça; dokununca döner), Erase; oyuncunun parça listesi (− / +), ad. "Test it" kaydeder ve oynatır, "Share link" adresi kopyalar (telefonda paylaş penceresi).

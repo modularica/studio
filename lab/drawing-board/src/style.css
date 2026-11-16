@@ -129,8 +129,27 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ball);
 .goal.got { color: var(--ink); }
 .goal:not(.got) { color: var(--ink-dim); }
 
+/* Run ve çalışırken yanında "Fast" (basılı tutunca makine 4 kat hızlı) */
+.run-row { margin-top: auto; flex: none; display: flex; gap: 8px; }
+.run-row[hidden] { display: none; }
+#ff {
+  flex: 0 0 40%; min-width: 0; height: 62px; border: 2px solid var(--ink); background: transparent; color: var(--ink);
+  font-size: 19px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+#ff[hidden] { display: none; }
+#ff svg { width: 22px; height: 20px; flex: none; }
+#ff.on { background: var(--ball); border-color: var(--ball); color: var(--paper-deep); }
+#ff-badge {
+  position: absolute; top: 10px; right: 12px; z-index: 2; display: none; align-items: center; gap: 5px;
+  padding: 4px 9px 3px; background: var(--ball); color: var(--paper-deep); border-radius: 3px; pointer-events: none;
+  font: 700 15px/1 var(--body); letter-spacing: 0.06em;
+}
+#ff-badge svg { width: 18px; height: 16px; }
+#sheet.fast #ff-badge { display: flex; }
 #run {
-  margin-top: auto; flex: none; height: 62px; border: 0; background: var(--ink); color: var(--paper-deep);
+  flex: 1; min-width: 0; height: 62px; border: 0; background: var(--ink); color: var(--paper-deep);
   font-size: 21px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 12px;
 }
@@ -334,7 +353,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   .note { grid-column: 1 / 3; }
   #bom, #pult { grid-column: 1; grid-row: 2; overflow: auto; align-self: start; }
   #goals { grid-column: 2; grid-row: 2; overflow: auto; align-self: start; }
-  #run { grid-column: 1 / 3; grid-row: 4; height: 56px; }
+  .run-row { grid-column: 1 / 3; grid-row: 4; }
+  #run, #ff { height: 56px; }
 }
 @media (max-aspect-ratio: 5/4) and (max-width: 900px) {
   .titleblock { flex-wrap: wrap; }
@@ -363,7 +383,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   .bom-row { padding: 4px 8px; }
   .panel-foot { display: none; }
   #goals { display: none; }
-  #run { height: 50px; font-size: 18px; }
+  #run, #ff { height: 50px; font-size: 18px; }
 }
 /* Kısa yatay ekran (telefon yatay, body.compact): antet gizlenir, adı, görevi ve düğmeleri yan
    panelin başına geçer (tahtaya yükseklik kalır). Yan panel daraltılabilir (body.rail): yalnız parça
@@ -396,7 +416,8 @@ body.compact #pult-buttons { padding: 6px; gap: 6px; }
 body.compact .dev { min-height: 46px; padding: 4px 8px; grid-template-columns: 32px 1fr; column-gap: 8px; }
 body.compact .dev .num { width: 32px; height: 32px; font-size: 18px; }
 body.compact .dev .nm { font-size: 15px; }
-body.compact #run { height: 46px; font-size: 18px; }
+body.compact #run, body.compact #ff { height: 46px; font-size: 17px; }
+body.compact .run-row { gap: 6px; }
 body.compact.editing #side { width: 292px; }
 body.compact.editing .side-toggle { display: none; }
 body.compact.editing .note { flex: none; }
@@ -416,8 +437,10 @@ body.compact.rail .bom-row .qty { font-size: 13px; line-height: 1; }
 body.compact.rail #pult-buttons { padding: 4px; }
 body.compact.rail .dev { grid-template-columns: 1fr; justify-items: center; padding: 4px 0; min-height: 48px; }
 body.compact.rail .dev .nm, body.compact.rail .dev .act { display: none; }
-body.compact.rail #run { gap: 0; }
-body.compact.rail #run-label { display: none; }
+body.compact.rail #run, body.compact.rail #ff { gap: 0; }
+body.compact.rail #run-label, body.compact.rail #ff-label { display: none; }
+body.compact.rail .run-row { flex-direction: column; gap: 6px; }
+body.compact.rail #ff, body.compact.rail #run { flex: none; }
 
 /* Telefon dikey tutulunca: oyun yatay oynanır */
 #rotate { display: none; }

@@ -150,8 +150,27 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ball);
 .goal.got { color: var(--ink); }
 .goal:not(.got) { color: var(--ink-dim); }
 
+/* Run ve çalışırken yanında "Fast" (basılı tutunca makine 4 kat hızlı) */
+.run-row { margin-top: auto; flex: none; display: flex; gap: 8px; }
+.run-row[hidden] { display: none; }
+#ff {
+  flex: 0 0 40%; min-width: 0; height: 62px; border: 2px solid var(--ink); background: transparent; color: var(--ink);
+  font-size: 19px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+#ff[hidden] { display: none; }
+#ff svg { width: 22px; height: 20px; flex: none; }
+#ff.on { background: var(--ball); border-color: var(--ball); color: var(--paper-deep); }
+#ff-badge {
+  position: absolute; top: 10px; right: 12px; z-index: 2; display: none; align-items: center; gap: 5px;
+  padding: 4px 9px 3px; background: var(--ball); color: var(--paper-deep); border-radius: 3px; pointer-events: none;
+  font: 700 15px/1 var(--body); letter-spacing: 0.06em;
+}
+#ff-badge svg { width: 18px; height: 16px; }
+#sheet.fast #ff-badge { display: flex; }
 #run {
-  margin-top: auto; flex: none; height: 62px; border: 0; background: var(--ink); color: var(--paper-deep);
+  flex: 1; min-width: 0; height: 62px; border: 0; background: var(--ink); color: var(--paper-deep);
   font-size: 21px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 12px;
 }
@@ -355,7 +374,8 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   .note { grid-column: 1 / 3; }
   #bom, #pult { grid-column: 1; grid-row: 2; overflow: auto; align-self: start; }
   #goals { grid-column: 2; grid-row: 2; overflow: auto; align-self: start; }
-  #run { grid-column: 1 / 3; grid-row: 4; height: 56px; }
+  .run-row { grid-column: 1 / 3; grid-row: 4; }
+  #run, #ff { height: 56px; }
 }
 @media (max-aspect-ratio: 5/4) and (max-width: 900px) {
   .titleblock { flex-wrap: wrap; }
@@ -384,7 +404,7 @@ html.lab .lab-only { display: inline-flex; align-items: center; }
   .bom-row { padding: 4px 8px; }
   .panel-foot { display: none; }
   #goals { display: none; }
-  #run { height: 50px; font-size: 18px; }
+  #run, #ff { height: 50px; font-size: 18px; }
 }
 /* Kısa yatay ekran (telefon yatay, body.compact): antet gizlenir, adı, görevi ve düğmeleri yan
    panelin başına geçer (tahtaya yükseklik kalır). Yan panel daraltılabilir (body.rail): yalnız parça
@@ -417,7 +437,8 @@ body.compact #pult-buttons { padding: 6px; gap: 6px; }
 body.compact .dev { min-height: 46px; padding: 4px 8px; grid-template-columns: 32px 1fr; column-gap: 8px; }
 body.compact .dev .num { width: 32px; height: 32px; font-size: 18px; }
 body.compact .dev .nm { font-size: 15px; }
-body.compact #run { height: 46px; font-size: 18px; }
+body.compact #run, body.compact #ff { height: 46px; font-size: 17px; }
+body.compact .run-row { gap: 6px; }
 body.compact.editing #side { width: 292px; }
 body.compact.editing .side-toggle { display: none; }
 body.compact.editing .note { flex: none; }
@@ -437,8 +458,10 @@ body.compact.rail .bom-row .qty { font-size: 13px; line-height: 1; }
 body.compact.rail #pult-buttons { padding: 4px; }
 body.compact.rail .dev { grid-template-columns: 1fr; justify-items: center; padding: 4px 0; min-height: 48px; }
 body.compact.rail .dev .nm, body.compact.rail .dev .act { display: none; }
-body.compact.rail #run { gap: 0; }
-body.compact.rail #run-label { display: none; }
+body.compact.rail #run, body.compact.rail #ff { gap: 0; }
+body.compact.rail #run-label, body.compact.rail #ff-label { display: none; }
+body.compact.rail .run-row { flex-direction: column; gap: 6px; }
+body.compact.rail #ff, body.compact.rail #run { flex: none; }
 
 /* Telefon dikey tutulunca: oyun yatay oynanır */
 #rotate { display: none; }
@@ -548,6 +571,7 @@ body.compact.rail #run-label { display: none; }
     <section id="sheet" aria-label="Drawing board">
       <canvas id="board"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
+      <div id="ff-badge" aria-hidden="true"><svg viewBox="0 0 22 20"><path d="M1.5 3l9 7-9 7zM11.5 3l9 7-9 7z" fill="currentColor"/></svg>×4</div>
     </section>
     <aside id="side">
       <div class="side-head" id="side-head">
@@ -566,7 +590,7 @@ body.compact.rail #run-label { display: none; }
       <div class="panel" id="pult" hidden>
         <div class="panel-head"><span class="cap">Controls</span><span class="cap" id="press-count">Presses: 0</span></div>
         <div id="pult-buttons"></div>
-        <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too.</p>
+        <p class="panel-foot" id="pult-foot">The orange devices are in your hands. Number keys work too. Hold Fast (or F) to speed up.</p>
       </div>
       <div class="panel" id="editor" hidden>
         <div class="panel-head"><span class="cap">Workshop</span><span class="cap" id="ed-status"></span></div>
@@ -585,10 +609,16 @@ body.compact.rail #run-label { display: none; }
         <div class="panel-head"><span class="cap">Approval stamps</span></div>
         <ul id="goal-list"></ul>
       </div>
-      <button id="run" type="button">
-        <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
-        <span id="run-label">Run</span>
-      </button>
+      <div class="run-row" id="run-row">
+        <button id="ff" type="button" hidden aria-pressed="false" aria-label="Fast: hold to speed up the machine" title="Hold to speed up (or hold F)">
+          <svg viewBox="0 0 22 20" aria-hidden="true"><path d="M1.5 3l9 7-9 7zM11.5 3l9 7-9 7z" fill="currentColor"/></svg>
+          <span id="ff-label">Fast</span>
+        </button>
+        <button id="run" type="button">
+          <svg id="run-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2.5l13 7.5-13 7.5z" fill="currentColor"/></svg>
+          <span id="run-label">Run</span>
+        </button>
+      </div>
     </aside>
   </main>
 </div>
@@ -2779,6 +2809,7 @@ body.compact.rail #run-label { display: none; }
     // Müzik tercihi ayrı; daha önce sesi kapatmış olanda müzik de kapalı başlar.
     music: device.music === undefined ? !device.muted : !!device.music,
     rail: !!device.rail,   // kısa yatay ekranda yan panel daraltılmış mı (cihazda kalır)
+    fastBy: new Set(),     // "Fast"ı basılı tutanlar (parmak, fare, F tuşu); boş değilse makine hızlı
     goalN: 0, goalAt: null, winAt: null, flashT: null, lastHit: [], introNew: null, newSeen: false,
   };
   function persist() {
@@ -3940,7 +3971,7 @@ body.compact.rail #run-label { display: none; }
     const L = S.level, h = L.hints || {}, prog = S.progress[L.id];
     let t;
     if (S.mode === 'edit') t = TOOL_HINT[S.edit.tool];
-    else if (S.mode === 'run') t = h.run || 'The machine is running. Press Stop to go back to building.';
+    else if (S.mode === 'run') t = h.run || 'The machine is running. Hold Fast to speed it up, or press Stop to go back to building.';
     else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
@@ -4001,7 +4032,9 @@ body.compact.rail #run-label { display: none; }
   function refreshSide() {
     const run = S.mode === 'run', edit = S.mode === 'edit';
     applyCompact();
-    $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit;
+    $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit; $('run-row').hidden = edit;
+    $('ff').hidden = !run;
+    if (!run) fastClear();
     $('btn-edit').hidden = edit || run || S.level.book !== 'W';
     if (edit) { $('bom').hidden = true; $('pult').hidden = true; setHint(); return; }
     $('bom').hidden = run; $('pult').hidden = !run;
@@ -4019,7 +4052,7 @@ body.compact.rail #run-label { display: none; }
     $('pult-foot').hidden = !devs.length;
     if (!devs.length) {
       const p = document.createElement('p'); p.className = 'pult-none';
-      p.textContent = 'Nothing to work by hand on this machine. Just watch.';
+      p.textContent = 'Nothing to work by hand on this machine. Just watch, or hold Fast to speed it up.';
       box.appendChild(p); return;
     }
     for (const rt of devs) {
@@ -4667,14 +4700,17 @@ body.compact.rail #run-label { display: none; }
       const sim = S.sim;
       // Son top kovaya girince an donar, sonra ağır çekim (yalnızca görüntü; fizik adımı aynı).
       const g = S.goalAt == null ? -1 : S.time - S.goalAt;
-      S.acc += dt * (g < 0 || reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
+      // "Fast" basılıyken makine FAST kat hızlı (fizik adımı aynı, karede daha çok adım). Kutlamada değil.
+      const fast = g < 0 && S.fastBy.size ? FAST : 1;
+      S.acc += dt * (g < 0 ? fast : reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
       if (PORTRAIT.matches) S.acc = 0;   // telefon dik tutulurken oyun görünmüyor: makine bekler
+      const cap = 12 * fast;
       let n = 0;
-      while (S.acc >= DT && n < 12) {
+      while (S.acc >= DT && n < cap) {
         if (guideHold()) { S.acc = 0; break; }
         sim.step(); S.acc -= DT; n++;
       }
-      if (n >= 12) S.acc = 0;
+      if (n >= cap) S.acc = 0;
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
@@ -5124,6 +5160,23 @@ body.compact.rail #run-label { display: none; }
       + (on ? '' : '<path d="M2.5 2.5l15 15"/>');
     if (!quiet) try { if (AU) AU.setMusic(on); } catch (e) { /* yok say */ }
   }
+  // Hızlı ileri: makine çalışırken "Fast" düğmesi ya da F / → tuşu basılı tutuldukça 4 kat hızlı.
+  // Aynı şeyi 50. kez denerken balonun süzülüşünü, topun uzun yolunu beklememek için (oyuncu isteği).
+  const FAST = 4;
+  function fastSet(src, on) {
+    if (on && S.mode !== 'run') return;
+    const was = S.fastBy.size > 0;
+    if (on) S.fastBy.add(src); else S.fastBy.delete(src);
+    fastShow(was);
+  }
+  function fastClear() { const was = S.fastBy.size > 0; S.fastBy.clear(); fastShow(was); }
+  function fastShow(was) {
+    const on = S.fastBy.size > 0;
+    if (on === was) return;
+    $('ff').classList.toggle('on', on); $('ff').setAttribute('aria-pressed', String(on));
+    $('sheet').classList.toggle('fast', on);
+  }
+
   // Kısa yatay ekran (telefon yatay): antet gizlenir, düğmeleri yan panelin başına taşınır.
   // Yan panel daraltılabilir; Atölye'de düzenlerken hep açık.
   const mq = q => (window.matchMedia ? window.matchMedia(q) : { matches: false, addEventListener() {} });
@@ -5188,6 +5241,21 @@ body.compact.rail #run-label { display: none; }
   });
   $('btn-guide').addEventListener('click', () => guideStart(true));
   $('side-toggle').addEventListener('click', () => setRail(!S.rail));
+  {
+    const ff = $('ff');
+    ff.addEventListener('pointerdown', e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      try { ff.setPointerCapture(e.pointerId); } catch (err) { /* yok say */ }
+      fastSet('p' + e.pointerId, true);
+    });
+    const up = e => fastSet('p' + e.pointerId, false);
+    ff.addEventListener('pointerup', up); ff.addEventListener('pointercancel', up); ff.addEventListener('lostpointercapture', up);
+    ff.addEventListener('contextmenu', e => e.preventDefault());
+    ff.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); fastSet('kb', true); } });
+    ff.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') fastSet('kb', false); });
+    window.addEventListener('blur', fastClear);
+  }
   COMPACT.addEventListener('change', applyCompact);
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('btn-new-drawing').addEventListener('click', () => { closeOverlay('levels'); openEditor(starterDoc()); });
@@ -5228,10 +5296,16 @@ body.compact.rail #run-label { display: none; }
       if (rt) devDown(rt, 'key' + e.key);
       return;
     }
+    if ((e.code === 'KeyF' || e.key === 'ArrowRight') && S.mode === 'run' && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      if (!e.repeat) fastSet('key', true);
+      return;
+    }
     const a = document.activeElement;
     if ((e.key === ' ' || e.key === 'Enter') && (!a || a === document.body)) { e.preventDefault(); toggleRun(); }
   });
   window.addEventListener('keyup', e => {
+    if (e.code === 'KeyF' || e.key === 'ArrowRight') fastSet('key', false);
     if (/^[1-9]$/.test(e.key) && S.sim) {
       const rt = S.sim.devices.find(d => d.num === Number(e.key));
       if (rt) devUp(rt, 'key' + e.key);
@@ -5243,7 +5317,7 @@ body.compact.rail #run-label { display: none; }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
 
   // Test ve geliştirme için küçük bir kapı.
-  window.KM_GAME = { S, G, guideStart, guideFor, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
+  window.KM_GAME = { S, G, guideStart, guideFor, fastSet, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
 
   function boot(data) {
     if (lab.on) document.documentElement.classList.add('lab');

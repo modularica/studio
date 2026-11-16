@@ -55,6 +55,7 @@
     // Müzik tercihi ayrı; daha önce sesi kapatmış olanda müzik de kapalı başlar.
     music: device.music === undefined ? !device.muted : !!device.music,
     rail: !!device.rail,   // kısa yatay ekranda yan panel daraltılmış mı (cihazda kalır)
+    fastBy: new Set(),     // "Fast"ı basılı tutanlar (parmak, fare, F tuşu); boş değilse makine hızlı
     goalN: 0, goalAt: null, winAt: null, flashT: null, lastHit: [], introNew: null, newSeen: false,
   };
   function persist() {
@@ -1216,7 +1217,7 @@
     const L = S.level, h = L.hints || {}, prog = S.progress[L.id];
     let t;
     if (S.mode === 'edit') t = TOOL_HINT[S.edit.tool];
-    else if (S.mode === 'run') t = h.run || 'The machine is running. Press Stop to go back to building.';
+    else if (S.mode === 'run') t = h.run || 'The machine is running. Hold Fast to speed it up, or press Stop to go back to building.';
     else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
@@ -1277,7 +1278,9 @@
   function refreshSide() {
     const run = S.mode === 'run', edit = S.mode === 'edit';
     applyCompact();
-    $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit;
+    $('editor').hidden = !edit; $('goals').hidden = edit; $('run').hidden = edit; $('run-row').hidden = edit;
+    $('ff').hidden = !run;
+    if (!run) fastClear();
     $('btn-edit').hidden = edit || run || S.level.book !== 'W';
     if (edit) { $('bom').hidden = true; $('pult').hidden = true; setHint(); return; }
     $('bom').hidden = run; $('pult').hidden = !run;
@@ -1295,7 +1298,7 @@
     $('pult-foot').hidden = !devs.length;
     if (!devs.length) {
       const p = document.createElement('p'); p.className = 'pult-none';
-      p.textContent = 'Nothing to work by hand on this machine. Just watch.';
+      p.textContent = 'Nothing to work by hand on this machine. Just watch, or hold Fast to speed it up.';
       box.appendChild(p); return;
     }
     for (const rt of devs) {
@@ -1943,14 +1946,17 @@
       const sim = S.sim;
       // Son top kovaya girince an donar, sonra ağır çekim (yalnızca görüntü; fizik adımı aynı).
       const g = S.goalAt == null ? -1 : S.time - S.goalAt;
-      S.acc += dt * (g < 0 || reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
+      // "Fast" basılıyken makine FAST kat hızlı (fizik adımı aynı, karede daha çok adım). Kutlamada değil.
+      const fast = g < 0 && S.fastBy.size ? FAST : 1;
+      S.acc += dt * (g < 0 ? fast : reduceMotion ? 1 : g < 0.09 ? 0 : 0.4);
       if (PORTRAIT.matches) S.acc = 0;   // telefon dik tutulurken oyun görünmüyor: makine bekler
+      const cap = 12 * fast;
       let n = 0;
-      while (S.acc >= DT && n < 12) {
+      while (S.acc >= DT && n < cap) {
         if (guideHold()) { S.acc = 0; break; }
         sim.step(); S.acc -= DT; n++;
       }
-      if (n >= 12) S.acc = 0;
+      if (n >= cap) S.acc = 0;
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
@@ -2400,6 +2406,23 @@
       + (on ? '' : '<path d="M2.5 2.5l15 15"/>');
     if (!quiet) try { if (AU) AU.setMusic(on); } catch (e) { /* yok say */ }
   }
+  // Hızlı ileri: makine çalışırken "Fast" düğmesi ya da F / → tuşu basılı tutuldukça 4 kat hızlı.
+  // Aynı şeyi 50. kez denerken balonun süzülüşünü, topun uzun yolunu beklememek için (oyuncu isteği).
+  const FAST = 4;
+  function fastSet(src, on) {
+    if (on && S.mode !== 'run') return;
+    const was = S.fastBy.size > 0;
+    if (on) S.fastBy.add(src); else S.fastBy.delete(src);
+    fastShow(was);
+  }
+  function fastClear() { const was = S.fastBy.size > 0; S.fastBy.clear(); fastShow(was); }
+  function fastShow(was) {
+    const on = S.fastBy.size > 0;
+    if (on === was) return;
+    $('ff').classList.toggle('on', on); $('ff').setAttribute('aria-pressed', String(on));
+    $('sheet').classList.toggle('fast', on);
+  }
+
   // Kısa yatay ekran (telefon yatay): antet gizlenir, düğmeleri yan panelin başına taşınır.
   // Yan panel daraltılabilir; Atölye'de düzenlerken hep açık.
   const mq = q => (window.matchMedia ? window.matchMedia(q) : { matches: false, addEventListener() {} });
@@ -2464,6 +2487,21 @@
   });
   $('btn-guide').addEventListener('click', () => guideStart(true));
   $('side-toggle').addEventListener('click', () => setRail(!S.rail));
+  {
+    const ff = $('ff');
+    ff.addEventListener('pointerdown', e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      try { ff.setPointerCapture(e.pointerId); } catch (err) { /* yok say */ }
+      fastSet('p' + e.pointerId, true);
+    });
+    const up = e => fastSet('p' + e.pointerId, false);
+    ff.addEventListener('pointerup', up); ff.addEventListener('pointercancel', up); ff.addEventListener('lostpointercapture', up);
+    ff.addEventListener('contextmenu', e => e.preventDefault());
+    ff.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); fastSet('kb', true); } });
+    ff.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') fastSet('kb', false); });
+    window.addEventListener('blur', fastClear);
+  }
   COMPACT.addEventListener('change', applyCompact);
   $('btn-levels').addEventListener('click', () => { if (S.mode === 'run') stopRun('user'); openLevels(); });
   $('btn-new-drawing').addEventListener('click', () => { closeOverlay('levels'); openEditor(starterDoc()); });
@@ -2504,10 +2542,16 @@
       if (rt) devDown(rt, 'key' + e.key);
       return;
     }
+    if ((e.code === 'KeyF' || e.key === 'ArrowRight') && S.mode === 'run' && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      if (!e.repeat) fastSet('key', true);
+      return;
+    }
     const a = document.activeElement;
     if ((e.key === ' ' || e.key === 'Enter') && (!a || a === document.body)) { e.preventDefault(); toggleRun(); }
   });
   window.addEventListener('keyup', e => {
+    if (e.code === 'KeyF' || e.key === 'ArrowRight') fastSet('key', false);
     if (/^[1-9]$/.test(e.key) && S.sim) {
       const rt = S.sim.devices.find(d => d.num === Number(e.key));
       if (rt) devUp(rt, 'key' + e.key);
@@ -2519,7 +2563,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.level && S.mode === 'build') refreshBom(); });
 
   // Test ve geliştirme için küçük bir kapı.
-  window.KM_GAME = { S, G, guideStart, guideFor, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
+  window.KM_GAME = { S, G, guideStart, guideFor, fastSet, openEditor, closeEditor, editAt, starterDoc, shareDoc, wsLevel, loadLevel, startRun, stopRun, toggleRun, addPlaced, rotatePart, saveSetup, refreshSide, openLevels, INTRO, view: () => V };
 
   function boot(data) {
     if (lab.on) document.documentElement.classList.add('lab');

@@ -2,7 +2,7 @@
 # 1–2. çizim: rehberi gerçek fareyle izler (bak, sürükle, çevir, Run). Sonra bütün çizimlerin bütün
 # çözümleri: parçalar API ile kurulur, elle basışlar rehberin dondurmasıyla tam anında yapılır
 # (böylece zamanlaması dar çözümler de oyunun kendi döngüsünde doğrulanır). En sonda iki çizim
-# rehbersiz, gerçek zamanlı tuşla oynanır.
+# rehbersiz, gerçek zamanlı tuşla oynanır; "Fast" düğmesinin hızı ölçülür.
 # Önce: node build.js --local /tmp/km-local.html  (ekran görüntüleri /tmp/km-shots/)
 import json, os, sys, time
 from playwright.sync_api import sync_playwright
@@ -158,6 +158,21 @@ with sync_playwright() as p:
         print(f'{lid} gerçek zamanlı:', result_open(page))
         if not result_open(page): fails.append(f'{lid}: gerçek zamanlı oynanmadı')
         else: page.click('#btn-retry'); page.wait_for_timeout(200)
+
+    # Hızlı ileri: Fast basılı tutulunca makine 4 kat hızlı, bırakınca normal
+    page.evaluate(f"KM_GAME.loadLevel({IDS.index('posta')})"); page.wait_for_timeout(200)
+    page.evaluate("KM_GAME.G.on = false"); page.evaluate(PLACE, [])
+    page.click('#run'); page.wait_for_timeout(300)
+    steps = lambda: page.evaluate("KM_GAME.S.sim ? KM_GAME.S.sim.steps : 0")
+    a0 = steps(); page.wait_for_timeout(600); a1 = steps()
+    bb = page.locator('#ff').bounding_box()
+    page.mouse.move(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2); page.mouse.down(); page.wait_for_timeout(100)
+    b0 = steps(); page.wait_for_timeout(600); b1 = steps()
+    page.mouse.up(); page.wait_for_timeout(100)
+    c0 = steps(); page.wait_for_timeout(600); c1 = steps()
+    print(f'Fast: normal {a1 - a0}, basılı {b1 - b0}, bırakınca {c1 - c0} adım')
+    if not (b1 - b0 > 3 * (a1 - a0) and c1 - c0 < 1.5 * (a1 - a0)): fails.append('Fast: hız tutmadı')
+    page.click('#run'); page.wait_for_timeout(200)
 
     # Görüntüler: kurulu tahtalar, çalışırken balon ve dişliler, çok toplu sayaç
     def show(lid, k, name, run_ms=0):
