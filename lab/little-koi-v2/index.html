@@ -98,6 +98,12 @@ body{
 .test-not[hidden]{display:none}
 .test-not button{font:inherit;color:var(--ink);background:var(--glass);border:1px solid var(--glass-line);border-radius:999px;padding:3px 10px;margin-left:4px;cursor:pointer}
 .lives{display:flex;gap:3px;margin-right:4px}
+/* a power-up's seconds left, under the buttons on the right */
+.guc-rozet{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 58px);display:flex;gap:10px;padding:5px 12px;border-radius:999px;background:rgba(4,26,29,.82);border:2px solid #f2c43a;color:#fff;font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;pointer-events:none}
+.guc-rozet.buz{border-color:#9edcff}
+.guc-rozet.biter{animation:rozetYan .5s steps(2) infinite}
+@keyframes rozetYan{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.guc-rozet.biter{animation:none}}
 .life{width:26px;height:13px;fill:var(--koi)}
 .life.lost{fill:none;stroke:var(--ink-dim);stroke-width:1.3;opacity:.55}
 .icon-btn{
@@ -412,6 +418,7 @@ body:not(.odada) #cikBtn{display:none}
     </button>
   </div>
   <span class="test-btn" id="testEtiket" hidden>Test round</span>
+  <div class="guc-rozet" id="gucRozet" hidden></div>
 </header>
 
 <div class="toast" id="toast" role="status" hidden></div>
@@ -696,8 +703,9 @@ let parilti = 0;     // the golden flash when the koi turns into a dragon
 // One round's journey: the way on (gecit; in the Ocean the Dragon Gate), the fade into the next water, the leap,
 // what the round opened, and a toast waiting to be shown (sonraki, after sonrakiT seconds).
 const YOL_BOS = { gecit: null, gecis: 0, gecisYer: '', sicrama: null, buzKayma: 0, gelgitT: 0, gelgitUyari: -1, gelgitYon: -1, tavanDedi: '', yakinDedi: '', aclikDedi: false,
-  ejderOldu: false, ejderBoy: 0, rekorDedi: false, yeniSular: [], yeniBicim: [], nehirT: 0, nehirIpucu: false, sonraki: '', sonrakiT: 0, aydinlik: 0 };
-const yol = Object.assign({ carpT: 0 }, YOL_BOS, { yeniSular: [], yeniBicim: [] });
+  ejderOldu: false, ejderBoy: 0, rekorDedi: false, yeniSular: [], yeniBicim: [], nehirT: 0, nehirIpucu: false, sonraki: '', sonrakiT: 0, aydinlik: 0,
+  guc: null, gucT: 30, buz: 0, hizT: 0, canAlindi: false, gucSay: null }; // guc: the power-up bubble in the water (below)
+const yol = Object.assign({ carpT: 0 }, YOL_BOS, { yeniSular: [], yeniBicim: [], gucSay: { buz: 0, hiz: 0, can: 0 } });
 function gelgitDeger(t) { return clamp(1.6 * Math.sin(TAU * (t == null ? yol.gelgitT : t) / GELGIT_DONGU), -1, 1); }
 function akintiSolo(x, y) {
   let v;
@@ -1334,7 +1342,7 @@ function updateChain() {
   });
   marker.style.left = (chainPos(P.lShow) * 100).toFixed(2) + '%';
 }
-let shownLen = '', shownAc = false, shownHedef = '-', shownKucul = false, shownTest = '-';
+let shownLen = '', shownAc = false, shownHedef = '-', shownKucul = false, shownTest = '-', shownGuc = '';
 // N: the koi grows 1 m at once (no more than the water holds, so at its limit the way on opens; a dragon has
 // no limit). The round becomes a test round: nothing from it is kept (store → testBellek, no score).
 function testBuyut() {
@@ -1364,6 +1372,14 @@ function updateHud() {
     const el = $('hedef');
     el.hidden = !h;
     if (h) { $('hedefYazi').textContent = h.yazi; $('hedefDolu').style.width = (clamp(h.oran, 0, 1) * 100).toFixed(1) + '%'; el.classList.toggle('tamam', !!h.tamam); }
+  }
+  const gp = [];
+  if (mode === 'play') { if (yol.buz > 0) gp.push('❄️ ' + Math.ceil(yol.buz)); if (yol.hizT > 0) gp.push('⚡ ' + Math.ceil(yol.hizT)); }
+  const gk = gp.join(' · ');
+  if (gk !== shownGuc) {
+    shownGuc = gk; const el = $('gucRozet');
+    el.hidden = !gk; el.textContent = gk; el.classList.toggle('buz', yol.buz > 0);
+    el.classList.toggle('biter', !!gk && Math.min(yol.buz > 0 ? yol.buz : 9, yol.hizT > 0 ? yol.hizT : 9) <= 1);
   }
   updateChain();
 }
@@ -1623,7 +1639,7 @@ function resetPlayer() {
 }
 // A new round alone: no way on, no leap yet.
 function yolSifirla() {
-  Object.assign(yol, YOL_BOS, { yeniSular: [], yeniBicim: [] });
+  Object.assign(yol, YOL_BOS, { yeniSular: [], yeniBicim: [], gucSay: { buz: 0, hiz: 0, can: 0 }, gucT: rand(GUC_ILK[0], GUC_ILK[1]) });
   parilti = 0;
 }
 function startGame(fromAttract) {
@@ -1736,9 +1752,10 @@ function turBitir(gecikme, ayrinti) {
   // v: 2 marked rounds played with slower growth and size limits (from 11 November 2026); v: 3 the one journey
   // with the Dragon Gate at the end of the Ocean (12 November 2026); v: 4 every round from the pond, the waters
   // as levels with their own difficulty, each koi form with its own physics (12 November, noon); v: 5 the Shop
-  // (upgrades in gel, boosts in yardim; 12 November only); v: 6 no Shop (13 November on). ejder: the round ended as a dragon.
+  // (upgrades in gel, boosts in yardim; 12 November only); v: 6 no Shop (13 November on); v: 7 power-ups in the water
+  // (guc: how many of each the round took) and an easier Ocean (16 November on). ejder: the round ended as a dragon.
   lbSonuc = window.Hesap
-    ? (turDeneme ? Promise.resolve() : Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, bas: turBas, v: 6 }, P.ejder ? { ejder: true, ejderBoy: Math.round(P.ejderZirve * 10) / 10 } : null, ayrinti)))
+    ? (turDeneme ? Promise.resolve() : Hesap.skor(Math.round(boy * 10) / 10, Object.assign({ eaten: eatenCount, tally: Object.assign({}, tally), harita: HARITA.id, bas: turBas, v: 7, guc: Object.assign({}, yol.gucSay) }, P.ejder ? { ejder: true, ejderBoy: Math.round(P.ejderZirve * 10) / 10 } : null, ayrinti)))
         .catch(() => {})
         .then(() => Hesap.siralama({ hafta: true, limit: 100 }))
         .catch(() => null)
@@ -2500,8 +2517,9 @@ function steerPlayer(dt) {
   }
   const F = fizik();
   if (mag > 0) { turnToward(P, ang, 7.5 * F.don * dt); mag *= .55 + .45 * Math.cos(wrapA(ang - P.angle)); }
-  const ts = Math.max(0, mag) * 3.6 * P.lShow * hiz(P.lShow) * F.hiz;
-  P.speed += (ts - P.speed) * (1 - Math.exp(-dt * (ts > P.speed ? 4.5 * F.ivme : 1.4 * F.suz)));
+  const hz = yol.hizT > 0 ? GUC_HIZ : 1; // a speed power-up
+  const ts = Math.max(0, mag) * 3.6 * P.lShow * hiz(P.lShow) * F.hiz * hz;
+  P.speed += (ts - P.speed) * (1 - Math.exp(-dt * (ts > P.speed ? 4.5 * F.ivme * hz : 1.4 * F.suz)));
 }
 function autopilot(dt) {
   P.autoT -= dt;
@@ -2512,8 +2530,10 @@ function autopilot(dt) {
 function updateFish(dt) {
   const live = mode === 'play' && P.alive, Z = zorluk();
   const fleeOn = mode === 'play' || mode === 'attract';
+  const donuk = mode === 'play' && yol.buz > 0; // a freeze power-up: every fish stays where it is
   for (const f of fish) {
     if (f.dead) continue;
+    if (donuk) { f.speed = 0; f.mode = 'wander'; f.chaseT = 0; continue; }
     const dxp = P.x - f.x, dyp = P.y - f.y, dp = Math.hypot(dxp, dyp), rel = f.l / P.l;
     const tr = clamp(4.6 * Math.pow(8 / f.l, .25), 1.5, 6);
     let ta = f.angle, ts = f.cruise, turn = tr;
@@ -2555,7 +2575,7 @@ function collide() {
         if (dx * dx + dy * dy < r * r) { eat(f); break; }
       }
     } else if (rel > 1.1) {
-      if (P.invuln > 0 || P.grace > 0) continue;
+      if (P.invuln > 0 || P.grace > 0 || yol.buz > 0) continue; // (frozen fish don't bite)
       const fhx = f.x + Math.cos(f.angle) * f.l * .03, fhy = f.y + Math.sin(f.angle) * f.l * .03, fr = f.l * .1;
       for (const i of [1, 3, 5]) {
         const dx = ps[i].x - fhx, dy = ps[i].y - fhy, r = fr + pw * .85;
@@ -2628,7 +2648,7 @@ const ZORLUK = {
   golet: { avci: .6, kovala: .66, sure: 2.2 },
   nehir: { avci: .85, kovala: .74, sure: 2.7 },
   deniz: { avci: 1, kovala: .78, sure: 3 },
-  okyanus: { avci: 1.15, kovala: .82, sure: 3.4 }
+  okyanus: { avci: 1, kovala: .78, sure: 3 } // 16 Nov: was 1.15 / .82 / 3.4; in the Lab nobody got past 4.8 m, so no one had met the dragon
 };
 const zorluk = () => ZORLUK[HARITA.id] || ZORLUK.deniz;
 // Each form of the koi moves its own way (alone; the skin is only a look, the form is how it swims): how fast it
@@ -2662,7 +2682,7 @@ function suyaUlas(id) {
 function suyaGec(id) {
   P.grace = 2.5; P.invuln = 0; P.tok = 0; P.ac = false; // the new water's first fish are all food
   P.lives = canSayisi(); renderLives(); // a new water, a fresh start: all lives back
-  inciler.length = 0;
+  inciler.length = 0; yol.guc = null; yol.canAlindi = false;
   haritaKur(id);
   Object.assign(yol, { tavanDedi: '', yakinDedi: '', buzKayma: 0, gelgitT: 0, gelgitUyari: -1, gelgitYon: -1 });
   engeldenCik(P, P.lShow * .12); initSpine(P, P.lShow);
@@ -2805,7 +2825,7 @@ function update(dt) {
   cOff[0] -= sdx * .55 - 9 * dt * drift; cOff[1] -= sdy * .55 - 5 * dt * drift;
   cOff[2] -= sdx * .45 + 7 * dt * drift; cOff[3] -= sdy * .45 - 8 * dt * drift;
 
-  inciGuncelle(dt);
+  inciGuncelle(dt); gucGuncelle(dt);
   if (mode === 'oda') odaGuncelle(dt);
   else {
     updateFish(dt);
@@ -2826,6 +2846,122 @@ function update(dt) {
   flash = Math.max(0, flash - dt * 2);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) toast.hidden = true; }
   if (mode === 'play' || inPond) updateHud();
+}
+
+/* ---------- power-ups in the water (alone; 16 Nov 2026) ----------
+   Umut: "sometimes something that freezes every fish for 5 s, sometimes more speed, maybe an extra life".
+   At most one bubble at a time, every 45–75 s once the koi is 30 cm (the first round's start stays plain).
+   It waits 10 s, blinks, and is gone. buz: every fish stops for 4 s and can't bite; small ones are easy to catch,
+   big ones still can't be eaten. hiz: 60% faster for 5 s. can: only while a life is lost, gives one back
+   (never more than the water's 3), once per water. Drawn over the Ocean's dark, so it shows like a lantern. */
+const GUC = {
+  buz: { sure: 4, renk: '150,220,255', yazi: '❄️ Freeze! Every fish stops for 4 seconds' },
+  hiz: { sure: 5, renk: '255,214,90', yazi: '⚡ Speed! You’re super fast for 5 seconds' },
+  can: { sure: 0, renk: '255,120,140', yazi: '❤️ One life back!' }
+};
+const GUC_ILK = [25, 40], GUC_ARA = [45, 75], GUC_OMUR = 10, GUC_HIZ = 1.6;
+const sfxBuz = () => { titret('seviye'); tone('sine', 2093, 1568, .22, .1); tone('triangle', 3136, 2637, .3, .05, .06); tone('sine', 1047, 523, .5, .12, .1); };
+const sfxHiz = () => { titret('seviye'); tone('sawtooth', 220, 880, .28, .05); tone('sine', 523, 1568, .3, .12); };
+const sfxCan = () => { titret('seviye'); tone('sine', 659, 659, .1, .14); tone('sine', 880, 880, .12, .14, .09); tone('sine', 1319, 1319, .2, .12, .18); };
+function gucKoy(tur, x, y) { yol.guc = { tur, x, y, t: 0, r: P.lShow * .34 }; }
+function gucGuncelle(dt) {
+  if (mode !== 'play') return; // (paused: the clocks stop too)
+  if (yol.buz > 0) yol.buz = Math.max(0, yol.buz - dt);
+  if (yol.hizT > 0) {
+    yol.hizT = Math.max(0, yol.hizT - dt);
+    if (Math.random() < dt * 30) { // a trail of bubbles behind a fast koi
+      const t = P.spine[8];
+      bubbles.push({ x: t.x + rand(-1, 1) * P.lShow * .05, y: t.y + rand(-1, 1) * P.lShow * .05, vx: -Math.cos(P.angle) * P.lShow * .4, vy: -Math.sin(P.angle) * P.lShow * .4, r: rand(1.5, 3.5), life: rand(.4, .8) });
+    }
+  }
+  if (yol.sicrama || yol.gecis > 0) return;
+  const g = yol.guc;
+  if (g) {
+    g.t += dt;
+    if (g.t > GUC_OMUR) yol.guc = null;
+    else if (Math.hypot(g.x - P.x, g.y - P.y) < P.lShow * .45 + g.r) gucAl(g);
+    return;
+  }
+  if (P.l < 30 || (yol.gucT -= dt) > 0) return;
+  yol.gucT = rand(GUC_ARA[0], GUC_ARA[1]);
+  const tur = P.lives < canSayisi() && !yol.canAlindi && Math.random() < .5 ? 'can' : Math.random() < .5 ? 'buz' : 'hiz';
+  const hw = W / 2 / cam.scale, hh = H / 2 / cam.scale;
+  for (let k = 0; k < 12; k++) { // somewhere you can see it, not on top of you, not in a rock
+    const x = cam.x + rand(-.62, .62) * hw, y = cam.y + rand(-.5, .5) * hh;
+    if (Math.hypot(x - P.x, y - P.y) > P.lShow * 1.8 && !engelde(x, y, P.lShow * .4)) { gucKoy(tur, x, y); return; }
+  }
+  yol.gucT = 3; // nowhere to put it: try again soon
+}
+function gucAl(g) {
+  yol.guc = null; yol.gucSay[g.tur]++;
+  if (g.tur === 'buz') { yol.buz = GUC.buz.sure; sfxBuz(); }
+  else if (g.tur === 'hiz') { yol.hizT = GUC.hiz.sure; sfxHiz(); }
+  else { yol.canAlindi = true; P.lives = Math.min(canSayisi(), P.lives + 1); renderLives(); sfxCan(); }
+  ripples.push({ x: g.x, y: g.y, r: g.r, max: g.r * 5, life: 1 });
+  for (let i = 0; i < 10; i++) bubbles.push({ x: g.x, y: g.y, vx: rand(-1, 1) * g.r * 3, vy: rand(-1, 1) * g.r * 3, r: rand(2, 4), life: rand(.5, 1) });
+  showToast(GUC[g.tur].yazi, 'yol');
+}
+function drawGuc() {
+  const g = yol.guc;
+  if (!g || mode !== 'play') return;
+  const sc = cam.scale, sx = (g.x - cam.x) * sc + W / 2, sy = (g.y - cam.y) * sc + H / 2;
+  const r = Math.max(18, g.r * sc) * (1 + .07 * Math.sin(time * 4)), c = GUC[g.tur].renk;
+  if (sx < -r * 3 || sx > W + r * 3 || sy < -r * 3 || sy > H + r * 3) return;
+  let a = Math.min(1, g.t * 3);
+  if (GUC_OMUR - g.t < 2.5 && Math.sin(time * 16) < 0) a *= .3; // it blinks before it goes
+  ctx.save(); ctx.globalAlpha = a;
+  const glow = ctx.createRadialGradient(sx, sy, r * .6, sx, sy, r * 2.4);
+  glow.addColorStop(0, `rgba(${c},.5)`); glow.addColorStop(1, `rgba(${c},0)`);
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, r * 2.4, 0, TAU); ctx.fill();
+  const b = ctx.createRadialGradient(sx - r * .3, sy - r * .35, r * .1, sx, sy, r);
+  b.addColorStop(0, 'rgba(255,255,255,.6)'); b.addColorStop(.6, `rgba(${c},.3)`); b.addColorStop(1, `rgba(${c},.6)`);
+  ctx.fillStyle = b; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(1.5, r * .08); ctx.stroke();
+  gucSimge(g.tur, sx, sy, r * .56);
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = Math.max(1.2, r * .07); ctx.lineCap = 'round'; // a shine on the bubble
+  ctx.beginPath(); ctx.arc(sx, sy, r * .8, -2.6, -1.8); ctx.stroke();
+  ctx.restore();
+}
+// The sign in the bubble, drawn (no emoji, so it looks the same everywhere): a snowflake, a lightning bolt, a heart.
+function gucSimge(tur, x, y, s) {
+  ctx.save(); ctx.translate(x, y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (tur === 'buz') {
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1.6, s * .16);
+    for (let i = 0; i < 3; i++) {
+      ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(-s, 0); ctx.lineTo(s, 0);
+      for (const k of [-1, 1]) { ctx.moveTo(k * s * .55, 0); ctx.lineTo(k * s * .85, -s * .26); ctx.moveTo(k * s * .55, 0); ctx.lineTo(k * s * .85, s * .26); }
+      ctx.stroke();
+    }
+  } else if (tur === 'hiz') {
+    ctx.fillStyle = '#fff3b0'; ctx.strokeStyle = '#a66f00'; ctx.lineWidth = Math.max(1, s * .09);
+    ctx.beginPath(); ctx.moveTo(s * .2, -s); ctx.lineTo(-s * .55, s * .12); ctx.lineTo(-s * .05, s * .12); ctx.lineTo(-s * .25, s);
+    ctx.lineTo(s * .55, -s * .18); ctx.lineTo(s * .05, -s * .18); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#ff5d73'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, s * .09);
+    ctx.beginPath(); ctx.moveTo(0, s * .85);
+    ctx.bezierCurveTo(-s * 1.1, s * .05, -s * .75, -s * .95, 0, -s * .38);
+    ctx.bezierCurveTo(s * .75, -s * .95, s * 1.1, s * .05, 0, s * .85);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+// Frozen fish sit in a shell of ice, and frost creeps in at the screen's edges. Both blink in the last second.
+function drawBuz(list) {
+  const sc = cam.scale, k = Math.min(1, yol.buz / .3), yan = yol.buz < 1 && Math.sin(time * 18) < 0 ? .45 : 1;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = k * yan;
+  for (const f of list) { // a capsule of ice along the body, however it is bent
+    if (f === P || f.no || !f.spine) continue;
+    const s = f.spine, w = Math.max(5, f.sp.w * f.l * sc * 2.7);
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) { const x = (s[i].x - cam.x) * sc + W / 2, y = (s[i].y - cam.y) * sc + H / 2; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+    ctx.lineWidth = w + 3; ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.stroke();
+    ctx.lineWidth = w; ctx.strokeStyle = 'rgba(200,238,255,.3)'; ctx.stroke();
+  }
+  const g = ctx.createRadialGradient(W / 2, H / 2, minDim * .32, W / 2, H / 2, Math.hypot(W, H) * .6);
+  g.addColorStop(0, `rgba(195,238,255,${(.07 * k * yan).toFixed(3)})`); g.addColorStop(1, `rgba(195,238,255,${(.55 * k * yan).toFixed(3)})`);
+  ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.restore();
 }
 
 /* ---------- pearls in the water: swim over one for 3 pearls ---------- */
@@ -3513,7 +3649,7 @@ function drawKelp() {
 // The ocean: dark beyond your light, but hunters' eyes still glow. k: how dark (a dragon lifts it to 0).
 function drawDark(list, hunted, k = 1) {
   const sc = cam.scale, px = (P.x - cam.x) * sc + W / 2, py = (P.y - cam.y) * sc + H / 2;
-  const g = ctx.createRadialGradient(px, py, minDim * .24, px, py, minDim * .54);
+  const g = ctx.createRadialGradient(px, py, minDim * .3, px, py, minDim * .64); // a wider light since 16 Nov (was .24 / .54)
   g.addColorStop(0, 'rgba(1,5,14,0)'); g.addColorStop(1, `rgba(1,5,14,${(.94 * k).toFixed(3)})`);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   if (!hunted) return;
@@ -3836,6 +3972,7 @@ function render() {
     else drawFish(f, f.sp, hunted && f.l > P.l * 1.1);
   }
 
+  if (yol.buz > 0 && mode === 'play') drawBuz(list);
   if (konfeti.length) drawKonfeti();
   ctx.lineWidth = 1.5;
   for (const r of ripples) {
@@ -3851,6 +3988,7 @@ function render() {
   if (hid === 'golet') forEachPad(padTop);
   else if (hid === 'deniz') drawKelp();
   if (HARITA.dark && isik < 1) drawDark(list, hunted, 1 - isik);
+  drawGuc();
   drawKapi();
   if (yol.sicrama && benGorun) drawFish(P, meSt, false); // a leaping koi is up in the air, over the gate
   if (inRoom) drawNames();
@@ -3942,7 +4080,7 @@ try { if (localStorage.getItem('koi2.debug') === '1') window.__fish = { P, get m
     } finally { ctx = eski.ctx; W = eski.W; H = eski.H; cam.x = eski.x; cam.y = eski.y; cam.scale = eski.s; }
   }, haritaKur, cam, oda, yosunYatagi, yosunda, inciler, yenildi: () => gameOver({ sp: SPECIES[6], cool: 0 }), tally: () => tally,
     // alone (Nov 2026): the journey, rocks, currents
-    yol, buyume, akinti, gelgitDeger, engellerYakin, engelHucre, engeldenCik, gecitAc, suyaGec, sicramaBasla, ejderOl, hedefDurum, ulasilan, ejderRekor, EJDER_BOY,
+    yol, gucKoy, gucAl, GUC, buyume, akinti, gelgitDeger, engellerYakin, engelHucre, engeldenCik, gecitAc, suyaGec, sicramaBasla, ejderOl, hedefDurum, ulasilan, ejderRekor, EJDER_BOY,
     hiz, testBuyut, get turDeneme() { return turDeneme; }, ZORLUK, zorluk, FIZIK, fizik, bolumGoster, rekorBak,
     dukkanOku, dukkanaGec, dukkanIade, sahipMi, sonrakiKoi, koiAc, bitten, eat,
     get akintiOlcek() { return akintiOlcek; }, get parilti() { return parilti; }, bicimStili, bicimlerim, BICIM, koiResmi, seritSolo,
