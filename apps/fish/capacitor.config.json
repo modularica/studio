@@ -1,0 +1,11 @@
+{
+  "appId": "com.uzigames.fish",
+  "appName": "Little Koi",
+  "webDir": "www",
+  "backgroundColor": "#ffffff",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#ffffff",
+    "scrollEnabled": false
+  }
+}
