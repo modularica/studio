@@ -109,15 +109,19 @@ body{
 .icon-btn svg{width:20px;height:20px}
 .icon-btn:focus-visible{outline:2px solid var(--koi);outline-offset:2px}
 
+/* Toasts: big enough to read mid-swim (Umut, 16 Nov: "çok küçük, anlamıyorum"), on a dark card, up to two lines */
 .toast{
-  position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 100px);transform:translateX(-50%);
-  z-index:7;padding:9px 15px;border-radius:999px;max-width:calc(100% - 32px);
-  background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);
-  font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 96px);transform:translateX(-50%);
+  z-index:7;padding:11px 18px;border-radius:18px;width:max-content;max-width:min(calc(100% - 28px),440px);
+  background:rgba(4,26,29,.86);border:2px solid rgba(255,255,255,.2);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);
+  font-weight:800;font-size:17px;line-height:1.3;text-align:center;text-wrap:balance;pointer-events:none;
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
 }
-.toast.bad{border-color:var(--danger-line)}
-.toast.uzun{white-space:normal;text-align:center;border-radius:18px;width:max-content;line-height:1.3;text-wrap:balance} /* a long one wraps onto two lines */
+.toast.bad{border-color:var(--danger-line);background:rgba(58,14,12,.86)}
+.toast.yol{border-color:#f2c43a;color:#ffe7a0} /* the journey: the way on opens, a new water, a record, the dragon */
+.toast.gir{animation:toastGir .3s cubic-bezier(.34,1.5,.5,1)}
+@keyframes toastGir{from{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.92)}to{opacity:1;transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.toast.gir{animation:none}}
 
 /* Food chain strip */
 .chain{
@@ -626,7 +630,7 @@ const MAPS = {
     bank: ['#3d5a2c', 'rgba(170,160,130,.75)', 'rgba(225,246,236,.45)']
   },
   deniz: {
-    id: 'deniz', tag: 'kelp', name: 'Sea', level: 6, bas: 200, tavan: 400, blurb: 'You start at 2 m. Hide in the kelp, mind the tide, and at 4 m the deep opens to the ocean', species: [
+    id: 'deniz', tag: 'kelp', name: 'Sea', level: 6, bas: 200, tavan: 400, blurb: 'You start at 2 m. Hide in the kelp, mind the current, and at 4 m the deep opens to the ocean', species: [
       { name: 'anchovy', plural: 'anchovies', min: 3, max: 10, body: '#bccbd8', back: '#3e5f7c', fin: 'rgba(210,225,235,.8)', w: .085, prof: 'slim', pat: 'none', tail: 'fork' },
       { name: 'sardine', plural: 'sardines', min: 10, max: 18, body: '#d9e3ea', back: '#36618a', fin: 'rgba(220,232,240,.8)', w: .1, prof: 'std', pat: 'spots', spot: '#24476b', tail: 'fork' },
       { name: 'mackerel', plural: 'mackerel', min: 18, max: 30, body: '#d3e3df', back: '#2c6d68', fin: 'rgba(200,220,215,.85)', w: .1, prof: 'slim', pat: 'bars', tail: 'fork' },
@@ -692,7 +696,7 @@ let parilti = 0;     // the golden flash when the koi turns into a dragon
 // One round's journey: the way on (gecit; in the Ocean the Dragon Gate), the fade into the next water, the leap,
 // what the round opened, and a toast waiting to be shown (sonraki, after sonrakiT seconds).
 const YOL_BOS = { gecit: null, gecis: 0, gecisYer: '', sicrama: null, buzKayma: 0, gelgitT: 0, gelgitUyari: -1, gelgitYon: -1, tavanDedi: '', yakinDedi: '', aclikDedi: false,
-  ejderOldu: false, ejderBoy: 0, rekorDedi: false, yeniSular: [], yeniBicim: [], nehirT: 0, nehirIpucu: false, sonraki: '', sonrakiT: 0 };
+  ejderOldu: false, ejderBoy: 0, rekorDedi: false, yeniSular: [], yeniBicim: [], nehirT: 0, nehirIpucu: false, sonraki: '', sonrakiT: 0, aydinlik: 0 };
 const yol = Object.assign({ carpT: 0 }, YOL_BOS, { yeniSular: [], yeniBicim: [] });
 function gelgitDeger(t) { return clamp(1.6 * Math.sin(TAU * (t == null ? yol.gelgitT : t) / GELGIT_DONGU), -1, 1); }
 function akintiSolo(x, y) {
@@ -943,7 +947,9 @@ const marker = $('marker'), track = $('track');
 const startOv = $('startOv'), pauseOv = $('pauseOv'), overOv = $('overOv');
 
 /* ---------- canvas sizing ---------- */
-let W = 1, H = 1, DPR = 1, minDim = 1, waterGrad = null, vignette = null;
+let W = 1, H = 1, DPR = 1, minDim = 1, waterGrad = null, isikGrad = null, vignette = null;
+// The Ocean once a dragon swims in it (Umut, 16 Nov: the dark gets old): sunlit blue water and bright caustics.
+const ISIK = { water: ['#2a86bd', '#0c4273'], caustic: [.12, .08] };
 function resize() {
   W = cv.clientWidth || innerWidth; H = cv.clientHeight || innerHeight;
   DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -954,6 +960,8 @@ function resize() {
 function suBoya() {
   waterGrad = ctx.createRadialGradient(W * .5, H * .42, 0, W * .5, H * .5, Math.hypot(W, H) * .62);
   waterGrad.addColorStop(0, HARITA.water[0]); waterGrad.addColorStop(1, HARITA.water[1]);
+  isikGrad = ctx.createRadialGradient(W * .5, H * .42, 0, W * .5, H * .5, Math.hypot(W, H) * .62);
+  isikGrad.addColorStop(0, ISIK.water[0]); isikGrad.addColorStop(1, ISIK.water[1]);
   vignette = ctx.createRadialGradient(W / 2, H / 2, minDim * .38, W / 2, H / 2, Math.hypot(W, H) * .62);
   vignette.addColorStop(0, `rgba(${HARITA.shade},0)`); vignette.addColorStop(1, `rgba(${HARITA.shade},.6)`);
   document.documentElement.style.setProperty('--water', HARITA.water[1]);
@@ -1133,7 +1141,7 @@ addEventListener('keydown', e => {
     const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
     e.preventDefault(); kilikDegistir('at');
   }
-  if (e.code === 'KeyN' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); testBuyut(); } // +1 m, a test round
+  if (e.code === 'KeyN' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !window.uygulama) { e.preventDefault(); testBuyut(); } // +1 m, a test round
   // the secret clown: AltGr+3 (the # key on a Turkish keyboard; Option+3 on a Mac)
   if (e.code === 'Digit3' && !e.shiftKey && !e.repeat && ((e.getModifierState && e.getModifierState('AltGraph')) || e.altKey)) {
     e.preventDefault(); kilikDegistir('palyaco');
@@ -1359,7 +1367,13 @@ function updateHud() {
   }
   updateChain();
 }
-function showToast(text, bad, sure) { toast.textContent = text; toast.classList.toggle('bad', !!bad); toast.classList.toggle('uzun', text.length > 40); toast.hidden = false; toastT = sure || 2.6; }
+// tur: true = bad news (red edge), 'yol' = the journey (gold). It stays up long enough to read, kids too:
+// about 1.8 s plus a second for every 20 letters.
+function showToast(text, tur, sure) {
+  toast.textContent = text; toast.classList.toggle('bad', tur === true); toast.classList.toggle('yol', tur === 'yol');
+  toast.hidden = false; toast.classList.remove('gir'); void toast.offsetWidth; toast.classList.add('gir');
+  toastT = Math.max(sure || 0, 1.8 + text.length * .05);
+}
 /* ---------- levels and maps in the menus ---------- */
 const svgUrl = x => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 18">${x}</svg>`);
 const MAP_ICON = {
@@ -1638,7 +1652,7 @@ function startGame(fromAttract) {
   hud.hidden = false; toast.hidden = true;
   renderLives(); shownLen = ''; shownHedef = '-'; chainKey = ''; updateHud();
   bolumGoster(HARITA.id); // "Level 1 · Pond"; the very first round on this device tells the whole story once
-  if (!store.get('koi2.hikaye', false)) { store.set('koi2.hikaye', true); showToast('Every koi dreams of becoming a dragon. Grow, and swim on to the Ocean!', false, 5); }
+  if (!store.get('koi2.hikaye', false)) { store.set('koi2.hikaye', true); showToast('Every koi dreams of becoming a dragon 🐉 Eat smaller fish and grow!', 'yol', 5); }
   hesapNotu(`Yeni tur · ${SU_TR[HARITA.id]} · ${fmtLenStr(P.l)}`);
   lockOn();
 }
@@ -1669,14 +1683,14 @@ function eat(f) { // (alone only: in rooms the server decides who eats)
   labels.push({ x: m.x, y: m.y, text: '+ ' + (f.sp.short || f.sp.name), life: 1 });
   sfxGulp(f.l / P.l);
   const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
-  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); }
+  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Now you can eat ${SPECIES[idx - 1].plural || SPECIES[idx - 1].name}!`); sfxLevel(); }
   hesapNotu(`${fmtLenStr(P.l)} · ${eatenCount} balık yedi`);
   rekorBak();
 }
 // Passing your record (the biggest fish you've ever grown) in the middle of a round: said once a round.
 function rekorBak() {
   if (yol.rekorDedi || turDeneme || mode !== 'play' || best < 15 || P.zirve <= best + .05) return;
-  yol.rekorDedi = true; showToast(`New record! You passed ${fmtLenStr(best)}`); sfxLevel();
+  yol.rekorDedi = true; showToast(`⭐ New record! You passed ${fmtLenStr(best)}`, 'yol'); sfxLevel();
 }
 function bitten(f) {
   P.lives--; renderLives();
@@ -1686,7 +1700,7 @@ function bitten(f) {
   ripples.push({ x: P.x, y: P.y, r: P.lShow * .2, max: P.lShow * 1.4, life: 1 });
   sfxBite();
   if (P.lives <= 0) { gameOver(f); return; }
-  showToast(`A ${f.sp.name} bit you · ${P.lives} ${P.lives === 1 ? 'life' : 'lives'} left`, true);
+  showToast(`A ${f.sp.name} bit you! ${P.lives} ${P.lives === 1 ? 'life' : 'lives'} left`, true);
 }
 function gameOver(f) {
   mode = 'over'; P.alive = false; P.speed = 0; killer = f.sp; flash = 1;
@@ -2190,7 +2204,7 @@ function benimBoyum(l) {
   if (!P.alive || !(l > 0)) return;
   P.l = l;
   const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
-  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Every ${SPECIES[idx - 1].name} is food now`); sfxLevel(); }
+  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Now you can eat ${SPECIES[idx - 1].plural || SPECIES[idx - 1].name}!`); sfxLevel(); }
 }
 function dalga(x, y, l, n) {
   ripples.push({ x, y, r: l * .2, max: l * 1.1, life: 1 });
@@ -2231,7 +2245,7 @@ function isirildim(m) {
   ripples.push({ x: P.x, y: P.y, r: P.lShow * .2, max: P.lShow * 1.4, life: 1 });
   sfxBite();
   const sp = SPECIES[m.tur] || SPECIES[0];
-  showToast(`A ${sp.name} bit you · ${m.can} ${m.can === 1 ? 'life' : 'lives'} left`, true);
+  showToast(`A ${sp.name} bit you! ${m.can} ${m.can === 1 ? 'life' : 'lives'} left`, true);
 }
 function oldum(m) {
   if (!P.alive) return;
@@ -2570,7 +2584,7 @@ function yolculuk(dt) {
   if (tavan && !P.ejder && P.l >= tavan - .05 && yol.tavanDedi !== id) { // the water's limit: the way on opens
     yol.tavanDedi = id;
     gecitAc(); sfxLevel();
-    showToast({ golet: 'The pond is too small: find the stream', nehir: 'Too big for the river: follow the current to the sea', deniz: 'The sea is too small: find the deep', okyanus: 'The Dragon Gate is open! Swim into it' }[id]);
+    showToast({ golet: 'The way to the river is open! Follow the gold arrow', nehir: 'The way to the sea is open! Follow the gold arrow', deniz: 'The way to the ocean is open! Follow the gold arrow', okyanus: 'The Dragon Gate is open! Follow the gold arrow' }[id], 'yol', 4.5);
     hesapNotu(id === 'okyanus' ? `Ejder Kapısı açıldı · ${fmtLenStr(P.l)}` : `${SU_TR_E[id]} sığmıyor · ${fmtLenStr(P.l)}`);
   }
   const h = hedefDurum(); // almost there: say it once per water
@@ -2584,7 +2598,7 @@ function yolculuk(dt) {
   }
   if (id !== 'nehir') return;
   yol.nehirT += dt;
-  if (!yol.nehirIpucu && yol.nehirT > 7) { yol.nehirIpucu = true; showToast('Rest in calm water: behind rocks, between the fast lanes'); }
+  if (!yol.nehirIpucu && yol.nehirT > 7) { yol.nehirIpucu = true; showToast('Strong current! Rest behind rocks, where the water is calm'); }
 }
 // The way on from each water, opening at its limit: a stream out of the pond (25 m away), the river's mouth
 // downstream (30 m), a deep hole in the sea floor (30 m). The koi swims into it and comes out in the next water.
@@ -2597,8 +2611,8 @@ const GECIT = {
 };
 const SU_TR = { golet: 'Gölet', nehir: 'Nehir', deniz: 'Deniz', okyanus: 'Okyanus' }; // for the play notes (in Turkish)
 const SU_TR_E = { golet: 'Gölete', nehir: 'Nehre', deniz: 'Denize', okyanus: 'Okyanusa' }; // the same, "into the …"
-const YAKIN = { golet: 'Almost 1 m: then a stream opens to the river', nehir: 'Almost 2 m: then the river mouth opens to the sea',
-  deniz: 'Almost 4 m: then the deep opens to the ocean', okyanus: 'Almost 6 m: then the Dragon Gate opens' };
+const YAKIN = { golet: 'Almost 1 m! Then the way to the river opens', nehir: 'Almost 2 m! Then the way to the sea opens',
+  deniz: 'Almost 4 m! Then the way to the ocean opens', okyanus: 'Almost 6 m! Then the Dragon Gate opens' };
 function gecitAc() {
   const G = GECIT[HARITA.id];
   if (!G) return;
@@ -2634,7 +2648,7 @@ let bolumT = 0;
 function bolumGoster(id) {
   const el = $('bolumYazi'), i = MAP_IDS.indexOf(id);
   $('bolumAd').textContent = id === 'ejder' ? 'Dragon' : `Level ${i + 1} · ${MAPS[id].name}`;
-  $('bolumAlt').textContent = (FIZIK[id] || {}).not || '';
+  $('bolumAlt').textContent = id === 'ejder' ? 'No size limit, and the ocean lights up!' : (FIZIK[id] || {}).not || '';
   el.hidden = false; el.classList.remove('oyna'); void el.offsetWidth; el.classList.add('oyna');
   clearTimeout(bolumT); bolumT = setTimeout(() => { el.hidden = true; }, 2450);
 }
@@ -2656,14 +2670,14 @@ function suyaGec(id) {
   parilti = Math.max(parilti, .5); sfxLevel(); // the koi grows into this water's form
   for (let i = 0; i < 3; i++) ripples.push({ x: P.x, y: P.y, r: P.lShow * (.2 + i * .25), max: P.lShow * (1.6 + i * .5), life: 1 - i * .15 });
   bolumGoster(id);
-  showToast({ nehir: 'You’re a River koi now! At 2 m the sea opens', deniz: 'You’re a Sea koi now! At 4 m the deep opens', okyanus: 'You’re an Ocean koi now! At 6 m the Dragon Gate opens' }[id]);
+  showToast({ nehir: 'You’re a River koi now! Grow to 2 m to reach the sea', deniz: 'You’re a Sea koi now! Grow to 4 m to reach the ocean', okyanus: 'You’re an Ocean koi now! Grow to 6 m for the Dragon Gate' }[id], 'yol');
   hesapNotu(`${SU_TR_E[id]} geçti · ${fmtLenStr(P.l)}`);
 }
 // The next goal in this water, for the bar under the length: how far along (0–1) and what it says.
 function hedefDurum() {
   if (mode !== 'play') return null;
   const L = P.l;
-  const acik = !!yol.gecit; // once the way on is open it stays open, even if hunger takes a little off
+  const acik = !!yol.gecit; // once the way on is open it stays open (and the koi doesn't go hungry: aclik)
   switch (HARITA.id) {
     case 'golet': return acik ? { yazi: 'Find the stream!', oran: 1, tamam: true } : { yazi: 'River at 1 m', oran: (L - 10) / 90 };
     case 'nehir': return acik ? { yazi: 'Swim on to the sea!', oran: 1, tamam: true } : { yazi: 'Sea at 2 m', oran: (L - 100) / 100 };
@@ -2716,7 +2730,7 @@ function ejderOl() {
   inciEkle(50); inciTur += 50; // (the first dragon also brings Gold Dragon and Little Dragon: they come with the dragon form)
   P.lives = canSayisi(); renderLives(); // like a new water: all lives back
   labels.push({ x: P.x, y: P.y, text: '+50 pearls', life: 1.6 });
-  showToast('Your koi became a dragon! +50 pearls', false, 3.2);
+  showToast('🐉 Your koi became a dragon! +50 pearls', 'yol', 3.2);
   bolumGoster('ejder');
   if (yol.gecit) yol.gecit.son = 0; // the spout falls back into the sea
   yol.sonraki = 'Now grow the biggest fish you can!'; yol.sonrakiT = 3.4;
@@ -2725,12 +2739,14 @@ function ejderOl() {
 // A big koi that goes hungry shrinks, slowly, but never below 70% of the biggest it got this round.
 function aclik(dt) {
   P.tok += dt;
-  const ac = P.l > ACLIK.esik && P.tok > ACLIK.bekle && yol.gecis <= 0 && !yol.sicrama;
+  // Once the way on is open the koi is full: no shrinking on the way there (Umut, 16 Nov: at 90 cm with the stream
+  // still open it felt wrong). It can't grow past the water's limit anyway.
+  const ac = P.l > ACLIK.esik && P.tok > ACLIK.bekle && yol.gecis <= 0 && !yol.sicrama && !(yol.gecit && yol.gecit.son == null && !P.ejder);
   P.kuculuyor = false;
   if (ac) {
     const alt = Math.max(10, P.zirve * ACLIK.alt);
     if (P.l > alt) { P.l = Math.max(alt, P.l * (1 - ACLIK.hiz * dt)); P.kuculuyor = true; }
-    if (!yol.aclikDedi) { yol.aclikDedi = true; showToast('Hungry! Eat or you’ll shrink', true); }
+    if (!yol.aclikDedi) { yol.aclikDedi = true; showToast('Hungry! Eat something or you’ll shrink', true); }
   }
   P.ac = ac;
 }
@@ -2738,8 +2754,8 @@ function aclik(dt) {
 function gelgitUyar() {
   if (mode !== 'play') return;
   const yari = GELGIT_DONGU / 2, n = Math.floor(yol.gelgitT / yari), ic = yol.gelgitT - n * yari;
-  if (ic > yari - 5 && yol.gelgitUyari !== n) { yol.gelgitUyari = n; showToast('The tide is turning'); }
-  else if (n > 0 && ic > 4 && ic < 12 && yol.gelgitYon !== n) { yol.gelgitYon = n; showToast(gelgitDeger() > 0 ? 'The tide flows →' : 'The tide flows ←'); }
+  if (ic > yari - 5 && yol.gelgitUyari !== n) { yol.gelgitUyari = n; showToast('The current is about to turn!'); }
+  else if (n > 0 && ic > 4 && ic < 12 && yol.gelgitYon !== n) { yol.gelgitYon = n; showToast(gelgitDeger() > 0 ? 'Now the current flows →' : 'Now the current flows ←'); }
 }
 
 let last = performance.now();
@@ -2752,8 +2768,9 @@ function update(dt) {
   if (solo && HARITA.id === 'deniz') { yol.gelgitT += dt; gelgitUyar(); }
   if (yol.gecis > 0) { const once = yol.gecis; yol.gecis -= dt; if (once > .55 && yol.gecis <= .55 && mode === 'play') suyaGec(yol.gecisYer); }
   parilti = Math.max(0, parilti - dt * .8);
+  if (P.ejder && yol.aydinlik < 1) yol.aydinlik = Math.min(1, yol.aydinlik + dt / 2.5); // the dragon lights up the ocean
   if (yol.gecit && yol.gecit.son != null && (yol.gecit.son += dt) > 1.6) yol.gecit = null; // the spout is gone after the leap
-  if (yol.sonraki && (yol.sonrakiT -= dt) <= 0) { if (mode === 'play') showToast(yol.sonraki); yol.sonraki = ''; }
+  if (yol.sonraki && (yol.sonrakiT -= dt) <= 0) { if (mode === 'play') showToast(yol.sonraki, 'yol'); yol.sonraki = ''; }
   if (yol.sicrama) sicramaGuncelle(dt);
   else if (mode === 'play' || inPond) steerPlayer(dt); else if (mode === 'attract') autopilot(dt);
   if (!yol.sicrama && mode !== 'over' && (mode !== 'oda' || inPond)) {
@@ -3493,18 +3510,18 @@ function drawKelp() {
     ctx.globalAlpha = 1;
   }
 }
-// The ocean: dark beyond your light, but hunters' eyes still glow.
-function drawDark(list, hunted) {
+// The ocean: dark beyond your light, but hunters' eyes still glow. k: how dark (a dragon lifts it to 0).
+function drawDark(list, hunted, k = 1) {
   const sc = cam.scale, px = (P.x - cam.x) * sc + W / 2, py = (P.y - cam.y) * sc + H / 2;
   const g = ctx.createRadialGradient(px, py, minDim * .24, px, py, minDim * .54);
-  g.addColorStop(0, 'rgba(1,5,14,0)'); g.addColorStop(1, 'rgba(1,5,14,.94)');
+  g.addColorStop(0, 'rgba(1,5,14,0)'); g.addColorStop(1, `rgba(1,5,14,${(.94 * k).toFixed(3)})`);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   if (!hunted) return;
   ctx.fillStyle = '#ff6a50';
   for (const f of list) {
     if (f === P || !f.g || !(f.l > P.l * 1.1)) continue;
     const e = frameAt(f.g, .45), er = Math.max(1.6, f.g.len * .02), nx = -e.ty * e.w * .72, ny = e.tx * e.w * .72;
-    ctx.globalAlpha = .65 + .35 * Math.sin(time * 5 + (f.phase || 0));
+    ctx.globalAlpha = (.65 + .35 * Math.sin(time * 5 + (f.phase || 0))) * k;
     ctx.beginPath(); ctx.arc(e.x + nx, e.y + ny, er, 0, TAU); ctx.arc(e.x - nx, e.y - ny, er, 0, TAU); ctx.fill();
   }
   ctx.globalAlpha = 1;
@@ -3748,14 +3765,14 @@ function hedefOku(wx, wy, ad, d, wr) {
   const ax = cx + c * t, ay = cy + s * t;
   ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
   ctx.globalAlpha = .85 + .15 * Math.sin(time * 4); ctx.fillStyle = '#f2c43a';
-  ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-7, -11); ctx.lineTo(-2, 0); ctx.lineTo(-7, 11); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(19, 0); ctx.lineTo(-9, -14); ctx.lineTo(-3, 0); ctx.lineTo(-9, 14); ctx.closePath(); ctx.fill();
   ctx.restore();
   const m = Math.round(Math.max(0, d) / 100), text = m >= 1 ? `${ad} · ${m} m` : ad;
-  ctx.font = '700 12px Figtree, system-ui, sans-serif'; ctx.textBaseline = 'middle';
-  let lx = ax, ly = ay - s * 26;
-  if (Math.abs(c) > .7) { ctx.textAlign = c < 0 ? 'left' : 'right'; lx = ax - c * 22; ly = ay; } // beside an arrow on the left or right edge
-  else { ctx.textAlign = 'center'; lx = clamp(ax, 64, W - 64); }
-  ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(5,28,30,.75)'; ctx.strokeText(text, lx, ly);
+  ctx.font = '800 15px Figtree, system-ui, sans-serif'; ctx.textBaseline = 'middle';
+  let lx = ax, ly = ay - s * 30;
+  if (Math.abs(c) > .7) { ctx.textAlign = c < 0 ? 'left' : 'right'; lx = ax - c * 27; ly = ay; } // beside an arrow on the left or right edge
+  else { ctx.textAlign = 'center'; lx = clamp(ax, 84, W - 84); }
+  ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(5,28,30,.75)'; ctx.strokeText(text, lx, ly);
   ctx.fillStyle = '#ffe7a0'; ctx.fillText(text, lx, ly);
   ctx.globalAlpha = 1;
 }
@@ -3763,9 +3780,12 @@ function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = waterGrad; ctx.fillRect(0, 0, W, H);
+  const isik = HARITA.dark && mode !== 'oda' ? yol.aydinlik : 0; // 0..1: a dragon has lit up the Ocean
+  if (isik > 0) { ctx.globalAlpha = isik; ctx.fillStyle = isikGrad; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
   if (causticPat) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    causticLayer(cOff[0], cOff[1], 1.7, HARITA.caustic[0]); causticLayer(cOff[2], cOff[3], 1.15, HARITA.caustic[1]);
+    causticLayer(cOff[0], cOff[1], 1.7, HARITA.caustic[0] + (ISIK.caustic[0] - HARITA.caustic[0]) * isik);
+    causticLayer(cOff[2], cOff[3], 1.15, HARITA.caustic[1] + (ISIK.caustic[1] - HARITA.caustic[1]) * isik);
     ctx.restore();
   }
   const sc = cam.scale, hid = HARITA.id;
@@ -3778,7 +3798,7 @@ function render() {
       const k = akinti(s.x, s.y) / tam, w = s.s * (1.5 + 9 * Math.abs(k)), x = (s.x - cam.x) * sc + W / 2;
       ctx.globalAlpha = s.a * .8; ctx.fillRect(k < 0 ? x - w : x, (s.y - cam.y) * sc + H / 2, w, Math.max(.8, s.s * .6));
     }
-  } else for (const s of specks) { ctx.globalAlpha = HARITA.dark ? Math.min(1, s.a * 2) : s.a; ctx.fillRect((s.x - cam.x) * sc + W / 2, (s.y - cam.y) * sc + H / 2, s.s, s.s); }
+  } else for (const s of specks) { ctx.globalAlpha = HARITA.dark ? Math.min(1, s.a * (2 - isik)) : s.a; ctx.fillRect((s.x - cam.x) * sc + W / 2, (s.y - cam.y) * sc + H / 2, s.s, s.s); }
   ctx.globalAlpha = 1;
   if (hid === 'golet') { ctx.fillStyle = 'rgba(2,20,22,.24)'; forEachPad(padShadow); }
   drawAkim(); drawGecit(); drawEngeller();
@@ -3830,7 +3850,7 @@ function render() {
 
   if (hid === 'golet') forEachPad(padTop);
   else if (hid === 'deniz') drawKelp();
-  if (HARITA.dark) drawDark(list, hunted);
+  if (HARITA.dark && isik < 1) drawDark(list, hunted, 1 - isik);
   drawKapi();
   if (yol.sicrama && benGorun) drawFish(P, meSt, false); // a leaping koi is up in the air, over the gate
   if (inRoom) drawNames();
