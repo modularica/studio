@@ -14,7 +14,7 @@
   var Review = C.registerPlugin('Review');
   // Ours too: ios/App/App/CloudSavePlugin.swift, copies of the save in iCloud and UserDefaults.
   var CloudSave = C.registerPlugin('CloudSave');
-  // App Store Connect leaderboards (since 1.1, Little Koi v2's rules): all time and this week (recurring, from Monday).
+  // App Store Connect leaderboards (since 1.1, Little Koi v2's rules): all time and this week (recurring, resets every Friday 00:00 Turkey time).
   // Score = the round's biggest length in whole centimetres; App Store Connect shows it in metres (Fixed Point,
   // 2 decimals, suffix " m": 327 → 3.27 m), like the game does. 1.0 and 1.0.1 sent millimetres shown as cm to
   // com.uzigames.fish.biggest (85,171.6 cm was hard to read); that leaderboard is archived with 1.1.
