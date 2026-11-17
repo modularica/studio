@@ -15,7 +15,9 @@
   // Ours too: ios/App/App/CloudSavePlugin.swift, copies of the save in iCloud and UserDefaults.
   var CloudSave = C.registerPlugin('CloudSave');
   // App Store Connect leaderboards (since 1.1, Little Koi v2's rules): all time and this week (recurring, from Monday).
-  // Score = the round's biggest length in mm. 1.0 and 1.0.1 sent to com.uzigames.fish.biggest (archived with 1.1).
+  // Score = the round's biggest length in whole centimetres; App Store Connect shows it in metres (Fixed Point,
+  // 2 decimals, suffix " m": 327 → 3.27 m), like the game does. 1.0 and 1.0.1 sent millimetres shown as cm to
+  // com.uzigames.fish.biggest (85,171.6 cm was hard to read); that leaderboard is archived with 1.1.
   var LIDERLIK = 'com.uzigames.littlekoi.biggest', HAFTALIK = 'com.uzigames.littlekoi.weekly';
   var sonYut = 0;
   function sessiz(p) { if (p && p.catch) p.catch(function () {}); return p; }
@@ -23,8 +25,8 @@
   function gonder(cm) {
     if (!window.uygulama.gameCenter || !(cm > 0)) return;
     [LIDERLIK, HAFTALIK].forEach(function (id) {
-      GameCenter.submitScore({ leaderboardId: id, score: Math.round(cm * 10) }).then(
-        function (r) { console.log('[gamecenter] score', id, Math.round(cm * 10), JSON.stringify(r)); },
+      GameCenter.submitScore({ leaderboardId: id, score: Math.round(cm) }).then(
+        function (r) { console.log('[gamecenter] score', id, Math.round(cm), JSON.stringify(r)); },
         function (e) { console.log('[gamecenter] score failed', id, e && e.message); });
     });
   }
