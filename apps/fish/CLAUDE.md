@@ -43,6 +43,7 @@ Oyunda değişiklik yaptıktan sonra `npm run sync` ve Xcode'da yeniden ▶︎.
 - Tüm zamanlar: Classic. Reference name "Biggest Koi v2", ID `com.uzigames.littlekoi.biggest`.
 - Haftalık: Recurring. Reference name "Biggest Koi This Week", ID `com.uzigames.littlekoi.weekly`. Süre 7 gün, her 7 günde yeniden; başlangıç bir pazartesi 00:00 UTC (Türkiye 03:00).
 - İkisinde de: Score Format Fixed Point, 2 ondalık (uygulama santimetre yollar, tablo metre gösterir: 327 → 3.27 m); Score Range boş; Sort Order High to Low; Score Submission Type Best Score; English localization: display name "Biggest Koi" / "Biggest Koi This Week", Score Format Suffix " m" (başında boşluk; tekil ve çoğul aynı).
+- Resimler (English localization → Image): `gamecenter/biggest-koi.png` (tüm zamanlar: okyanusta ejder) ve `gamecenter/biggest-koi-this-week.png` (haftalık: gölette Kohaku); ikisi aynı duruşta, koi ejder oluyor. Oyunun kendi çiziminden (HUD gizli), 1024×1024 RGB PNG; balık ortadaki 1024×640 bantta, kırpılsa da görünür.
 - Tablolar 1.1'in Draft Submission'ına eklenir (ilk tablo gibi). Eski `com.uzigames.fish.biggest` 1.1 yayına çıkınca arşivlenir.
 
 ## TestFlight
