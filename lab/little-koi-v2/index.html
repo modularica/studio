@@ -115,10 +115,11 @@ body{
 .icon-btn svg{width:20px;height:20px}
 .icon-btn:focus-visible{outline:2px solid var(--koi);outline-offset:2px}
 
-/* Toasts: big enough to read mid-swim (Umut, 16 Nov: "çok küçük, anlamıyorum"), on a dark card, up to two lines */
+/* Toasts: big enough to read mid-swim (Umut, 16 Nov: "çok küçük, anlamıyorum"), on a dark card, up to two lines.
+   border-box: without it the padding pushed long toasts past both screen edges (TestFlight, 17 Nov) */
 .toast{
   position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 96px);transform:translateX(-50%);
-  z-index:7;padding:11px 18px;border-radius:18px;width:max-content;max-width:min(calc(100% - 28px),440px);
+  z-index:7;padding:11px 18px;border-radius:18px;box-sizing:border-box;width:max-content;max-width:min(calc(100% - 32px),440px);
   background:rgba(4,26,29,.86);border:2px solid rgba(255,255,255,.2);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);
   font-weight:800;font-size:17px;line-height:1.3;text-align:center;text-wrap:balance;pointer-events:none;
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
@@ -251,9 +252,6 @@ body{
 .hk small{font-size:10.5px;font-weight:700;color:var(--ink-dim);white-space:nowrap}
 .hk.ejder-kart{color:#f6d36a}
 /* the journey on the menu: every round starts in the pond; waters you haven't swum to yet are dim */
-.yolculuk{list-style:none;margin:0;padding:0}
-.yolculuk .hk{cursor:default}
-.yolculuk .hk.yok{filter:saturate(.35) brightness(.75)}
 /* "Level 2 · River" as you swim into a new water */
 .bolum{position:fixed;left:0;right:0;top:28%;z-index:6;display:grid;justify-items:center;gap:8px;padding:0 20px;pointer-events:none;text-align:center;text-shadow:0 2px 10px rgba(3,20,22,.75)}
 .bolum[hidden]{display:none}
@@ -268,7 +266,6 @@ body{
 .hk.goster{cursor:default}
 .hk:disabled small{color:var(--ink)}
 .hk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.harita-not{margin:-6px 0 0;font-size:13px;font-weight:600;color:var(--ink-dim);min-height:1.3em;text-wrap:balance}
 .xp-son{display:grid;gap:6px;justify-items:center;width:100%;max-width:340px}
 .xp-son .sv-bar{width:100%}
 .xp-son b{color:var(--koi)}
@@ -325,6 +322,11 @@ body{
 #lbList{max-height:min(56vh,560px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
 #lbOv{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}
 body.lb-acik .chain{display:none}
+/* the menu and My koi without the food chain strip: it belongs to the game (TestFlight, 17 Nov: "too much on the start screen") */
+body:has(#startOv:not([hidden])) .chain,body:has(#koiOv:not([hidden])) .chain{display:none}
+/* My koi and Leaderboard side by side under Start */
+.ikincil{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.ikincil .btn{margin:0}
 .lb-not{margin:-6px 0 0;font-size:14px;font-weight:600;color:var(--ink-dim);text-wrap:balance}
 .lb-empty{color:var(--ink-dim);font-size:14px;padding:8px 0}
 .lb-rank{margin:8px 0 0;font-size:14px;font-weight:700;color:var(--koi);min-height:1.3em}
@@ -456,17 +458,13 @@ body:not(.odada) #cikBtn{display:none}
   <div class="panel">
     <h1 class="title iki" aria-label="Little Koi v2"><b><span>L</span><span>i</span><span>t</span><span>t</span><span>l</span><span>e</span></b><b><span>K</span><span>o</span><span>i</span><i class="surum">v2</i></b></h1>
     <p class="lede">Every koi dreams of becoming a dragon. Eat smaller fish, grow from the Pond to the Ocean, and leap the Dragon Gate.</p>
-    <div class="how"><span class="tch">Put your thumb anywhere and drag to swim</span><span class="ptr">Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
-    <div class="seviye" id="seviye">
-      <div class="sv-ust"><span class="sv-lv" id="svLv">Next koi</span><span class="sv-xp" id="svXp"></span></div>
-      <div class="sv-bar" aria-hidden="true"><i id="svBar"></i></div>
-    </div>
-    <ol class="haritalar yolculuk" id="haritalar" aria-label="Your journey"></ol>
-    <p class="harita-not" id="haritaNot"></p>
+    <div class="how" id="nasil"><span class="tch">Put your thumb anywhere and drag to swim</span><span class="ptr">Drag anywhere to swim</span><span class="kbd">Arrow keys work too</span></div>
     <button class="btn" id="startBtn" type="button">Start swimming</button>
-    <button class="btn ghost koi-btn" id="koiBtn" type="button"><span>My koi</span><span class="inci-say"><i class="inci-ikon" aria-hidden="true"></i><b id="inciBtn">0</b></span></button>
-    <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
-    <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
+    <div class="ikincil">
+      <button class="btn ghost koi-btn" id="koiBtn" type="button"><span>My koi</span><span class="inci-say"><i class="inci-ikon" aria-hidden="true"></i><b id="inciBtn">0</b></span></button>
+      <button class="btn ghost" id="lbBtn" type="button" hidden>Leaderboard</button>
+      <button class="btn ghost" id="odaBtn" type="button" hidden>Play with friends</button>
+    </div>
     <p class="best" id="startBest" hidden></p>
   </div>
 </section>
@@ -1172,13 +1170,10 @@ function joyBasla(e) {
   joyKonum(); joyEl.classList.add('on');
 }
 function joyAyarla(x, y) {
-  let dx = x - joy.cx, dy = y - joy.cy, d = Math.hypot(dx, dy);
-  const takip = joy.R * 1.35;
-  if (d > takip) { // dragged well past the ring: the stick follows the thumb
-    const k = (d - takip) / d;
-    joy.cx += dx * k; joy.cy += dy * k; dx -= dx * k; dy -= dy * k; d = takip;
-    joyKonum();
-  }
+  // The stick stays where the thumb landed; past the ring the knob waits at the rim. (Until 17 Nov it followed
+  // a far-dragged thumb; on TestFlight Umut found steering hard when the centre moved with it.)
+  let dx = x - joy.cx, dy = y - joy.cy;
+  const d = Math.hypot(dx, dy);
   if (d > joy.R) { dx = dx / d * joy.R; dy = dy / d * joy.R; }
   joy.dx = dx; joy.dy = dy;
   joyKnob.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
@@ -1470,29 +1465,6 @@ function haritaKartlari(box, secili, L, sec) {
   });
   box.replaceChildren(...kartlar);
 }
-// The menu: the next koi pattern to buy with pearls (no "level" here: the waters are the levels), and the journey,
-// Level 1 Pond to Level 4 Ocean and the dragon, lit where your koi has been.
-function seviyeCiz() {
-  const next = sonrakiKoi(), inci = inciSay();
-  $('svLv').textContent = next ? `Next koi: ${next.name}` : 'Every koi is yours';
-  $('svXp').textContent = !next ? '' : inci >= next.price ? 'Ready in My koi!' : `${inci} / ${next.price} pearls`;
-  $('svBar').style.width = (next ? Math.min(1, inci / next.price) * 100 : 100).toFixed(1) + '%';
-  yolCiz();
-}
-function yolCiz() {
-  const sular = ulasilan();
-  const parca = (ad, alt, renk, ikon, gitti, cls) => {
-    const li = mk('li', 'hk' + (gitti ? '' : ' yok') + (cls ? ' ' + cls : ''));
-    li.style.setProperty('--h1', renk[0]); li.style.setProperty('--h2', renk[1]); li.style.setProperty('--hi', `url("${ikon}")`);
-    li.append(ad, mk('small', null, alt));
-    li.setAttribute('aria-label', `${ad}, ${alt}${gitti ? '' : ', not reached yet'}`);
-    return li;
-  };
-  $('haritalar').replaceChildren(
-    ...MAP_IDS.map((id, i) => parca(MAPS[id].name, `Level ${i + 1}`, MAPS[id].water, MAP_ICON[id], id === 'golet' || sular.includes(id))),
-    parca('Dragon', 'no limit', EJDER_RENK, MAP_ICON.ejder, ejderAcik(), 'ejder-kart'));
-  $('haritaNot').textContent = 'Every round starts in the Pond. River at 1\u00a0m, Sea at 2\u00a0m, Ocean at 4\u00a0m, then the Dragon Gate at 6\u00a0m.';
-}
 // Switches the water: its fish, colours and food chain.
 function haritaKur(id) {
   if (!MAPS[id]) id = 'golet';
@@ -1616,9 +1588,26 @@ $('koiAl').addEventListener('click', () => {
 });
 $('koiBtn').addEventListener('click', () => { ensureAudio(); koiAc(); });
 $('koiGeri').addEventListener('click', () => { hepsiniGizle(); renderStartBest(); startOv.hidden = false; $('koiBtn').focus({ preventScroll: true }); });
+// Like iOS: a swipe from the left edge of the screen to the right goes back from My koi and the leaderboard (TestFlight, 17 Nov)
+{
+  let kay = null;
+  const geriDugme = () => !$('koiOv').hidden ? $('koiGeri') : !$('lbOv').hidden ? $('lbClose') : null;
+  addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    kay = e.touches.length === 1 && t.clientX < 40 && geriDugme() ? { x: t.clientX, y: t.clientY } : null;
+  }, { passive: true });
+  addEventListener('touchmove', e => {
+    if (!kay) return;
+    const t = e.touches[0], dx = t.clientX - kay.x, dy = Math.abs(t.clientY - kay.y);
+    if (dy > 40 && dy > dx) { kay = null; return; } // scrolling the patterns, not going back
+    if (dx > 70 && dy < dx * .6) { kay = null; const b = geriDugme(); if (b) b.click(); }
+  }, { passive: true });
+  addEventListener('touchend', () => { kay = null; }, { passive: true });
+  addEventListener('touchcancel', () => { kay = null; }, { passive: true });
+}
 
 function renderStartBest() {
-  seviyeCiz();
+  $('nasil').hidden = !!store.get('koi2.hikaye', false); // the thumb hint until the first round
   if (!sahipMi(seciliDesen)) seciliDesen = 'kohaku';
   $('inciBtn').textContent = inciSay();
   const el = $('startBest');
@@ -1699,7 +1688,7 @@ function eat(f) { // (alone only: in rooms the server decides who eats)
   labels.push({ x: m.x, y: m.y, text: '+ ' + (f.sp.short || f.sp.name), life: 1 });
   sfxGulp(f.l / P.l);
   const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
-  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Now you can eat ${SPECIES[idx - 1].plural || SPECIES[idx - 1].name}!`); sfxLevel(); }
+  if (idx > P.topIdx) { P.topIdx = idx; sfxLevel(); } // no toast: the food chain strip shows it (Umut, 17 Nov)
   hesapNotu(`${fmtLenStr(P.l)} · ${eatenCount} balık yedi`);
   rekorBak();
 }
@@ -2221,7 +2210,7 @@ function benimBoyum(l) {
   if (!P.alive || !(l > 0)) return;
   P.l = l;
   const idx = SPECIES.filter(s => s.max <= P.l * .9).length;
-  if (idx > P.topIdx) { P.topIdx = idx; showToast(`Now you can eat ${SPECIES[idx - 1].plural || SPECIES[idx - 1].name}!`); sfxLevel(); }
+  if (idx > P.topIdx) { P.topIdx = idx; sfxLevel(); } // no toast: the food chain strip shows it (Umut, 17 Nov)
 }
 function dalga(x, y, l, n) {
   ripples.push({ x, y, r: l * .2, max: l * 1.1, life: 1 });
