@@ -159,8 +159,9 @@ with sync_playwright() as p:
         if not result_open(page): fails.append(f'{lid}: gerçek zamanlı oynanmadı')
         else: page.click('#btn-retry'); page.wait_for_timeout(200)
 
-    # Hızlı ileri: Fast basılı tutulunca makine 4 kat hızlı, bırakınca normal
-    page.evaluate(f"KM_GAME.loadLevel({IDS.index('posta')})"); page.wait_for_timeout(200)
+    # Hızlı ileri: Fast basılı tutulunca makine 4 kat hızlı, bırakınca normal. Sabit flipper'lı çizim: top dursa da
+    # makine durmaz (elle kumandalı cihaz varken "The ball stopped" yalnız uyarı), ölçüm penceresi boyunca çalışır.
+    page.evaluate(f"KM_GAME.loadLevel({IDS.index('pinball')})"); page.wait_for_timeout(200)
     page.evaluate("KM_GAME.G.on = false"); page.evaluate(PLACE, [])
     page.click('#run'); page.wait_for_timeout(300)
     steps = lambda: page.evaluate("KM_GAME.S.sim ? KM_GAME.S.sim.steps : 0")
@@ -185,10 +186,12 @@ with sync_playwright() as p:
         page.screenshot(path=f'{OUT}/{name}.png')
         if run_ms and page.evaluate("KM_GAME.S.mode") == 'run': page.click('#run'); page.wait_for_timeout(150)
         if result_open(page): page.click('#btn-retry'); page.wait_for_timeout(150)
-    for lid in ['zikzak', 'kopru', 'havada-yay', 'ilk-bant', 'bant', 'buyuk-makine', 'kule', 'hava-akimi']:
+    for lid in ['zikzak', 'kopru', 'havada-yay', 'ilk-bant', 'bant', 'buyuk-makine', 'kule', 'hava-akimi-2', 'cift-yumruk']:
         show(lid, 0, f'n1-{lid}')
     show('teleferik', 1, 'd4-tele-run', 1500)
     show('degirmen', 1, 'd5-degirmen-run', 4200)
+    show('iki-is', 0, 'd6-iki-is-run', 3000)
+    show('fitil', 0, 'd7-fitil-run', 2500)
     page.evaluate(f"KM_GAME.loadLevel({IDS.index('domino')})"); page.wait_for_timeout(150)
     page.evaluate("KM_GAME.G.on = false"); page.evaluate(PLACE, [])
     page.click('#run'); page.wait_for_timeout(1500)

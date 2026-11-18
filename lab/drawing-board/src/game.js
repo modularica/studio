@@ -1059,8 +1059,23 @@
     }
   }
   // Tahtanın sağ üst köşesinde küçük güneş: mercekli çizimde ışığın tepeden geldiğini anlatır.
-  function drawSun(c, Vw, time) {
-    const x = W - 0.55, y = H - 0.55, a0 = reduceMotion ? 0 : time * 0.4;
+  // Güneşin yeri: tepe sırasında duvara değmeyen en sağdaki yer. Tavan bütün tahtayı kapatıyorsa güneş çizilmez
+  // (Hot Air: tepsideki mercek şaşırtma, ışık hiçbir yerden girmiyor).
+  function sunSpot(lv) {
+    if (sunSpot.lv === lv && sunSpot.w === lv.walls) return sunSpot.at;
+    const box = w => Array.isArray(w[0]) ? [Math.min(...w.map(q => q[0])), Math.min(...w.map(q => q[1])), Math.max(...w.map(q => q[0])), Math.max(...w.map(q => q[1]))] : w;
+    const walls = (lv.walls || []).map(box);
+    let at = null;
+    for (let cx = W - 1; cx >= 0 && !at; cx--) {
+      const x = cx + 0.45, y = H - 0.55;
+      if (!walls.some(w => w[0] < x + 0.42 && w[2] > x - 0.42 && w[1] < y + 0.42 && w[3] > y - 0.42)) at = [x, y];
+    }
+    sunSpot.lv = lv; sunSpot.w = lv.walls; sunSpot.at = at;
+    return at;
+  }
+
+  function drawSun(c, Vw, at, time) {
+    const [x, y] = at, a0 = reduceMotion ? 0 : time * 0.4;
     c.beginPath(); c.arc(x, y, 0.2, 0, TAU); fill(c, rgba(C.ball, 0.85)); stroke(c, Vw, GOLD, LW.thin);
     c.beginPath();
     for (let i = 0; i < 8; i++) { const a = a0 + i * TAU / 8; c.moveTo(x + Math.cos(a) * 0.28, y + Math.sin(a) * 0.28); c.lineTo(x + Math.cos(a) * 0.4, y + Math.sin(a) * 0.4); }
@@ -1254,7 +1269,7 @@
     for (const it of items) byId[it.p.id] = it.p;
     // Güneş ışığı (mercek) ve kayışlar parçaların arkasında.
     const lensItems = items.filter(it => it.p.type === 'lens');
-    if (lensItems.length || ((L.tray || {}).lens > 0)) drawSun(c, V, time);
+    if (lensItems.length || ((L.tray || {}).lens > 0)) { const at = sunSpot(L); if (at) drawSun(c, V, at, time); }
     for (const it of lensItems) drawSunlight(c, V, it.p, run ? it.rt : sunMemo(it.p, items), run, time);
     if (run) for (const [a, b] of S.sim.belts) drawBeltLoop(c, V, [a.x + 0.5, a.y + 0.5], [b.x + 0.5, b.y + 0.5], a.spin, time, 1);
     else {
