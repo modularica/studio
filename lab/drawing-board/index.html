@@ -2465,10 +2465,11 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     {
       id: 'patlat-zipla', hard: true,
       name: 'Pop and Hop', book: 4,
-      task: 'Fly the balloon along the ceiling, pop it, and bounce the ball up into the cup on the tower.',
+      task: 'Fly the balloon along the ceiling, pop it, and bounce the ball up into the cup on the tower. The cup has a roof.',
       start: { x: 1.5, y: 0.68 },
       balloons: [{ ball: 0, len: 1.1 }],
-      walls: [[0, 0, 16, 0.4], [0, 9.5, 16, 9.8], [3, 0.4, 3.2, 5], [11, 0.4, 16, 4.6]],
+      // Kovanın çatısı: alçak pervaneyle hızlanan balon patlayınca top yaydan sekmeden kovaya uçuyordu (pervane + iğne, iki parça).
+      walls: [[0, 0, 16, 0.4], [0, 9.5, 16, 9.8], [3, 0.4, 3.2, 5], [11, 0.4, 16, 4.6], [10.8, 6.6, 13.6, 6.9]],
       cup: { x: 11, y: 4.6, w: 2, back: { side: 'r', h: 1.6 } },
       tray: { fan: 1, sensor: 1, pin: 1, spring: 1, cutter: 1, ramp: 1, bumper: 1 },
       badges: [{ k: 'solve' }, { k: 'auto' }],
