@@ -342,6 +342,27 @@
     bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
     cutter(t, h) { hiss(t, 0.16, 0.035, 'highpass', 5200, 0, X.sfx); wood(t + 0.01, 0.06, 2600, X.sfx); hiss(t + 0.05, 0.1, 0.03, 'highpass', 6500, 0, X.sfx); mallet(tone(h.song, h.c, 1, 72, 84), t + 0.05, 0.07, 0, X.sfx); },
     crank(t, h) { for (let i = 0; i < 4; i++) wood(t + i * 0.07, 0.05 - i * 0.008, 2400 + i * 200, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.1, 0, X.sfx); },
+    // Motor çalıştı: alçaktan yükselen uğultu ve akordan bir nota.
+    motor(t, h) {
+      const f = mtof(tone(h.song, h.c, 0, 36, 48)), lp = X.ac.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 900; lp.connect(X.sfx);
+      const g = gain(lp), o = X.ac.createOscillator();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.5, t); o.frequency.exponentialRampToValueAtTime(f * 2, t + 0.35);
+      env(g, t, 0.04, 0.07, 0.4); o.connect(g); o.start(t); o.stop(t + 0.5);
+      mallet(tone(h.song, h.c, 1, 60, 72), t + 0.3, 0.1, 0, X.sfx);
+    },
+    // Makaranın kancası açıldı: metal tık ve iki nota aşağı.
+    unhook(t, h) { wood(t, 0.08, 2600, X.sfx); mallet(tone(h.song, h.c, 2, 67, 79), t + 0.02, 0.1, 0, X.sfx); mallet(tone(h.song, h.c, 0, 60, 72), t + 0.12, 0.08, 0, X.sfx); },
+    button(t, h) { wood(t, 0.07, 1500, X.sfx); mallet(tone(h.song, h.c, 2, 67, 79), t + 0.01, 0.1, 0, X.sfx); },
+    // İp yandı: çıtırtılar ve kısa bir hışırtı.
+    burn(t, h, o) {
+      const x = clamp((o && o.x) || 0, -0.7, 0.7);
+      for (let i = 0; i < 6; i++) hiss(t + i * 0.035 + (i % 2) * 0.012, 0.05 + 0.02 * (i % 3), 0.02, 'bandpass', 2600 + i * 500, 1.4, X.sfx);
+      hiss(t, 0.08, 0.3, 'lowpass', 1200, 0, X.sfx);
+      mallet(tone(h.song, h.c, 0, 60, 72), t + 0.05, 0.09, x, X.sfx);
+    },
+    // Mum tutuştu: yükselen hışırtı ve çan.
+    ignite(t, h) { hiss(t, 0.1, 0.35, 'bandpass', 600, 1.2, X.sfx, 2600); bell(tone(h.song, h.c, 1, 79, 91), t + 0.12, 0.06, X.sfx, 0.8); },
     pop(t, h, o) {
       const x = clamp((o && o.x) || 0, -0.7, 0.7);
       hiss(t, 0.34, 0.07, 'bandpass', 1400, 0.7, X.sfx); thump(t, 0.2, 180, 60, 0.08, X.sfx);

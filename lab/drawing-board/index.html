@@ -721,6 +721,10 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     bumpMin: 9,
     balR: 0.42, balRise: 1.4, balK: 6, balMaxF: 3, balFanV: 2.6, balTop: 10.5, hookR: 0.08,
     gearW: 2.4, gearR: 0.42, liftV: 1.6, liftMax: 3, liftTilt: 0.06,
+    pulleyR: 0.36, winchV: 1.6, winchMin: 0.1, winchMax: 7, winchLet: 0.45, winchDamp: 8, btnH: 0.025,
+    // Ateş ve ışık: ip alevde burnFlame, mercek odağında burnLens saniyede yanar; sönük mum alevin yanında
+    // lightFlame, odakta lightLens saniyede tutuşur. Odak merceğin ortasından focusDown aşağıda.
+    burnFlame: 0.5, burnLens: 0.9, lightFlame: 0.45, lightLens: 0.8, focusR: 0.22, focusDown: 1.75,
     restTime: 1.5,
     maxTime: 40,
   };
@@ -756,8 +760,24 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     lift: { orients: ['r', 'l'], w: 2, h: 1 },
     // Rüzgâr türbini: açık bir pervanenin kuşağındayken kendi kendine döner ('cw' / 'ccw'), yanındaki dişliyi çevirir.
     turbine: { orients: ['cw', 'ccw'], w: 1, h: 1 },
+    // Kasnak: kayış takılan dişli. Yanındaki dişlilere dişli gibi geçer (ters döner); kayışla bağlı iki kasnak
+    // ne kadar uzakta olursa olsun aynı yöne döner. Kayış sensör bağlantısı gibi `link` (öbür kasnağın kimliği).
+    pulley: { orients: ['-'], w: 1, h: 1, belt: true },
+    // Motor: açılınca kendi döner ('cw' / 'ccw') ve yanındaki dişliyi çevirir. Elle açılmaz: sensör açar/kapar,
+    // düğme üstünde top durdukça çalıştırır.
+    motor: { orients: ['cw', 'ccw'], w: 1, h: 1, switched: true },
+    // Düğme: zemindeki basma plakası. Üstünde top durdukça bağlı cihaz çalışır (basılı tutulur); basılan cihaz
+    // (piston, makas, kapı) top gelince bir kez çalışır. Bağlantı sensördeki gibi `link`.
+    button: { orients: ['-'], w: 1, h: 1, trigger: true },
+    // Makara: ip sarar. Yanındaki dişli onu `o` yönünde (ccw / cw) çevirince ipi sarar, ters yönde salar.
+    // İpi bölümde: hangs: [{ ball, winch: 'f0' }].
+    winch: { orients: ['ccw', 'cw'], w: 1, h: 1 },
+    // Mum: alevi üstündeki ipi yakar, balonu patlatır, yanındaki sönük mumu tutuşturur. Sabit mum sönük başlayabilir (`unlit`).
+    candle: { orients: ['-'], w: 1, h: 1 },
+    // Mercek: tepeden gelen güneşi (üstü açıksa) iki kare aşağıda toplar: sönük mumu yakar, ipi yakar, balonu patlatır.
+    lens: { orients: ['-'], w: 1, h: 1 },
   };
-  const DRIVE = { crank: 1, gear: 1, lift: 1, turbine: 1 };
+  const DRIVE = { crank: 1, gear: 1, lift: 1, turbine: 1, pulley: 1, motor: 1, winch: 1 };
 
   const DIRS = { u: [0, 1], r: [1, 0], l: [-1, 0], d: [0, -1] };
 
@@ -818,6 +838,31 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     if (p.o === 'r') return [p.x + 1, p.y + 0.05, p.x + 1 + L, p.y + 0.95];
     if (p.o === 'l') return [p.x - L, p.y + 0.05, p.x, p.y + 0.95];
     return [p.x + 0.05, p.y + 1, p.x + 0.95, p.y + 1 + L];
+  }
+
+  // Mumun alevi (ipi yakan bölge), fitili, merceğin odağı.
+  const candleZone = p => [p.x + 0.22, p.y + 0.7, p.x + 0.78, p.y + 1.75];
+  const candleWick = p => [p.x + 0.5, p.y + 0.72];
+  const candleFlame = p => [p.x + 0.5, p.y + 0.84];
+  const lensFocus = p => [p.x + 0.5, p.y + 0.5 - T.focusDown];
+  function segPointDist(a, b, q) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
+    const t = l2 ? Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l2)) : 0;
+    return Math.hypot(a[0] + dx * t - q[0], a[1] + dy * t - q[1]);
+  }
+  // Güneş tepeden dik gelir: merceğin üstündeki sütunda duvar ya da parça varsa ışık gelmez; mercekle odak
+  // arasındaki kare doluysa odak oluşmaz. Hareketli engel (kapı levhası) çalışırken ayrıca bakılır.
+  function sunInfo(level, parts, lens) {
+    const cov = coverage(level), x = lens.x;
+    const solidAt = (cx, cy, k) => {
+      if ((cov[cx + ',' + cy] || 0) > k) return true;
+      if (level.pipe && level.pipe.x === cx && level.pipe.y === cy) return true;
+      return parts.some(q => q !== lens && !PARTS[q.type].sensor && q.type !== 'gate' && cellsOf(q).some(c => c[0] === cx && c[1] === cy));
+    };
+    let blockY = null;
+    for (let y = lens.y + 1; y < H; y++) if (solidAt(x, y, 0.15)) { blockY = y; break; }
+    const gap = lens.y - 1 >= 0 && solidAt(x, lens.y - 1, 0.5);
+    return { sun: blockY == null, blockY, focusOk: !gap && lens.y + 0.5 - T.focusDown > 0 };
   }
 
   const CUP = { wall: 0.12, rim: 0.8 };
@@ -932,11 +977,12 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
 
     const parts = listParts(level, placed);
     const rts = [], pistons = [], fans = [], sensors = [], gates = [], magnets = [], flippers = [], drives = [], byId = {};
+    const buttons = [], candles = [], lenses = [], winches = [];
     const kinds = ballKinds(level);
     for (const p of parts) {
       const rt = { p, type: p.type, o: p.o, x: p.x, y: p.y, num: p.num || 0,
         state: 'idle', offset: 0, timer: 0, held: false, latched: false, on: false, blade: 0,
-        flash: 0, compress: 0, inside: false, link: null, fires: 0, open: false };
+        flash: 0, compress: 0, inside: false, link: null, fires: 0, open: false, weight: 0 };
       byId[p.id] = rt;
       rts.push(rt);
       if (p.type === 'ramp') {
@@ -986,9 +1032,24 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       } else if (DRIVE[p.type]) {
         const body = world.createKinematicBody({ position: pl.Vec2(p.x + (p.type === 'lift' ? 1 : 0.5), p.y + 0.5) });
         if (p.type === 'lift') body.createFixture(pl.Box(1, 0.07, pl.Vec2(0, -0.57), p.o === 'r' ? -T.liftTilt : T.liftTilt), { friction: 0.8 }).setUserData({ kind: 'lift', rt });
-        else body.createFixture(pl.Circle(p.type === 'gear' ? T.gearR : 0.34), { friction: 0.9 }).setUserData({ kind: 'gear', rt });
+        else if (p.type === 'motor') box(statics, [p.x + 0.08, p.y + 0.1, p.x + 0.92, p.y + 0.9]);   // gövde; mili görünür, dönen gövde yok
+        else if (p.type === 'winch') body.createFixture(pl.Circle(0.28), { friction: 0 }).setUserData({ kind: 'gear', rt });   // top tamburun üstünden kayar
+        else body.createFixture(pl.Circle(p.type === 'gear' ? T.gearR : p.type === 'pulley' ? T.pulleyR : 0.34), { friction: 0.9 }).setUserData({ kind: 'gear', rt });
         rt.body = body; rt.spin = 0; rt.jam = false; rt.offset = 0;
         drives.push(rt);
+        if (p.type === 'winch') winches.push(rt);
+      } else if (p.type === 'button') {
+        // Kenarları eğik basma plakası: yuvarlanan top takılmadan üstüne çıkar.
+        statics.createFixture(pl.Polygon([[0.04, 0], [0.96, 0], [0.8, T.btnH], [0.2, T.btnH]].map(q => pl.Vec2(p.x + q[0], p.y + q[1]))), { friction: 0.7 });
+        rt.pressed = false;
+        buttons.push(rt);
+      } else if (p.type === 'candle') {
+        box(statics, [p.x + 0.36, p.y, p.x + 0.64, p.y + 0.62], { friction: 0.6 });
+        rt.lit = !p.unlit; rt.heat = 0; rt.litStep = rt.lit ? 0 : -1;
+        candles.push(rt);
+      } else if (p.type === 'lens') {
+        box(statics, [p.x + 0.1, p.y + 0.44, p.x + 0.9, p.y + 0.56], { friction: 0.4 });
+        lenses.push(rt);
       } else if (p.type === 'pin') {
         statics.createFixture(pl.Polygon(pinTri(p).map(q => pl.Vec2(q[0], q[1]))), { friction: 0.2 }).setUserData({ kind: 'pin', rt });
       } else if (p.type === 'bumper') {
@@ -997,21 +1058,30 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           { friction: 0, restitution: 0.9 }).setUserData({ kind: 'bumper', rt });
       }
     }
-    for (const s of sensors) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
-    // Dişli ağları: kenarı bitişik dönen parçalar birbirine geçer.
+    for (const s of sensors.concat(buttons)) s.link = s.p.link != null ? (byId[s.p.link] || null) : null;
+    // Dişli ağları: kenarı bitişik dönen parçalar birbirine geçer (ters döner); kayışla bağlı kasnaklar aynı döner.
     const touch = (a, b) => cellsOf(a.p).some(([x, y]) => cellsOf(b.p).some(([u, v]) => Math.abs(x - u) + Math.abs(y - v) === 1));
     // Asansör yalnız yanındaki (solundaki / sağındaki) dişliden güç alır, gücü başkasına geçirmez.
     const lifts = drives.filter(d => d.type === 'lift');
-    for (const a of drives) a.nb = a.type === 'lift' ? [] : drives.filter(b => b !== a && b.type !== 'lift' && touch(a, b));
+    for (const a of drives) { a.nb = a.type === 'lift' ? [] : drives.filter(b => b !== a && b.type !== 'lift' && touch(a, b)); a.bl = []; }
+    const belts = [];
+    for (const a of drives) {
+      if (a.type !== 'pulley' || a.p.link == null) continue;
+      const b = byId[a.p.link];
+      if (!b || b === a || b.type !== 'pulley' || a.bl.includes(b)) continue;
+      a.bl.push(b); b.bl.push(a); belts.push([a, b]);
+    }
     for (const L of lifts) L.pinions = drives.filter(g => g.type !== 'lift' && g.p.y === L.p.y && (g.p.x === L.p.x - 1 || g.p.x === L.p.x + 2))
       .map(g => ({ g, side: g.p.x < L.p.x ? 1 : -1 }));
     const nets = [], seenNet = new Set();
     for (const a of drives.filter(d => d.type !== 'lift')) {
       if (seenNet.has(a)) continue;
       const net = [], q = [a]; seenNet.add(a);
-      while (q.length) { const n = q.shift(); net.push(n); for (const m of n.nb) if (!seenNet.has(m)) { seenNet.add(m); q.push(m); } }
+      while (q.length) { const n = q.shift(); net.push(n); for (const m of n.nb.concat(n.bl)) if (!seenNet.has(m)) { seenNet.add(m); q.push(m); } }
       nets.push(net);
     }
+
+    for (const L of lenses) Object.assign(L, sunInfo(level, parts, L.p), { focus: lensFocus(L.p), hot: false });
 
     const balls = startsOf(level).map((st, i) => {
       const b = world.createDynamicBody({ position: pl.Vec2(st.x, st.y), bullet: true,
@@ -1032,10 +1102,22 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       const r = Object.assign({ joint: j, bodyA, bodyB, la: bodyA.getLocalPoint(pa), lb: bodyB.getLocalPoint(pb), cut: false }, extra);
       ropes.push(r); return r;
     };
+    // İpin çapası ayrı bir durağan gövde: eklem bağladığı iki gövdenin çarpışmasını kapatır; çapa duvarların
+    // gövdesi olsaydı asılı top duvarların içinden geçerdi.
+    const anchor = () => world.createBody();
     (level.hangs || []).forEach(h => {
       const b = balls[h.ball || 0], bp = b.getPosition();
+      const w = h.winch != null ? byId[h.winch] : null;
+      if (w) {
+        // Makaradaki ip: makaranın altından topun ortasına (top ipe takılmadan yuvarlanır); makara döndükçe
+        // uzunluğu değişir.
+        const hx = w.x + 0.5, hy = w.y + 0.2, len = Math.max(T.winchMin, Math.hypot(bp.x - hx, bp.y - hy));
+        const r = tie(anchor(), pl.Vec2(hx, hy), b, pl.Vec2(bp.x, bp.y), len, { kind: 'hang', hook: [hx, hy], winch: w, len, max: Math.max(T.winchMax, len) });
+        w.rope = r;
+        return;
+      }
       statics.createFixture(pl.Circle(pl.Vec2(h.x, h.y), T.hookR), { isSensor: true });
-      tie(statics, pl.Vec2(h.x, h.y), b, pl.Vec2(bp.x, bp.y + T.R), Math.max(0.1, h.y - bp.y - T.R), { kind: 'hang', hook: [h.x, h.y] });
+      tie(anchor(), pl.Vec2(h.x, h.y), b, pl.Vec2(bp.x, bp.y + T.R), Math.max(0.1, Math.hypot(bp.x - h.x, bp.y + T.R - h.y)), { kind: 'hang', hook: [h.x, h.y] });
     });
     (level.balloons || []).forEach((q, k) => {
       const b = balls[q.ball || 0], bp = b.getPosition(), len = q.len || 1.1;
@@ -1071,6 +1153,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
 
     const sim = {
       world, ball, balls, kinds, rts, pistons, fans, sensors, gates, magnets, flippers, drives, nets, lifts, need, ropes, balloons, pops: 0,
+      buttons, candles, lenses, winches, belts, burns: [], ignites: 0, unhooks: 0,
       bstate: balls.map(() => 'run'), goals: 0,
       devices: rts.filter(r => PARTS[r.type].manual),
       steps: 0, status: 'run', presses: 0, restT: 0, goalStep: -1,
@@ -1084,6 +1167,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           if (manual) sim.presses++;
           return true;
         }
+        if (rt.type === 'motor') { rt.latched = !rt.latched; rt.fires++; return true; }
         if (rt.type === 'fan' || rt.type === 'magnet' || rt.type === 'crank') {
           // Sensör pervaneyi ve mıknatısı anahtar gibi açar; bir daha tetiklenirse kapatır.
           rt.latched = !rt.latched;
@@ -1124,6 +1208,23 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       },
       step() {
         if (sim.status === 'out') return;
+        // Düğmeler: üstünde top duran düğme bağlı cihazı basılı tutar; basılan cihazı (piston, makas, kapı)
+        // top geldiği an bir kez çalıştırır.
+        for (const rt of rts) rt.weight = 0;
+        for (const bt of buttons) {
+          const top = bt.y + T.btnH, was = bt.pressed;
+          bt.pressed = balls.some((b, i) => {
+            if (sim.bstate[i] === 'out') return false;
+            const bp = b.getPosition();
+            return Math.abs(bp.x - (bt.x + 0.5)) < 0.36 && bp.y - top > T.R - 0.08 && bp.y - top < T.R + 0.06;
+          });
+          if (bt.pressed && !was) { bt.fires++; bt.flash = 0.4; }
+          const dev = bt.link;
+          if (!dev || !bt.pressed) continue;
+          dev.weight++;
+          const kind = PARTS[dev.type].manual;
+          if (!was && (kind === 'press' || kind === 'toggle')) sim.press(dev, false);
+        }
         for (const rt of pistons) {
           const d = DIRS[rt.o];
           let v = 0;
@@ -1141,7 +1242,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           rt.head.setLinearVelocity(pl.Vec2(d[0] * v, d[1] * v));
         }
         for (const rt of fans) {
-          rt.on = rt.held || rt.latched;
+          rt.on = rt.held || rt.latched || rt.weight > 0;
           if (!rt.on) continue;
           rt.blade += DT * 30;
           const z = rt.zone, d = DIRS[rt.o];
@@ -1161,7 +1262,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
             const cx = n.x + 0.5, cy = n.y + 0.5;
             n.on = fans.some(f => f.on && cx >= f.zone[0] - 0.3 && cx <= f.zone[2] + 0.3 && cy >= f.zone[1] - 0.3 && cy <= f.zone[3] + 0.3);
           }
-          const src = net.filter(n => (n.type === 'crank' && (n.held || n.latched)) || (n.type === 'turbine' && n.on));
+          const src = net.filter(n => (n.type === 'crank' && (n.held || n.latched || n.weight > 0)) || (n.type === 'motor' && (n.latched || n.weight > 0)) || (n.type === 'turbine' && n.on));
           const sg = new Map(); let jam = false;
           for (const s0 of src) {
             const want = s0.o === 'ccw' ? 1 : -1;
@@ -1173,10 +1274,15 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
                 if (!sg.has(m)) { sg.set(m, -sg.get(n)); q.push(m); }
                 else if (sg.get(m) === sg.get(n)) jam = true;
               }
+              for (const m of n.bl) {
+                if (!sg.has(m)) { sg.set(m, sg.get(n)); q.push(m); }
+                else if (sg.get(m) !== sg.get(n)) jam = true;
+              }
             }
           }
           for (const n of net) {
-            if (n.type === 'crank') n.on = n.held || n.latched;
+            if (n.type === 'crank') n.on = n.held || n.latched || n.weight > 0;
+            if (n.type === 'motor') n.on = n.latched || n.weight > 0;
             n.jam = jam && src.length > 0;
             n.spin = src.length && !jam ? sg.get(n) * T.gearW : 0;
             n.body.setAngularVelocity(n.spin);
@@ -1191,6 +1297,34 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           if (L.offset + v * DT > T.liftMax) v = (T.liftMax - L.offset) / DT;
           if (L.offset + v * DT < 0) v = -L.offset / DT;
           L.offset += v * DT; L.body.setLinearVelocity(pl.Vec2(0, v));
+          L.moving = Math.abs(v) > 1e-9;
+        }
+        // Makara: `o` yönünde dönerken ipi sarar (top makaraya çekilir), ters yönde salar. İp topun gerçek
+        // uzaklığından çok kısalmaz (takılan topu duvardan geçirmesin). Top makaraya varınca kanca bırakır.
+        for (const w of winches) {
+          const r = w.rope;
+          w.reeling = false;
+          if (!r || r.cut || !w.spin) continue;
+          const up = Math.sign(w.spin) === (w.o === 'ccw' ? 1 : -1);
+          const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb), d = Math.hypot(b.x - a.x, b.y - a.y);
+          let len = r.len + (up ? -1 : 1) * T.winchV * DT;
+          if (up) len = Math.max(len, d - 0.05);
+          const was = r.len;
+          r.len = Math.max(T.winchMin, Math.min(r.max, len));
+          w.reeling = Math.abs(r.len - was) > 1e-9;
+          r.joint.setMaxLength(r.len);
+          r.bodyB.setAwake(true);   // duran top uyur; ip kısalınca uyanmazsa yükselmez
+          if (up && d > 0.01) {
+            // Sarılan ipteki top sallanmaz: ipe dik hızı sönümlenir, makaraya doğru gelir (vinç kancası gibi).
+            const v = r.bodyB.getLinearVelocity(), ux = (a.x - b.x) / d, uy = (a.y - b.y) / d, vu = v.x * ux + v.y * uy;
+            const k = Math.min(1, T.winchDamp * DT);
+            r.bodyB.setLinearVelocity(pl.Vec2(v.x - (v.x - vu * ux) * k, v.y - (v.y - vu * uy) * k));
+          }
+          // Top kancanın dibine varınca kanca açılır: top olduğu yerden dümdüz düşer.
+          if (up && d <= T.winchLet) {
+            world.destroyJoint(r.joint); r.cut = true; r.unhooked = true; w.fires++; sim.unhooks++;
+            r.bodyB.setLinearVelocity(pl.Vec2(0, 0)); r.bodyB.setAngularVelocity(0);
+          }
         }
         for (const rt of gates) {
           const g = GATES[rt.o], target = rt.open ? T.gateLift : 0, gap = target - rt.offset;
@@ -1214,10 +1348,11 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
             }
           }
           rt.offset += v * DT;
+          rt.moving = Math.abs(v) > 1e-9;
           rt.plate.setLinearVelocity(pl.Vec2(g.dir[0] * v, g.dir[1] * v));
         }
         for (const rt of magnets) {
-          rt.on = rt.held || rt.latched;
+          rt.on = rt.held || rt.latched || rt.weight > 0;
           if (!rt.on) continue;
           const fc = rt.face, d = fc.d;
           balls.forEach((b, i) => {
@@ -1240,7 +1375,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
         for (const rt of flippers) {
           if (rt.pulse > 0) rt.pulse -= DT;
           const was = rt.on;
-          rt.on = rt.held || rt.pulse > 0;
+          rt.on = rt.held || rt.pulse > 0 || rt.weight > 0;
           if (rt.on && !was) rt.fires++;
           const gap = (rt.on ? T.flipUp : T.flipDown) - rt.angle;
           let w = 0;
@@ -1283,6 +1418,58 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           const p = bl.body.getPosition(); bl.x = p.x; bl.y = p.y;
           if (!bl.rope.cut) { world.destroyJoint(bl.rope.joint); bl.rope.cut = true; }
           world.destroyBody(bl.body);
+        }
+
+        // Ateş ve ışık: yanan mumun alevi ve merceğin odağı ipi yakar, balonu patlatır, sönük mumu tutuşturur.
+        if (candles.length || lenses.length) {
+          for (const L of lenses) {
+            let lit = L.sun && L.focusOk;
+            // Kapı levhası güneşin sütununu ya da mercekle odak arasını kapatıyorsa ışık geçmez.
+            if (lit) for (const g of gates) {
+              const G = GATES[g.o], o = g.offset;
+              const r = [g.x + G.plate[0] + G.dir[0] * o, g.y + G.plate[1] + G.dir[1] * o, g.x + G.plate[2] + G.dir[0] * o, g.y + G.plate[3] + G.dir[1] * o];
+              if (r[2] > L.x + 0.3 && r[0] < L.x + 0.7 && r[3] > L.focus[1] && r[1] < H) { lit = false; break; }
+            }
+            L.hot = lit;
+          }
+          const flames = candles.filter(cd => cd.lit);
+          for (const r of ropes) {
+            if (r.cut) continue;
+            const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb), A = [a.x, a.y], B = [b.x, b.y];
+            let add = 0, at = null;
+            for (const f of flames) if (segHitsRect(A, B, candleZone(f))) { add += DT / T.burnFlame; at = at || candleFlame(f); }
+            for (const L of lenses) if (L.hot && segPointDist(A, B, L.focus) < T.focusR) { add += DT / T.burnLens; at = at || L.focus; }
+            r.heat = add ? (r.heat || 0) + add : Math.max(0, (r.heat || 0) - DT);
+            r.hotAt = add ? at : null;
+            if (r.heat >= 1) {
+              world.destroyJoint(r.joint); r.cut = true; r.burnt = true;
+              const m = r.hotAt || A; sim.burns.push({ x: m[0], y: m[1], step: sim.steps });
+            }
+          }
+          for (const bl of balloons) {
+            if (!bl.alive) continue;
+            const bp = bl.body.getPosition();
+            const near = (q, rad) => Math.hypot(bp.x - q[0], bp.y - q[1]) < rad;
+            if (flames.some(f => { const z = candleZone(f); return bp.x + T.balR > z[0] && bp.x - T.balR < z[2] && bp.y + T.balR > z[1] && bp.y - T.balR < z[3]; })
+              || lenses.some(L => L.hot && near(L.focus, T.balR + 0.05))) popQueue.push(bl.k);
+          }
+          for (const cd of candles) {
+            if (cd.lit) continue;
+            const wk = candleWick(cd);
+            let add = 0;
+            for (const f of flames) if (f !== cd && Math.hypot(candleFlame(f)[0] - wk[0], candleFlame(f)[1] - wk[1]) < 1.05) add += DT / T.lightFlame;
+            for (const L of lenses) if (L.hot && Math.hypot(L.focus[0] - wk[0], L.focus[1] - wk[1]) < T.focusR + 0.12) add += DT / T.lightLens;
+            cd.heat = add ? cd.heat + add : Math.max(0, cd.heat - DT);
+            if (cd.heat >= 1) { cd.lit = true; cd.litStep = sim.steps; sim.ignites++; }
+          }
+          while (popQueue.length) {
+            const bl = balloons[popQueue.pop()];
+            if (!bl || !bl.alive) continue;
+            bl.alive = false; bl.popT = sim.steps; sim.pops++;
+            const p = bl.body.getPosition(); bl.x = p.x; bl.y = p.y;
+            if (!bl.rope.cut) { world.destroyJoint(bl.rope.joint); bl.rope.cut = true; }
+            world.destroyBody(bl.body);
+          }
         }
 
         if (bounces.length) {
@@ -1343,7 +1530,11 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           const v = b.getLinearVelocity();
           if (Math.hypot(v.x, v.y) >= 0.05 || Math.abs(b.getAngularVelocity()) >= 0.25) slow = false;
         });
-        sim.restT = slow ? sim.restT + DT : 0;
+        // Toplar dursa da makine iş görüyorsa (asansör ya da makara çalışıyor, ip ya da mum ısınıyor, kapı
+        // açılıp kapanıyor) bekleme sayılmaz: fitil yürürken oyun "top durdu" demesin.
+        const busy = lifts.some(L => L.moving) || winches.some(w => w.reeling) || gates.some(g => g.moving)
+          || ropes.some(r => !r.cut && r.heat > 0) || candles.some(c => !c.lit && c.heat > 0);
+        sim.restT = slow && !busy ? sim.restT + DT : 0;
 
         let goals = 0, outs = 0;
         balls.forEach((b, i) => {
@@ -1387,7 +1578,8 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     return { status: sim.status, t: sim.steps * DT, presses: sim.presses, x: p.x, y: p.y, trail: sim.trails[0], trails: sim.trails, goals: sim.goals, sim };
   }
 
-  return { pinTri, segHitsRect, W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless };
+  return { pinTri, segHitsRect, W, H, DT, T, PARTS, DIRS, CUP, GATES, cupsOf, startsOf, ballKinds, sizeOf, cellsOf, coverage, occupancy, canPlace, pointInPoly, rampLine, pistonGeom, fanZone, magnetFace, flipperGeom, bumperLine, cupBoxes, listParts, createSim, runHeadless,
+    candleZone, candleWick, candleFlame, lensFocus, sunInfo };
 }));
 
 </script>
@@ -2272,6 +2464,298 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
         { name: 'sensör', parts: [{ type: 'lift', x: 2, y: 1, o: 'r' }, { type: 'gear', x: 4, y: 1, o: '-' }, { type: 'gear', x: 5, y: 1, o: '-' }, { type: 'gear', x: 6, y: 1, o: '-' }, { type: 'turbine', x: 7, y: 1, o: 'ccw' }, { type: 'sensor', x: 3, y: 1, o: '-', link: 'f0' }], inputs: [] },
       ],
     },
+    // ------------------------------------------------ Defter 6: kayışlar ve motorlar (18 Kasım 2026)
+    // Kasnak (kayışla aynı yöne döner), makara (ipi sarar, top makaraya varınca kanca bırakır), motor (elle
+    // açılmaz: sensör aç/kapa, düğme üstünde top durdukça), düğme. Son üçü zor: yön, iki iş, ağırlık.
+    {
+      id: 'kayis',
+      name: 'Belt Drive', book: 6,
+      task: 'The crank is far from the lift. Join them with a belt.',
+      start: { x: 0.6, y: 6.28, vx: 2.4 },
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 5.6, 4, 6], [7, 0.4, 7.2, 3.5], [[7.2, 3.5], [11, 3.1], [11, 3.5], [7.2, 3.9]], [4, 0, 16, 0.4], [9.5, 7.6, 11.5, 8]],
+      fixed: [{ type: 'lift', x: 5, y: 1, o: 'r' }, { type: 'crank', x: 10, y: 8, o: 'cw' }],
+      cup: { x: 11.1, y: 0.4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { pulley: 2 },
+      badges: [{ k: 'solve' }],
+      hints: {
+        place: 'Put one pulley next to the crank and one right beside the lift. The belt joins them by itself.',
+        ready: 'Press Run. Hold 1 when the ball is on the lift.',
+        run: 'Hold 1 to turn the crank.',
+        fail: 'Tap a pulley, then another pulley, to run a belt between them. The one at the lift has to sit right beside it.',
+        after: 'Pulleys joined by a belt turn the same way, however far apart.',
+      },
+      sol: [{ name: 'kayış', parts: [{ type: 'pulley', x: 10, y: 9, o: '-' }, { type: 'pulley', x: 4, y: 1, o: '-', link: 1 }], inputs: [{ t: 3, num: 1, act: 'down' }, { t: 5.2, num: 1, act: 'up' }] }],
+    },
+    {
+      id: 'vinc',
+      name: 'Claw', book: 6,
+      task: 'Wind the ball out of the pit. The winch lets go of it right over the cup.',
+      start: { x: 2, y: 0.68 },
+      hangs: [{ ball: 0, winch: 'f0' }],
+      walls: [[0, 0, 16, 0.4], [3.6, 0.4, 3.8, 3], [7.6, 7, 10.2, 7.3], [12.4, 0.4, 12.6, 1.8]],
+      fixed: [{ type: 'winch', x: 8, y: 6, o: 'ccw' }, { type: 'crank', x: 13, y: 2, o: 'ccw' }],
+      cup: { x: 7.5, y: 0.4, w: 2 },
+      tray: { pulley: 2 },
+      badges: [{ k: 'solve' }],
+      guide: [
+        { look: 'fixed:0', say: 'New part: the winch. Turned the right way, it winds in its rope and pulls the ball to it. At the top, the hook lets go.' },
+        { place: true, say: 'Join the crank to the winch with a belt: drag the pulleys onto the dotted outlines.' },
+        { run: true, say: 'Press Run. I will tell you when to use the crank.' },
+      ],
+      hints: {
+        place: 'Join the crank to the winch with two pulleys.',
+        ready: 'Press Run and hold 1.',
+        run: 'Hold 1 until the hook lets go of the ball.',
+        fail: 'The winch only turns while you hold the crank. Keep holding until the ball is at the winch.',
+        after: 'A winch is a gear that winds a rope.',
+      },
+      sol: [{ name: 'kayış', parts: [{ type: 'pulley', x: 13, y: 3, o: '-' }, { type: 'pulley', x: 9, y: 6, o: '-', link: 1 }], inputs: [{ t: 0.5, num: 1, act: 'down' }, { t: 8, num: 1, act: 'up' }] }],
+    },
+    {
+      id: 'motor',
+      name: 'Motor', book: 6,
+      task: 'Build a machine that lifts the ball all by itself.',
+      start: { x: 0.6, y: 1.28, vx: 2.4 },
+      pipe: { x: 0, y: 1, dir: 'r' },
+      walls: [[0, 0, 5, 1], [7.08, 2, 7.25, 3.5], [[7.08, 3.5], [11, 3.1], [11, 3.5], [7.08, 3.9]], [7.15, 0, 11, 0.4], [11, 0, 16, 0.4]],
+      fixed: [{ type: 'lift', x: 5, y: 1, o: 'r' }, { type: 'gear', x: 7, y: 1 }],
+      cup: { x: 11.1, y: 0.4, w: 2, back: { side: 'r', h: 1.5 } },
+      tray: { motor: 1, sensor: 1 },
+      badges: [{ k: 'solve' }],
+      guide: [
+        { place: true, say: 'New part: the motor. It turns the gear next to it all by itself. Drag it onto the dotted outline.' },
+        { run: true, say: 'Your hands can’t start a motor: the sensor does, when the ball rolls over it. Press Run.' },
+      ],
+      hints: {
+        place: 'The motor turns the gear, the gear moves the lift. A sensor on the lift switches the motor on.',
+        ready: 'Press Run.',
+        run: 'Watch the motor start.',
+        fail: 'Lift going nowhere? Tap the motor to make it turn the other way.',
+        after: 'A sensor switches a motor on, and the next pass switches it off.',
+      },
+      sol: [{ name: 'motor + sensör', parts: [{ type: 'motor', x: 8, y: 1, o: 'ccw' }, { type: 'sensor', x: 5, y: 1, o: '-', link: 1 }], inputs: [] }],
+    },
+    {
+      id: 'dugme',
+      name: 'Counterweight', book: 6,
+      task: 'The yellow ball waits on the lift. Let the steel ball’s weight run the motor.',
+      balls: [{ x: 6.6, y: 1.28, kind: 'yellow' }, { x: 0.6, y: 6.28, vx: 2, kind: 'steel' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 5.6, 3, 6], [2.8, 4.6, 3, 5.6], [2.8, 4.6, 4.2, 5], [4, 5, 4.2, 6.4], [0, 0, 5, 1], [7.08, 1.9, 7.25, 3.5], [[7.08, 3.5], [11, 3.1], [11, 3.5], [7.08, 3.9]], [7.15, 0, 11, 0.4], [11, 0, 16, 0.4]],
+      fixed: [{ type: 'lift', x: 5, y: 1, o: 'r' }, { type: 'motor', x: 7, y: 1, o: 'cw' }],
+      cups: [{ x: 11.1, y: 0.4, w: 2, kind: 'yellow', back: { side: 'r', h: 1.5 } }],
+      need: 1,
+      tray: { button: 1 },
+      badges: [{ k: 'solve' }],
+      hints: {
+        place: 'Put the button where the steel ball comes to rest.',
+        ready: 'Press Run.',
+        run: 'The motor runs as long as the steel ball sits on the button.',
+        fail: 'A button only works while a ball rests on it. Where does the steel ball stop?',
+        after: 'A sensor switches. A button holds.',
+      },
+      sol: [{ name: 'düğme', parts: [{ type: 'button', x: 3, y: 5, o: '-', link: 'f1' }], inputs: [] }],
+    },
+    // Defter 6'nın zor çizimleri: yön (kayış aynı, dişli ters çevirir), iki düğme, rüzgâr gücü.
+    {
+      id: 'iki-is', hard: true,
+      name: 'Two Jobs', book: 6,
+      task: 'One motor, two jobs: lift the yellow ball and fish out the steel one.',
+      balls: [{ x: 0.6, y: 6.28, vx: 2, kind: 'yellow' }, { x: 14.2, y: 0.68, kind: 'steel' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      hangs: [{ ball: 1, winch: 'f2' }],
+      walls: [[0, 0, 16, 0.4], [0, 5.6, 1.6, 6], [4, 0.4, 4.2, 3.9], [[4.2, 3.9], [6, 3.7], [6, 3.3], [4.2, 3.5]], [6, 0.4, 8, 2.6], [7.6, 4.6, 8.4, 5], [12.6, 0.4, 12.8, 3], [9.6, 7, 11.4, 7.3]],
+      fixed: [{ type: 'lift', x: 2, y: 1, o: 'r' }, { type: 'motor', x: 8, y: 5, o: 'ccw' }, { type: 'winch', x: 10, y: 6, o: 'cw' }],
+      cups: [{ x: 6, y: 2.6, w: 2, kind: 'yellow', back: { side: 'r', h: 1.2 } }, { x: 9.5, y: 0.4, w: 2, kind: 'steel' }],
+      tray: { sensor: 1, pulley: 2, gear: 4 },
+      badges: [{ k: 'solve' }, { k: 'budget', n: 5 }],
+      hints: {
+        place: 'A sensor starts the motor. Gears carry its turn to the winch, a belt carries it all the way to the lift.',
+        ready: 'Press Run.',
+        run: 'Watch which way each part turns.',
+        fail: 'Lift going nowhere? Each gear turns the other way from its neighbour, but a belt keeps the same way. Hook the belt to a different gear.',
+        after: 'Five parts: a sensor, two gears and one belt.',
+      },
+      sol: [
+        { name: 'kayış dişliden', parts: [{ type: 'sensor', x: 3, y: 1, o: '-', link: 'f1' }, { type: 'gear', x: 9, y: 5, o: '-' }, { type: 'gear', x: 9, y: 6, o: '-' }, { type: 'pulley', x: 9, y: 4, o: '-' }, { type: 'pulley', x: 1, y: 1, o: '-', link: 4 }], inputs: [] },
+        { name: 'kayış araya dişli', parts: [{ type: 'sensor', x: 3, y: 1, o: '-', link: 'f1' }, { type: 'gear', x: 9, y: 5, o: '-' }, { type: 'gear', x: 9, y: 6, o: '-' }, { type: 'pulley', x: 8, y: 6, o: '-' }, { type: 'gear', x: 1, y: 1, o: '-' }, { type: 'pulley', x: 0, y: 1, o: '-', link: 4 }], inputs: [] },
+      ],
+    },
+    {
+      id: 'agirlik', hard: true,
+      name: 'Trapdoor Weight', book: 6,
+      task: 'The yellow ball rolls over the trapdoor. Drop the steel ball through it, and let its weight run the lift.',
+      balls: [{ x: 2.6, y: 6.88, vx: 2.6, kind: 'yellow' }, { x: 0.5, y: 6.88, vx: 2.6, kind: 'steel' }],
+      pipe: { x: 0, y: 6, dir: 'r' },
+      walls: [[0, 6.2, 3, 6.6], [5, 5.6, 9, 6], [3.8, 4.6, 4, 6.32], [5, 4.6, 5.2, 5.6], [3.8, 4.6, 5.2, 5], [0, 0, 16, 0.4], [12, 0.4, 12.2, 3.9], [[12.2, 3.9], [14, 3.7], [14, 3.3], [12.2, 3.5]], [14, 0.4, 16, 2.4], [5.6, 8.6, 6.4, 9]],
+      fixed: [{ type: 'gate', x: 3, y: 6, o: 'l' }, { type: 'lift', x: 10, y: 1, o: 'r' }, { type: 'motor', x: 6, y: 8, o: 'cw' }],
+      cups: [{ x: 14, y: 2.4, w: 2, kind: 'yellow', back: { side: 'r', h: 1.2 } }],
+      need: 1,
+      tray: { button: 2, pulley: 2, gear: 2 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'A button fires a trapdoor once, but it keeps a motor running only while a ball sits on it.',
+        ready: 'Press Run.',
+        run: 'The yellow ball has to cross the trapdoor while it is still shut.',
+        fail: 'The trapdoor has to open after the yellow ball and before the steel ball.',
+        after: 'Two buttons, two jobs: one opens the trapdoor, one holds the motor.',
+      },
+      sol: [
+        { name: 'iki düğme', parts: [{ type: 'button', x: 5, y: 6, o: '-', link: 'f0' }, { type: 'button', x: 4, y: 5, o: '-', link: 'f2' }, { type: 'pulley', x: 7, y: 8, o: '-' }, { type: 'pulley', x: 9, y: 1, o: '-', link: 3 }], inputs: [] },
+        { name: 'elle', parts: [{ type: 'button', x: 4, y: 5, o: '-', link: 'f2' }, { type: 'pulley', x: 7, y: 8, o: '-' }, { type: 'pulley', x: 9, y: 1, o: '-', link: 2 }], inputs: [{ t: 1.15, num: 1, act: 'press' }] },
+      ],
+    },
+    {
+      id: 'ruzgar-kayis', hard: true,
+      name: 'Wind Power', book: 6,
+      task: 'Let the yellow ball switch on the wind, and let the wind fish out the steel ball.',
+      balls: [{ x: 0.6, y: 5.28, vx: 2.4, kind: 'yellow' }, { x: 14.3, y: 0.68, kind: 'steel' }],
+      pipe: { x: 0, y: 5, dir: 'r' },
+      hangs: [{ ball: 1, winch: 'f1' }],
+      walls: [[0, 4.6, 5, 5], [0, 0, 16, 0.4], [0, 7.6, 1, 8], [12.6, 0.4, 12.8, 2.8], [10.6, 8, 12.4, 8.3], [4.6, 0.4, 5, 1.6]],
+      fixed: [{ type: 'fan', x: 0, y: 8, o: 'r' }, { type: 'winch', x: 11, y: 7, o: 'ccw' }],
+      cups: [{ x: 2.2, y: 0.4, w: 2, kind: 'yellow', back: { side: 'l', h: 1.5 } }, { x: 10.5, y: 0.4, w: 2, kind: 'steel' }],
+      tray: { sensor: 1, turbine: 1, pulley: 2, ramp: 1, gear: 2, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'A turbine in the wind turns by itself, and a belt can carry its turn across to the winch.',
+        ready: 'Press Run.',
+        run: 'Watch the turbine and the winch.',
+        fail: 'Rope getting longer? Tap the turbine to turn it the other way.',
+        after: 'Wind, turbine, belt, winch: fully automatic.',
+      },
+      sol: [{ name: 'rüzgâr', parts: [{ type: 'sensor', x: 3, y: 5, o: '-', link: 'f0' }, { type: 'turbine', x: 5, y: 8, o: 'ccw' }, { type: 'pulley', x: 5, y: 9, o: '-' }, { type: 'pulley', x: 12, y: 7, o: '-', link: 3 }, { type: 'ramp', x: 5, y: 3, o: 'dl' }], inputs: [] }],
+    },
+
+    // ------------------------------------------------ Defter 7: ateş ve ışık (18 Kasım 2026)
+    // Mum (yanar: üstündeki ipi yakar, balonu patlatır, yanındaki ve üstündeki sönük mumu tutuşturur), mercek
+    // (tepesi açıksa güneşi iki kare aşağıda toplar). Sabit mumlar sönük başlayabilir: fitil.
+    {
+      id: 'mum',
+      name: 'Candle', book: 7,
+      task: 'A rope holds the ball back. Burn it.',
+      start: { x: 6.6, y: 5.2 },
+      hangs: [{ ball: 0, x: 2.5, y: 6.4 }],
+      walls: [[0, 4.6, 6, 5], [[6, 5], [12, 3.2], [12, 2.8], [6, 4.6]], [2.2, 6.4, 2.8, 6.7], [0, 0, 16, 0.4]],
+      cup: { x: 12.6, y: 0.4, w: 2, back: { side: 'r', h: 2 } },
+      tray: { candle: 1 },
+      badges: [{ k: 'solve' }],
+      hints: {
+        place: 'Put the candle under the rope.',
+        ready: 'Press Run.',
+        run: 'The flame needs half a second.',
+        fail: 'The flame burns what is just above it. Put the candle right under the rope.',
+        after: 'A candle burns a rope, pops a balloon and lights other candles.',
+      },
+      sol: [{ name: 'mum', parts: [{ type: 'candle', x: 4, y: 5, o: '-' }], inputs: [] }],
+    },
+    {
+      id: 'gunes',
+      name: 'Sunlight', book: 7,
+      task: 'The candle is out. Let the sun light it.',
+      start: { x: 9.4, y: 5.2 },
+      hangs: [{ ball: 0, x: 13.5, y: 6.4 }],
+      walls: [[10, 4.6, 16, 5], [[4, 3.2], [10, 5], [10, 4.6], [4, 2.8]], [13.2, 6.4, 13.8, 6.7], [8, 8.6, 11, 9], [12, 8.6, 16, 9], [0, 0, 16, 0.4]],
+      fixed: [{ type: 'candle', x: 11, y: 5, unlit: true }],
+      cup: { x: 1.2, y: 0.4, w: 2, back: { side: 'l', h: 2 } },
+      tray: { lens: 1 },
+      badges: [{ k: 'solve' }],
+      hints: {
+        place: 'The sun comes straight down through the gap in the roof. The lens gathers it two squares lower.',
+        ready: 'Press Run.',
+        run: 'Watch the candle catch.',
+        fail: 'The yellow dot under the lens is where the sun gets hot. Move the lens until the dot sits on the wick.',
+        after: 'A lens only works with open sky above it.',
+      },
+      sol: [{ name: 'mercek', parts: [{ type: 'lens', x: 11, y: 7, o: '-' }], inputs: [] }],
+    },
+    {
+      id: 'fitil',
+      name: 'Fuse', book: 7,
+      task: 'The rope is under the roof, where the sun can’t reach. Fire spreads from candle to candle.',
+      start: { x: 12.3, y: 4.6 },
+      hangs: [{ ball: 0, x: 12.3, y: 7.6 }],
+      walls: [[0, 0, 16, 0.4], [4, 4.6, 12, 5], [12, 4.92, 13, 5], [6, 8.2, 16, 8.6], [12, 7.6, 12.6, 8.2], [14.4, 0.4, 14.6, 1.4]],
+      fixed: [{ type: 'candle', x: 4, y: 5, unlit: true }, { type: 'candle', x: 5, y: 5, unlit: true }, { type: 'candle', x: 6, y: 5, unlit: true }, { type: 'candle', x: 7, y: 5, unlit: true }, { type: 'candle', x: 8, y: 5, unlit: true }, { type: 'candle', x: 9, y: 5, unlit: true }, { type: 'candle', x: 10, y: 5, unlit: true }, { type: 'candle', x: 11, y: 5, unlit: true }, { type: 'candle', x: 12, y: 5, unlit: true }],
+      cup: { x: 11.3, y: 0.4, w: 2 },
+      tray: { lens: 1 },
+      badges: [{ k: 'solve' }],
+      hints: {
+        place: 'Light the first candle with the sun. The fire walks along the row by itself.',
+        ready: 'Press Run.',
+        run: 'The fire takes its time: watch it walk.',
+        fail: 'Only the candles out in the open can get the sun. Put the lens two squares above one of them.',
+        after: 'Fire spreads sideways and upwards, never down.',
+      },
+      sol: [{ name: 'güneşte yak', parts: [{ type: 'lens', x: 4, y: 7, o: '-' }], inputs: [] }],
+    },
+    // Defter 7'nin zor çizimleri: çatı penceresi, bayrak yarışı, sıcak hava balonu.
+    {
+      id: 'zincir', hard: true,
+      name: 'Chain Reaction', book: 7,
+      task: 'The yellow ball opens the skylight. The sun does the rest, if you help it.',
+      balls: [{ x: 0.6, y: 7.28, vx: 2.2, kind: 'yellow' }, { x: 11.3, y: 4.6, kind: 'steel' }],
+      pipe: { x: 0, y: 7, dir: 'r' },
+      hangs: [{ ball: 1, x: 11.3, y: 7.6 }],
+      walls: [[0, 8, 5, 8.6], [7, 8, 16, 8.6], [0, 6.6, 2, 7], [5, 4.6, 11, 5], [11, 4.92, 12, 5], [11, 7.6, 11.6, 8], [0, 0, 16, 0.4], [2.6, 0.4, 2.8, 1.6], [9.4, 0.4, 9.6, 1.6]],
+      fixed: [{ type: 'gate', x: 5, y: 8, o: 'r' }, { type: 'candle', x: 5, y: 5, unlit: true }, { type: 'candle', x: 6, y: 5, unlit: true }, { type: 'candle', x: 7, y: 5, unlit: true }, { type: 'candle', x: 8, y: 5, unlit: true }, { type: 'candle', x: 9, y: 5, unlit: true }, { type: 'candle', x: 10, y: 5, unlit: true }, { type: 'candle', x: 11, y: 5, unlit: true }],
+      cups: [{ x: 0.4, y: 0.4, w: 2, kind: 'yellow', back: { side: 'l', h: 1.6 } }, { x: 7, y: 0.4, w: 2, kind: 'steel', back: { side: 'l', h: 1.6 } }],
+      tray: { button: 1, lens: 1, ramp: 2, spring: 1, sensor: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'The trapdoor in the roof is a skylight: open, it lets the sun in. Then build both balls a way into their cups.',
+        ready: 'Press Run.',
+        run: 'Skylight, lens, fuse, rope.',
+        fail: 'No sun under a shut skylight. Something has to open it.',
+        after: 'Fully automatic: the yellow ball opens the skylight on its way.',
+      },
+      sol: [
+        { name: 'zincir', parts: [{ type: 'button', x: 1, y: 7, o: '-', link: 'f0' }, { type: 'lens', x: 5, y: 7, o: '-' }, { type: 'ramp', x: 3, y: 2, o: 'dl' }, { type: 'ramp', x: 10, y: 2, o: 'dl' }], inputs: [] },
+        { name: 'elle', parts: [{ type: 'lens', x: 5, y: 7, o: '-' }, { type: 'ramp', x: 3, y: 2, o: 'dl' }, { type: 'ramp', x: 10, y: 2, o: 'dl' }], inputs: [{ t: 0.5, num: 1, act: 'press' }] },
+      ],
+    },
+    {
+      id: 'bayrak', hard: true,
+      name: 'Relay', book: 7,
+      task: 'The sun frees the steel ball, and the steel ball sends the yellow one up.',
+      balls: [{ x: 1.6, y: 1.28, kind: 'yellow' }, { x: 9.3, y: 6, kind: 'steel' }],
+      hangs: [{ ball: 1, x: 9.3, y: 7.9 }],
+      walls: [[3, 8, 16, 8.6], [2, 6.6, 10, 7], [0, 0, 16, 0.4], [2.08, 1.9, 2.25, 3.5], [[2.08, 3.5], [5, 3.1], [5, 3.5], [2.08, 3.9]], [[8.4, 3.4], [13, 2.5], [13, 2.1], [8.4, 3]], [13.6, 5.6, 14.4, 6]],
+      fixed: [{ type: 'lift', x: 0, y: 1, o: 'r' }, { type: 'gear', x: 2, y: 1 }, { type: 'motor', x: 14, y: 6, o: 'cw' },
+        { type: 'candle', x: 2, y: 7, unlit: true }, { type: 'candle', x: 3, y: 7, unlit: true }, { type: 'candle', x: 4, y: 7, unlit: true }, { type: 'candle', x: 5, y: 7, unlit: true }, { type: 'candle', x: 6, y: 7, unlit: true }, { type: 'candle', x: 7, y: 7, unlit: true }, { type: 'candle', x: 8, y: 7, unlit: true }, { type: 'candle', x: 9, y: 7, unlit: true }],
+      cups: [{ x: 4.6, y: 0.4, w: 2, kind: 'yellow', back: { side: 'r', h: 1.6 } }, { x: 13.4, y: 0.4, w: 2, kind: 'steel', back: { side: 'r', h: 2 } }],
+      tray: { lens: 1, sensor: 1, pulley: 2, gear: 2, button: 1, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'Light the fuse with the sun. When the steel ball falls, let it switch on the motor.',
+        ready: 'Press Run.',
+        run: 'Watch the fire walk, then the motor start.',
+        fail: 'Lift not moving? The belt from the motor has to turn the lift’s gear the right way.',
+        after: 'Sun, fire, ball, motor, belt, lift.',
+      },
+      sol: [{ name: 'güneş + kayış', parts: [{ type: 'lens', x: 2, y: 9, o: '-' }, { type: 'sensor', x: 11, y: 2, o: '-', link: 'f2' }, { type: 'pulley', x: 13, y: 6, o: '-' }, { type: 'pulley', x: 3, y: 1, o: '-', link: 3 }], inputs: [] }],
+    },
+    {
+      id: 'sicak-hava', hard: true,
+      name: 'Hot Air', book: 7,
+      task: 'Send the balloon off on the wind and pop it in the right place. The cup has a roof.',
+      start: { x: 1.5, y: 0.68 },
+      balloons: [{ ball: 0, len: 1.1 }],
+      walls: [[0, 0, 16, 0.4], [0, 9.5, 16, 9.8], [3, 0.4, 3.2, 5], [11.4, 3, 16, 3.3], [15.6, 0.4, 16, 3]],
+      fixed: [{ type: 'fan', x: 0, y: 8, o: 'r' }],
+      cup: { x: 13.4, y: 0.4, w: 2, back: { side: 'r', h: 2.4 } },
+      tray: { sensor: 1, candle: 1, belt: 1, ramp: 1, lens: 1, spring: 1 },
+      badges: [{ k: 'solve' }, { k: 'auto' }],
+      hints: {
+        place: 'A sensor can switch on the wind as the balloon rises. A candle under its path pops it.',
+        ready: 'Press Run.',
+        run: 'Watch where it pops.',
+        fail: 'The cup has a roof: the ball has to come in from the side, fast.',
+        after: 'Fully automatic: a sensor, a candle, a ramp and a conveyor.',
+      },
+      sol: [{ name: 'sıcak hava', parts: [{ type: 'sensor', x: 1, y: 3, o: '-', link: 'f0' }, { type: 'candle', x: 8, y: 7, o: '-' }, { type: 'ramp', x: 7, y: 3, o: 'dr' }, { type: 'belt', x: 10, y: 2, o: 'r' }], inputs: [] }],
+    },
   ];
 }));
 
@@ -2621,6 +3105,27 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     bumper(t, h) { mallet(tone(h.song, h.c, 2, 76, 88), t, 0.13, 0, X.sfx); bell(tone(h.song, h.c, 1, 84, 96), t + 0.01, 0.06, X.sfx, 0.5); hiss(t, 0.06, 0.03, 'highpass', 4000, 0, X.sfx); },
     cutter(t, h) { hiss(t, 0.16, 0.035, 'highpass', 5200, 0, X.sfx); wood(t + 0.01, 0.06, 2600, X.sfx); hiss(t + 0.05, 0.1, 0.03, 'highpass', 6500, 0, X.sfx); mallet(tone(h.song, h.c, 1, 72, 84), t + 0.05, 0.07, 0, X.sfx); },
     crank(t, h) { for (let i = 0; i < 4; i++) wood(t + i * 0.07, 0.05 - i * 0.008, 2400 + i * 200, X.sfx); mallet(tone(h.song, h.c, 0, 55, 67), t, 0.1, 0, X.sfx); },
+    // Motor çalıştı: alçaktan yükselen uğultu ve akordan bir nota.
+    motor(t, h) {
+      const f = mtof(tone(h.song, h.c, 0, 36, 48)), lp = X.ac.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 900; lp.connect(X.sfx);
+      const g = gain(lp), o = X.ac.createOscillator();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.5, t); o.frequency.exponentialRampToValueAtTime(f * 2, t + 0.35);
+      env(g, t, 0.04, 0.07, 0.4); o.connect(g); o.start(t); o.stop(t + 0.5);
+      mallet(tone(h.song, h.c, 1, 60, 72), t + 0.3, 0.1, 0, X.sfx);
+    },
+    // Makaranın kancası açıldı: metal tık ve iki nota aşağı.
+    unhook(t, h) { wood(t, 0.08, 2600, X.sfx); mallet(tone(h.song, h.c, 2, 67, 79), t + 0.02, 0.1, 0, X.sfx); mallet(tone(h.song, h.c, 0, 60, 72), t + 0.12, 0.08, 0, X.sfx); },
+    button(t, h) { wood(t, 0.07, 1500, X.sfx); mallet(tone(h.song, h.c, 2, 67, 79), t + 0.01, 0.1, 0, X.sfx); },
+    // İp yandı: çıtırtılar ve kısa bir hışırtı.
+    burn(t, h, o) {
+      const x = clamp((o && o.x) || 0, -0.7, 0.7);
+      for (let i = 0; i < 6; i++) hiss(t + i * 0.035 + (i % 2) * 0.012, 0.05 + 0.02 * (i % 3), 0.02, 'bandpass', 2600 + i * 500, 1.4, X.sfx);
+      hiss(t, 0.08, 0.3, 'lowpass', 1200, 0, X.sfx);
+      mallet(tone(h.song, h.c, 0, 60, 72), t + 0.05, 0.09, x, X.sfx);
+    },
+    // Mum tutuştu: yükselen hışırtı ve çan.
+    ignite(t, h) { hiss(t, 0.1, 0.35, 'bandpass', 600, 1.2, X.sfx, 2600); bell(tone(h.song, h.c, 1, 79, 91), t + 0.12, 0.06, X.sfx, 0.8); },
     pop(t, h, o) {
       const x = clamp((o && o.x) || 0, -0.7, 0.7);
       hiss(t, 0.34, 0.07, 'bandpass', 1400, 0.7, X.sfx); thump(t, 0.2, 180, 60, 0.08, X.sfx);
@@ -2758,9 +3263,9 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin', crank: 'Crank', gear: 'Gear', lift: 'Lift', turbine: 'Turbine' };
-  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gear', 'lift', 'turbine', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'crank', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u', crank: 'cw', gear: '-', lift: 'r', turbine: 'cw' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin', crank: 'Crank', gear: 'Gear', lift: 'Lift', turbine: 'Turbine', pulley: 'Pulley', motor: 'Motor', button: 'Button', winch: 'Winch', candle: 'Candle', lens: 'Lens' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gear', 'pulley', 'lift', 'winch', 'turbine', 'candle', 'lens', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'crank', 'motor', 'sensor', 'button'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u', crank: 'cw', gear: '-', lift: 'r', turbine: 'cw', pulley: '-', motor: 'cw', button: '-', winch: 'ccw', candle: '-', lens: '-' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -2841,6 +3346,12 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     gear: ['New part', 'Gear', 'Gears side by side turn each other, each the other way round.'],
     turbine: ['New part', 'Turbine', 'Wind from a fan spins it, and it turns the gear next to it.'],
     lift: ['New part', 'Lift', 'A gear at its side moves it up or down. When the gear stops, it stays.'],
+    pulley: ['New part', 'Pulley', 'A gear with a groove. Two pulleys joined by a belt turn the same way, however far apart.'],
+    winch: ['New part', 'Winch', 'Turned the right way, it winds in its rope and pulls the ball to it. At the top, the hook lets go.'],
+    motor: ['New part', 'Motor', 'Turns the gear next to it all by itself. Your hands can’t start it: a sensor or a button can.'],
+    button: ['New part', 'Button', 'While a ball sits on it, the linked device runs.'],
+    candle: ['New part', 'Candle', 'Its flame burns through a rope above it, pops balloons and lights other candles.'],
+    lens: ['New part', 'Lens', 'Catches the sunlight from above and focuses it two squares down: hot enough to light a candle or burn a rope.'],
   };
   const INTRO = (() => {
     const seen = new Set();
@@ -3510,13 +4021,17 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     if (run) {
       const sim = S.sim;
       for (const r of sim.ropes) {
-        if (r.kind === 'hang') hook(c, Vw, r.hook[0], r.hook[1]);
+        if (r.kind === 'hang' && !r.winch) hook(c, Vw, r.hook[0], r.hook[1]);
         if (r.cut) {
           if (r.kind === 'hang') rope(c, Vw, r.hook, [r.hook[0], r.hook[1] - 0.35], 0.6);
           continue;
         }
         const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb);
         rope(c, Vw, [a.x, a.y], [b.x, b.y], 1);
+        if (r.hotAt && r.heat > 0.02) {
+          // Isınan ip: ısındıkça büyüyen kor.
+          c.beginPath(); c.arc(r.hotAt[0], r.hotAt[1] + 0.05, 0.05 + 0.1 * r.heat, 0, TAU); fill(c, rgba(FLAME, 0.4 + 0.5 * r.heat));
+        }
       }
       for (const bl of sim.balloons) {
         if (!bl.alive) continue;
@@ -3526,7 +4041,15 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       }
     } else {
       const st = KM.startsOf(L);
-      for (const h of L.hangs || []) { const b = st[h.ball || 0]; rope(c, Vw, [h.x, h.y], [b.x, b.y + T.R], 0.8); hook(c, Vw, h.x, h.y); }
+      for (const h of L.hangs || []) {
+        const b = st[h.ball || 0];
+        if (h.winch != null) {
+          const w = (L.fixed || [])[+String(h.winch).slice(1)];
+          if (w) rope(c, Vw, [w.x + 0.5, w.y + 0.2], [b.x, b.y], 0.8);   // makara ipi topun ortasına bağlı
+          continue;
+        }
+        rope(c, Vw, [h.x, h.y], [b.x, b.y + T.R], 0.8); hook(c, Vw, h.x, h.y);
+      }
       for (const q of L.balloons || []) {
         const b = st[q.ball || 0], len = q.len || 1.1;
         // Üstünde raf varsa balon rafın altında başlar (ip gevşek).
@@ -3634,6 +4157,175 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     if (rt && rt.jam) jamMark(c, Vw, p.x + 1, y + 0.3);
   }
 
+  // Kasnak: kayış oluklu dişli (dişli gibi komşusuna geçer). Kayış öbür kasnağa iki teğet çizgiyle gider.
+  function drawPulley(c, Vw, p, rt) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), turning = !!(rt && rt.spin);
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, T.gearR + 0.04, 10, ang); fill(c, C.paper); fill(c, ink(turning ? 0.2 : 0.1)); stroke(c, Vw, C.ink, LW.part);
+    c.beginPath(); c.arc(0, 0, 0.31, 0, TAU); c.arc(0, 0, 0.21, 0, TAU, true); fill(c, ink(0.32));
+    c.beginPath(); c.arc(0, 0, 0.31, 0, TAU); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.21, 0, TAU); stroke(c, Vw, C.ink, LW.thin);
+    if (Vw.lod) for (let i = 0; i < 3; i++) {
+      const a = ang + i * TAU / 3;
+      c.beginPath(); c.moveTo(Math.cos(a) * 0.08, Math.sin(a) * 0.08); c.lineTo(Math.cos(a) * 0.2, Math.sin(a) * 0.2); stroke(c, Vw, ink(0.7), LW.thin);
+    }
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+  }
+  // Kayış: iki kasnağın oluğundan geçen iki düz kol. Dönerken üstündeki çizgiler kayar.
+  function drawBeltLoop(c, Vw, a, b, spin, time, alpha) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy);
+    if (d < 0.01) return;
+    const nx = -dy / d, ny = dx / d, r = 0.26;
+    for (const sgn of [1, -1]) {
+      c.beginPath(); c.moveTo(a[0] + nx * r * sgn, a[1] + ny * r * sgn); c.lineTo(b[0] + nx * r * sgn, b[1] + ny * r * sgn);
+      stroke(c, Vw, ink(0.92 * alpha), LW.edge + 0.6);
+      if (Vw.lod) {
+        c.save();
+        c.setLineDash([Vw.lw(2.5), Vw.lw(6)]);
+        c.lineDashOffset = reduceMotion || !spin ? 0 : -Vw.lw(time * 26 * Math.sign(spin) * sgn);
+        c.lineWidth = Vw.lw(LW.thin); c.strokeStyle = rgba(C['paper-deep'], 0.85 * alpha); c.stroke();
+        c.restore();
+      }
+    }
+  }
+  // Motor: gövde (soğutma kanatları), ortada dönen mil dişlisi, açıkken lamba yanar.
+  // Elle açılmaz, bu yüzden turuncu değil: sensör ya da düğme çalıştırır.
+  function drawMotor(c, Vw, p, rt, ann) {
+    const on = !!(rt && rt.on), x = p.x, y = p.y, dir = p.o === 'ccw' ? 1 : -1;
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0);
+    c.beginPath(); rrect(c, x + 0.08, y + 0.1, 0.84, 0.8, 0.09); fill(c, C.paper); fill(c, ink(on ? 0.22 : 0.1)); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) {
+      c.beginPath();
+      for (const fx of [0.16, 0.24, 0.76, 0.84]) { c.moveTo(x + fx, y + 0.2); c.lineTo(x + fx, y + 0.8); }
+      stroke(c, Vw, ink(0.55), LW.hair);
+    }
+    c.save(); c.translate(x + 0.5, y + 0.5);
+    gearPath(c, 0.25, 8, ang); fill(c, C.paper); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.06, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.58, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.58, Math.sin(a1) * 0.58, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    c.beginPath(); c.arc(x + 0.79, y + 0.79, 0.06, 0, TAU); fill(c, on ? C.ball : C['paper-deep']); stroke(c, Vw, C.ink, LW.hair);
+    if (on && !reduceMotion) { c.beginPath(); c.arc(x + 0.79, y + 0.79, 0.12, 0, TAU); fill(c, rgba(C.ball, 0.25)); }
+    if (Vw.lod > 1) textAt(c, Vw, 'M', x + 0.22, y + 0.79, Math.max(8, Vw.cs * 0.16), ink(0.8), 'center', 700);
+    if (rt && rt.jam) jamMark(c, Vw, x + 0.5, y + 0.5);
+  }
+  // Düğme: zemindeki camgöbeği basma plakası, altında yay. Üstünde top durdukça bağlı cihaz çalışır.
+  function drawButton(c, Vw, p, rt, linked) {
+    const x = p.x, y = p.y, pr = !!(rt && rt.pressed), f = rt ? Math.max(0, rt.flash / 0.4) : 0;
+    const top = y + (pr ? 0.05 : 0.14);
+    if (f > 0) { c.beginPath(); c.arc(x + 0.5, y + 0.2, 0.2 + 0.3 * (1 - f), 0, TAU); fill(c, eye(0.3 * f)); }
+    c.beginPath(); c.moveTo(x + 0.06, y + 0.012); c.lineTo(x + 0.94, y + 0.012); stroke(c, Vw, C.eye, LW.part);
+    if (Vw.lod) {
+      c.beginPath(); c.moveTo(x + 0.3, y + 0.012);
+      const n = 5;
+      for (let i = 1; i <= n; i++) c.lineTo(x + 0.3 + (0.4 * i) / n, y + 0.012 + (i % 2 ? top - y - 0.02 : 0));
+      stroke(c, Vw, eye(0.7), LW.hair);
+    }
+    c.beginPath(); rrect(c, x + 0.14, top - 0.02, 0.72, 0.07, 0.03); fill(c, C.paper); fill(c, eye(pr ? 0.65 : 0.3)); stroke(c, Vw, C.eye, LW.part);
+    if (!linked) { c.beginPath(); c.arc(x + 0.84, y + 0.5, 0.075, 0, TAU); fill(c, C.bad); stroke(c, Vw, C['paper-deep'], LW.thin); }
+  }
+  // Makara: üstüne ip sarılı tambur ve dişli göbek (komşu dişliye geçer). Kurarken sarma yönü ok ve "up".
+  function drawWinch(c, Vw, p, rt, ann) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), cx = p.x + 0.5, cy = p.y + 0.5;
+    const dir = p.o === 'ccw' ? 1 : -1;
+    c.save(); c.translate(cx, cy);
+    gearPath(c, T.gearR + 0.04, 10, ang); fill(c, C.paper); fill(c, ink(rt && rt.spin ? 0.18 : 0.08)); stroke(c, Vw, ink(0.85), LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.3, 0, TAU); fill(c, C.paper); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) {
+      c.save(); c.beginPath(); c.arc(0, 0, 0.29, 0, TAU); c.clip();
+      c.rotate(ang);
+      c.beginPath(); for (let k = -0.3; k <= 0.3; k += 0.075) { c.moveTo(-0.3, k); c.lineTo(0.3, k + 0.06); }
+      stroke(c, Vw, ink(0.55), LW.hair); c.restore();
+    }
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.56, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.56, Math.sin(a1) * 0.56, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    // Yazı ekran koordinatıyla çizilir (dönüşümün dışında).
+    if (ann && Vw.lod) textAt(c, Vw, 'up', cx + (dir > 0 ? 0.62 : -0.62), cy + 0.42, Math.max(8, Math.min(11, Vw.cs * 0.18)), ink(0.75), 'center', 700, HALO);
+    if (rt && rt.jam) jamMark(c, Vw, cx, cy);
+  }
+  // Alev: titreyen damla, dışı turuncu-sarı, içi sarı.
+  const FLAME = '#ffad42';
+  function flame(c, Vw, fx, fy, time, k) {
+    const fl = reduceMotion ? 1 : 1 + 0.09 * Math.sin(time * 17 + fx * 3.1) + 0.05 * Math.sin(time * 31 + fy);
+    const h = 0.27 * fl * (k == null ? 1 : k), w = 0.11 * (k == null ? 1 : Math.min(1, k + 0.3));
+    const sway = reduceMotion ? 0 : 0.02 * Math.sin(time * 11 + fx);
+    c.beginPath(); c.moveTo(fx + sway, fy + h);
+    c.bezierCurveTo(fx + w, fy + h * 0.35, fx + w, fy - 0.07, fx, fy - 0.09);
+    c.bezierCurveTo(fx - w, fy - 0.07, fx - w, fy + h * 0.35, fx + sway, fy + h);
+    fill(c, rgba(FLAME, 0.95)); stroke(c, Vw, '#c4661c', LW.hair);
+    c.beginPath(); c.ellipse(fx, fy - 0.01, w * 0.45, h * 0.32, 0, 0, TAU); fill(c, C.ball);
+  }
+  // Mum: gövde, damla, tabak; fitil ve alev. Sönükse yalnız kıvrık fitil. Kurarken alevin yaktığı bölge kesik çizgiyle.
+  function drawCandle(c, Vw, p, rt, ann, time) {
+    const lit = rt ? rt.lit : !p.unlit, x = p.x, y = p.y;
+    c.beginPath(); c.rect(x + 0.24, y, 0.52, 0.05); fill(c, C.ink);
+    c.beginPath(); c.rect(x + 0.36, y + 0.05, 0.28, 0.57); fill(c, C.paper); fill(c, ink(0.1)); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) { c.beginPath(); c.moveTo(x + 0.6, y + 0.62); c.quadraticCurveTo(x + 0.63, y + 0.5, x + 0.6, y + 0.42); stroke(c, Vw, ink(0.6), LW.hair); }
+    c.beginPath(); c.moveTo(x + 0.5, y + 0.62); c.quadraticCurveTo(x + (lit ? 0.52 : 0.56), y + 0.68, x + (lit ? 0.5 : 0.54), y + 0.74); stroke(c, Vw, C.ink, LW.thin);
+    if (lit) {
+      const k = rt && rt.litStep > 0 && S.sim ? Math.min(1, (S.sim.steps - rt.litStep) * DT / 0.3) : 1;
+      flame(c, Vw, x + 0.5, y + 0.84, time, k);
+      if (ann && Vw.lod) {
+        const z = KM.candleZone(p);
+        c.beginPath(); c.rect(z[0], z[1] + 0.3, z[2] - z[0], z[3] - z[1] - 0.3); stroke(c, Vw, rgba(FLAME, 0.55), LW.hair, DASH.hidden);
+        c.beginPath();
+        for (const ox of [-0.12, 0.12]) { c.moveTo(x + 0.5 + ox, y + 1.15); c.quadraticCurveTo(x + 0.58 + ox, y + 1.3, x + 0.5 + ox, y + 1.45); c.quadraticCurveTo(x + 0.42 + ox, y + 1.58, x + 0.5 + ox, y + 1.7); }
+        stroke(c, Vw, rgba(FLAME, 0.6), LW.hair);
+      }
+    } else if (rt && rt.heat > 0.05) {
+      c.beginPath(); c.arc(x + 0.54, y + 0.74, 0.05 + 0.08 * rt.heat, 0, TAU); fill(c, rgba(FLAME, 0.35 + 0.4 * rt.heat));
+    }
+  }
+  // Mercek: iki yanı dışbükey cam, uçlarında kelepçe.
+  function drawLens(c, Vw, p, rt) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, hot = !!(rt && rt.hot);
+    c.beginPath(); c.ellipse(cx, cy, 0.4, 0.1, 0, 0, TAU); fill(c, 'rgba(214,236,255,0.42)'); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) { c.beginPath(); c.ellipse(cx - 0.12, cy + 0.03, 0.12, 0.025, 0, 0, TAU); fill(c, 'rgba(255,255,255,0.7)'); }
+    for (const sx of [-1, 1]) { c.beginPath(); c.rect(cx + sx * 0.44 - 0.04, cy - 0.08, 0.08, 0.16); fill(c, C.ink); }
+    if (hot) { c.beginPath(); c.ellipse(cx, cy, 0.42, 0.12, 0, 0, TAU); stroke(c, Vw, rgba(C.ball, 0.6), LW.thin); }
+  }
+  // Güneş ışığı: tepeden merceğe dik bir ışık sütunu, mercekten odağa iki yakınsayan çizgi, odakta işaret.
+  // Kurarken engel kırmızı çarpıyla gösterilir (ışık gelmiyor ya da odak oluşmuyor).
+  function drawSunlight(c, Vw, p, info, run, time) {
+    const x = p.x, y = p.y, cy = y + 0.5, F = KM.lensFocus(p), hot = run ? info.hot : info.sun && info.focusOk;
+    const top = info.sun ? H : info.blockY;
+    if (top > y + 0.6) {
+      c.beginPath(); c.rect(x + 0.12, cy + 0.1, 0.76, top - cy - 0.1); fill(c, rgba(C.ball, info.sun ? (run ? 0.07 : 0.1) : 0.04));
+      c.beginPath(); for (const rx of [0.12, 0.5, 0.88]) { c.moveTo(x + rx, top); c.lineTo(x + rx, cy + 0.1); }
+      stroke(c, Vw, rgba(C.ball, info.sun ? 0.55 : 0.25), LW.hair, DASH.hidden);
+    }
+    if (!info.sun && !run) jamMark(c, Vw, x + 0.5, info.blockY + 0.5);
+    if (!info.sun) return;
+    c.beginPath(); c.moveTo(x + 0.12, cy - 0.06); c.lineTo(F[0], F[1]); c.moveTo(x + 0.88, cy - 0.06); c.lineTo(F[0], F[1]);
+    stroke(c, Vw, rgba(C.ball, info.focusOk ? 0.75 : 0.3), LW.thin, info.focusOk ? null : DASH.hidden);
+    if (!info.focusOk) { if (!run) jamMark(c, Vw, x + 0.5, y - 0.5); return; }
+    const pulse = reduceMotion ? 1 : 0.75 + 0.25 * Math.sin(time * 9);
+    if (hot) { c.beginPath(); c.arc(F[0], F[1], 0.17 * pulse, 0, TAU); fill(c, rgba(C.ball, run ? 0.55 : 0.3)); }
+    c.beginPath(); c.arc(F[0], F[1], 0.06, 0, TAU); fill(c, C.ball);
+    if (!run && Vw.lod) {
+      c.beginPath(); c.moveTo(F[0] - 0.16, F[1]); c.lineTo(F[0] + 0.16, F[1]); c.moveTo(F[0], F[1] - 0.16); c.lineTo(F[0], F[1] + 0.16); stroke(c, Vw, rgba(C.ball, 0.9), LW.hair);
+    }
+  }
+  // Tahtanın sağ üst köşesinde küçük güneş: mercekli çizimde ışığın tepeden geldiğini anlatır.
+  function drawSun(c, Vw, time) {
+    const x = W - 0.55, y = H - 0.55, a0 = reduceMotion ? 0 : time * 0.4;
+    c.beginPath(); c.arc(x, y, 0.2, 0, TAU); fill(c, rgba(C.ball, 0.85)); stroke(c, Vw, GOLD, LW.thin);
+    c.beginPath();
+    for (let i = 0; i < 8; i++) { const a = a0 + i * TAU / 8; c.moveTo(x + Math.cos(a) * 0.28, y + Math.sin(a) * 0.28); c.lineTo(x + Math.cos(a) * 0.4, y + Math.sin(a) * 0.4); }
+    c.lineCap = 'round'; stroke(c, Vw, rgba(C.ball, 0.85), LW.part); c.lineCap = 'butt';
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -3671,6 +4363,12 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     else if (p.type === 'lift') drawLift(c, Vw, p, rt, ann);
     else if (p.type === 'turbine') drawTurbine(c, Vw, p, rt, ann);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
+    else if (p.type === 'pulley') drawPulley(c, Vw, p, rt);
+    else if (p.type === 'motor') drawMotor(c, Vw, p, rt, ann);
+    else if (p.type === 'button') drawButton(c, Vw, p, rt, true);
+    else if (p.type === 'winch') drawWinch(c, Vw, p, rt, ann);
+    else if (p.type === 'candle') drawCandle(c, Vw, p, rt, ann, time);
+    else if (p.type === 'lens') drawLens(c, Vw, p, rt);
     if (p.fixed) fixings(c, Vw, p);
   }
 
@@ -3748,6 +4446,19 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
   // ---------------------------------------------------------------- yardımcılar (kurulum)
   const allParts = () => KM.listParts(S.level, S.parts);
   const devicesAll = () => allParts().filter(p => PARTS[p.type].manual);
+  // Sensör ve düğme bir cihaza bağlanır (elle kumandalılar ve motor); kasnak kayışla başka bir kasnağa.
+  const isLinker = p => p.type === 'sensor' || p.type === 'button';
+  const linkTargets = () => allParts().filter(p => PARTS[p.type].manual || PARTS[p.type].switched);
+  const pulleysAll = () => allParts().filter(p => p.type === 'pulley');
+  // Kurarken merceğin güneş bilgisi; kurulum değişmedikçe yeniden hesaplanmaz.
+  let sunCache = { key: '', map: new Map() };
+  function sunMemo(p, items) {
+    const key = S.level.id + '#' + items.map(it => it.p.type + it.p.x + ',' + it.p.y + it.p.o).join('|');
+    if (sunCache.key !== key) sunCache = { key, map: new Map() };
+    const k = p.id + '@' + p.x + ',' + p.y;
+    if (!sunCache.map.has(k)) sunCache.map.set(k, KM.sunInfo(S.level, items.map(it => it.p), p));
+    return sunCache.map.get(k);
+  }
   const trayTotal = () => Object.values(S.level.tray || {}).reduce((a, b) => a + b, 0);
   const trayLeft = type => ((S.level.tray || {})[type] || 0) - S.parts.filter(p => p.type === type).length;
   // Bütün çizimler açık (9 Kasım 2026, Umut'un isteği): sıra yalnızca öneri.
@@ -3756,14 +4467,27 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
   function autoLink(sensor) {
     const [sx, sy] = centerOf(sensor);
     let best = null, bd = 1e9;
-    for (const d of devicesAll()) {
+    for (const d of linkTargets()) {
       const [dx, dy] = centerOf(d), dist = Math.hypot(dx - sx, dy - sy);
       if (dist < bd) { bd = dist; best = d; }
     }
     sensor.link = best ? best.id : null;
   }
+  // Yeni kasnak kayışını en yakın, henüz kayışı olmayan kasnağa takar.
+  const beltCount = id => pulleysAll().filter(q => q.id === id ? q.link != null : q.link === id).length;
+  function autoBelt(pul) {
+    const [sx, sy] = centerOf(pul);
+    let best = null, bd = 1e9;
+    for (const q of pulleysAll()) {
+      if (q.id === pul.id || beltCount(q.id)) continue;
+      const [qx, qy] = centerOf(q), dist = Math.hypot(qx - sx, qy - sy);
+      if (dist < bd) { bd = dist; best = q; }
+    }
+    pul.link = best ? best.id : null;
+  }
   function relinkAfterRemoval(id) {
-    for (const s of S.parts) if (s.type === 'sensor' && s.link === id) autoLink(s);
+    for (const s of S.parts) if (isLinker(s) && s.link === id) autoLink(s);
+    for (const s of S.parts) if (s.type === 'pulley' && s.link === id) s.link = null;
   }
   function cellHit(list, w) {
     const cx = Math.floor(w.x), cy = Math.floor(w.y);
@@ -3785,18 +4509,36 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, kindIdx(kinds[i]), !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
     for (const cup of KM.cupsOf(L)) drawCup(c, V, cup, time);
     drawPipe(c, V, L);
-    for (const it of items) if (it.p.type !== 'sensor') drawPart(c, V, it.p, it.rt, time, ann);
     const byId = {};
     for (const it of items) byId[it.p.id] = it.p;
+    // Güneş ışığı (mercek) ve kayışlar parçaların arkasında.
+    const lensItems = items.filter(it => it.p.type === 'lens');
+    if (lensItems.length || ((L.tray || {}).lens > 0)) drawSun(c, V, time);
+    for (const it of lensItems) drawSunlight(c, V, it.p, run ? it.rt : sunMemo(it.p, items), run, time);
+    if (run) for (const [a, b] of S.sim.belts) drawBeltLoop(c, V, [a.x + 0.5, a.y + 0.5], [b.x + 0.5, b.y + 0.5], a.spin, time, 1);
+    else {
+      const done = new Set();
+      for (const it of items) {
+        if (it.p.type !== 'pulley' || it.p.link == null) continue;
+        const t = byId[it.p.link];
+        if (!t || t === it.p || t.type !== 'pulley') continue;
+        const key = [it.p.id, t.id].sort().join('|');
+        if (done.has(key)) continue;
+        done.add(key);
+        drawBeltLoop(c, V, [it.p.x + 0.5, it.p.y + 0.5], [t.x + 0.5, t.y + 0.5], 0, time, 0.85);
+      }
+    }
+    for (const it of items) if (it.p.type !== 'sensor' && it.p.type !== 'button') drawPart(c, V, it.p, it.rt, time, ann);
     for (const it of items) {
-      if (it.p.type !== 'sensor') continue;
+      if (!isLinker(it.p)) continue;
       const target = run ? (it.rt.link && it.rt.link.p) : byId[it.p.link];
       const age = run && it.rt.flash > 0 ? 0.4 - it.rt.flash : -1;
       if (target) drawLink(c, V, it.p, target, age >= 0 && age < 0.24 && !reduceMotion ? age / 0.24 : null);
     }
     for (const it of items) {
-      if (it.p.type !== 'sensor') continue;
-      drawSensor(c, V, it.p, it.rt, run ? !!it.rt.link : !!byId[it.p.link]);
+      if (!isLinker(it.p)) continue;
+      const linked = run ? !!it.rt.link : !!byId[it.p.link];
+      if (it.p.type === 'button') drawButton(c, V, it.p, it.rt, linked); else drawSensor(c, V, it.p, it.rt, linked);
     }
     if (ann) for (const it of items) {
       if (it.p.type === 'fan') drawFanRange(c, V, it.p);
@@ -3834,9 +4576,12 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 1.5);
     }
     if (S.linkFrom) {
-      const pulse = 0.55 + 0.4 * Math.sin(time * 7);
-      for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 2.5);
-      outline(c, V, S.linkFrom, C.eye, 0.9, 2.5);
+      const pulse = 0.55 + 0.4 * Math.sin(time * 7), belt = S.linkFrom.type === 'pulley';
+      for (const it of items) {
+        if (belt ? it.p.type === 'pulley' && it.p.id !== S.linkFrom.id : PARTS[it.p.type].manual || PARTS[it.p.type].switched)
+          outline(c, V, it.p, PARTS[it.p.type].manual ? C.hand : C.ink, pulse, 2.5);
+      }
+      outline(c, V, S.linkFrom, belt ? C.ink : C.eye, 0.9, 2.5);
     }
     if (cand) {
       for (const q of KM.cellsOf(cand)) {
@@ -3894,6 +4639,22 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
           const a = i * TAU / 5 + 1.1, r = 0.25 + 0.7 * k;
           c.beginPath(); c.arc(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r - 0.5 * k * k, 0.06, 0, TAU); fill(c, rgba(BALLOON, 1 - k));
         }
+      } else if (f.k === 'burn') {
+        // İp yandı: kıvılcımlar ve yükselen duman.
+        const k = age / 0.7; if (k >= 1) continue;
+        c.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = i * TAU / 8 + 0.4, r0 = 0.08 + 0.35 * k, r1 = r0 + 0.1 * (1 - k);
+          c.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); c.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+        }
+        c.lineCap = 'round'; stroke(c, V, rgba(FLAME, 0.95 * (1 - k)), LW.part); c.lineCap = 'butt';
+        for (let i = 0; i < 3; i++) {
+          const q = Math.max(0, k * 1.2 - i * 0.15);
+          c.beginPath(); c.arc(f.x + 0.08 * Math.sin(i * 2 + q * 6), f.y + 0.2 + q * 0.9, 0.07 + q * 0.12, 0, TAU); fill(c, ink(0.22 * (1 - k)));
+        }
+      } else if (f.k === 'ignite') {
+        const k = age / 0.5; if (k >= 1) continue;
+        c.beginPath(); c.arc(f.x, f.y, 0.1 + 0.45 * k, 0, TAU); stroke(c, V, rgba(FLAME, 0.9 * (1 - k)), LW.part);
       } else if (f.k === 'win') {
         // Makine çalıştı: kovadan çıkan ışınlar ve kovanın üstünde kendini çizen onay işareti.
         const k = age / 1.15; if (k >= 1) continue;
@@ -3972,7 +4733,8 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     let t;
     if (S.mode === 'edit') t = TOOL_HINT[S.edit.tool];
     else if (S.mode === 'run') t = h.run || 'The machine is running. Hold Fast to speed it up, or press Stop to go back to building.';
-    else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
+    else if (S.linkFrom) t = S.linkFrom.type === 'pulley' ? 'Tap another pulley to run the belt to it. Tap this pulley again to take its belt off.'
+      : `Tap a device to link the ${NAMES[S.linkFrom.type].toLowerCase()} to it. Tap an empty spot to cancel.`;
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
       t = missing ? (h.after || 'Go for the missing stamps.')
@@ -4165,9 +4927,12 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       return p || null;
     });
     const linkOk = G.sol.parts.map((q, j) => {
-      if (q.type !== 'sensor' || !m[j] || q.link == null) return true;
+      if (!(q.type === 'sensor' || q.type === 'button' || q.type === 'pulley') || !m[j] || q.link == null) return true;
       const want = typeof q.link === 'number' ? (m[q.link - 1] && m[q.link - 1].id) : q.link;
-      return want != null && m[j].link === want;
+      if (want == null) return false;
+      // Kayış iki yönlü: hangi kasnakta yazılı olduğu fark etmez.
+      if (q.type === 'pulley') return m[j].link === want || S.parts.some(o => o.id === want && o.link === m[j].id);
+      return m[j].link === want;
     });
     return { m, linkOk, extra: S.parts.filter(p => !used.has(p)) };
   }
@@ -4245,9 +5010,10 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       if (j < 0) {   // hepsi yerinde, bir sensörün bağlantısı yanlış
         const js = G.idx.find(k => !linkOk[k]), sp = m[js], q2 = G.sol.parts[js];
         const dev = typeof q2.link === 'number' ? m[q2.link - 1] : S.level.fixed[+String(q2.link).slice(1)];
-        const dn = dev ? nameOf(dev.type) : 'device';
-        if (S.linkFrom === sp && dev) return { key: 'link2' + js, say: `Now tap the ${dn}.`, rect: boardRect(...partBox(dev)), box: partBox(dev, 0.1), ghosts, quiet, tap: boardRect(...partBox(dev)) };
-        return { key: 'link' + js, say: `The sensor has to work the ${dn}. Tap the sensor, then tap the ${dn}.`, rect: boardRect(...partBox(sp)), box: partBox(sp, 0.1), ghosts, quiet, tap: boardRect(...partBox(sp)) };
+        const dn = dev ? nameOf(dev.type) : 'device', sn = nameOf(sp.type);
+        if (S.linkFrom === sp && dev) return { key: 'link2' + js, say: sp.type === 'pulley' ? 'Now tap the other pulley.' : `Now tap the ${dn}.`, rect: boardRect(...partBox(dev)), box: partBox(dev, 0.1), ghosts, quiet, tap: boardRect(...partBox(dev)) };
+        const say = sp.type === 'pulley' ? 'Run the belt: tap this pulley, then tap the other pulley.' : `The ${sn} has to work the ${dn}. Tap the ${sn}, then tap the ${dn}.`;
+        return { key: 'link' + js, say, rect: boardRect(...partBox(sp)), box: partBox(sp, 0.1), ghosts, quiet, tap: boardRect(...partBox(sp)) };
       }
       const qr = boardRect(...partBox(q));
       const wrong = S.parts.find(p => !m.includes(p) && p.type === q.type && p.x === q.x && p.y === q.y);
@@ -4459,7 +5225,8 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
 
   function addPlaced(p) {
     S.parts.push(p);
-    if (p.type === 'sensor' && (p.link == null || !devicesAll().some(d => d.id === p.link))) autoLink(p);
+    if (isLinker(p) && (p.link == null || !linkTargets().some(d => d.id === p.link))) autoLink(p);
+    if (p.type === 'pulley' && (p.link == null || !pulleysAll().some(q => q.id === p.link && q.id !== p.id))) autoBelt(p);
   }
 
   // ---------------------------------------------------------------- sürükle-bırak
@@ -4524,9 +5291,11 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     }
   }
 
-  function enterLink(sensor) {
-    if (!devicesAll().length) { toast('There is no orange device to link in this drawing.'); return; }
-    S.linkFrom = sensor; sfx('tick'); setHint();
+  function enterLink(part) {
+    if (part.type === 'pulley') {
+      if (!pulleysAll().some(q => q.id !== part.id)) { toast('A belt needs two pulleys.'); return; }
+    } else if (!linkTargets().length) { toast('There is no device to link in this drawing.'); return; }
+    S.linkFrom = part; sfx('tick'); setHint();
   }
   function exitLink() { if (S.linkFrom) { S.linkFrom = null; setHint(); } }
 
@@ -4544,8 +5313,19 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     }
     if (S.drag) return;
     if (S.linkFrom) {
-      const t = cellHit(devicesAll(), w);
-      if (t) { S.linkFrom.link = t.id; sfx('link'); saveSetup(); }
+      const src = S.linkFrom;
+      if (src.type === 'pulley') {
+        const t = cellHit(pulleysAll(), w);
+        if (t && t.id === src.id) {
+          // Aynı kasnağa dokununca kayışları çıkar.
+          src.link = null;
+          for (const q of S.parts) if (q.type === 'pulley' && q.link === src.id) q.link = null;
+          sfx('remove'); saveSetup();
+        } else if (t) { src.link = t.id; sfx('link'); saveSetup(); }
+      } else {
+        const t = cellHit(linkTargets(), w);
+        if (t) { src.link = t.id; sfx('link'); saveSetup(); }
+      }
       exitLink();
       return;
     }
@@ -4574,7 +5354,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     const pr = S.press;
     if (pr && e.pointerId === pr.pid) {
       S.press = null;
-      if (pr.part.type === 'sensor') enterLink(pr.part); else rotatePart(pr.part);
+      if (isLinker(pr.part) || pr.part.type === 'pulley') enterLink(pr.part); else rotatePart(pr.part);
       return;
     }
     const rt = S.held.get(e.pointerId);
@@ -4618,7 +5398,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.goalN = 0; S.goalAt = null; S.winAt = null; S.flashT = null; S.lastHit = []; S.newSeen = true;
     S.held.clear();
-    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on })); S.popsSeen = 0;
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on, lit: rt.lit })); S.popsSeen = 0; S.burnsSeen = 0;
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run'); musicMode('run');
     refreshSide(); buildPult(); updatePult();
@@ -4714,12 +5494,24 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter', crank: 'tick' }[rt.type] || 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter', crank: 'tick', motor: 'tick', button: 'button', winch: 'unhook' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
         if (rt.type === 'crank' && rt.on && !s.on) sfx('crank');
-        s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
+        if (rt.type === 'motor' && rt.on !== s.on) sfx(rt.on ? 'motor' : 'stop');
+        if (rt.type === 'candle' && rt.lit && !s.lit) {
+          sfx('ignite');
+          if (!reduceMotion) S.fx.push({ k: 'ignite', x: rt.x + 0.5, y: rt.y + 0.8, t: S.time });
+        }
+        s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on; s.lit = rt.lit;
       });
+      if (sim.burns.length > S.burnsSeen) {
+        for (const b of sim.burns.slice(S.burnsSeen)) {
+          sfx('burn', { x: b.x / W * 2 - 1 });
+          if (!reduceMotion) S.fx.push({ k: 'burn', x: b.x, y: b.y, t: S.time });
+        }
+        S.burnsSeen = sim.burns.length;
+      }
       if (sim.pops > S.popsSeen) {
         S.popsSeen = sim.pops;
         for (const bl of sim.balloons) if (!bl.alive && !bl.fxDone) {
@@ -4901,7 +5693,7 @@ body.compact.rail #ff, body.compact.rail #run { flex: none; }
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors', 5: 'Gears and Wind' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors', 5: 'Gears and Wind', 6: 'Belts and Motors', 7: 'Fire and Light' };
 
   // ---------------------------------------------------------------- Atölye: kendi çizimin
   // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.

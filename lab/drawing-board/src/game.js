@@ -4,9 +4,9 @@
   const KM = window.KM, LEVELS = window.KM_LEVELS;
   const { W, H, DT, T, PARTS, DIRS } = KM;
   const TAU = Math.PI * 2;
-  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin', crank: 'Crank', gear: 'Gear', lift: 'Lift', turbine: 'Turbine' };
-  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gear', 'lift', 'turbine', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'crank', 'sensor'];
-  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u', crank: 'cw', gear: '-', lift: 'r', turbine: 'cw' };
+  const NAMES = { ramp: 'Ramp', spring: 'Spring', belt: 'Conveyor', piston: 'Piston', fan: 'Fan', sensor: 'Sensor', gate: 'Gate', magnet: 'Magnet', flipper: 'Flipper', bumper: 'Bumper', cutter: 'Scissors', pin: 'Pin', crank: 'Crank', gear: 'Gear', lift: 'Lift', turbine: 'Turbine', pulley: 'Pulley', motor: 'Motor', button: 'Button', winch: 'Winch', candle: 'Candle', lens: 'Lens' };
+  const ORDER = ['ramp', 'spring', 'belt', 'bumper', 'pin', 'gear', 'pulley', 'lift', 'winch', 'turbine', 'candle', 'lens', 'gate', 'piston', 'fan', 'flipper', 'magnet', 'cutter', 'crank', 'motor', 'sensor', 'button'];
+  const DEFAULT_O = { ramp: 'dr', spring: 'u', belt: 'r', piston: 'u', fan: 'r', sensor: '-', gate: 'u', magnet: 'l', flipper: 'l', bumper: 'r', cutter: '-', pin: 'u', crank: 'cw', gear: '-', lift: 'r', turbine: 'cw', pulley: '-', motor: 'cw', button: '-', winch: 'ccw', candle: '-', lens: '-' };
   const $ = id => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -87,6 +87,12 @@
     gear: ['New part', 'Gear', 'Gears side by side turn each other, each the other way round.'],
     turbine: ['New part', 'Turbine', 'Wind from a fan spins it, and it turns the gear next to it.'],
     lift: ['New part', 'Lift', 'A gear at its side moves it up or down. When the gear stops, it stays.'],
+    pulley: ['New part', 'Pulley', 'A gear with a groove. Two pulleys joined by a belt turn the same way, however far apart.'],
+    winch: ['New part', 'Winch', 'Turned the right way, it winds in its rope and pulls the ball to it. At the top, the hook lets go.'],
+    motor: ['New part', 'Motor', 'Turns the gear next to it all by itself. Your hands can’t start it: a sensor or a button can.'],
+    button: ['New part', 'Button', 'While a ball sits on it, the linked device runs.'],
+    candle: ['New part', 'Candle', 'Its flame burns through a rope above it, pops balloons and lights other candles.'],
+    lens: ['New part', 'Lens', 'Catches the sunlight from above and focuses it two squares down: hot enough to light a candle or burn a rope.'],
   };
   const INTRO = (() => {
     const seen = new Set();
@@ -756,13 +762,17 @@
     if (run) {
       const sim = S.sim;
       for (const r of sim.ropes) {
-        if (r.kind === 'hang') hook(c, Vw, r.hook[0], r.hook[1]);
+        if (r.kind === 'hang' && !r.winch) hook(c, Vw, r.hook[0], r.hook[1]);
         if (r.cut) {
           if (r.kind === 'hang') rope(c, Vw, r.hook, [r.hook[0], r.hook[1] - 0.35], 0.6);
           continue;
         }
         const a = r.bodyA.getWorldPoint(r.la), b = r.bodyB.getWorldPoint(r.lb);
         rope(c, Vw, [a.x, a.y], [b.x, b.y], 1);
+        if (r.hotAt && r.heat > 0.02) {
+          // Isınan ip: ısındıkça büyüyen kor.
+          c.beginPath(); c.arc(r.hotAt[0], r.hotAt[1] + 0.05, 0.05 + 0.1 * r.heat, 0, TAU); fill(c, rgba(FLAME, 0.4 + 0.5 * r.heat));
+        }
       }
       for (const bl of sim.balloons) {
         if (!bl.alive) continue;
@@ -772,7 +782,15 @@
       }
     } else {
       const st = KM.startsOf(L);
-      for (const h of L.hangs || []) { const b = st[h.ball || 0]; rope(c, Vw, [h.x, h.y], [b.x, b.y + T.R], 0.8); hook(c, Vw, h.x, h.y); }
+      for (const h of L.hangs || []) {
+        const b = st[h.ball || 0];
+        if (h.winch != null) {
+          const w = (L.fixed || [])[+String(h.winch).slice(1)];
+          if (w) rope(c, Vw, [w.x + 0.5, w.y + 0.2], [b.x, b.y], 0.8);   // makara ipi topun ortasına bağlı
+          continue;
+        }
+        rope(c, Vw, [h.x, h.y], [b.x, b.y + T.R], 0.8); hook(c, Vw, h.x, h.y);
+      }
       for (const q of L.balloons || []) {
         const b = st[q.ball || 0], len = q.len || 1.1;
         // Üstünde raf varsa balon rafın altında başlar (ip gevşek).
@@ -880,6 +898,175 @@
     if (rt && rt.jam) jamMark(c, Vw, p.x + 1, y + 0.3);
   }
 
+  // Kasnak: kayış oluklu dişli (dişli gibi komşusuna geçer). Kayış öbür kasnağa iki teğet çizgiyle gider.
+  function drawPulley(c, Vw, p, rt) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), turning = !!(rt && rt.spin);
+    c.save(); c.translate(p.x + 0.5, p.y + 0.5);
+    gearPath(c, T.gearR + 0.04, 10, ang); fill(c, C.paper); fill(c, ink(turning ? 0.2 : 0.1)); stroke(c, Vw, C.ink, LW.part);
+    c.beginPath(); c.arc(0, 0, 0.31, 0, TAU); c.arc(0, 0, 0.21, 0, TAU, true); fill(c, ink(0.32));
+    c.beginPath(); c.arc(0, 0, 0.31, 0, TAU); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.21, 0, TAU); stroke(c, Vw, C.ink, LW.thin);
+    if (Vw.lod) for (let i = 0; i < 3; i++) {
+      const a = ang + i * TAU / 3;
+      c.beginPath(); c.moveTo(Math.cos(a) * 0.08, Math.sin(a) * 0.08); c.lineTo(Math.cos(a) * 0.2, Math.sin(a) * 0.2); stroke(c, Vw, ink(0.7), LW.thin);
+    }
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    c.restore();
+    if (rt && rt.jam) jamMark(c, Vw, p.x + 0.5, p.y + 0.5);
+  }
+  // Kayış: iki kasnağın oluğundan geçen iki düz kol. Dönerken üstündeki çizgiler kayar.
+  function drawBeltLoop(c, Vw, a, b, spin, time, alpha) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy);
+    if (d < 0.01) return;
+    const nx = -dy / d, ny = dx / d, r = 0.26;
+    for (const sgn of [1, -1]) {
+      c.beginPath(); c.moveTo(a[0] + nx * r * sgn, a[1] + ny * r * sgn); c.lineTo(b[0] + nx * r * sgn, b[1] + ny * r * sgn);
+      stroke(c, Vw, ink(0.92 * alpha), LW.edge + 0.6);
+      if (Vw.lod) {
+        c.save();
+        c.setLineDash([Vw.lw(2.5), Vw.lw(6)]);
+        c.lineDashOffset = reduceMotion || !spin ? 0 : -Vw.lw(time * 26 * Math.sign(spin) * sgn);
+        c.lineWidth = Vw.lw(LW.thin); c.strokeStyle = rgba(C['paper-deep'], 0.85 * alpha); c.stroke();
+        c.restore();
+      }
+    }
+  }
+  // Motor: gövde (soğutma kanatları), ortada dönen mil dişlisi, açıkken lamba yanar.
+  // Elle açılmaz, bu yüzden turuncu değil: sensör ya da düğme çalıştırır.
+  function drawMotor(c, Vw, p, rt, ann) {
+    const on = !!(rt && rt.on), x = p.x, y = p.y, dir = p.o === 'ccw' ? 1 : -1;
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0);
+    c.beginPath(); rrect(c, x + 0.08, y + 0.1, 0.84, 0.8, 0.09); fill(c, C.paper); fill(c, ink(on ? 0.22 : 0.1)); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) {
+      c.beginPath();
+      for (const fx of [0.16, 0.24, 0.76, 0.84]) { c.moveTo(x + fx, y + 0.2); c.lineTo(x + fx, y + 0.8); }
+      stroke(c, Vw, ink(0.55), LW.hair);
+    }
+    c.save(); c.translate(x + 0.5, y + 0.5);
+    gearPath(c, 0.25, 8, ang); fill(c, C.paper); stroke(c, Vw, C.ink, LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.06, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.58, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.58, Math.sin(a1) * 0.58, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    c.beginPath(); c.arc(x + 0.79, y + 0.79, 0.06, 0, TAU); fill(c, on ? C.ball : C['paper-deep']); stroke(c, Vw, C.ink, LW.hair);
+    if (on && !reduceMotion) { c.beginPath(); c.arc(x + 0.79, y + 0.79, 0.12, 0, TAU); fill(c, rgba(C.ball, 0.25)); }
+    if (Vw.lod > 1) textAt(c, Vw, 'M', x + 0.22, y + 0.79, Math.max(8, Vw.cs * 0.16), ink(0.8), 'center', 700);
+    if (rt && rt.jam) jamMark(c, Vw, x + 0.5, y + 0.5);
+  }
+  // Düğme: zemindeki camgöbeği basma plakası, altında yay. Üstünde top durdukça bağlı cihaz çalışır.
+  function drawButton(c, Vw, p, rt, linked) {
+    const x = p.x, y = p.y, pr = !!(rt && rt.pressed), f = rt ? Math.max(0, rt.flash / 0.4) : 0;
+    const top = y + (pr ? 0.05 : 0.14);
+    if (f > 0) { c.beginPath(); c.arc(x + 0.5, y + 0.2, 0.2 + 0.3 * (1 - f), 0, TAU); fill(c, eye(0.3 * f)); }
+    c.beginPath(); c.moveTo(x + 0.06, y + 0.012); c.lineTo(x + 0.94, y + 0.012); stroke(c, Vw, C.eye, LW.part);
+    if (Vw.lod) {
+      c.beginPath(); c.moveTo(x + 0.3, y + 0.012);
+      const n = 5;
+      for (let i = 1; i <= n; i++) c.lineTo(x + 0.3 + (0.4 * i) / n, y + 0.012 + (i % 2 ? top - y - 0.02 : 0));
+      stroke(c, Vw, eye(0.7), LW.hair);
+    }
+    c.beginPath(); rrect(c, x + 0.14, top - 0.02, 0.72, 0.07, 0.03); fill(c, C.paper); fill(c, eye(pr ? 0.65 : 0.3)); stroke(c, Vw, C.eye, LW.part);
+    if (!linked) { c.beginPath(); c.arc(x + 0.84, y + 0.5, 0.075, 0, TAU); fill(c, C.bad); stroke(c, Vw, C['paper-deep'], LW.thin); }
+  }
+  // Makara: üstüne ip sarılı tambur ve dişli göbek (komşu dişliye geçer). Kurarken sarma yönü ok ve "up".
+  function drawWinch(c, Vw, p, rt, ann) {
+    const ang = (rt && rt.body ? rt.body.getAngle() : 0) + ((p.x + p.y) % 2 ? Math.PI / 10 : 0), cx = p.x + 0.5, cy = p.y + 0.5;
+    const dir = p.o === 'ccw' ? 1 : -1;
+    c.save(); c.translate(cx, cy);
+    gearPath(c, T.gearR + 0.04, 10, ang); fill(c, C.paper); fill(c, ink(rt && rt.spin ? 0.18 : 0.08)); stroke(c, Vw, ink(0.85), LW.thin);
+    c.beginPath(); c.arc(0, 0, 0.3, 0, TAU); fill(c, C.paper); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) {
+      c.save(); c.beginPath(); c.arc(0, 0, 0.29, 0, TAU); c.clip();
+      c.rotate(ang);
+      c.beginPath(); for (let k = -0.3; k <= 0.3; k += 0.075) { c.moveTo(-0.3, k); c.lineTo(0.3, k + 0.06); }
+      stroke(c, Vw, ink(0.55), LW.hair); c.restore();
+    }
+    c.beginPath(); c.arc(0, 0, 0.07, 0, TAU); fill(c, C['paper-deep']); stroke(c, Vw, C.ink, LW.thin);
+    if (ann && Vw.lod) {
+      const a0 = dir > 0 ? -0.6 : 0.6 + Math.PI, a1 = a0 + dir * 1.5;
+      c.beginPath(); c.arc(0, 0, 0.56, Math.min(a0, a1), Math.max(a0, a1)); stroke(c, Vw, ink(0.55), LW.hair);
+      arrow(c, Vw, Math.cos(a1) * 0.56, Math.sin(a1) * 0.56, a1 + dir * Math.PI / 2, 6, ink(0.65));
+    }
+    c.restore();
+    // Yazı ekran koordinatıyla çizilir (dönüşümün dışında).
+    if (ann && Vw.lod) textAt(c, Vw, 'up', cx + (dir > 0 ? 0.62 : -0.62), cy + 0.42, Math.max(8, Math.min(11, Vw.cs * 0.18)), ink(0.75), 'center', 700, HALO);
+    if (rt && rt.jam) jamMark(c, Vw, cx, cy);
+  }
+  // Alev: titreyen damla, dışı turuncu-sarı, içi sarı.
+  const FLAME = '#ffad42';
+  function flame(c, Vw, fx, fy, time, k) {
+    const fl = reduceMotion ? 1 : 1 + 0.09 * Math.sin(time * 17 + fx * 3.1) + 0.05 * Math.sin(time * 31 + fy);
+    const h = 0.27 * fl * (k == null ? 1 : k), w = 0.11 * (k == null ? 1 : Math.min(1, k + 0.3));
+    const sway = reduceMotion ? 0 : 0.02 * Math.sin(time * 11 + fx);
+    c.beginPath(); c.moveTo(fx + sway, fy + h);
+    c.bezierCurveTo(fx + w, fy + h * 0.35, fx + w, fy - 0.07, fx, fy - 0.09);
+    c.bezierCurveTo(fx - w, fy - 0.07, fx - w, fy + h * 0.35, fx + sway, fy + h);
+    fill(c, rgba(FLAME, 0.95)); stroke(c, Vw, '#c4661c', LW.hair);
+    c.beginPath(); c.ellipse(fx, fy - 0.01, w * 0.45, h * 0.32, 0, 0, TAU); fill(c, C.ball);
+  }
+  // Mum: gövde, damla, tabak; fitil ve alev. Sönükse yalnız kıvrık fitil. Kurarken alevin yaktığı bölge kesik çizgiyle.
+  function drawCandle(c, Vw, p, rt, ann, time) {
+    const lit = rt ? rt.lit : !p.unlit, x = p.x, y = p.y;
+    c.beginPath(); c.rect(x + 0.24, y, 0.52, 0.05); fill(c, C.ink);
+    c.beginPath(); c.rect(x + 0.36, y + 0.05, 0.28, 0.57); fill(c, C.paper); fill(c, ink(0.1)); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) { c.beginPath(); c.moveTo(x + 0.6, y + 0.62); c.quadraticCurveTo(x + 0.63, y + 0.5, x + 0.6, y + 0.42); stroke(c, Vw, ink(0.6), LW.hair); }
+    c.beginPath(); c.moveTo(x + 0.5, y + 0.62); c.quadraticCurveTo(x + (lit ? 0.52 : 0.56), y + 0.68, x + (lit ? 0.5 : 0.54), y + 0.74); stroke(c, Vw, C.ink, LW.thin);
+    if (lit) {
+      const k = rt && rt.litStep > 0 && S.sim ? Math.min(1, (S.sim.steps - rt.litStep) * DT / 0.3) : 1;
+      flame(c, Vw, x + 0.5, y + 0.84, time, k);
+      if (ann && Vw.lod) {
+        const z = KM.candleZone(p);
+        c.beginPath(); c.rect(z[0], z[1] + 0.3, z[2] - z[0], z[3] - z[1] - 0.3); stroke(c, Vw, rgba(FLAME, 0.55), LW.hair, DASH.hidden);
+        c.beginPath();
+        for (const ox of [-0.12, 0.12]) { c.moveTo(x + 0.5 + ox, y + 1.15); c.quadraticCurveTo(x + 0.58 + ox, y + 1.3, x + 0.5 + ox, y + 1.45); c.quadraticCurveTo(x + 0.42 + ox, y + 1.58, x + 0.5 + ox, y + 1.7); }
+        stroke(c, Vw, rgba(FLAME, 0.6), LW.hair);
+      }
+    } else if (rt && rt.heat > 0.05) {
+      c.beginPath(); c.arc(x + 0.54, y + 0.74, 0.05 + 0.08 * rt.heat, 0, TAU); fill(c, rgba(FLAME, 0.35 + 0.4 * rt.heat));
+    }
+  }
+  // Mercek: iki yanı dışbükey cam, uçlarında kelepçe.
+  function drawLens(c, Vw, p, rt) {
+    const cx = p.x + 0.5, cy = p.y + 0.5, hot = !!(rt && rt.hot);
+    c.beginPath(); c.ellipse(cx, cy, 0.4, 0.1, 0, 0, TAU); fill(c, 'rgba(214,236,255,0.42)'); stroke(c, Vw, C.ink, LW.part);
+    if (Vw.lod) { c.beginPath(); c.ellipse(cx - 0.12, cy + 0.03, 0.12, 0.025, 0, 0, TAU); fill(c, 'rgba(255,255,255,0.7)'); }
+    for (const sx of [-1, 1]) { c.beginPath(); c.rect(cx + sx * 0.44 - 0.04, cy - 0.08, 0.08, 0.16); fill(c, C.ink); }
+    if (hot) { c.beginPath(); c.ellipse(cx, cy, 0.42, 0.12, 0, 0, TAU); stroke(c, Vw, rgba(C.ball, 0.6), LW.thin); }
+  }
+  // Güneş ışığı: tepeden merceğe dik bir ışık sütunu, mercekten odağa iki yakınsayan çizgi, odakta işaret.
+  // Kurarken engel kırmızı çarpıyla gösterilir (ışık gelmiyor ya da odak oluşmuyor).
+  function drawSunlight(c, Vw, p, info, run, time) {
+    const x = p.x, y = p.y, cy = y + 0.5, F = KM.lensFocus(p), hot = run ? info.hot : info.sun && info.focusOk;
+    const top = info.sun ? H : info.blockY;
+    if (top > y + 0.6) {
+      c.beginPath(); c.rect(x + 0.12, cy + 0.1, 0.76, top - cy - 0.1); fill(c, rgba(C.ball, info.sun ? (run ? 0.07 : 0.1) : 0.04));
+      c.beginPath(); for (const rx of [0.12, 0.5, 0.88]) { c.moveTo(x + rx, top); c.lineTo(x + rx, cy + 0.1); }
+      stroke(c, Vw, rgba(C.ball, info.sun ? 0.55 : 0.25), LW.hair, DASH.hidden);
+    }
+    if (!info.sun && !run) jamMark(c, Vw, x + 0.5, info.blockY + 0.5);
+    if (!info.sun) return;
+    c.beginPath(); c.moveTo(x + 0.12, cy - 0.06); c.lineTo(F[0], F[1]); c.moveTo(x + 0.88, cy - 0.06); c.lineTo(F[0], F[1]);
+    stroke(c, Vw, rgba(C.ball, info.focusOk ? 0.75 : 0.3), LW.thin, info.focusOk ? null : DASH.hidden);
+    if (!info.focusOk) { if (!run) jamMark(c, Vw, x + 0.5, y - 0.5); return; }
+    const pulse = reduceMotion ? 1 : 0.75 + 0.25 * Math.sin(time * 9);
+    if (hot) { c.beginPath(); c.arc(F[0], F[1], 0.17 * pulse, 0, TAU); fill(c, rgba(C.ball, run ? 0.55 : 0.3)); }
+    c.beginPath(); c.arc(F[0], F[1], 0.06, 0, TAU); fill(c, C.ball);
+    if (!run && Vw.lod) {
+      c.beginPath(); c.moveTo(F[0] - 0.16, F[1]); c.lineTo(F[0] + 0.16, F[1]); c.moveTo(F[0], F[1] - 0.16); c.lineTo(F[0], F[1] + 0.16); stroke(c, Vw, rgba(C.ball, 0.9), LW.hair);
+    }
+  }
+  // Tahtanın sağ üst köşesinde küçük güneş: mercekli çizimde ışığın tepeden geldiğini anlatır.
+  function drawSun(c, Vw, time) {
+    const x = W - 0.55, y = H - 0.55, a0 = reduceMotion ? 0 : time * 0.4;
+    c.beginPath(); c.arc(x, y, 0.2, 0, TAU); fill(c, rgba(C.ball, 0.85)); stroke(c, Vw, GOLD, LW.thin);
+    c.beginPath();
+    for (let i = 0; i < 8; i++) { const a = a0 + i * TAU / 8; c.moveTo(x + Math.cos(a) * 0.28, y + Math.sin(a) * 0.28); c.lineTo(x + Math.cos(a) * 0.4, y + Math.sin(a) * 0.4); }
+    c.lineCap = 'round'; stroke(c, Vw, rgba(C.ball, 0.85), LW.part); c.lineCap = 'butt';
+  }
+
   // Sabit parçalar cıvatalı: taşınamazlar.
   function fixings(c, Vw, p) {
     if (!Vw.lod) return;
@@ -917,6 +1104,12 @@
     else if (p.type === 'lift') drawLift(c, Vw, p, rt, ann);
     else if (p.type === 'turbine') drawTurbine(c, Vw, p, rt, ann);
     else if (p.type === 'sensor') drawSensor(c, Vw, p, rt, true);
+    else if (p.type === 'pulley') drawPulley(c, Vw, p, rt);
+    else if (p.type === 'motor') drawMotor(c, Vw, p, rt, ann);
+    else if (p.type === 'button') drawButton(c, Vw, p, rt, true);
+    else if (p.type === 'winch') drawWinch(c, Vw, p, rt, ann);
+    else if (p.type === 'candle') drawCandle(c, Vw, p, rt, ann, time);
+    else if (p.type === 'lens') drawLens(c, Vw, p, rt);
     if (p.fixed) fixings(c, Vw, p);
   }
 
@@ -994,6 +1187,19 @@
   // ---------------------------------------------------------------- yardımcılar (kurulum)
   const allParts = () => KM.listParts(S.level, S.parts);
   const devicesAll = () => allParts().filter(p => PARTS[p.type].manual);
+  // Sensör ve düğme bir cihaza bağlanır (elle kumandalılar ve motor); kasnak kayışla başka bir kasnağa.
+  const isLinker = p => p.type === 'sensor' || p.type === 'button';
+  const linkTargets = () => allParts().filter(p => PARTS[p.type].manual || PARTS[p.type].switched);
+  const pulleysAll = () => allParts().filter(p => p.type === 'pulley');
+  // Kurarken merceğin güneş bilgisi; kurulum değişmedikçe yeniden hesaplanmaz.
+  let sunCache = { key: '', map: new Map() };
+  function sunMemo(p, items) {
+    const key = S.level.id + '#' + items.map(it => it.p.type + it.p.x + ',' + it.p.y + it.p.o).join('|');
+    if (sunCache.key !== key) sunCache = { key, map: new Map() };
+    const k = p.id + '@' + p.x + ',' + p.y;
+    if (!sunCache.map.has(k)) sunCache.map.set(k, KM.sunInfo(S.level, items.map(it => it.p), p));
+    return sunCache.map.get(k);
+  }
   const trayTotal = () => Object.values(S.level.tray || {}).reduce((a, b) => a + b, 0);
   const trayLeft = type => ((S.level.tray || {})[type] || 0) - S.parts.filter(p => p.type === type).length;
   // Bütün çizimler açık (9 Kasım 2026, Umut'un isteği): sıra yalnızca öneri.
@@ -1002,14 +1208,27 @@
   function autoLink(sensor) {
     const [sx, sy] = centerOf(sensor);
     let best = null, bd = 1e9;
-    for (const d of devicesAll()) {
+    for (const d of linkTargets()) {
       const [dx, dy] = centerOf(d), dist = Math.hypot(dx - sx, dy - sy);
       if (dist < bd) { bd = dist; best = d; }
     }
     sensor.link = best ? best.id : null;
   }
+  // Yeni kasnak kayışını en yakın, henüz kayışı olmayan kasnağa takar.
+  const beltCount = id => pulleysAll().filter(q => q.id === id ? q.link != null : q.link === id).length;
+  function autoBelt(pul) {
+    const [sx, sy] = centerOf(pul);
+    let best = null, bd = 1e9;
+    for (const q of pulleysAll()) {
+      if (q.id === pul.id || beltCount(q.id)) continue;
+      const [qx, qy] = centerOf(q), dist = Math.hypot(qx - sx, qy - sy);
+      if (dist < bd) { bd = dist; best = q; }
+    }
+    pul.link = best ? best.id : null;
+  }
   function relinkAfterRemoval(id) {
-    for (const s of S.parts) if (s.type === 'sensor' && s.link === id) autoLink(s);
+    for (const s of S.parts) if (isLinker(s) && s.link === id) autoLink(s);
+    for (const s of S.parts) if (s.type === 'pulley' && s.link === id) s.link = null;
   }
   function cellHit(list, w) {
     const cx = Math.floor(w.x), cy = Math.floor(w.y);
@@ -1031,18 +1250,36 @@
     trails.forEach((tr, i) => drawTrail(c, V, tr, run ? 0.75 : 0.45, kindIdx(kinds[i]), !run && !!S.trailFail && tr.length > 0 && !inCup(tr[tr.length - 1])));
     for (const cup of KM.cupsOf(L)) drawCup(c, V, cup, time);
     drawPipe(c, V, L);
-    for (const it of items) if (it.p.type !== 'sensor') drawPart(c, V, it.p, it.rt, time, ann);
     const byId = {};
     for (const it of items) byId[it.p.id] = it.p;
+    // Güneş ışığı (mercek) ve kayışlar parçaların arkasında.
+    const lensItems = items.filter(it => it.p.type === 'lens');
+    if (lensItems.length || ((L.tray || {}).lens > 0)) drawSun(c, V, time);
+    for (const it of lensItems) drawSunlight(c, V, it.p, run ? it.rt : sunMemo(it.p, items), run, time);
+    if (run) for (const [a, b] of S.sim.belts) drawBeltLoop(c, V, [a.x + 0.5, a.y + 0.5], [b.x + 0.5, b.y + 0.5], a.spin, time, 1);
+    else {
+      const done = new Set();
+      for (const it of items) {
+        if (it.p.type !== 'pulley' || it.p.link == null) continue;
+        const t = byId[it.p.link];
+        if (!t || t === it.p || t.type !== 'pulley') continue;
+        const key = [it.p.id, t.id].sort().join('|');
+        if (done.has(key)) continue;
+        done.add(key);
+        drawBeltLoop(c, V, [it.p.x + 0.5, it.p.y + 0.5], [t.x + 0.5, t.y + 0.5], 0, time, 0.85);
+      }
+    }
+    for (const it of items) if (it.p.type !== 'sensor' && it.p.type !== 'button') drawPart(c, V, it.p, it.rt, time, ann);
     for (const it of items) {
-      if (it.p.type !== 'sensor') continue;
+      if (!isLinker(it.p)) continue;
       const target = run ? (it.rt.link && it.rt.link.p) : byId[it.p.link];
       const age = run && it.rt.flash > 0 ? 0.4 - it.rt.flash : -1;
       if (target) drawLink(c, V, it.p, target, age >= 0 && age < 0.24 && !reduceMotion ? age / 0.24 : null);
     }
     for (const it of items) {
-      if (it.p.type !== 'sensor') continue;
-      drawSensor(c, V, it.p, it.rt, run ? !!it.rt.link : !!byId[it.p.link]);
+      if (!isLinker(it.p)) continue;
+      const linked = run ? !!it.rt.link : !!byId[it.p.link];
+      if (it.p.type === 'button') drawButton(c, V, it.p, it.rt, linked); else drawSensor(c, V, it.p, it.rt, linked);
     }
     if (ann) for (const it of items) {
       if (it.p.type === 'fan') drawFanRange(c, V, it.p);
@@ -1080,9 +1317,12 @@
       for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 1.5);
     }
     if (S.linkFrom) {
-      const pulse = 0.55 + 0.4 * Math.sin(time * 7);
-      for (const it of items) if (PARTS[it.p.type].manual) outline(c, V, it.p, C.hand, pulse, 2.5);
-      outline(c, V, S.linkFrom, C.eye, 0.9, 2.5);
+      const pulse = 0.55 + 0.4 * Math.sin(time * 7), belt = S.linkFrom.type === 'pulley';
+      for (const it of items) {
+        if (belt ? it.p.type === 'pulley' && it.p.id !== S.linkFrom.id : PARTS[it.p.type].manual || PARTS[it.p.type].switched)
+          outline(c, V, it.p, PARTS[it.p.type].manual ? C.hand : C.ink, pulse, 2.5);
+      }
+      outline(c, V, S.linkFrom, belt ? C.ink : C.eye, 0.9, 2.5);
     }
     if (cand) {
       for (const q of KM.cellsOf(cand)) {
@@ -1140,6 +1380,22 @@
           const a = i * TAU / 5 + 1.1, r = 0.25 + 0.7 * k;
           c.beginPath(); c.arc(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r - 0.5 * k * k, 0.06, 0, TAU); fill(c, rgba(BALLOON, 1 - k));
         }
+      } else if (f.k === 'burn') {
+        // İp yandı: kıvılcımlar ve yükselen duman.
+        const k = age / 0.7; if (k >= 1) continue;
+        c.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = i * TAU / 8 + 0.4, r0 = 0.08 + 0.35 * k, r1 = r0 + 0.1 * (1 - k);
+          c.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0); c.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+        }
+        c.lineCap = 'round'; stroke(c, V, rgba(FLAME, 0.95 * (1 - k)), LW.part); c.lineCap = 'butt';
+        for (let i = 0; i < 3; i++) {
+          const q = Math.max(0, k * 1.2 - i * 0.15);
+          c.beginPath(); c.arc(f.x + 0.08 * Math.sin(i * 2 + q * 6), f.y + 0.2 + q * 0.9, 0.07 + q * 0.12, 0, TAU); fill(c, ink(0.22 * (1 - k)));
+        }
+      } else if (f.k === 'ignite') {
+        const k = age / 0.5; if (k >= 1) continue;
+        c.beginPath(); c.arc(f.x, f.y, 0.1 + 0.45 * k, 0, TAU); stroke(c, V, rgba(FLAME, 0.9 * (1 - k)), LW.part);
       } else if (f.k === 'win') {
         // Makine çalıştı: kovadan çıkan ışınlar ve kovanın üstünde kendini çizen onay işareti.
         const k = age / 1.15; if (k >= 1) continue;
@@ -1218,7 +1474,8 @@
     let t;
     if (S.mode === 'edit') t = TOOL_HINT[S.edit.tool];
     else if (S.mode === 'run') t = h.run || 'The machine is running. Hold Fast to speed it up, or press Stop to go back to building.';
-    else if (S.linkFrom) t = 'Tap an orange device to link the sensor to it. Tap an empty spot to cancel.';
+    else if (S.linkFrom) t = S.linkFrom.type === 'pulley' ? 'Tap another pulley to run the belt to it. Tap this pulley again to take its belt off.'
+      : `Tap a device to link the ${NAMES[S.linkFrom.type].toLowerCase()} to it. Tap an empty spot to cancel.`;
     else if (prog && prog.solved) {
       const missing = L.badges.some(b => !prog.badges[b.k]);
       t = missing ? (h.after || 'Go for the missing stamps.')
@@ -1411,9 +1668,12 @@
       return p || null;
     });
     const linkOk = G.sol.parts.map((q, j) => {
-      if (q.type !== 'sensor' || !m[j] || q.link == null) return true;
+      if (!(q.type === 'sensor' || q.type === 'button' || q.type === 'pulley') || !m[j] || q.link == null) return true;
       const want = typeof q.link === 'number' ? (m[q.link - 1] && m[q.link - 1].id) : q.link;
-      return want != null && m[j].link === want;
+      if (want == null) return false;
+      // Kayış iki yönlü: hangi kasnakta yazılı olduğu fark etmez.
+      if (q.type === 'pulley') return m[j].link === want || S.parts.some(o => o.id === want && o.link === m[j].id);
+      return m[j].link === want;
     });
     return { m, linkOk, extra: S.parts.filter(p => !used.has(p)) };
   }
@@ -1491,9 +1751,10 @@
       if (j < 0) {   // hepsi yerinde, bir sensörün bağlantısı yanlış
         const js = G.idx.find(k => !linkOk[k]), sp = m[js], q2 = G.sol.parts[js];
         const dev = typeof q2.link === 'number' ? m[q2.link - 1] : S.level.fixed[+String(q2.link).slice(1)];
-        const dn = dev ? nameOf(dev.type) : 'device';
-        if (S.linkFrom === sp && dev) return { key: 'link2' + js, say: `Now tap the ${dn}.`, rect: boardRect(...partBox(dev)), box: partBox(dev, 0.1), ghosts, quiet, tap: boardRect(...partBox(dev)) };
-        return { key: 'link' + js, say: `The sensor has to work the ${dn}. Tap the sensor, then tap the ${dn}.`, rect: boardRect(...partBox(sp)), box: partBox(sp, 0.1), ghosts, quiet, tap: boardRect(...partBox(sp)) };
+        const dn = dev ? nameOf(dev.type) : 'device', sn = nameOf(sp.type);
+        if (S.linkFrom === sp && dev) return { key: 'link2' + js, say: sp.type === 'pulley' ? 'Now tap the other pulley.' : `Now tap the ${dn}.`, rect: boardRect(...partBox(dev)), box: partBox(dev, 0.1), ghosts, quiet, tap: boardRect(...partBox(dev)) };
+        const say = sp.type === 'pulley' ? 'Run the belt: tap this pulley, then tap the other pulley.' : `The ${sn} has to work the ${dn}. Tap the ${sn}, then tap the ${dn}.`;
+        return { key: 'link' + js, say, rect: boardRect(...partBox(sp)), box: partBox(sp, 0.1), ghosts, quiet, tap: boardRect(...partBox(sp)) };
       }
       const qr = boardRect(...partBox(q));
       const wrong = S.parts.find(p => !m.includes(p) && p.type === q.type && p.x === q.x && p.y === q.y);
@@ -1705,7 +1966,8 @@
 
   function addPlaced(p) {
     S.parts.push(p);
-    if (p.type === 'sensor' && (p.link == null || !devicesAll().some(d => d.id === p.link))) autoLink(p);
+    if (isLinker(p) && (p.link == null || !linkTargets().some(d => d.id === p.link))) autoLink(p);
+    if (p.type === 'pulley' && (p.link == null || !pulleysAll().some(q => q.id === p.link && q.id !== p.id))) autoBelt(p);
   }
 
   // ---------------------------------------------------------------- sürükle-bırak
@@ -1770,9 +2032,11 @@
     }
   }
 
-  function enterLink(sensor) {
-    if (!devicesAll().length) { toast('There is no orange device to link in this drawing.'); return; }
-    S.linkFrom = sensor; sfx('tick'); setHint();
+  function enterLink(part) {
+    if (part.type === 'pulley') {
+      if (!pulleysAll().some(q => q.id !== part.id)) { toast('A belt needs two pulleys.'); return; }
+    } else if (!linkTargets().length) { toast('There is no device to link in this drawing.'); return; }
+    S.linkFrom = part; sfx('tick'); setHint();
   }
   function exitLink() { if (S.linkFrom) { S.linkFrom = null; setHint(); } }
 
@@ -1790,8 +2054,19 @@
     }
     if (S.drag) return;
     if (S.linkFrom) {
-      const t = cellHit(devicesAll(), w);
-      if (t) { S.linkFrom.link = t.id; sfx('link'); saveSetup(); }
+      const src = S.linkFrom;
+      if (src.type === 'pulley') {
+        const t = cellHit(pulleysAll(), w);
+        if (t && t.id === src.id) {
+          // Aynı kasnağa dokununca kayışları çıkar.
+          src.link = null;
+          for (const q of S.parts) if (q.type === 'pulley' && q.link === src.id) q.link = null;
+          sfx('remove'); saveSetup();
+        } else if (t) { src.link = t.id; sfx('link'); saveSetup(); }
+      } else {
+        const t = cellHit(linkTargets(), w);
+        if (t) { src.link = t.id; sfx('link'); saveSetup(); }
+      }
       exitLink();
       return;
     }
@@ -1820,7 +2095,7 @@
     const pr = S.press;
     if (pr && e.pointerId === pr.pid) {
       S.press = null;
-      if (pr.part.type === 'sensor') enterLink(pr.part); else rotatePart(pr.part);
+      if (isLinker(pr.part) || pr.part.type === 'pulley') enterLink(pr.part); else rotatePart(pr.part);
       return;
     }
     const rt = S.held.get(e.pointerId);
@@ -1864,7 +2139,7 @@
     S.mode = 'run'; S.acc = 0; S.endT = 0; S.restNoted = false; S.goalPlayed = false;
     S.goalN = 0; S.goalAt = null; S.winAt = null; S.flashT = null; S.lastHit = []; S.newSeen = true;
     S.held.clear();
-    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on })); S.popsSeen = 0;
+    S.seen = S.sim.rts.map(rt => ({ fires: rt.fires, comp: rt.compress, on: rt.on, lit: rt.lit })); S.popsSeen = 0; S.burnsSeen = 0;
     S.fx = []; S.prevV = []; S.prevState = S.sim.bstate.slice();
     sfx('run'); musicMode('run');
     refreshSide(); buildPult(); updatePult();
@@ -1960,12 +2235,24 @@
       watchBalls(sim);
       sim.rts.forEach((rt, i) => {
         const s = S.seen[i];
-        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter', crank: 'tick' }[rt.type] || 'piston');
+        if (rt.fires > s.fires) sfx({ sensor: 'sensor', gate: 'gate', flipper: 'flipper', bumper: 'bumper', cutter: 'cutter', crank: 'tick', motor: 'tick', button: 'button', winch: 'unhook' }[rt.type] || 'piston');
         if (rt.compress > s.comp + 0.01) sfx('spring');
         if (rt.type === 'magnet' && rt.on && !s.on) sfx('magnet');
         if (rt.type === 'crank' && rt.on && !s.on) sfx('crank');
-        s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on;
+        if (rt.type === 'motor' && rt.on !== s.on) sfx(rt.on ? 'motor' : 'stop');
+        if (rt.type === 'candle' && rt.lit && !s.lit) {
+          sfx('ignite');
+          if (!reduceMotion) S.fx.push({ k: 'ignite', x: rt.x + 0.5, y: rt.y + 0.8, t: S.time });
+        }
+        s.fires = rt.fires; s.comp = rt.compress; s.on = rt.on; s.lit = rt.lit;
       });
+      if (sim.burns.length > S.burnsSeen) {
+        for (const b of sim.burns.slice(S.burnsSeen)) {
+          sfx('burn', { x: b.x / W * 2 - 1 });
+          if (!reduceMotion) S.fx.push({ k: 'burn', x: b.x, y: b.y, t: S.time });
+        }
+        S.burnsSeen = sim.burns.length;
+      }
       if (sim.pops > S.popsSeen) {
         S.popsSeen = sim.pops;
         for (const bl of sim.balloons) if (!bl.alive && !bl.fxDone) {
@@ -2147,7 +2434,7 @@
     const cnv = $('confetti'); if (cnv) cnv.getContext('2d').clearRect(0, 0, cnv.width, cnv.height);
   }
 
-  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors', 5: 'Gears and Wind' };
+  const BOOKS = { 1: 'Basics', 2: 'Gates and Magnets', 3: 'Flippers and Bumpers', 4: 'Balloons and Scissors', 5: 'Gears and Wind', 6: 'Belts and Motors', 7: 'Fire and Light' };
 
   // ---------------------------------------------------------------- Atölye: kendi çizimin
   // Çizim (doc) sıkışık tutulur: boru, kova, duvar hücreleri, sabit parçalar, oyuncunun parça listesi.
