@@ -20,6 +20,7 @@
     { "source": "/lab/kucuk-muhendisler/:path*", "destination": "/lab/drawing-board/:path*", "permanent": false },
     { "source": "/vagon-defteri/:path*", "destination": "/lab/vagon-defteri/:path*", "permanent": false },
     { "source": "/otel-yeni/:path*", "destination": "/lab/otel-yeni/:path*", "permanent": false },
+    { "source": "/kurye/:path*", "destination": "/lab/kurye/:path*", "permanent": false },
     { "source": "/kelime-tenisi/:path*", "destination": "/lab/kelime-tenisi/:path*", "permanent": false },
     { "source": "/uzay-hatti/:path*", "destination": "/lab/uzay-hatti/:path*", "permanent": false },
     { "source": "/harf-kutusu/:path*", "destination": "/lab/harf-kutusu/:path*", "permanent": false },
